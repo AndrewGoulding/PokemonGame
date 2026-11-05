@@ -1663,7 +1663,7 @@ for (const share of [false, true]) {
   const introJs = fs.readFileSync(path.join(root, "ui/intro.js"), "utf8");
   const names = new Set();
   for (const [, list] of introJs.matchAll(/_IMAGES = \[([^\]]+)\]/g)) for (const [, n] of list.matchAll(/"([\w-]+)"/g)) names.add(n);
-  assert(names.size > 25, "intro image lists");
+  assert(names.size > 30, "intro image lists");
   for (const n of names) assert(fs.existsSync(path.join(root, "assets/intro", n + ".png")), "missing intro image " + n);
   for (const [, label] of introJs.matchAll(/IT\("(\w+)"\)/g)) assert(INTRO_TEXT[label], "missing intro text " + label);
   for (const n of ["Red", "Green", "Gary", "Leaf"]) assert(INTRO_TEXT["gNameChoice_" + n], "name choice " + n);
@@ -1853,7 +1853,7 @@ for (const share of [false, true]) {
   for (const [look, l] of Object.entries(Player.LOOKS)) {
     assert.strictEqual(Player.create("T", look).look, look);
     for (const file of ["assets/sprites/trainers/back/" + l.back + ".png", "assets/sprites/trainers/front/" + l.front + ".png",
-      "assets/world/sprites/player_" + look + ".png", "assets/world/sprites/player_" + look + "_run.png"]) {
+      "assets/intro/" + l.speech + ".png", "assets/world/sprites/player_" + look + ".png", "assets/world/sprites/player_" + look + "_run.png"]) {
       assert(fs.existsSync(path.join(root, file)), "missing " + file);
     }
   }
@@ -1862,6 +1862,8 @@ for (const share of [false, true]) {
   assert.strictEqual(Player.load(JSON.parse(JSON.stringify(asRed))).player.look, "custom", "saves as Red or Leaf become the custom character");
   const saved = Object.assign(Player.create("T", "custom"), { party: [Party.create("Pidgey", 5)] });
   assert.strictEqual(Player.load(JSON.parse(JSON.stringify(saved))).player.look, "custom", "the custom look survives saving");
+  // Every picture Oak's speech uses is built (or added by hand, like the custom portrait).
+  assert(fs.readFileSync(path.join(root, "ui/intro.js"), "utf8").includes('"oak-speech-player-character"'));
 }
 
 // Battle backgrounds: every terrain ui/game.js can pick is built, at 512x112
@@ -1944,8 +1946,7 @@ for (const share of [false, true]) {
   // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    if (["johto", "emerald", "orre", "hoenn", "sinnoh"].includes(WORLD_MAPS[name].region)) continue;
-    if (["yugioh", "yakuza"].includes(WORLD_MAPS[name].realm)) continue;   // (nor the Yu-Gi-Oh! and Like a Dragon realms')   // (Johto, Hoenn, Faraway Island, Orre and Sinnoh aren't on Kanto's Town Map)
+    if (["johto", "emerald", "orre", "hoenn", "sinnoh"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Hoenn, Faraway Island, Orre and Sinnoh aren't on Kanto's Town Map)
     if (window.JOHTO_TOWN_MAP && window.JOHTO_TOWN_MAP.at[name]) continue;   // (nor Johto's maps east of New Bark Town, which are Kanto's for Badges but on Johto's)
     // (Saffron's Magnet Train station, HGSS's: its townMapSection, which ui/magnet-train.js adds.)
     if (WORLD_MAPS[name].townMapSection) { assert(onMap(WORLD_MAPS[name].townMapSection), name + " is on the Town Map"); continue; }
@@ -7170,329 +7171,18 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   done.then(() => console.log("ok: Hoenn's scripts, Norman's scene and Wally's lesson, Dive, trades, " + Object.keys(HS.s).length + " scripts"));
 }
 
-// The other realms' battles (engine/battle.js's Ultimax): Kamurocho's fights, played with random choices, end;
-// the chart's immunities hold; EXP levels a member up and teaches their skills.
+// The reeling game: held in your zone it's landed, perfectly; never reeled, it gets away; a hard fight's zone smaller.
 {
-  const R = window.Ultimax, S = window.REALM_SKILLS, groups = window.REALM_ENCOUNTERS.Kamurocho.groups;
-  assert.strictEqual(R.effect("Psychic", ["Dark"]), 0);
-  assert.strictEqual(R.effect("Ground", ["Dark", "Steel"]), 2);
-  for (const id in window.REALM_FIGHTERS) for (const [, s] of window.REALM_FIGHTERS[id].skills) assert(S[s], id + "'s " + s);
-  for (const id in window.REALM_FOES) for (const s of window.REALM_FOES[id].skills) assert(S[s], id + "'s " + s);
-  let turns = 0;
-  for (let g = 0; g < 60; g++) {
-    const races = window.REALM_RACES.map((r) => r.id).concat("you");
-    const recs = [R.recruit(races[g % races.length], 1 + g % 8), R.recruit("kiryu", 3 + g % 8)].concat(g % 2 ? [R.recruit("majima", 8)] : []);
-    const b = R.create(recs.map((r) => R.member(r, "Red")), g % 3 ? groups[g % groups.length][1] : ["majima"], { seed: g + 1 });
-    b.items = { staminan: 2 };
-    for (let n = 0; !b.over; n++) {
-      assert(n < 300, "a realm battle ends");
-      const choices = b.allies.map((f, i) => (g % 4 === 0 && i === 0 ? { act: "item", item: "staminan", target: 1 } : f.skills[n % 3] && R.skillOf(f, f.skills[n % 3]).mp <= f.mp ? { act: "skill", skill: f.skills[n % 3], target: 0 } : { act: "attack", target: 0 }));
-      for (const st of R.turn(b, n % 9 === 8 ? "run" : choices)) assert(!/NaN|undefined/.test(st.text), st.text);
-      turns++;
-    }
-  }
-  const rec = R.recruit("you", 1), ups = R.gainExp(rec, R.expFor(5));
-  assert(rec.lv === 5 && ups.length === 4 && ups.some((u) => u.learned.includes("rush")));
-  // (Each race is a fighter of its own, levelling up through all its skills.)
-  for (const r of window.REALM_RACES) { const x = R.recruit(r.id, 1); R.gainExp(x, R.expFor(20)); assert.strictEqual(R.skillsAt(r.id, x.lv).length, 7, r.id); }
-  // (A Pokémon out of its realm: the Ultimax system's rules, its stats as theirs, its types as elements.)
-  const TYPES = { Dragon: "Air", Flying: "Air", Normal: "Neutral", Electric: "Electric", Water: "Water", Grass: "Grass", Psychic: "Psychic",
-    Fire: "Fire", Rock: "Ground", Ground: "Ground", Steel: "Steel", Ghost: "Dark", Fairy: "Light", Poison: "Poison", Bug: "Grass",
-    Fighting: "Neutral", Ice: "Ice", Dark: "Dark" };
-  for (const t in TYPES) assert.deepStrictEqual(R.pokemonElements([t]), [TYPES[t]], t);
-  assert.deepStrictEqual(R.pokemonElements(["Normal", "Flying"]), ["Air"]);
-  assert.deepStrictEqual(R.pokemonElements(["Rock", "Ground"]), ["Ground"]);
-  assert.deepStrictEqual(R.pokemonElements(["Fighting", "Normal"]), ["Neutral"]);
-  assert.deepStrictEqual(R.pokemonElements(["Ghost", "Fairy"]), ["Dark", "Light"]);
-  for (const e of Object.values(TYPES)) assert(window.REALM_ELEMENTS.includes(e), e);
-  const pika = Party.create("Pikachu", 20, { moves: ["Thunderbolt", "Quick Attack", "Thunder Wave", "Growl"] }), ps = Party.stats(pika);
-  const pf = R.pokemon(pika, ps, "Pikachu");
-  assert(pf.str === ps.atk && pf.def === ps.def && pf.int === ps.spa && pf.wis === ps.spd && pf.spd === ps.spe && pf.maxHp === ps.hp * R.HP_SCALE);
-  assert.deepStrictEqual(pf.elements, ["Electric"]);
-  assert.deepStrictEqual(pf.skills, ["move:Thunderbolt", "move:Quick Attack", "move:Thunder Wave", "move:Growl"]);
-  assert(pf.own["move:Thunderbolt"].kind === "magic" && pf.own["move:Thunderbolt"].element === "Electric" && pf.own["move:Thunderbolt"].status === "paralysis");
-  assert(pf.own["move:Quick Attack"].kind === "phys" && pf.own["move:Quick Attack"].priority === 1 && pf.own["move:Thunder Wave"].kind === "status" && pf.own["move:Thunder Wave"].status === "paralysis");
-  assert(pf.own["move:Growl"].kind === "boost" && pf.own["move:Growl"].boosts.atk === -1);
-  assert(R.pokemonSkill("Recover", 30, 100).kind === "heal" && R.pokemonSkill("Protect", 30, 100).kind === "protect" && R.pokemonSkill("Harden", 30, 100).kind === "boost");
-  assert(R.pokemonSkill("Sleep Powder", 30, 100).status === "sleep" && R.pokemonSkill("Toxic", 30, 100).status === "toxic" && R.pokemonSkill("Will-O-Wisp", 30, 100).status === "burn");
-  assert(R.pokemonSkill("Swords Dance", 30, 100).kind === "boost" && R.pokemonSkill("Confuse Ray", 30, 100).status === "confusion" && !R.pokemonSkill("Rain Dance", 30, 100));
-  for (const id in S) assert(S[id].status !== "stun", id + ": stun is paralysis now");
-  {
-    const b = R.create([R.member(R.recruit("hylian", 20), "Red"), pf], ["thug", "knife"], { seed: 7 });
-    // (its moves cost MP, not PP: its MP its species', data/mon-mp.js)
-    const mp0 = pf.mp, pp0 = pika.moves[0].pp;
-    assert(mp0 === R.monMp("Pikachu", 20) && mp0 > 0 && pf.own["move:Thunderbolt"].mp === 5, "a Pokémon's MP and its moves' costs");
-    for (let n = 0; !b.over; n++) {
-      assert(n < 100, "a fight with a Pokémon in it ends");
-      for (const st of R.turn(b, [{ act: "attack", target: 0 }, { act: "skill", skill: "move:Thunderbolt", target: 0 }])) assert(!/NaN|undefined/.test(st.text), st.text);
-    }
-    assert(pf.mp < mp0, "its moves cost MP");
-    R.keep(b);
-    assert(pika.moves[0].pp === pp0 && pika.realmMp === pf.mp && pika.hp === Math.ceil(pf.hp / R.HP_SCALE), "its MP and HP go back to it, its PP untouched");
-    assert(R.pokemon(pika, ps, "Pikachu").mp === pf.mp, "and it comes back with that MP");
-    Party.heal(pika);
-    assert(pika.realmMp === undefined && R.pokemon(pika, ps, "Pikachu").mp === mp0, "a Pokémon Center fills it again");
-    assert(R.pokemonExp(pika, 20) > 0);
-    assert(Object.keys(window.MON_MP).length === 386 && window.MON_MP.Bulbasaur > 0 && window.MON_MP["Deoxys-Normal"] > 0, "the first 386's MP");
-  }
-  // (Kanto's Pokémon Trainers: weak but for speed; Go! sends one out, and they become it at their level, its stats,
-  // elements, four moves and Return; Return, and the fight's end, make them themselves again.)
-  {
-    const rec = R.recruit("kanto", 12), me = R.member(rec, "Red"), hyl = R.member(R.recruit("hylian", 12), "Red");
-    assert(me.str < hyl.str && me.def < hyl.def && me.spd > hyl.spd && me.maxHp < hyl.maxHp, "a trainer's weak, but quick");
-    assert.deepStrictEqual(R.skillsAt("kanto", 1), ["go_pikachu"], "one Pokémon to send out at first");
-    const b = R.create([me], ["punk"], { seed: 11 });
-    R.turn(b, [{ act: "skill", skill: "go_bulbasaur", target: 0 }]);
-    const st = R.monStats("Bulbasaur", 12);
-    assert(me.form === "Bulbasaur" && me.str === st.atk && me.spd === st.spe && me.maxHp === st.hp * R.HP_SCALE && me.maxMp === R.monMp("Bulbasaur", 12), "they become it, at their level");
-    assert.deepStrictEqual(me.elements, ["Grass", "Poison"]);
-    assert(me.skills.length === 5 && me.skills[4] === "return_mon" && me.skills.slice(0, 4).every((id) => me.own[id]), "its four moves, and Return");
-    R.turn(b, [{ act: "skill", skill: "return_mon", target: 0 }]);
-    assert(!me.form && me.name === "Red" && me.str === hyl.str - (hyl.str - me.str) && me.skills[0] === "go_pikachu", "Return: themselves again");
-    R.turn(b, [{ act: "skill", skill: "go_pikachu", target: 0 }]);
-    R.keep(b);
-    assert(rec.hp <= R.statsOf(rec).hp && rec.mp <= R.statsOf(rec).mp, "out of the fight, themselves");
-  }
-  // (Four fight and four wait in reserve: Swap brings one in, and one comes in for anyone who falls; the fight's lost
-  // only when the reserve's down too.)
-  {
-    const mk = (id, lv) => R.member(R.recruit(id, lv), "Red");
-    const b = R.create([mk("hylian", 3)], ["grunt"], { seed: 3, reserve: [mk("kiryu", 30), mk("majima", 30)] });
-    const k0 = b.reserve[0];
-    R.turn(b, [{ act: "swap", reserve: 0 }]);
-    assert(b.allies[0] === k0 && b.reserve[0].id === "hylian", "a swap");
-    b.allies[0].hp = 1;
-    for (let n = 0; !b.over && n < 60; n++) R.turn(b, [{ act: "attack", target: 0 }]);
-    assert(b.over === "won", "the reserve fights on: " + b.over);
-    const lost = R.create([mk("hylian", 1)], ["shakedown"], { seed: 5, reserve: [mk("hylian", 1)] });
-    for (let n = 0; !lost.over && n < 200; n++) R.turn(lost, [{ act: "defend" }]);
-    assert(lost.over === "lost" && lost.allies.concat(lost.reserve).every((f) => f.hp === 0), "lost once everyone's down");
-  }
-  // (HP_SCALE: everyone's HP that many times, a save's from before as much of the new; the Pokémon realm's ways:
-  // stat stages, Protect, paralysis and the rest.)
-  {
-    const old = { id: "kiryu", lv: 5, exp: R.expFor(5), hp: 20, mp: 5 };
-    R.rescale(old);
-    assert(old.hp === 20 * R.HP_SCALE && old.hpScale === R.HP_SCALE && R.stats("kiryu", 5).hp % R.HP_SCALE === 0);
-    assert.strictEqual(R.create([], ["punk"]).foes[0].maxHp, window.REALM_FOES.punk.hp * R.FOE_HP_SCALE, "the street's foes keep their own HP");
-    assert.strictEqual(R.create([], ["majima"]).foes[0].maxHp, window.REALM_FOES.majima.hp * R.HP_SCALE, "a boss's is scaled");
-    // (Categories: Physical by Strength, Magical by Intelligence, the rest Status, heals by Wisdom; a Pokémon's
-    // Special moves Magical.)
-    const SK = window.REALM_SKILLS;
-    assert.deepStrictEqual([R.category(SK.rush), R.category(SK.kamehameha), R.category(SK.first_aid), R.category(SK.brace)], ["Physical", "Magical", "Status", "Status"]);
-    assert.strictEqual(R.category(R.pokemonSkill("Thunderbolt", 20, 60)), "Magical");
-    assert.strictEqual(R.category(R.pokemonSkill("Tackle", 20, 60)), "Physical");
-    const hitBy = (k, v, skill) => {
-      const me = R.member(R.recruit("human", 10)), b = R.create([me], ["punk"], { seed: 7 });
-      me[k] = v; me.mp = 99; b.foes[0].hp = b.foes[0].maxHp = 9999; b.foes[0].def = b.foes[0].wis = 0;
-      R.turn(b, [{ act: "skill", skill, target: 0 }]);
-      return 9999 - b.foes[0].hp;
-    };
-    assert(hitBy("int", 80, "kamehameha") > hitBy("int", 20, "kamehameha") * 2, "Magical goes by Intelligence");
-    assert(hitBy("str", 80, "wolf_fang") > hitBy("str", 20, "wolf_fang") * 2, "Physical by Strength");
-    const healBy = (wis) => {
-      const me = R.member(R.recruit("you", 10)), b = R.create([me], ["punk"], { seed: 3 });
-      me.wis = wis; me.mp = 99; me.hp = 1; b.foes[0].str = 0;
-      R.turn(b, [{ act: "skill", skill: "first_aid", target: 0 }]);
-      return me.hp;
-    };
-    assert(healBy(40) > healBy(10) * 1.5, "heals by Wisdom");
-    // (Stat points: 3 a level, into any stat; a member saved before them gets their levels' worth.)
-    const pr = R.recruit("kiryu", 1);
-    R.gainExp(pr, R.expFor(3));
-    assert.strictEqual(pr.points, 6);
-    const before = R.statsOf(pr);
-    assert(R.spend(pr, "str") && R.spend(pr, "hp") && R.statsOf(pr).str === before.str + 1 && R.statsOf(pr).hp === before.hp + 2 * R.HP_SCALE && pr.points === 4);
-    const old5 = { id: "kiryu", lv: 5, exp: R.expFor(5), hp: 10, mp: 5, hpScale: R.HP_SCALE };
-    assert.strictEqual(R.pointsOf(old5).points, 12);
-    assert.strictEqual(R.member(pr).str, R.statsOf(pr).str);
-    const mon = (moves) => { const m = Party.create("Machamp", 50, { moves }); return R.pokemon(m, Party.stats(m), "Machamp"); };
-    // (Swords Dance: Strength two stages up, the damage with it.)
-    const sd = mon(["Swords Dance", "Protect", "Thunder Punch", "Bulk Up"]);
-    const b1 = R.create([sd], ["shakedown"], { seed: 11 });
-    const t1 = R.turn(b1, [{ act: "skill", skill: "move:Swords Dance" }]).map((x) => x.text).join(" ");
-    assert(sd.boosts.str === 2 && /Strength sharply rose/.test(t1), t1);
-    // (Protect: nothing lands; straight after, a third as likely; Thunder Punch can paralyse, and paralysis halves speed.)
-    let guarded = 0;
-    for (let seed = 1; seed < 40; seed++) {
-      const p = mon(["Protect"]), b = R.create([p], ["grunt"], { seed });
-      const hp = p.hp, text = R.turn(b, [{ act: "skill", skill: "move:Protect" }]).map((x) => x.text).join(" ");
-      if (/protected itself/.test(text) && p.hp === hp) guarded++;
-    }
-    assert(guarded >= 35, "Protect works: " + guarded);
-    let again = 0;
-    for (let seed = 1; seed <= 90; seed++) {
-      const p = mon(["Protect"]), b = R.create([p], ["punk"], { seed });
-      R.turn(b, [{ act: "skill", skill: "move:Protect" }]);
-      if (p.protectChain === 1 && /protected itself/.test(R.turn(b, [{ act: "skill", skill: "move:Protect" }])[0].text)) again++;
-    }
-    assert(again > 10 && again < 50, "Protect straight after works a third of the time: " + again);
-    const z = R.create([sd], ["grunt"], { seed: 1 }).foes[0];
-    const spd = z.spd;
-    z.status = "paralysis";
-    assert(R.TYPE_ELEMENT.Electric === "Electric" && z.spd === spd);
-    // (Thunder Wave doesn't paralyse the Electric; Will-O-Wisp doesn't burn the Fire.)
-    const tw = R.pokemon(Party.create("Jolteon", 50, { moves: ["Thunder Wave"] }), Party.stats(Party.create("Jolteon", 50)), "Jolteon");
-    const b3 = R.create([tw], ["punk"], { seed: 3 });
-    b3.foes[0].elements = ["Electric"];
-    const t3 = R.turn(b3, [{ act: "skill", skill: "move:Thunder Wave", target: 0 }]).map((x) => x.text).join(" ");
-    assert(!b3.foes[0].status && /doesn't work|no effect/.test(t3), t3);
-    b3.foes[0].elements = ["Neutral"]; b3.foes[0].hp = b3.foes[0].maxHp;
-    for (let n = 0; n < 10 && !b3.foes[0].status; n++) { tw.mp = tw.maxMp; R.turn(b3, [{ act: "skill", skill: "move:Thunder Wave", target: 0 }]); }
-    assert.strictEqual(b3.foes[0].status, "paralysis");
-    // (Fights with every kind of move in them end, and say nothing undefined.)
-    const all = ["Swords Dance", "Protect", "Toxic", "Will-O-Wisp", "Confuse Ray", "Leech Seed", "Rest", "Close Combat", "Giga Drain", "Double-Edge", "Fake Out",
-      "Sand Attack", "Endure", "Wide Guard", "Spiky Shield", "Haze", "Belly Drum", "Swagger", "Ice Beam", "Fire Fang", "Explosion", "Aqua Ring"];
-    for (let g = 0; g < 30; g++) {
-      const ms = [0, 1, 2, 3].map((k) => all[(g * 4 + k) % all.length]);
-      const m = Party.create("Mew", 40, { moves: ms }), f = R.pokemon(m, Party.stats(m), "Mew");
-      const b = R.create([f, R.member(R.recruit("kai", 10), "Red")], ["thug", "biker"], { seed: g + 5, reserve: [R.member(R.recruit("kiryu", 12), "Red")] });
-      for (let n = 0; !b.over; n++) {
-        assert(n < 400, "a fight with " + ms.join(", ") + " ends");
-        const choices = b.allies.map((x) => (x.mon ? { act: "skill", skill: x.skills[n % x.skills.length], target: 0 } : { act: "attack", target: 0 }));
-        if (f.mon) f.mp = f.maxMp;
-        for (const st of R.turn(b, choices)) assert(!/NaN|undefined/.test(st.text), st.text);
-      }
-      R.keep(b);
-      assert(m.hp >= 0 && m.hp <= Party.stats(m).hp && (m.hp > 0 || !m.status));
-    }
-  }
-  // (Kamurocho's streets, side on: every scene's picture and people drawn, everyone and every way in on its floor;
-  // the manhole in Serena's backlot, the ladder up from the sewer to it.)
-  {
-    const K = window.KAMUROCHO_STREET, here = (f) => fs.existsSync(require("path").join(__dirname, "..", f));
-    const inside = (poly, x, y) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
-    assert(K.scenes[K.arrive.scene] && inside(K.scenes[K.arrive.scene].floor, K.arrive.x, K.arrive.y), "the Time Machine leaves you on the floor");
-    for (const [id, S] of Object.entries(K.scenes)) {
-      assert(here(S.image), id + "'s picture");
-      for (const p of S.people || []) assert(here("assets/kamurocho/people/" + p.sprite + ".png") && inside(S.floor, p.x, p.y), id + ": " + p.script);
-      // (those who walk: their walk a strip of four frames as wide as they stand, its frames' heights theirs, and
-      // both ends of their beat on the floor)
-      const png = (f) => { const b = fs.readFileSync(require("path").join(__dirname, "..", "assets/kamurocho/people", f + ".png")); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
-      for (const p of (S.people || []).filter((p) => p.walk)) {
-        const [w, h] = png(p.sprite), [ww, wh] = png(p.walk), r = p.range || 50;
-        assert(ww === 4 * w && wh === h && inside(S.floor, p.x - r, p.y) && inside(S.floor, p.x + r, p.y), id + ": " + p.script + " walks");
-      }
-      for (const e of S.exits || []) assert(K.scenes[e.to] && inside(K.scenes[e.to].floor, e.x, e.y), id + " to " + e.to);
-      for (const th of S.things || []) assert(here(th.image), th.image);
-    }
-    for (const f of Object.values(window.REALM_FOES)) if (f.street) assert(here("assets/kamurocho/people/" + f.street + ".png"), f.name);
-    assert(K.scenes.street.exits.some((e) => e.to === "backlot" && e.spot) && !K.scenes.street.exits.some((e) => e.to === "sewer"), "Serena's backlot, off the street");
-    assert(K.scenes.backlot.exits.some((e) => e.to === "sewer") && K.scenes.sewer.exits.some((e) => e.to === "backlot") && !K.scenes.backlot.encounters, "the backlot's manhole");
-    // (every scene reached from the sewer, and back; the gangs' foes each with a walk if it's said to have one, and
-    // something to say; no fights off the streets)
-    const reach = (from) => { const seen = new Set([from]), todo = [from]; while (todo.length) for (const e of K.scenes[todo.pop()].exits || []) if (!seen.has(e.to)) { seen.add(e.to); todo.push(e.to); } return seen; };
-    // (a room only the story takes you to, `story`: left, and back to the sewer)
-    for (const id of Object.keys(K.scenes)) assert((K.scenes[id].story || reach(K.arrive.scene).has(id)) && reach(id).has(K.arrive.scene), id + " is reached, and left");
-    for (const f of K.foeWalks) assert(here("assets/kamurocho/people/" + f + "_walk.png"), f + "'s walk");
-    for (const [, foes] of window.REALM_ENCOUNTERS.Kamurocho.groups) assert(K.barks[foes[0]] && K.barks[foes[0]].length, foes[0] + "'s bark");
-    for (const id of ["alley", "backlot", "sewer", "poppo", "bacchus", "champion", "toko", "kazama", "dojima", "nakamichi-alley", "pink-alley", "theater-alley"]) assert(!K.scenes[id].encounters, id + ": no fights");
-    for (const id of ["street", "taihei", "tenkaichi", "nakamichi", "pink", "theater", "showa", "senryo", "hotels", "shichifuku"]) assert(K.scenes[id].encounters, id + ": its gangs");
-    // (each picture as wide and as high as its scene says; Taihei Boulevard's road below its pavement, walked on)
-    const size = (f) => { const b = fs.readFileSync(require("path").join(__dirname, "..", f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
-    for (const [id, S] of Object.entries(K.scenes)) assert.deepStrictEqual(size(S.image), [S.width, S.height || 480], id + "'s size");
-    assert(inside(K.scenes.taihei.floor, 800, 590), "Taihei Boulevard's road");
-    // (the karaoke box: its spot, and each song's words within its bars, each line done before the next, a
-    // syllable a note)
-    assert(K.scenes.heroine.spots.some((sp) => sp.script === "Kamurocho_Karaoke") && K.scenes.theater.exits.some((e) => e.to === "heroine"), "Heroine, the karaoke bar");
-    // (Yakuza 0's first chapter: Kuze to fight at the Empty Lot, Tachibana Real Estate's door on Showa Street and on the Map)
-    assert(window.REALM_FOES.kuze && window.REALM_FOES.kuze.boss && K.scenes.showa.spots.some((sp) => sp.script === "Kamurocho_Tachibana") && K.map.scenes.tachibana.title, "Bound by Oath");
-    // (every realm… and kamurocho… function ui/game.js calls is one it defines: a missing one hangs the game where it's
-    // called, as realmPoints once did after a level-up)
-    {
-      const gj = fs.readFileSync(require("path").join(__dirname, "..", "ui/game.js"), "utf8");
-      for (const [, name] of gj.matchAll(/(?<![\w.])((?:realm|kamurocho)[A-Z]\w*)\(/g))
-        assert(new RegExp("(function\\s+" + name + "\\b|(const|let)\\s+" + name + "\\s*=)").test(gj), "ui/game.js defines " + name);
-    }
-    for (const song of window.KARAOKE_SONGS) {
-      let end = 0;
-      for (const [start, syl] of song.lines) {
-        assert(start >= end && start >= song.intro * 4, song.id + ": its lines in turn");
-        end = start + syl.reduce((t, [w, midi, len]) => (assert(typeof w === "string" && midi >= 40 && midi <= 96 && len > 0, song.id + ": " + w), t + len), 0);
-      }
-      assert(end <= song.chords.length * 4 && song.chords.every(([r, q]) => r > 0 && ["maj", "min", "7"].includes(q)), song.id + ": its bars");
-    }
-  }
-  // (And each has its looks: parts that are drawn, and skins that are colours.)
-  const skins = window.LOOK_COLOURS.skin.map((c) => c[0]);
-  for (const r of window.REALM_RACES) {
-    assert(r.looks, r.id);
-    const P = window.PLAYER_LOOK_PARTS, part = (p) => P[p] && fs.existsSync(require("path").join(__dirname, "..", "assets/world/sprites/looks", p + ".png"));
-    for (const p of r.looks.bodies) assert(part(p), r.id + ": " + p);
-    for (const h of r.looks.heads || []) assert(part(h + "_face"), r.id + ": " + h);
-    for (const s of r.looks.skin) assert(skins.includes(s), r.id + ": " + s);
-    for (const b of Object.keys(r.looks.bodyLabels || {})) assert(r.looks.bodies.includes(b), r.id + ": " + b);
-    // (a character cut in three: its body says where its head is, in each of its 15 frames, its face and hair where
-    // theirs is; each face's hairstyles are parts, its own among them)
-    for (const b of r.looks.bodies) {
-      if (P[b].kind === "whole") continue;
-      assert(P[b].kind === "body" && P[b].headAt && P[b].headAt.length === 15, b + "'s neck");
-      const F = P[b + "_face"];
-      if (!F && r.looks.heads) continue;   // (Hyrule's bodies, with no heads of their own: they take its heads)
-      assert(F && F.kind === "face" && F.ref.length === 15 && F.family === P[b].family, b + "'s face");
-      for (const h of F.hairs) assert(h === "" || (P[h] && P[h].kind === "hair"), b + ": " + h);
-      assert(F.hairs.includes(P[b + "_hair"] ? b + "_hair" : ""), b + " takes its own hair");
-    }
-    if (r.looks.start) for (const k of ["body", "face", "hairstyle"]) assert(!r.looks.start[k] || P[r.looks.start[k]], r.id + "'s start: " + k);
-  }
-  // (Every race offers its own person (race_<id>: the sprite sheets given for the game, tools/import-race-sprites.py;
-  // the Sheikah a woman too): a whole character, its fifteen frames; any presets' parts there to be drawn.)
-  {
-    const P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS, ids = (k) => C[k].map((c) => c[0]);
-    const fs = require("fs"), path = require("path");
-    for (const r of window.REALM_RACES) {
-      const L = r.looks, own = "race_" + r.id;
-      assert(L.bodies[0] === own && L.bodies.every((b) => b.startsWith(own)), r.id + " offers its own person");
-      for (const b of L.bodies) {
-        assert(P[b] && P[b].kind === "whole" && P[b].family === "custom", b);
-        const png = fs.readFileSync(path.join(__dirname, "..", "assets/world/sprites/looks", b + ".png"));
-        assert(png.readUInt32BE(16) === 15 * 32 && png.readUInt32BE(20) === 17 * 32, b + "'s sheet");
-      }
-      for (const p of L.presets || []) {
-        assert(["male", "female"].includes(p.gender) && P[p.body] && (!p.face || P[p.face].kind === "face") && (!p.hairstyle || P[p.hairstyle].kind === "hair"), r.id + ": " + p.name);
-        if (p.face && p.hairstyle !== undefined) assert(P[p.face].hairs.includes(p.hairstyle || ""), p.name + "'s hair fits its face");
-        if (p.face) assert(P[p.face].family === P[p.body].family, p.name + ": one family");
-        for (const k of ["hair", "outfit", "trim"]) assert(!p[k] || ids(k === "hair" ? "hair" : "cloth").includes(p[k]), p.name + ": " + k);
-        assert(!p.skin || L.skin.includes(p.skin), p.name + ": skin");
-      }
-    }
-  }
-  // (Every race's man and woman in battle (tools/import-race-backs.py, source/battle64): a back of five 64x64 frames, a
-  // 64x64 front.)
-  {
-    const fs = require("fs"), path = require("path"), A = path.join(__dirname, "..", "assets/sprites/trainers");
-    for (const r of window.REALM_RACES) for (const id of [r.id, r.id + "_f"]) {
-      assert(window.RACE_BACKS.includes(id), id + " has a back");
-      const back = fs.readFileSync(path.join(A, "back", "race_" + id + ".png")), front = fs.readFileSync(path.join(A, "front", "race_" + id + ".png"));
-      assert(back.readUInt32BE(16) === 64 && back.readUInt32BE(20) === 320, id + "'s back sheet");
-      assert(front.readUInt32BE(16) === 64 && front.readUInt32BE(20) === 64, id + "'s front");
-    }
-  }
-  // (The colours: each four shades, darkest first, its id once in its list; a good many of each, and seven skins or
-  // more for every race.)
-  {
-    const C = window.LOOK_COLOURS, lum = (h) => { const n = parseInt(h.slice(1), 16); return 0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255); };
-    for (const k of ["hair", "cloth", "skin"]) {
-      assert(new Set(C[k].map((c) => c[0])).size === C[k].length && C[k].length >= 25, k + ": its colours");
-      for (const c of C[k]) assert(c.length === 6 && c.slice(2).every((h, i, a) => /^#[0-9a-f]{6}$/.test(h) && (!i || lum(h) > lum(a[i - 1]))), k + ": " + c[0]);
-    }
-    for (const r of window.REALM_RACES) assert(r.looks.skin.length >= 7, r.id + "'s skins");
-  }
-  // (Android 20 is Dr. Gero, not Mr. Popo; Frieza's people the Arcosians)
-  assert.strictEqual(window.REALM_RACES.find((r) => r.id === "arcosian").name, "Arcosians");
-  // (The reeling game: held in your zone it's landed, perfectly; never reeled, it gets away; a hard fight's zone smaller)
-  {
-    require("../game/fishing-game.js");
-    const FG = window.FishingGame;
-    const g = FG.create(() => 0.5, { level: 10, rod: "old-rod" });
-    for (let i = 0; i < 60 * 60 && !g.over; i++) { g.zone.y = Math.max(0, Math.min(1 - g.zone.size, g.fish.y - g.zone.size / 2)); FG.step(g, { reel: false }); }
-    assert(g.over === "landed" && FG.result(g).perfect && FG.result(g).xpBonus >= 10, "reeled in perfectly");
-    // (the fish kept at the top, your zone left at the bottom)
-    const h = FG.create(() => 0.5, { level: 1, rod: "super-rod", slot: 4 });
-    for (let i = 0; i < 60 * 60 && !h.over; i++) { h.fish.y = h.fish.target = 0.95; FG.step(h, { reel: false }); }
-    assert(h.over === "escaped" && !FG.result(h).landed, "out of your zone, it got away");
-    assert(h.fight > g.fight && h.zone.size < g.zone.size, "a hard fight's harder");
-    assert(FG.TREASURE.every((id) => window.ITEMS[id]), "its treasures are items");
-  }
-  console.log("ok: realm battles, 60 of Kamurocho's fights finished (" + turns + " turns)");
+  require("../game/fishing-game.js");
+  const FG = window.FishingGame;
+  const g = FG.create(() => 0.5, { level: 10, rod: "old-rod" });
+  for (let i = 0; i < 60 * 60 && !g.over; i++) { g.zone.y = Math.max(0, Math.min(1 - g.zone.size, g.fish.y - g.zone.size / 2)); FG.step(g, { reel: false }); }
+  assert(g.over === "landed" && FG.result(g).perfect && FG.result(g).xpBonus >= 10, "reeled in perfectly");
+  // (the fish kept at the top, your zone left at the bottom)
+  const h = FG.create(() => 0.5, { level: 1, rod: "super-rod", slot: 4 });
+  for (let i = 0; i < 60 * 60 && !h.over; i++) { h.fish.y = h.fish.target = 0.95; FG.step(h, { reel: false }); }
+  assert(h.over === "escaped" && !FG.result(h).landed, "out of your zone, it got away");
+  assert(h.fight > g.fight && h.zone.size < g.zone.size, "a hard fight's harder");
+  assert(FG.TREASURE.every((id) => window.ITEMS[id]), "its treasures are items");
 }
+console.log("ok: the reeling game");

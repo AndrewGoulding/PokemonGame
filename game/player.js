@@ -25,7 +25,7 @@
   // and so are the Explorer Kit (for digging in cave walls) and the Fishing Rod.
   // No Poké Balls: as in FireRed, the first ones come from Prof. Oak with the Pokédex.
   const STARTING_BAG = { "exp-share": 1, "explorer-kit": 1, "berry-pouch": 1, "fishing-rod": 1 };
-  const MAX_MONEY = 10000000;
+  const MAX_MONEY = 9999999;
   const MAX_ITEM_COUNT = 999;
   // The item storage in your PC starts with a Potion, as in FireRed.
   const STARTING_PC_ITEMS = { "potion": 1 };
@@ -79,12 +79,13 @@
   // The player character: the custom one (sprites recoloured to match
   // assets/sprites/trainers/back/player_character.png). Red and Leaf aren't
   // playable: they're rivals in this game. A look lists its battle back sprite
-  // and trainer-card picture (assets/sprites/trainers/), and overworld sprites (assets/world/sprites/player_<look>*.png);
+  // and trainer-card picture (assets/sprites/trainers/), Oak's-speech portrait
+  // (assets/intro/), and overworld sprites (assets/world/sprites/player_<look>*.png);
   // `girl` would pick FireRed's lines for girls (Mom, the Magikarp salesman).
   const LOOKS = {
-    custom: { label: "Custom", back: "player_character", front: "player_character" },
+    custom: { label: "Custom", back: "player_character", front: "player_character", speech: "oak-speech-player-character" },
     // Wes, who you are in Orre (game/orre.js): not chosen at the start.
-    wes: { label: "Wes", back: "wes", front: "wes" }
+    wes: { label: "Wes", back: "wes", front: "wes", speech: "oak-speech-player-character" }
   };
   const PLAYER_LOOK = "custom";
   // Saves from when you could play as Red or Leaf become the custom character.
@@ -254,21 +255,6 @@
     return true;
   }
 
-  // Each realm has a bag of its own (this game's own). Your Bag, with everything you've had all along, is the
-  // Pokémon realm's: it's put away (flags.realmBags) while you're out of that realm, and the realm you're in has
-  // its own instead (the Yu-Gi-Oh! realm's: its booster packs). Your money goes with you. True if it changed.
-  function enterRealm(player, realm) {
-    realm = realm || "pokemon";
-    const f = player.flags, now = f.bagRealm || "pokemon";
-    if (now === realm) return false;
-    const bags = f.realmBags = Object.assign({}, f.realmBags);
-    bags[now] = player.bag;
-    player.bag = bags[realm] || {};
-    delete bags[realm];
-    if (realm === "pokemon") delete f.bagRealm; else f.bagRealm = realm;
-    return true;
-  }
-
   // PC item storage: moves items between the bag and the PC.
   function depositItem(player, item, n) {
     if (!removeItem(player, item, n)) return false;
@@ -375,18 +361,18 @@
       return Number.isInteger(v) && v >= 0 && v < 16 ? v : w;
     });
     player.bag = {};
-    let oldPacks = 0;
     const RENAMED = renamedItems(data.version);
     for (const r of player.party.concat(boxed(player))) if (r.item) r.item = RENAMED[r.item] || r.item;
-    for (let [item, n] of Object.entries(data.bag || {})) {
+    // (A save made in one of the other realms the game once had: its bag was that realm's, your own put away in
+    // flags.realmBags.pokemon; your own back.)
+    const f0 = data.flags || {}, bag = f0.bagRealm && f0.realmBags ? f0.realmBags.pokemon || {} : data.bag;
+    for (let [item, n] of Object.entries(bag || {})) {
       item = RENAMED[item] || item;
       if (window.ITEMS[item] && n > 0) player.bag[item] = Math.min(MAX_ITEM_COUNT, n | 0);
-      else if (/-pack$/.test(item) && n > 0) oldPacks += n | 0;   // (Duel Monsters packs of the old sets: Pack Tokens, below)
     }
     // Everyone has the Explorer Kit, the Berry Pouch and the Fishing Rod, saves from before
     // them too (not Wes, in Orre: game/orre.js has your own Bag put away).
-    // (Nor in another realm, where the bag's that realm's: enterRealm.)
-    const asWes = !!(data.flags && (data.flags.orreStash || data.flags.bagRealm));
+    const asWes = !!(data.flags && data.flags.orreStash);
     if (!asWes) player.bag["explorer-kit"] = player.bag["berry-pouch"] = player.bag["fishing-rod"] = 1;
     // Saves from before PC item storage get its starting Potion.
     player.pcItems = {};
@@ -399,7 +385,8 @@
     for (const s of dex.caught || []) markCaught(player, s);
     player.badges = Array.isArray(data.badges) ? data.badges.slice() : [];
     player.flags = Object.assign({}, data.flags);
-    if (oldPacks) { const y = player.flags.yugioh = Object.assign({}, player.flags.yugioh); y.packTokens = (y.packTokens || 0) + oldPacks; }
+    // (Nothing kept of the other realms the game once had: their bags, cards, stories and the Time Machine.)
+    for (const k of Object.keys(player.flags)) if (/^(realm|bagRealm|yugioh|kamurocho|kmr|timeMachine|ultimax)/i.test(k)) delete player.flags[k];
     if (RENAMED[player.flags.registered]) player.flags.registered = RENAMED[player.flags.registered];
     // (Your own Bag, put away while you're Wes in Orre.)
     const stash = player.flags.orreStash;
@@ -416,7 +403,7 @@
     }
     // Saves from before key items: the Exp. Share, and Oak's Parcel if it's still to deliver.
     if (!player.bag["exp-share"] && !asWes) player.bag["exp-share"] = 1;
-    if (player.flags.oaksParcel && !player.flags.parcelDelivered && !asWes) player.bag["oaks-parcel"] = 1;
+    if (player.flags.oaksParcel && !player.flags.parcelDelivered) player.bag["oaks-parcel"] = 1;
     // Saves from before the Pokédex scene: Oak gave it with the parcel.
     if (player.flags.parcelDelivered && player.flags.pokedex === undefined) player.flags.pokedex = true;
     // Navel Rock and Birth Island are gone (left out on purpose): Celio's
@@ -429,25 +416,6 @@
     for (const k of ["gotEventTickets", "enableShipNavelRock", "enableShipBirthIsland", "shownMysticTicket", "shownAuroraTicket",
       "worldMapNavelRock", "worldMapBirthIsland", "foughtHoOh", "hoOhFlewAway", "foughtLugia", "lugiaFlewAway", "foughtDeoxys", "deoxysFlewAway"]) delete player.flags[k];
     player.look = lookOf(data.look);
-    // (Your race in the other realms, data/type-chart.js's REALM_RACES; saves from before races have none yet.)
-    // (The Mushroom Kingdom's Humans and the Pokémon Trainers are Humans now: one race of them all; their look, a Human's.)
-    if (data.race === "mk_human" || data.race === "kanto") { data.race = "human"; data.appearance = { body: "race_human", hair: "own", outfit: "own", trim: "own", skin: "own", gender: (data.appearance || {}).gender || "male" }; }
-    if (data.race && (window.REALM_RACES || []).some((r) => r.id === data.race)) player.race = data.race;
-    // (And how you look: the character creator's parts and colours, PLAYER_LOOK_PARTS and LOOK_COLOURS.)
-    const a = data.appearance, parts = window.PLAYER_LOOK_PARTS || {};
-    const race = (window.REALM_RACES || []).find((r) => r.id === player.race);
-    if (race && !race.looks && a && typeof a === "object") player.appearance = { body: null, face: null, hairstyle: "" };
-    else if (player.race && a && typeof a === "object" && parts[a.body]) {
-      // (A look saved with a head, from before heads were a face and hair (Goku's "goku_head", Hyrule's "head_64"):
-      // that head's face and hair; and one saved as a whole character, from before they were cut: its own.)
-      const head = typeof a.head === "string" ? a.head.replace(/_head$/, "") : null;
-      const own = (k) => (parts[k] && parts[k].kind === "face" || parts[k] && parts[k].kind === "hair" ? k : null);
-      const whole = parts[a.body].kind === "whole";
-      const face = whole ? null : own(a.face) || (head && own(head + "_face")) || own(a.body + "_face");
-      const hairstyle = whole ? "" : typeof a.hairstyle === "string" ? (own(a.hairstyle) || "") : (head && own(head + "_hair")) || own(a.body + "_hair") || "";
-      player.appearance = { body: a.body, face, hairstyle, gender: a.gender === "female" ? "female" : "male" };
-      for (const k of ["hair", "outfit", "trim", "skin"]) player.appearance[k] = typeof a[k] === "string" ? a[k].slice(0, 20) : "own";
-    }
     player.rival = String(data.rival || RIVAL_NAME).slice(0, 12);
     let loc = data.location;
     if (loc && /^(NavelRock|BirthIsland)_/.test(loc.map)) loc = VERMILION_DOCK;
@@ -469,10 +437,6 @@
     }
     if (loc && known(loc.map)) {
       player.location = { map: loc.map, x: loc.x | 0, y: loc.y | 0, facing: loc.facing || "down" };
-      // (Kamurocho's streets, side on: which scene, and where on it: ui/street.js)
-      const st = loc.street;
-      if (st && typeof st === "object" && typeof st.scene === "string" && window.KAMUROCHO_STREET && window.KAMUROCHO_STREET.scenes[st.scene])
-        player.location.street = { scene: st.scene, x: +st.x || 0, y: +st.y || 0, facing: ["up", "down", "left", "right"].includes(st.facing) ? st.facing : "down" };
     } else {
       // A save from before the overworld: the story so far is done.
       player.location = Object.assign({}, OLD_SAVE_LOCATION);
@@ -544,8 +508,7 @@
   // New Game + (this game's own): a new game, as `name` and `look`, that keeps from `old` the Bag (but the story's
   // key items and the HMs: KEPT_KEY_ITEMS are the tools that stay), the PC's items, the money, the skills' XP
   // (mining, fishing, farming), the Pokédex's seen and caught, the PC's boxes with the party put in them (healed, in the first empty slots; any
-  // that don't fit stay in the party), and the Trainer ID your Pokémon know you by; and the Yu-Gi-Oh! realm's: your
-  // cards, your decks and your tokens (flags.yugioh) and that realm's bag (its booster packs).
+  // that don't fit stay in the party), and the Trainer ID your Pokémon know you by.
   const KEPT_KEY_ITEMS = new Set(["berry-pouch", "bicycle", "exp-share", "fishing-rod", "old-rod", "good-rod", "super-rod", "mega-ring",
     "town-map", "coin-case", "powder-jar", "vs-seeker", "explorer-kit", "itemfinder", "zygarde-cube", "z-ring", "dynamax-band", "tera-orb",
     "soot-sack", "vs-recorder", "apricorn-box", "wailmer-pail"]);
@@ -553,12 +516,7 @@
   function newGamePlus(old, name, look) {
     const p = create(name, look);
     p.bag = {};
-    // (saved in another realm: the bag you had is that realm's, your own put away)
-    const realm = old.flags && old.flags.bagRealm, away = (old.flags && old.flags.realmBags) || {};
-    const own = realm ? away.pokemon || {} : old.bag || {}, ygoBag = realm === "yugioh" ? old.bag : away.yugioh;
-    for (const [id, n] of Object.entries(own)) if (!storyItem(id)) p.bag[id] = n;
-    if (ygoBag && Object.keys(ygoBag).length) p.flags.realmBags = { yugioh: Object.assign({}, ygoBag) };
-    if (old.flags && old.flags.yugioh) p.flags.yugioh = JSON.parse(JSON.stringify(old.flags.yugioh));
+    for (const [id, n] of Object.entries(old.bag || {})) if (!storyItem(id)) p.bag[id] = n;
     p.pcItems = Object.assign({}, old.pcItems || {});
     for (const id of Object.keys(p.pcItems)) if (storyItem(id)) delete p.pcItems[id];
     p.money = old.money | 0;
@@ -587,6 +545,6 @@
     REGION_BADGES, LEVEL_CAPS, levelCap,
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
     create, markSeen, markCaught, hasCaught, nationalDex, KANTO_DEX_COUNT, dexNumber, dexCount, dexRating, hasAllMons, receive, deposit, withdraw, swapWithBox, healBoxes, release, boxCount, firstEmpty, boxed,
-    itemCount, addItem, removeItem, enterRealm, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
+    itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load
   };
 })();

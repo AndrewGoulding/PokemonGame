@@ -4,8 +4,7 @@
 //
 //   await Intro.movie();                  // copyright, Game Freak, Gengar vs Nidorino (A/Start skips)
 //   await Intro.titleScreen();            // -> "start", or "timeout" to replay the movie
-//   await Intro.newCharacter()            // -> { name, race, appearance }: a new game's character creator and name
-//   await Intro.chooseRace(name, was)     // -> { race, appearance }, on the character creator alone
+//   await Intro.oakSpeech()               // -> { name, look }
 //
 // Frame counts are the GBA's (60 a second). There's no sound.
 // Depends on: window.Screen (text box and menus), window.WORLD_TEXT-style
@@ -167,6 +166,11 @@
     if (skippable && (pressed.a || pressed.start)) skipped = true;
   });
   const clearInput = () => { pressed.a = pressed.b = pressed.start = false; };
+  // Waits for A.
+  function waitForA() {
+    clearInput();
+    return until(() => pressed.a);
+  }
 
   // A tiny deterministic RNG like the GBA's (x * 1103515245 + 24691).
   function lcg(seed) {
@@ -709,8 +713,10 @@
     return result;
   }
 
-  // ---------- The names you're offered (src/oak_speech.c's), and text on the picture ----------
+  // ---------- Prof. Oak's speech (src/oak_speech.c) ----------
 
+  const SPEECH_IMAGES = ["oak-speech-bg", "oak-speech-oak", "oak-speech-player-character",
+    "oak-speech-platform", "pikachu-page", "pikachu-body", "pikachu-ears", "pikachu-eyes"];
   const IT = (label) => window.INTRO_TEXT[label];
   const NAMES = (labels) => labels.map((l) => IT("gNameChoice_" + l)[0]);
   const BOY_NAMES = NAMES(["Red", "Fire", "Ash", "Kene", "Geki", "Jak", "Janne", "Jonn", "Kamon", "Karl", "Taylor", "Oscar",
@@ -727,312 +733,214 @@
     g.textAlign = "left";
   }
 
-  // The text box under the picture.
+  // The text box and menu under the picture.
+  const say = (pages) => (async () => { for (const p of [].concat(pages)) await window.Screen.read(p); })();
   const show = (page) => window.Screen.say(page);
+
+  // The guide's pages turn with the buttons, as in FireRed: A forward, B back
+  // (not on the first page). Nothing in the text box.
+  function turnPage(page) {
+    show("");
+    window.Screen.clearMenu();
+    return window.GbaMenus.keys((k) => {
+      const se = () => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_select"); };
+      if (k === "a") { se(); return "next"; }
+      if (k === "b" && page > 1) { se(); return "back"; }
+      return undefined;
+    });
+  }
 
   const BAR = "#283a78";
 
-  // ---------- The character creator: your race and your look (data/type-chart.js's REALM_RACES) ----------
-  //
-  // A page of its own, after your name. Up and down go through what you can choose, left and right change it:
-  // your race (Hyrule's four, then the Dragon World's three); your body (a whole character, for some) and your head
-  // on it; and the colours of your hair, your clothes, their trim and your skin (LOOK_COLOURS, or the part's own).
-  // You turn and walk about in the picture as you choose (ui/overworld.js's composeLook); the race's element,
-  // stats at level 1 and skills are under it, its description in the text box. A, and YES, and that's you.
-  // -> { race, appearance }. Your race is who you are in the realms' battles (Kamurocho's and on); your look is
-  // you everywhere you walk.
-  const racePics = {};
-  function crest(kind, color, x, y, line) {
-    g.save();
-    g.translate(x, y);
-    g.fillStyle = color; g.strokeStyle = line || "#fff"; g.lineWidth = 1;
-    const path = (pts) => { g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.closePath(); g.fill(); g.stroke(); };
-    // (a throwing knife, point up, a ring at its end: the Sheikah's)
-    if (kind === "kunai") { path([[32, 6], [38, 30], [34, 34], [30, 34], [26, 30]]); path([[29, 34], [35, 34], [34, 46], [30, 46]]); g.beginPath(); g.arc(32, 52, 5, 0, Math.PI * 2); g.stroke(); }
-    if (kind === "triforce") { path([[32, 8], [44, 30], [20, 30]]); path([[20, 30], [32, 52], [8, 52]]); path([[44, 30], [56, 52], [32, 52]]); }
-    if (kind === "leaf") {
-      g.beginPath(); g.moveTo(32, 6); g.quadraticCurveTo(58, 26, 32, 56); g.quadraticCurveTo(6, 26, 32, 6); g.fill(); g.stroke();
-      g.beginPath(); g.moveTo(32, 12); g.lineTo(32, 58); for (const t of [20, 30, 40]) { g.moveTo(32, t + 4); g.lineTo(22, t - 2); g.moveTo(32, t + 4); g.lineTo(42, t - 2); } g.stroke();
-    }
-    if (kind === "fin") {
-      g.beginPath(); g.moveTo(32, 6); g.bezierCurveTo(50, 28, 52, 40, 32, 56); g.bezierCurveTo(12, 40, 14, 28, 32, 6); g.fill(); g.stroke();
-      g.beginPath(); g.moveTo(20, 40); g.quadraticCurveTo(32, 30, 44, 40); g.moveTo(22, 47); g.quadraticCurveTo(32, 38, 42, 47); g.stroke();
-    }
-    if (kind === "star") {
-      const pts = [];
-      for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 11 : 26; pts.push([32 + r * Math.cos(a), 34 + r * Math.sin(a)]); }
-      path(pts);
-    }
-    if (kind === "pokeball") {
-      g.beginPath(); g.arc(32, 32, 24, 0, Math.PI * 2); g.fill(); g.stroke();
-      g.beginPath(); g.moveTo(8, 32); g.lineTo(25, 32); g.moveTo(39, 32); g.lineTo(56, 32); g.stroke();
-      g.beginPath(); g.arc(32, 32, 7, 0, Math.PI * 2); g.stroke();
-      g.beginPath(); g.arc(32, 32, 3, 0, Math.PI * 2); g.stroke();
-    }
-    if (kind === "mushroom") {
-      g.beginPath(); g.moveTo(6, 34); g.quadraticCurveTo(8, 8, 32, 8); g.quadraticCurveTo(56, 8, 58, 34); g.closePath(); g.fill(); g.stroke();
-      path([[22, 34], [42, 34], [44, 54], [20, 54]]);
-      for (const [cx, cy, r] of [[32, 20, 6], [17, 28, 4], [47, 28, 4]]) { g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke(); }
-    }
-    if (kind === "palm") {
-      path([[30, 26], [34, 26], [38, 58], [26, 58]]);
-      for (const [dx, dy] of [[-22, 6], [-16, -10], [0, -16], [16, -10], [22, 6]]) {
-        g.beginPath(); g.moveTo(32, 24); g.quadraticCurveTo(32 + dx / 2, 24 + dy - 6, 32 + dx, 24 + dy); g.quadraticCurveTo(32 + dx / 2, 24 + dy / 2, 32, 26); g.fill(); g.stroke();
-      }
-    }
-    if (kind === "goomba") {
-      g.beginPath(); g.moveTo(10, 44); g.quadraticCurveTo(10, 10, 32, 10); g.quadraticCurveTo(54, 10, 54, 44); g.closePath(); g.fill(); g.stroke();
-      path([[14, 44], [28, 44], [26, 56], [12, 56]]); path([[36, 44], [50, 44], [52, 56], [38, 56]]);
-      for (const x of [24, 40]) { g.beginPath(); g.ellipse(x, 30, 3, 6, 0, 0, Math.PI * 2); g.stroke(); }
-    }
-    if (kind === "shell") {
-      g.beginPath(); g.ellipse(32, 34, 24, 20, 0, 0, Math.PI * 2); g.fill(); g.stroke();
-      path([[32, 22], [42, 28], [42, 40], [32, 46], [22, 40], [22, 28]]);
-      for (const [x1, y1, x2, y2] of [[32, 22, 32, 14], [42, 28, 52, 22], [42, 40, 52, 46], [32, 46, 32, 54], [22, 40, 12, 46], [22, 28, 12, 22]]) { g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
-    }
-    if (kind === "moon") {
-      g.beginPath(); g.arc(30, 32, 22, 0, Math.PI * 2); g.arc(38, 28, 18, 0, Math.PI * 2, true); g.fill("evenodd");
-      path([[46, 40], [49, 47], [56, 48], [50, 52], [52, 59], [46, 55], [40, 59], [42, 52], [36, 48], [43, 47]]);
-    }
-    g.restore();
-  }
-  // A race's choices: its bodies; its faces (each of its characters' own, cut from them: PLAYER_LOOK_PARTS's
-  // "<body>_face", then its heads', Hyrule's); its hairstyles (its characters' and heads' own, and those of the races
-  // it shares with, looks.hairFrom); and its presets, the characters as they are (Goku is Goku's face and hair on
-  // Goku's body, his colours his own), and the race's own start. You're your own: any preset is only where you start,
-  // every row of it yours to change. A face takes only the hairstyles that cover where its own hair was (its `hairs`,
-  // "" for none: tools/build-player-looks.py), and a body only the faces of its own family (its sprites' game).
-  // (The Face row offers only the race's own faces: a look saved with another race's, from before every race had a
-  // woman's head of its own, keeps it (`known`), but it isn't one to choose: another race's head never sat right on
-  // the race's bodies.)
-  const hairsOf = (r) => r.looks.bodies.map((b) => b + "_hair").concat((r.looks.heads || []).map((h) => h + "_hair"));
-  function looksOf(r) {
-    const P = window.PLAYER_LOOK_PARTS, L = r.looks;
-    if (!L) return null;
-    // (Its characters, each a preset, a man unless it's among its women; then its other presets, their parts its own
-    // too, any of its family's.)
-    const presets = L.bodies.filter((b) => P[b] && (P[b].kind === "whole" || P[b + "_face"]))
-      .map((b) => ({ name: P[b].name, gender: (L.female || []).includes(b) ? "female" : "male", body: b, face: P[b].kind === "whole" ? null : b + "_face",
-        hairstyle: P[b + "_hair"] ? b + "_hair" : "" }))
-      .concat((L.presets || []).filter((pr) => P[pr.body]));
-    const uniq = (list) => [...new Set(list)];
-    const bodies = uniq(L.bodies.concat(presets.map((pr) => pr.body))).filter((b) => P[b]);
-    const faces = uniq(L.bodies.map((b) => b + "_face").concat((L.heads || []).map((h) => h + "_face"))).filter((f) => f && P[f]);
-    const known = uniq(faces.concat(presets.map((pr) => pr.face))).filter((f) => f && P[f]);
-    let hairs = hairsOf(r).concat(presets.map((pr) => pr.hairstyle));
-    for (const id of L.hairFrom || []) { const o = window.REALM_RACES.find((x) => x.id === id); if (o && o.looks) hairs = hairs.concat(hairsOf(o)); }
-    hairs = uniq(hairs).filter((h) => h && P[h]);
-    return { bodies, faces, known, hairs, presets };
-  }
-  // (What can go with what: the faces of a body's family, of the race's own (or of those it knows: `all`); the
-  // hairstyles a face takes, of those the race has.)
-  const facesFor = (X, body, all) => (all ? X.known || X.faces : X.faces).filter((f) => window.PLAYER_LOOK_PARTS[f].family === window.PLAYER_LOOK_PARTS[body].family);
-  const hairsFor = (X, face) => { const ok = (window.PLAYER_LOOK_PARTS[face] || {}).hairs || [""]; return ok.filter((h) => h === "" || X.hairs.includes(h)); };
-  // (A look made to fit: a face of its body's family, a hairstyle its face takes; else the body's own, the face's own.)
-  function fit(X, look) {
-    const P = window.PLAYER_LOOK_PARTS;
-    if (!P[look.body] || P[look.body].kind === "whole") { look.face = null; look.hairstyle = ""; return look; }
-    const faces = facesFor(X, look.body, true);
-    if (!faces.includes(look.face)) look.face = faces.includes(look.body + "_face") ? look.body + "_face" : facesFor(X, look.body)[0] || faces[0];
-    const hairs = hairsFor(X, look.face), own = look.face.replace(/_face$/, "_hair");
-    if (!hairs.includes(look.hairstyle || "")) look.hairstyle = hairs.includes(own) ? own : hairs[0] || "";
-    return look;
-  }
-  // A race's look to start with: its own start, or its first preset, every colour the part's own unless it says.
-  // (A race with no looks: no body, and you're the trainer.)
-  const startLook = (r) => (r.looks ? fit(looksOf(r), Object.assign({ hair: "own", outfit: "own", trim: "own", skin: "own", gender: "male" }, r.looks.start || presetLook(looksOf(r).presets[0])))
-    : { body: null, face: null, hairstyle: "" });
-  // A preset as your look: its body, face and hairstyle, its colours its own (or its own start's).
-  const COLOUR_KEYS = ["hair", "outfit", "trim", "skin"];
-  // (Its gender comes with it, and stays with you as you change the rest: appearance.gender.)
-  const presetLook = (pr) => { const q = Object.assign({ hair: "own", outfit: "own", trim: "own", skin: "own", gender: "male" }, pr); delete q.name; return q; };
-  async function racePage(name, was) {
-    const races = window.REALM_RACES, F = window.REALM_FIGHTERS, S = window.REALM_SKILLS, P = window.PLAYER_LOOK_PARTS, C = window.LOOK_COLOURS;
-    for (const r of races) if (r.pic && !racePics[r.id]) { const i = new Image(); i.src = r.pic; racePics[r.id] = i; }
-    let at = Math.max(0, races.findIndex((r) => was && r.id === was.race));
-    // (a look saved with another race's face and hair, from a preset that had them before, keeps them: they're known)
-    const known = (X, a) => (X ? Object.assign({}, X, { known: X.known.concat(P[a.face] ? [a.face] : []), hairs: X.hairs.concat(P[a.hairstyle] ? [a.hairstyle] : []) }) : X);
-    let look = was && was.appearance && was.appearance.body ? fit(known(looksOf(races[at]), was.appearance) || { faces: [], hairs: [] }, Object.assign({}, was.appearance)) : startLook(races[at]);
-    let row = 0, t = 0, sheet = null, asked = 0;
-    const race = () => races[at];
-    const parts = () => window.Overworld.lookParts(look).map((n) => P[n]);
-    const has = (role) => parts().some((p) => p.roles.includes(role));
-    // The rows: [label, the choices, the one chosen, its name].
-    // (each colour's name from its own list: "sky" is Sky Blue for hair, Sky for clothes)
-    const colourRow = (label, role, list) => [label, ["own"].concat(list), role, (id) => (id === "own" ? "Original" :
-      (C[role === "outfit" || role === "trim" ? "cloth" : role].find((c) => c[0] === id) || Object.values(C).flat().find((c) => c[0] === id) || [, id])[1])];
-    // (The preset you look like: one whose head, body and colours are yours; or none, "Custom".)
-    const presetAt = () => {
-      const X = looksOf(race());
-      return X && P[look.body] ? X.presets.findIndex((pr) => { const q = fit(X, presetLook(pr)); return q.body === look.body && (q.face || null) === (look.face || null) &&
-        (q.hairstyle || "") === (look.hairstyle || "") && COLOUR_KEYS.every((k) => (q[k] || "own") === (look[k] || "own")); }) : -1;
-    };
-    const rows = () => {
-      const r = race(), out = [["Race", races.map((x) => x.id), "race", (id) => races.find((x) => x.id === id).name]];
-      if (!r.looks) return out;
-      const X = looksOf(r);
-      out.push(["Preset", X.presets.map((_, i) => i), "preset", (i) => (i < 0 ? "Custom" : X.presets[i].name)]);
-      if (P[look.body] && P[look.body].kind !== "whole") {
-        const faces = facesFor(X, look.body), hairs = hairsFor(X, look.face);
-        if (faces.length > 1 || !faces.includes(look.face)) out.push(["Face", faces, "face", (id) => P[id].name]);
-        if (hairs.length > 1) out.push(["Hairstyle", hairs, "hairstyle", (id) => (id ? P[id].name : "None")]);
-      }
-      if (X.bodies.length > 1) out.push(["Body", X.bodies, "body", (id) => P[id].name]);
-      const L = Object.assign({}, r.looks.labels, (r.looks.bodyLabels || {})[look.body]);
-      if (has("hair")) out.push(colourRow(L.hair || "Hair colour", "hair", C.hair.map((c) => c[0])));
-      if (has("outfit")) out.push(colourRow(L.outfit || { Hyrule: "Tunic", "Dragon World": "Gi" }[r.home] || "Clothes", "outfit", C.cloth.map((c) => c[0])));
-      if (has("trim")) out.push(colourRow(L.trim || "Trim", "trim", C.cloth.map((c) => c[0])));
-      if (has("skin")) out.push(colourRow(L.skin || "Skin", "skin", r.looks.skin));
-      return out;
-    };
-    const redraw = async () => {
-      const n = ++asked, c = await window.Overworld.composeLook(look);
-      if (n === asked) sheet = c;
-    };
-    if (fade.level < 16) await fadeTo("#000", fade.level, 16, 0);
-    const was0 = paint;
+  // The Pikachu pages about the adventure ahead. (FireRed's controls guide
+  // before them isn't in this game: the buttons are under the screen.)
+  async function pikachuPages() {
+    const s = { page: 1, textAlpha: 1, t: 0 };
     paint = () => {
-      const r = race(), f = F[r.id];
-      g.fillStyle = "#1c2030"; g.fillRect(0, 0, W, H);
-      g.fillStyle = r.color; g.globalAlpha = 0.25; g.fillRect(0, 16, W, H - 16); g.globalAlpha = 1;
       g.fillStyle = BAR; g.fillRect(0, 0, W, 16);
-      text("CREATE YOUR CHARACTER", 6, 3, { bold: true });
-      text("▲▼ ◀▶  Ⓐ DONE", 234, 3, { bold: true, align: "right" });
-      // (You, turning round every second and a half and walking on the spot, over your race's portrait or crest.)
-      g.fillStyle = "#0008"; g.fillRect(6, 20, 68, 68);
-      g.fillStyle = r.color; g.fillRect(8, 22, 64, 64);
-      g.globalAlpha = r.looks ? 0.35 : 1;
-      const pic = racePics[r.id];
-      if (pic && pic.complete && pic.naturalWidth) g.drawImage(pic, 8, 22, 64, 64);
-      else if (r.crest) crest(r.crest, "#fff", 8, 22, r.looks ? null : "#0008");
+      blit("pikachu-page", 0, 0, W, 144, 0, 16);
+      text(s.page === 1 ? "Ⓐ NEXT" : "Ⓐ NEXT  Ⓑ BACK", 234, 3, { bold: true, align: "right" });
+      g.globalAlpha = s.textAlpha;
+      text(IT("gPikachuIntro_Text_Page" + s.page)[0], 11, 37, { color: "#3a3a3a", lineHeight: 14.5 });
       g.globalAlpha = 1;
-      if (sheet) {
-        const dir = ["down", "left", "up", "right"][Math.floor(t / 90) % 4];
-        const fr = window.Overworld.lookFrame(dir, Math.floor(t / 12));
-        g.save();
-        if (dir === "right") { g.translate(72, 22); g.scale(-1, 1); g.drawImage(sheet, fr * 32, 0, 32, 32, 0, 0, 64, 64); }
-        else g.drawImage(sheet, fr * 32, 0, 32, 32, 8, 22, 64, 64);
-        g.restore();
-      }
-      if (!r.looks) text("(Its look is to come:\nyou're the trainer\nfor now.)", 84, 32, { size: 7, color: "#e8e8e8", lineHeight: 9 });
-      // (closer together when there are more, above the stats; under the preset's name, its gender)
-      const all = rows(), gap = all.length > 7 ? 7.4 : 9;
-      let y = 19;
-      all.forEach(([label, , key, nameOf], i) => {
-        const value = key === "race" ? r.id : key === "preset" ? presetAt() : look[key];
-        if (i === row) { g.fillStyle = "#fff3"; g.fillRect(80, y - 1, 156, gap); }
-        text(label, 84, y, { size: 7, bold: true, color: i === row ? "#fff" : "#d8d8d8" });
-        const arrows = i === row && !(key === "race" && was && was.sameRace && race().id === was.race);
-        text((arrows ? "◀ " : "") + nameOf(value) + (key === "race" ? " · " + f.elements.join("/") : "") + (arrows ? " ▶" : ""), 132, y, { size: 7, color: i === row ? "#ffe890" : "#e8e8e8" });
-        y += gap;
-        if (key === "preset") {
-          text(look.gender === "female" ? "♀ Female" : "♂ Male", 136, y, { size: 6, color: look.gender === "female" ? "#ffa8d0" : "#a8d0ff" });
-          y += 6.5;
-        }
-      });
-      // (The race's stats and its skills, with the levels they come at, wrapped to the page: the text box covers
-      // it below y 112.)
-      text(["hp", "mp", "str", "def", "int", "wis", "spd"].map((k) => k.toUpperCase() + " " + f.base[k]).join("  "), 7, 92, { size: 7, color: "#fff" });
-      // (in two lines: the type smaller, for a race whose skills' names are long)
-      const wrap = (size) => {
-        g.font = size + "px 'Trebuchet MS', Verdana, sans-serif";
-        const lines = [""];
-        for (const w of f.skills.map(([lv, k]) => S[k].name.replace(/ /g, "\u00a0") + "\u00a0(" + lv + ")").join(", ").split(" ")) {
-          const l = lines[lines.length - 1], next = l ? l + " " + w : w;
-          if (l && g.measureText(next).width > W - 14) lines.push(w); else lines[lines.length - 1] = next;
-        }
-        return lines;
-      };
-      let size = 7, lines = wrap(size);
-      while (lines.length > 2 && size > 5) lines = wrap(size -= 0.5);
-      text(lines.slice(0, 2).join("\n"), 7, 101, { size, color: "#ffe890", lineHeight: size + 0.5 });
+      // Pikachu in the corner: the body bobs every 30 frames, ears twitch, eyes blink.
+      const bob = Math.floor(s.t / 30) % 2, ears = s.t % 120 < 12 ? 1 : 0, eyes = s.t % 90 < 8 ? 1 : 0;
+      sprite("pikachu-body", bob, 32, 32, 16, 17);
+      sprite("pikachu-ears", ears, 32, 16, 16, 9 + bob);
+      sprite("pikachu-eyes", eyes, 16, 8, 24, 13 + bob);
     };
-    const ticker = () => { t++; };
-    actors.add(ticker);
-    await redraw();
-    await fadeTo("#000", 16, 0, 0);
-    const se = () => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se("se_select"); };
+    actors.add(() => { s.t++; });
+    await fadeTo("#000", 16, 0, 2);
+    let page = 1;
     for (;;) {
-      const list = rows();
-      row = Math.min(row, list.length - 1);
-      // (two lines, as the text box holds)
-      // (At a Time Machine (`was.sameRace`): your look only, your race as it is.)
-      const locked = !!(was && was.sameRace && races[at].id === was.race);
-      show(row === 0 ? (locked ? "You stay " + (/^[AEIOU]/.test(race().name) ? "an " : "a ") + race().name + ": change your look\nwith ▲▼ and ◀▶.  Ⓐ: done!" : race().text)
-        : "Choose your " + list[row][0].toLowerCase() + " with ◀▶.\n▲▼: another row.  Ⓐ: done!");
-      const k = await window.GbaMenus.keys((k) => (["left", "right", "up", "down", "a"].includes(k) ? k : undefined));
-      se();
-      if (k === "a") {
-        const r = race();
-        // (one of a kind, "a Saiyan"; of a people named as many, "one of the Arcosians")
-        const of = /(Clan|Race)$/.test(r.name) ? "of the " : /s$/.test(r.name) ? "one of the " : /^[AEIOU]/.test(r.name) ? "an " : "a ";
-        if (await window.Screen.yesNo(locked ? "Is this how you want to look?" : (name ? name + ", you" : "You") + " are " + of + r.name + "?")) break;
-        continue;
-      }
-      if (k === "up" || k === "down") { row = (row + (k === "up" ? list.length - 1 : 1)) % list.length; continue; }
-      const [, choices, key] = list[row], d = k === "left" ? -1 : 1;
-      if (key === "race" && locked) continue;
-      if (key === "race") { at = (at + d + races.length) % races.length; look = startLook(race()); }
-      else if (key === "preset") {
-        const X = looksOf(race()), i = presetAt();
-        look = fit(X, presetLook(X.presets[((i < 0 ? (d > 0 ? -1 : 0) : i) + d + X.presets.length) % X.presets.length]));
-      } else {
-        const i = choices.indexOf(look[key]);
-        look[key] = choices[((i < 0 ? 0 : i) + d + choices.length) % choices.length];
-        if (key === "body" || key === "face") fit(looksOf(race()), look);
-      }
-      await redraw();
+      const v = await turnPage(page);
+      const next = v === "next" ? page + 1 : page - 1;
+      if (next > 3) break;
+      await until((t) => (s.textAlpha = Math.max(0, 1 - (t + 1) / 8)) <= 0);
+      page = s.page = next;
+      await until((t) => (s.textAlpha = Math.min(1, (t + 1) / 8)) >= 1);
     }
     show("");
-    await fadeTo("#000", 0, 16, 0);
-    actors.delete(ticker);
-    paint = was0;
-    return { race: race().id, appearance: look };
-  }
-  // The creator on its own (a game saved before there were races or looks, or a change of look at the Time
-  // Machine, `was.sameRace`: your race stays): -> { race, appearance }. `was`: what you are now.
-  async function chooseRace(name, was) {
-    start();
-    fade = { color: "#000", level: 16 };
-    const r = await racePage(name, was);
-    stop();
-    return r;
+    await wait(24);
+    await fadeTo("#000", 0, 16, 2);
+    await wait(80);
   }
 
-  // A new game: the character creator, then FireRed's naming screen (between fades to black), for your name.
-  // -> { name, race, appearance }.
-  async function newCharacter() {
+  // 3. Prof. Oak.
+  async function speech() {
+    if (window.GameAudio) window.GameAudio.music("mus_new_game_intro");
+    const s = {
+      pic: "oak-speech-oak", picAlpha: 1, picX: 0, platform: true, platformX: 0,
+      ball: null, mon: null, monAlpha: 1, flash: 0, naming: null,
+      bgDark: 0, white: 0, scaleX: 1, scaleY: 1
+    };
+    const ball = new Image();
+    ball.src = "assets/sprites/items/ball/poke.png";
+    const nidoran = new Image();
+    nidoran.src = window.Screen.spriteUrl("Nidoran-F", "");
+    paint = () => {
+      if (s.naming) { s.naming.draw(g); return; }
+      blit("oak-speech-bg", 0, 0, W, H, 0, 0);
+      if (s.platform) blit("oak-speech-platform", 0, 0, 96, 32, 72 + s.platformX, 96, { alpha: s.picAlpha });
+      if (s.bgDark) { g.fillStyle = "rgba(0,0,0," + s.bgDark + ")"; g.fillRect(0, 0, W, H); }
+      if (s.pic) {
+        const picImg = s.white > 0 ? tinted(s.pic, "#fff", s.white) : s.pic;
+        g.save();
+        g.translate(120, 84);
+        g.scale(s.scaleX, s.scaleY);
+        g.translate(-120, -84);
+        blit(picImg, 0, 0, 64, 96, 88 + s.picX, 16, { alpha: s.picAlpha });
+        g.restore();
+      }
+      if (s.mon && nidoran.complete) {
+        g.globalAlpha = s.monAlpha;
+        g.drawImage(nidoran, 96 - nidoran.naturalWidth / 2, 96 - nidoran.naturalHeight / 2 + (s.mon.dy || 0));
+        g.globalAlpha = 1;
+      }
+      if (s.ball && ball.complete) g.drawImage(ball, s.ball.x - 16, s.ball.y - 16);
+      if (s.flash) { g.fillStyle = "rgba(255,255,255," + s.flash + ")"; g.fillRect(0, 0, W, H); }
+    };
+    const fadePic = (to, frames) => {
+      const from = s.picAlpha;
+      return until((t) => { s.picAlpha = from + (to - from) * Math.min(1, (t + 1) / frames); if (to === 0 && s.picAlpha < 0.5) s.platform = false; return t + 1 >= frames; });
+    };
+    const flash = async () => { for (const a of [0.6, 1, 0.6, 0.3, 0]) { s.flash = a; await wait(2); } };
+    const fill = (str, name) => str.replace(/\{PLAYER\}/g, name || "");
+
+    // Oak appears.
+    await fadeTo("#000", 16, 0, 5);
+    await wait(80);
+    await say(IT("gOakSpeech_Text_WelcomeToTheWorld"));
+    show(IT("gOakSpeech_Text_ThisWorld")[0]);
+    // Nidoran♀ comes out of a Poké Ball.
+    s.ball = { x: 100, y: 66 };
+    await wait(20);
+    await flash();
+    s.ball = null; s.mon = { dy: 0 }; s.monAlpha = 1;
+    if (window.GameAudio) window.GameAudio.cry("Nidoran-F");
+    await wait(32);
+    await say(IT("gOakSpeech_Text_IsInhabitedFarAndWide"));
+    await say(IT("gOakSpeech_Text_IStudyPokemon"));
+    show("");
+    // ...and goes back in.
+    s.ball = { x: 100, y: 66 };
+    await flash();
+    await until((t) => { if (t > 40) s.mon.dy -= 1; s.monAlpha = Math.max(0, 1 - t / 64); return t >= 63; });
+    s.mon = null; s.ball = null;
+    await wait(48);
+    await say(IT("gOakSpeech_Text_TellMeALittleAboutYourself"));
+    show("");
+    await fadePic(0, 48);
+    await wait(48);
+
+    // You're always the custom character (Red and Leaf are rivals in this
+    // game), so FireRed's "Are you a boy? Or are you a girl?" is skipped.
+    const look = Player.PLAYER_LOOK;
+    const playerPic = Player.LOOKS[look].speech;
+    s.pic = playerPic; s.picX = 0; s.platform = true; s.platformX = 0;
+    await fadePic(1, 24);
+    await wait(32);
+
+    // The player's name.
+    const pickFrom = (list) => list[Math.floor(Math.random() * list.length)];
+    // FireRed's naming screen (ui/naming-screen.js), between fades to black;
+    // OK with nothing typed gives `suggestion`.
+    const nameScreen = async (title, suggestion, overworld) => {
+      await fadeTo("#000", 0, 16, 0);
+      show("");
+      window.Screen.clearMenu();
+      const icon =overworld ? "assets/world/sprites/" + overworld + ".png" : null;
+      await window.NamingScreen.preload(icon);
+      const ns = window.NamingScreen.create({ title, maxChars: 7, fallback: suggestion, icon });
+      s.naming = ns;
+      actors.add(() => (s.naming === ns ? ns.step() : false));
+      await fadeTo("#000", 16, 0, 0);
+      ns.start();
+      const v = await ns.done;
+      await fadeTo("#000", 0, 16, 0);
+      s.naming = null;
+      return v;
+    };
+    let name;
+    await say(IT("gOakSpeech_Text_YourNameWhatIsIt"));
+    for (;;) {
+      name = await nameScreen("YOUR NAME?",pickFrom(BOY_NAMES), "player_" + look);
+      s.picX = 60; s.platformX = 60;
+      await fadeTo("#000", 16, 0, 0);
+      show(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name));
+      await wait(25);
+      if (await window.Screen.yesNo(fill(IT("gOakSpeech_Text_SoYourNameIsPlayer")[0], name))) break;
+    }
+    show("");
+
+    // No rival here (FireRed introduces him at this point): you slide back to
+    // the middle, and off you go.
+    await until((t) => { s.picX = s.platformX = Math.max(0, 60 - (t + 1) * 2); return t >= 29; });
+    await wait(20);
+    const letsGo = IT("gOakSpeech_Text_LetsGo").map((p) => fill(p, name));
+    await say(letsGo.slice(0, -1));
+    show(letsGo[letsGo.length - 1]);
+    await wait(30);
+
+    // The player turns white and shrinks away as everything goes dark (to
+    // FireRed's closing jingle).
+    if (window.GameAudio) { window.GameAudio.music(null); window.GameAudio.fanfare("mus_new_game_exit"); }
+    const darken = until((t) => (s.bgDark = Math.min(1, (t + 1) / 45)) >= 1).then(() => { s.platform = false; });
+    const whiten = (async () => {
+      await wait(8);
+      for (let c = 0, gap = 7; c <= 14; c++, gap = Math.max(1, gap - 1)) { s.white = c / 16; await wait(gap); }
+      s.white = 1;
+    })();
+    const shrink = (async () => {
+      for (const [sx, sy] of [[0.969, 0.813], [0.844, 0.688], [0.719, 0.563], [0.594, 0.438], [0.469, 0.313]]) {
+        await wait(20);
+        s.scaleX = sx; s.scaleY = sy;
+      }
+      await wait(36);
+    })();
+    await Promise.all([darken, whiten, shrink]);
+    show("");
+    await fadeTo("#000", 0, 16, 2);
+    return { name, look };
+  }
+
+  async function oakSpeech() {
+    await preload(SPEECH_IMAGES);
     start();
     skippable = false; skipped = false;
     fade = { color: "#000", level: 16 };
-    if (window.GameAudio) window.GameAudio.music("mus_new_game_intro");
-    const made = await racePage(null);
-    // (you, walking on the spot beside your name, as FireRed's trainer does)
-    const icon = await window.Overworld.composeLook(made.appearance);
-    let name;
-    for (;;) {
-      show(""); window.Screen.clearMenu();
-      await window.NamingScreen.preload(null);
-      const ns = window.NamingScreen.create({ title: "YOUR NAME?", maxChars: 7, fallback: BOY_NAMES[Math.floor(Math.random() * BOY_NAMES.length)], icon, iconWidth: 32 });
-      paint = () => ns.draw(g);
-      actors.add(() => (paint ? ns.step() : false));
-      await fadeTo("#000", 16, 0, 0);
-      ns.start();
-      name = await ns.done;
-      await fadeTo("#000", 0, 16, 0);
-      paint = null;
-      if (await window.Screen.yesNo("So your name is " + name + "?")) break;
-    }
-    show("");
+    if (window.GameAudio) window.GameAudio.music("mus_new_game_instruct");
+    await pikachuPages();
+    actors.clear();
+    const result = await speech();
     stop();
-    return Object.assign({ name }, made);
+    return result;
   }
 
   window.Intro = {
     movie: async () => { await movie(); },
     titleScreen: async () => { const r = await titleScreen(); return r; },
-    newCharacter,
-    chooseRace,
+    oakSpeech,
     stop
   };
 })();

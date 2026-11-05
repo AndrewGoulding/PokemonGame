@@ -55,9 +55,13 @@
   const itemPlural = (name) => (/s$/i.test(name) ? name : /[^aeiou]y$/i.test(name) ? name.slice(0, -1) + "ies" : name + "s");
   const back = (label) => ({ label: label || "Back", value: "back", className: "action", wide: true });
 
+  function playTime(ms) {
+    const mins = Math.floor(ms / 60000);
+    return Math.floor(mins / 60) + ":" + String(mins % 60).padStart(2, "0");
+  }
+
   function show(which) {
     if (which !== "world") Overworld.hide();
-    if (window.Street) Street.show(which === "street");
     if (which !== "intro" && window.Intro) Intro.stop();
     $("#world-pic").classList.add("hidden");
     field.classList.toggle("hidden", which !== "field");
@@ -272,54 +276,19 @@
         savePromptAt = null;
         tick();
         Save.write(player);   // (the game you loaded is the one saved now)
-        await applyLook();
         await message("Loaded " + player.name + "'s game.");
       }
     }
     return null;
   }
 
-  // A new game starts with the character creator (your race and your look) and your name, then you're in the
-  // Realm Hub, between the realms, with ¥10,000; the red portal is the Pokémon realm's (beside Pallet Town, where
-  // Prof. Oak's story starts as ever).
+  // A new game starts with FireRed's intro: the controls guide, then Prof. Oak
+  // asks whether you're a boy or a girl and names you and your rival.
   // (New Game +: from `old`, what Player.newGamePlus keeps.)
-  const NEW_GAME_MONEY = 10000;
   async function newGame(old) {
     show("intro");
-    const r = await Intro.newCharacter();
-    player = old ? Player.newGamePlus(old, r.name) : Player.create(r.name);   // the rival is Gary (Player.RIVAL_NAME)
-    player.race = r.race;
-    player.appearance = r.appearance;
-    player.money = Math.max(old ? player.money : 0, NEW_GAME_MONEY);
-    player.location = Object.assign({}, window.TIME_MACHINE.hub);
-    player.flags.realmHubVisited = true;
-    await persist();
-  }
-
-  // Your picture in battle (its back) and on your card and in the Pokédex (its front), by your race and whether you
-  // chose its man or its woman (race_<id>_f): tools/import-race-backs.py's, where your race has one.
-  function racePic() {
-    const have = window.RACE_BACKS || [], id = player.race;
-    if (!id || !have.includes(id)) return null;
-    const woman = !!player.appearance && /_f$/.test(player.appearance.body || "");
-    return "race_" + id + (woman && have.includes(id + "_f") ? "_f" : "");
-  }
-
-  // Your look from the character creator (player.appearance: ui/intro.js's race page), as you walk about everywhere.
-  async function applyLook() {
-    Overworld.setPlayerLook(player.appearance ? await Overworld.composeLook(player.appearance) : null);
-  }
-  // The creator again, from a Time Machine: your race, and how you look. (A new race is who you fight as from now
-  // on, at the level you were: realmParty.)
-  async function changeLook() {
-    show("intro");
-    // (Your look only: your race stays what it is, once you have one.)
-    const r = await Intro.chooseRace(player.name, { race: player.race, appearance: player.appearance, sameRace: !!player.race });
-    player.race = r.race; player.appearance = r.appearance;
-    await applyLook();
-    Screen.say(""); clearMenu();
-    if (Street.isStreet(player.location.map)) show("street");
-    else { show("world"); await Overworld.resume(); }
+    const r = await Intro.oakSpeech();
+    player = old ? Player.newGamePlus(old, r.name, r.look) : Player.create(r.name, r.look);   // the rival is Gary (Player.RIVAL_NAME)
     await persist();
   }
 
@@ -455,8 +424,7 @@
       arena: !!opts.arena, palace: !!opts.palace,   // (the Battle Frontier's Arena and Palace rules: engine/battle.js)
       record: !!opts.record,   // (the choices and seed kept, to play it back: a Frontier battle's)
       expShare: expShareOn(),
-      // (your back: your race's, where it has one, tools/import-race-backs.py)
-      trainer: racePic() || Player.LOOKS[player.look].back,
+      trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
       victoryMusic: opts.victoryMusic || johtoMusic.win || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
       terrain: battleTerrain(opts),
@@ -1643,6 +1611,7 @@
   // (Berries can be sorted by their tiers, BerryPicking.TIERS, as the berry
   // tree gives them: the Bag's "Sort" on a berry, flags.berrySort "tier".)
   const BERRY_TIER_ORDER = () => BerryPicking.TIERS.flatMap((t) => t.berries);
+  const berryTier = (id) => BerryPicking.TIERS.find((t) => t.berries.includes(id));
   // (`bag`: another than yours, as the Bug-Catching Contest's.)
   function bagPockets(bag) {
     bag = bag || player.bag;
@@ -1671,11 +1640,6 @@
     for (;;) {
       Screen.say("");
       clearMenu();
-      // (Another realm's bag, the few things in it: open on a pocket with something in it.)
-      if (player.flags.bagRealm) {
-        const full = bagPockets().filter((p) => p.items.length);
-        if (full.length && !full.some((p) => p.name === bagPocket)) bagPocket = full[0].name;
-      }
       const r = await BagScreen.open({
         pockets: bagPockets, pocketName: bagPocket, reorder: bagReorder,
         female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
@@ -2235,11 +2199,6 @@
         { label: "Visit Johto (New Bark Town)", value: "johto", className: "action" },
         { label: "Visit Hoenn (the moving truck)", value: "hoenn", className: "action" },
         { label: "Visit Sinnoh (Twinleaf Town)", value: "sinnoh", className: "action" },
-        { label: "Visit the Realm Hub", value: "hub", className: "action" },
-        { label: "Reset Kamurocho progress", value: "kamurocho-reset", className: "action" },
-        { label: "Fill the Trunk (3 of every card)", value: "trunk", className: "action" },
-        { label: "Clear the Trunk (no cards at all)", value: "clear-trunk", className: "action" },
-        { label: "Duel Yugi", value: "duel", className: "action" },
         { label: Orre.inOrre(player.location) ? "Leave Orre" : "Visit Orre (the Air Strip)", value: "orre", className: "action" },
         back()]);
       if (v === "back") return;
@@ -2269,39 +2228,6 @@
         player.location = Object.assign({}, center || Player.HOME);
         await persist();
         return "battled";   // (back to the map, at the new place)
-      } else if (v === "trunk") {
-        const y = yugioh();
-        for (let n = 1; n < window.YUGIOH_CARDS.cards.length; n++) if (window.YUGIOH_RARITY[n] !== "-") y.trunk[n] = 3;
-        await persist();
-        await message("Your Trunk has three of every card now.");
-      } else if (v === "clear-trunk") {
-        // (every Duel Monsters card you have: the Trunk's, and so your decks' too; your packs and tokens stay)
-        if (!(await confirm("Delete every Duel Monsters card you\nhave, your decks' too?"))) return;
-        const y = yugioh();
-        for (const n of Object.keys(y.trunk)) delete y.trunk[n];
-        for (const d of y.decks) { d.main.length = 0; d.side.length = 0; }
-        await persist();
-        await message("Your Trunk and your decks are empty now.");
-      } else if (v === "duel") {
-        await dominoDuel("yugi", null);
-        return "battled";
-      } else if (v === "kamurocho-reset") {
-        // Kamurocho's story back to before its opening (flags.y0*, the Map's waypoint, the karaoke's prizes); its
-        // party too, if asked (back to you alone, as on your first trip through the Time Machine).
-        const w = await ask("Reset Kamurocho progress?", [{ label: "The story", value: "story", className: "action" },
-          { label: "The story and the party", value: "all", className: "action" }, back("Cancel")]);
-        if (w === "back") continue;
-        const f = player.flags;
-        for (const k of ["y0Prologue", "y0Step", "y0v2", "kamurochoWaypoint", "karaoke", "karaokePrize"]) delete f[k];
-        if (w === "all" && f.realmParty) delete f.realmParty.yakuza;
-        if (((window.WORLD_MAPS[player.location.map] || {}).realm) === "yakuza") await Overworld.teleport(Object.assign({}, window.KMR.arrive));
-        await persist();
-        await message(w === "all" ? "Kamurocho's story and party are reset. The story starts again the next time you step out onto the street."
-          : "Kamurocho's story is reset. It starts again the next time you step out onto the street.");
-      } else if (v === "hub") {
-        // The Realm Hub, by the Time Machine (its machine brings you back beside Pallet Town).
-        fieldAction = visitRealmHub;
-        return "battled";
       } else if (v === "orre") {
         // Orre: Prof. Oak's plane to the Air Strip, without his briefing (game/orre.js); and back.
         if (Orre.inOrre(player.location)) await leaveOrre();
@@ -2433,7 +2359,7 @@
       entries: dexList().map((e) => ({ id: e.id, species: e.species, seen: seen.has(e.species), caught: caught.has(e.species) })),
       areas: speciesAreas,
       areaRegions: dexAreaRegions(),
-      trainer: "assets/sprites/trainers/front/" + (racePic() || Player.LOOKS[player.look].front) + ".png",
+      trainer: "assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png",
       cry: (sp) => cry(sp),
       // (The National Pokédex from the start: Player.nationalDex.)
       national: Player.nationalDex(player)
@@ -2530,7 +2456,7 @@
     const dir = "assets/trainer-card/" + region;
     const pics = { front: cardImage(dir + "-front-" + stars + ".png"), back: cardImage(dir + "-back-" + stars + ".png"),
       badges: cardImage(dir + "-badges.png"), star: cardImage(dir + "-star.png"),
-      me: cardImage("assets/sprites/trainers/front/" + (racePic() || Player.LOOKS[player.look].front) + ".png") };
+      me: cardImage("assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png") };
     await Promise.all(Object.values(pics).map((p) => p.loaded));
     const ok = (img) => img.complete && img.naturalWidth > 0;
     const BADGES = { kanto: ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"],
@@ -2665,10 +2591,7 @@
   const START_HELP = {
     dex: "A device that records Pokémon secrets\nupon meeting or catching them.",
     party: "Check and organize Pokémon that are\ntraveling with you in your party.",
-    realmparty: "Check the party: who fights, who waits\nin reserve, and their stats and skills.",
-    realmmap: "A map of Kamurocho, and where you are\nin it.",
     bag: "Equipped with pockets for storing items\nyou bought, received, or found.",
-    trunk: "Look through your Duel Monsters cards\nand build your deck.",
     card: "Check your money and other game data.",
     gear: "Use the Pokégear's phone, map and radio.",   // (the PokéNav's, once it is one: navName)
     save: "Save your game with a complete record\nof your progress to take a break.",
@@ -2707,10 +2630,8 @@
   }
   async function startMenu() {
     player.flags.openedMenu = true;   // (FireRed's FLAG_OPENED_START_MENU: the Sign Lady's scene)
-    // (On Kamurocho's side-on streets, the street stays behind the menu.)
-    const onStreet = window.Street && Street.isStreet(player.location.map);
     for (;;) {
-      show(onStreet ? "street" : "world");
+      show("world");
       Screen.say("");
       clearMenu();
       // POKéDEX once Prof. Oak has given you one, POKéMON once you have one.
@@ -2723,21 +2644,14 @@
       if (pyramid) items.push({ key: "retirePyramid", label: "Retire" });
       if (safari) items.push({ key: "retire", label: "Retire" });
       if (contest) items.push({ key: "retire", label: "Retire", help: "Finish the Bug-Catching Contest now and\nwait for the judging." });
-      // (In the Yu-Gi-Oh! realm: no Pokédex, Pokémon, Bag or Trainer Card; the Trunk instead, your Duel Monsters cards.)
-      const ygo = (window.WORLD_MAPS[player.location.map] || {}).realm === "yugioh";
-      // (In the Like a Dragon realm: no Pokédex or Pokémon; its party instead (the party screen, ui/realm-party.js),
-      // and its map.)
-      const lad = (window.WORLD_MAPS[player.location.map] || {}).realm === "yakuza";
-      if (player.flags.pokedex && !ygo && !lad) items.push({ key: "dex", label: "Pokédex" });
-      if (player.party.length && !ygo && !lad) items.push({ key: "party", label: "Pokémon" });
-      if (lad) items.push({ key: "realmparty", label: "Party" }, { key: "realmmap", label: "Map" });
-      if (!contest && !ygo) items.push({ key: "bag", label: "Bag" });
-      if (ygo) items.push({ key: "trunk", label: "Trunk" });
+      if (player.flags.pokedex) items.push({ key: "dex", label: "Pokédex" });
+      if (player.party.length) items.push({ key: "party", label: "Pokémon" });
+      if (!contest) items.push({ key: "bag", label: "Bag" });
       if (gear.has()) items.push({ key: "gear", label: hasPokenav() ? "PokéNav" : "Pokégear" });   // (HGSS's, once you have it: ui/pokegear.js)
       // (Emerald's Frontier Pass, once Scott's gate has issued it: it holds the Trainer Card, your Battle Points,
       // Symbols and the battle recorded on it; opened from your name, as the Trainer Card is.)
       const pass = isHoenn(player.location.map) && hoenn.flag("FLAG_SYS_FRONTIER_PASS");
-      if (!ygo) items.push({ key: "card", label: player.name, help: pass ? "Check your FRONTIER PASS: your Trainer Card,\nBattle Points, Symbols and recorded battle." : undefined });
+      items.push({ key: "card", label: player.name, help: pass ? "Check your FRONTIER PASS: your Trainer Card,\nBattle Points, Symbols and recorded battle." : undefined });
       if (!safari && !contest) items.push({ key: "save", label: "Save" });
       items.push({ key: "option", label: "Option" }, { key: "exit", label: "Exit" });
       for (const it of items) it.help = it.help || START_HELP[it.key];
@@ -2760,10 +2674,7 @@
         continue;
       }
       if (v === "party") { if ((await partyMenu()) === "escaped") return; }
-      else if (v === "realmparty") await realmPartyScreen("yakuza");
-      else if (v === "realmmap") await realmMap();
       else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
-      else if (v === "trunk") await trunkScreen();
       else if (v === "dex") await pokedex();
       else if (v === "gear") await gear.open();
       else if (v === "card") { if ((await (pass ? frontierPass() : trainerCard())) === "battled") return; }
@@ -3042,14 +2953,6 @@
   // (Sinnoh's: tools/build-sinnoh.js; and Sandgem's beach's sailor, sinnohSailor.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SandgemTown_EventScript_Sailor");
-  // (Domino High's duelists: Yugi, Téa, Joey and Tristan, dominoDuel.)
-  const DOMINO_DUELISTS = { DominoHigh_Person12: "yugi", DominoHigh_Person13: "tea", DominoHigh_Person14: "joey", DominoHigh_Person15: "tristan" };
-  // (The Time Machine off Pallet Town, and the Realm Hub's portals: timeMachine, realmPortal.)
-  for (const sc of ["TimeMachine_EventScript_Machine", "TimeMachine_EventScript_Sign", "TimeMachine_EventScript_Scientist",
-    "RealmHub_EventScript_Portal_pokemon", "RealmHub_EventScript_Portal_yugioh", "RealmHub_EventScript_Portal_yakuza", "Kamurocho_TimeMachine", "Kamurocho_Kiryu", "Kamurocho_Majima", "Kamurocho_Clerk", "Kamurocho_Karaoke", "Kamurocho_Tachibana", "Kamurocho_Blend", "SacredCards_Fountain", "SacredCards_BackToTown",
-    "Domino_WorldMap", "KameGame_Grandpa", "Domino_Manhole", "Domino_ManholeUp", "Domino_TimeMachine", ...Object.keys(DOMINO_DUELISTS)]) SPECIAL.add(sc);
-  // (and the other pupils and the teacher, with their boosters' decks: classmate)
-  for (let i = 0; i < 12; i++) SPECIAL.add("DominoHigh_Person" + i);
   // (And its ferries, Canalave's to Iron Island and back, and Oreburgh's fossil scientist: sinnohFerry, fossilScientist.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
@@ -3065,8 +2968,6 @@
   function visible(person, map) {
     if (isHoenn(map || player.location.map)) { const dv = deltaVisible(person); if (dv !== undefined) return dv; const b = hoennBerries.visible(person, map || player.location.map); return b !== undefined ? b : hoennVisible(person, map || player.location.map); }
     const f = player.flags;
-    // (Kamurocho's Kiryu and Majima: gone from the streets once they've joined your party.)
-    { const lad = /^Kamurocho_(Kiryu|Majima)$/.exec(person.script || ""); if (lad) return !inRealmParty("yakuza", lad[1].toLowerCase()); }
     // (A Tera Raid den: glowing while its raid is on.)
     { const den = RaidDens.byScript(person.script); if (den) return RaidDens.active(f, den.id) ? { sprite: "raid_den_active" } : true; }
     // (Johto's people: hidden while HGSS's flag for them is set, and where
@@ -3406,25 +3307,6 @@
       return;
     }
     if (script === "SandgemTown_EventScript_Sailor") { await sinnohSailor(); return; }
-    if (script === "TimeMachine_EventScript_Machine") { await timeMachine(); return; }
-    if (script === "TimeMachine_EventScript_Scientist") { await timeMachineScientist(); return; }
-    if (script === "TimeMachine_EventScript_Sign") { await say("TIME MACHINE\nTravel beyond the Pokémon realm!"); return; }
-    { const rp = /^RealmHub_EventScript_Portal_(\w+)$/.exec(script || ""); if (rp) { await realmPortal(rp[1]); return; } }
-    if (script === "SacredCards_Fountain") { await dominoFountain(); return; }
-    if (script === "SacredCards_BackToTown") { await dominoBackToTown(); return; }
-    if (script === "Domino_WorldMap") { await dominoTravel(); return; }
-    if (script === "KameGame_Grandpa") { await kameGameShop(); return; }
-    if (script === "Domino_Manhole" || script === "Domino_ManholeUp") { await dominoManhole(script === "Domino_Manhole"); return; }
-    if (script === "Domino_TimeMachine") { await dominoTimeMachine(); return; }
-    if (script === "Kamurocho_TimeMachine") { await kamurochoTimeMachine(); return; }
-    if (script === "Kamurocho_Kiryu") { await kamurochoKiryu(ev.person); return; }
-    if (script === "Kamurocho_Majima") { await kamurochoMajima(ev.person); return; }
-    if (script === "Kamurocho_Clerk") { await kamurochoShop(); return; }
-    if (script === "Kamurocho_Karaoke") { await kamurochoKaraoke(); return; }
-    if (script === "Kamurocho_Tachibana") { await kamurochoTachibana(); return; }
-    if (script === "Kamurocho_Blend") { await kamurochoBlend(); return; }
-    if (DOMINO_DUELISTS[script]) { await dominoDuel(DOMINO_DUELISTS[script], ev.person); return; }
-    if (/^DominoHigh_Person([0-9]|1[01])$/.test(script || "")) { await dominoDuel(classmate(script), ev.person); return; }
     if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
     if (/_EventScript_FossilScientist$/.test(script || "") && isSinnoh(ev.map)) { await fossilScientist(); return; }
     // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
@@ -6460,7 +6342,7 @@
   // Stepping out of a building onto a town or route, once both are done.
   function megaAideDue(map) {
     const m = window.WORLD_MAPS[map];
-    return megaReady() && !player.flags.megaAideMet && !!m && OUTDOORS.includes(m.type) && !m.realm && canBattle();
+    return megaReady() && !player.flags.megaAideMet && !!m && OUTDOORS.includes(m.type) && canBattle();
   }
   // He comes from just off the screen (within 10 steps), or else from 5 to 7
   // steps away, along tiles he can walk on (World.walkable), and goes back
@@ -6847,8 +6729,7 @@
         return async () => { await say(usedMove(mon, "Cut")); cutDown(tree); };
       }
       case "Fly":
-        // (Nor out of the Pokémon realm: the Realm Hub, Domino City.)
-        if (!OUTDOORS.includes(here.type) || here.realm) return "Can't use that here.";
+        if (!OUTDOORS.includes(here.type)) return "Can't use that here.";
         return () => fly(mon);
       case "Strength": {
         if (!facingScript("EventScript_StrengthBoulder")) return "Can't use that here.";
@@ -6881,7 +6762,7 @@
       // FireRed's FldEff_TeleportWarpOut: from where Fly could go, back to the last Pokémon Center you were in (outside
       // it, where Fly lands), as blacking out would take you (in Hoenn, only to Hoenn's; or your room there, or home).
       case "Teleport": {
-        if (!OUTDOORS.includes(here.type) || here.realm) return "Can't use that here.";
+        if (!OUTDOORS.includes(here.type)) return "Can't use that here.";
         const to = teleportTarget();
         if (!to || (to.map === player.location.map && to.x === Overworld.position().x && to.y === Overworld.position().y)) return "Can't use that here.";
         return async () => {
@@ -9664,23 +9545,17 @@
   // where the ship drops anchor off Sandgem Town's beach; its sailor there rows you out to it again, back to Lilycove.
   const SANDGEM_BEACH = { map: "SandgemTown", x: 25, y: 29, facing: "down" };
   const LILYCOVE_HARBOR = { map: "LilycoveCity_Harbor", x: 8, y: 11, facing: "down" };
-  async function voyage(to, lines, sound) {
-    // (Out of Kamurocho's streets the map isn't running: straight to the black screens, and the map picks up from
-    // player.location when exploring starts again.)
-    const fromStreet = Street.isStreet(player.location.map);
-    if (!fromStreet) await Overworld.fadeToBlack();
+  async function voyage(to, lines) {
+    await Overworld.fadeToBlack();
     music(null);
     Overworld.setAvatar("walk");
     Orre.leave(player);
     const o = $("#overlay");
-    sfx(sound || "se_ship");
+    sfx("se_ship");
     for (const l of lines) await GbaMenus.blackScreen(o, l);
     o.classList.add("hidden");
     player.location = Object.assign({}, to);
-    // (Into Kamurocho: its streets, by the Time Machine; ui/street.js takes over from there.)
-    if (Street.isStreet(to.map)) { delete player.location.street; Street.place(null); show("street"); }
-    else if (fromStreet) show("world");
-    else await Overworld.teleport(player.location);
+    await Overworld.teleport(player.location);
     await persist();
   }
   async function sailToSinnoh() {
@@ -9710,1853 +9585,6 @@
     await say("The S.S. Tidal has arrived in\nLilycove City.");
   }
 
-  // ---------- The Time Machine and the Realm Hub (this game's own) ----------
-  //
-  // Everything so far happens in one realm, the Pokémon realm. Through the gap in the trees on Pallet Town's west
-  // edge, a scientist's Time Machine (tools/build-time-machine.js) takes you beyond it, once you have a Pokémon of
-  // your own, to the Realm Hub: a platform in the void between the realms, with the realms' portals along its north:
-  // the Pokémon realm's (back out beside the Time Machine off Pallet Town), the Yu-Gi-Oh! realm's and the Like a
-  // Dragon realm's (Kamurocho: its streets side on, ui/street.js, its Time Machine under a manhole). Each realm's Time Machine (Pallet's, and the one under the Kame Game shop's street) takes you
-  // to the Realm Hub; its portals take you out. The Yu-Gi-Oh! realm's portal comes out by the fountain in Domino City's square:
-  // its screens are Yu-Gi-Oh! The Sacred Cards' (tools/build-sacred-cards.py), and its fountain takes you back, or
-  // round the city's other places (window.SACRED_CARDS.areas). Your Pokémon stay in their balls in the Yu-Gi-Oh!
-  // realm (ui/follower.js), and Fly and Teleport don't work out of the Pokémon realm.
-  const HUB_YUGIOH_PORTAL = { map: "RealmHub", x: 10, y: 5, facing: "down" }, HUB_YAKUZA_PORTAL = { map: "RealmHub", x: 16, y: 5, facing: "down" };
-  async function timeMachine() {
-    const to = window.TIME_MACHINE;
-    if (!player.flags.starter && !player.flags.realmHubVisited) { await say(["It's a strange machine with a clock\non its dome.", "Its door won't open."]); return; }
-    await say("It's the Time Machine!\nIts door glows with a strange light.");
-    // (Its mirror: the character creator again.)
-    const v = ["go", "look", "back"][await multichoice("What will you do?", 17, 6, ["Travel", "Change Look", "Leave"])] || "back";
-    if (v === "look") { await changeLook(); return; }
-    if (v !== "go" || !(await confirm("Step inside and travel beyond\nthe Pokémon realm?"))) return;
-    await voyage(to.hub, ["The Time Machine whirs to life…", "The years spin past in a blur\nof light…", "Beyond time itself, the machine\ncomes to rest."], "se_warp_in");
-    player.flags.realmHubVisited = true;
-    await say(["You've arrived at the Realm Hub,\nthe place between the realms!"]);
-  }
-  async function timeMachineScientist() {
-    const f = player.flags;
-    if (f.realmHubVisited) {
-      await say(["Scientist: Welcome back! How was\nthe Realm Hub?", "The golden portal there leads to\nthe Yu-Gi-Oh! realm,", "to a city called Domino, where\neveryone plays Duel Monsters!"]);
-      return;
-    }
-    await say(["Scientist: Ah, a visitor! This is my\nTime Machine.", "Every Pokémon and every region you\nknow lies in one realm: the\nPokémon realm.",
-      "But there are other realms out\nthere, worlds all their own!", "My machine travels beyond time\nto the Realm Hub, the place\nbetween them all."]
-      .concat(f.starter ? ["Step inside whenever you like!", "From the Realm Hub, the red portal\nbrings you back here."] : ["It's no place to go alone, though.\nCome back with a Pokémon partner!"]));
-  }
-  async function realmPortal(id) {
-    if (id === "yugioh") {
-      await say(["A portal of swirling golden light.\nA pyramid shines above it.", "Beyond it lies the Yu-Gi-Oh! realm,\nthe world of Duel Monsters…"]);
-      if (!(await confirm("Step through the portal?"))) return;
-      // (out beside the Time Machine, in the room under the Kame Game shop's street)
-      await voyage(window.TIME_MACHINE.under, ["You step into the golden light…", "The world turns inside out…"], "se_warp_in");
-      if (!player.flags.dominoVisited) await say(["You've arrived in Domino City,\nin the Yu-Gi-Oh! realm!", "Your Bag stays behind in the\nPokémon realm. Here you have\na bag of this realm's own.", "Climb the ladder up to the street\nby the Kame Game shop."]);
-      player.flags.dominoVisited = true;
-      await persist();
-      return;
-    }
-    if (id === "pokemon") {
-      await say(["A portal of swirling red light.\nA Poké Ball shines above it.", "Beyond it lies the Pokémon realm…"]);
-      if (!(await confirm("Step through the portal?"))) return;
-      // (out beside the Time Machine, in its clearing off Pallet Town)
-      await voyage(window.TIME_MACHINE.lane, ["You step into the red light…", "Time and space twist around you…", "…and settle back into place."], "se_warp_in");
-      await say(player.flags.pokemonVisited || player.flags.starter ? "You're back in the Pokémon realm,\nbeside Pallet Town." : ["You've arrived in the Pokémon realm,\nbeside Pallet Town!", "Prof. Oak's lab is in the town,\njust to the south."]);
-      player.flags.pokemonVisited = true;
-      await persist();
-      return;
-    }
-    if (id === "yakuza") {
-      await say(["A portal of swirling crimson light.\nA dragon's crest shines above it.", "Beyond it lies the Like a Dragon\nrealm, the city that never sleeps…"]);
-      if (!(await confirm("Step through the portal?"))) return;
-      // (out beside the Time Machine, under the manhole in Serena's backlot)
-      const to = window.KAMUROCHO.arrive;
-      await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing }, ["You step into the crimson light…", "Neon blurs past you…"], "se_warp_in");
-      if (!player.flags.kamurochoVisited) await say(["You've arrived in Kamurocho,\nin the Like a Dragon realm!", "It's 1988. The streets are packed,\nthe money's flowing, and the\nTojo Clan runs the town.",
-        "Your Bag stays behind in the\nPokémon realm. Here you have\na bag of this realm's own."]);
-      player.flags.kamurochoVisited = true;
-      await persist();
-      return;
-    }
-    await say(["A portal of cold stone. Its light\nhas gone out.", "Another realm may open here\nsomeday…"]);
-  }
-  // The Time Machine, under the manhole in Serena's backlot, off Kamurocho's street: back to the Realm Hub, by the crimson portal; or a rest beside it
-  // (the party's HP and MP back), a look at the party, or a Pokémon of yours to fight beside you (realmPokemon).
-  async function kamurochoTimeMachine() {
-    await say("It's the Time Machine, hidden down\nhere under the street.");
-    for (;;) {
-      // (FireRed's multichoice window, at the right over the street.)
-      const v = ["rest", "party", "pokemon", "look", "hub", "back"][await multichoice("What will you do?", 19, 0, ["Rest", "Party", "Pokémon", "Look", "Realm Hub", "Leave"])] || "back";
-      if (v === "look") { await changeLook(); continue; }
-      if (v === "pokemon") { await realmPokemon("yakuza"); continue; }
-      if (v === "rest") {
-        realmRestore(realmParty("yakuza"));
-        await fanfare("mus_heal");
-        await say("You rest a while in the shadow of\nthe Time Machine. Everyone's\nback to full strength!");
-        continue;
-      }
-      if (v === "party") { await realmPartyScreen("yakuza", true); continue; }
-      if (v === "hub") {
-        if (!(await confirm("Travel back to the Realm Hub?"))) continue;
-        await voyage(HUB_YAKUZA_PORTAL, ["The Time Machine whirs to life…", "Kamurocho's lights fade away…", "…and you come out in the Realm Hub."], "se_warp_in");
-      }
-      return;
-    }
-  }
-
-  // ---------- The other realms' battles (Dragon Quest's way: engine/battle.js's Ultimax) ----------
-  //
-  // Out of the Pokémon realm you fight in a party, as in Dragon Quest: you and up to three companions
-  // (data/type-chart.js's REALM_FIGHTERS), each with HP, MP, a level and skills, against a group of foes. Each
-  // realm's party and its items: flags.realmParty[realm] = { party: [{ id, lv, exp, hp, mp }], items: { id: n } }.
-  // In Kamurocho you start alone; Kiryu joins when you ask him, and Majima once you've beaten him. Walking its streets
-  // (not in the alley, the bars, the shops, the backlot or under the street) gangs walk about in plain sight, as in the
-  // Yakuza games (ui/street.js, REALM_ENCOUNTERS' groups): one that spots you walks up and picks a fight; keep away and
-  // it gives up. Fall, and you wake by the Time Machine with half your money gone.
-  // You fight as your race (player.race: REALM_RACES); a party saved before that had you as plain "you", and
-  // becomes your race at the same level and EXP (as does a party you've changed race since, at a Time Machine).
-  // Four fight (party), four more wait to come in (reserve: in battle, Swap brings one in, and one replaces anyone
-  // who falls), and anyone else waits at the Time Machine (stored); realmJoin puts whoever joins in the first with
-  // room.
-  function realmParty(realm) {
-    const all = player.flags.realmParty = player.flags.realmParty || {};
-    const me = player.race && window.REALM_FIGHTERS[player.race] ? player.race : "you";
-    if (!all[realm]) all[realm] = { party: [Ultimax.recruit(me, 1)], items: { staminan: 3 } };
-    const P = all[realm];
-    P.reserve = P.reserve || []; P.stored = P.stored || [];
-    // (A Pokémon brought along who's no longer in your party, left in a box or traded, goes back.)
-    for (const k of ["party", "reserve", "stored"]) P[k] = P[k].filter((r) => !r.pokemon || realmMon(r));
-    // (HP saved before Ultimax.HP_SCALE: as much of the new maximum.)
-    for (const r of P.party.concat(P.reserve, P.stored)) Ultimax.rescale(r);
-    // (Four at most fighting, four in reserve.)
-    while (P.party.length > 4) P.reserve.unshift(P.party.pop());
-    while (P.reserve.length > 4) P.stored.unshift(P.reserve.pop());
-    const rec = realmMe(P);
-    if (rec && (rec.id === "you" || (window.REALM_RACES || []).some((r) => r.id === rec.id)) && rec.id !== me && me !== "you") {
-      rec.id = me;
-      const s = Ultimax.statsOf(rec);
-      rec.hp = Math.min(rec.hp, s.hp); rec.mp = Math.min(rec.mp, s.mp);
-    }
-    return all[realm];
-  }
-  // A Pokémon in a realm's party: { pokemon: its personality }, the record itself staying in your party (so its HP,
-  // PP and EXP are the same in both realms). It fights by the Ultimax system's rules (engine/battle.js's
-  // Ultimax.pokemon): its stats as theirs, its types as elements, its moves as skills that cost PP.
-  const realmAll = (P) => P.party.concat(P.reserve || [], P.stored || []);
-  // (You: your race's record, wherever you are in the party.)
-  const realmMe = (P) => realmAll(P).find((r) => r.id === "you" || (window.REALM_RACES || []).some((x) => x.id === r.id)) || P.party[0];
-  function realmJoin(P, rec) {
-    const k = P.party.length < 4 ? "party" : P.reserve.length < 4 ? "reserve" : "stored";
-    P[k].push(rec);
-    return k;
-  }
-  const JOINED = { party: "", reserve: " (in reserve)", stored: " They'll wait at the Time Machine." };
-  const realmMon = (rec) => rec.pokemon != null ? (player.party || []).find((m) => !m.egg && m.personality === rec.pokemon) || null : null;
-  const realmMember = (rec) => {
-    const mon = realmMon(rec);
-    return mon ? Object.assign(Ultimax.pokemon(mon, Party.stats(mon), Party.displayName(mon)), { rec }) : Ultimax.member(rec, player.name);
-  };
-  // Everyone's HP and MP back (a Pokémon's HP and PP, as at a Pokémon Center).
-  function realmRestore(P) {
-    for (const rec of realmAll(P)) {
-      const mon = realmMon(rec);
-      if (mon) { Party.heal(mon); delete mon.realmMp; }
-      else { const s = Ultimax.statsOf(rec); rec.hp = s.hp; rec.mp = s.mp; rec.hpScale = Ultimax.HP_SCALE; }
-    }
-  }
-  // Bringing a Pokémon from your party into the realm's (as anyone joins: realmJoin), or sending one back.
-  async function realmPokemon(realm) {
-    const P = realmParty(realm);
-    for (;;) {
-      const here = realmAll(P).filter((r) => realmMon(r)).map(realmMon);
-      const can = (player.party || []).filter((m) => !m.egg && !here.includes(m));
-      const v = await ask("Pokémon fight here by this realm's\nrules. Bring one, or send one back?", [
-        { label: "Bring one", value: "bring", className: "action", disabled: !can.length },
-        { label: "Send back", value: "send", className: "action", disabled: !here.length }, back()]);
-      if (v === "back") return;
-      const list = v === "bring" ? can : here;
-      const pick = await ask(v === "bring" ? "Bring which Pokémon?" : "Send which one back?",
-        list.map((m, i) => ({ label: Party.displayName(m) + "  Lv " + m.level, value: i })).concat([back()]));
-      if (pick === "back") continue;
-      const mon = list[pick], f = Ultimax.pokemon(mon, Party.stats(mon), Party.displayName(mon));
-      if (v === "bring") {
-        const where = realmJoin(P, { pokemon: mon.personality });
-        await say([realmWrap(Party.displayName(mon) + " joins the party!" + JOINED[where]), realmWrap("Here it's " + f.elements.join("/") + ", with STR " + f.str + ", DEF " + f.def + ", INT " + f.int + ", WIS " + f.wis + " and SPD " + f.spd + "."),
-          realmWrap(f.skills.length ? "Its moves here: " + f.skills.map((id) => f.own[id].name).join(", ") + "." : "None of its moves work here: it can only attack.")]);
-      } else {
-        for (const k of ["party", "reserve", "stored"]) { const i = P[k].findIndex((r) => realmMon(r) === mon); if (i >= 0) P[k].splice(i, 1); }
-        await say(Party.displayName(mon) + " goes back to your party.");
-      }
-      await persist();
-    }
-  }
-  const raceName = () => { const r = (window.REALM_RACES || []).find((x) => x.id === player.race); return r ? r.name : null; };
-  const inRealmParty = (realm, id) => !!(player.flags.realmParty && player.flags.realmParty[realm] && realmAll(realmParty(realm)).some((m) => m.id === id));
-  const realmName = (rec) => (realmMon(rec) ? Party.displayName(realmMon(rec)) : window.REALM_FIGHTERS[rec.id].name || player.name);
-  let realmQuiet = 0;   // (steps before the next fight can start: a few after each one)
-  // (A battle's line, broken into the text box's lines at the spaces.)
-  function realmWrap(text) {
-    const out = [];
-    for (const para of String(text).split("\n")) {
-      let line = "";
-      for (const w of para.split(" ")) {
-        if (line && (line + " " + w).length > 30) { out.push(line); line = w; } else line = line ? line + " " + w : w;
-      }
-      out.push(line);
-    }
-    return out.join("\n");
-  }
-  function realmEncounterStep() {
-    const m = player.location.map, enc = window.REALM_ENCOUNTERS && window.REALM_ENCOUNTERS[m];
-    if (!enc) return null;
-    if (realmQuiet > 0) { realmQuiet--; return null; }
-    return Math.random() < enc.rate ? { type: "realm-battle" } : null;
-  }
-  // (On Kamurocho's street: a step's chance of a fight, its rate as the map's; never in the alley or the bar.)
-  function realmStreetStep() {
-    const enc = window.REALM_ENCOUNTERS && window.REALM_ENCOUNTERS.Kamurocho;
-    if (!enc) return null;
-    if (realmQuiet > 0) { realmQuiet--; return null; }
-    return Math.random() < enc.rate ? { type: "realm-battle" } : null;
-  }
-  // Who walks behind you on Kamurocho's streets (ui/street.js): those fighting beside you, standing (Kiryu and Majima
-  // at ease, a Pokémon as its HGSS follower sheet, tools/build-hgss-followers.js).
-  function realmFollowers() {
-    const P = player.flags.realmParty && player.flags.realmParty.yakuza;
-    if (!P) return [];
-    const F = window.JOHTO_FOLLOWERS || { hgss: [] }, me = realmMe(P);
-    return P.party.filter((rec) => rec !== me).map((rec) => {
-      const mon = realmMon(rec);
-      if (mon) {
-        if (mon.hp <= 0) return null;
-        const id = String((window.DEX[mon.species] || {}).id || 0);
-        return F.hgss.includes(id) ? { mon: "follow/" + id } : null;
-      }
-      if (rec.hp <= 0) return null;
-      return rec.id === "kiryu" || rec.id === "majima" ? { stand: rec.id + "_idle", walk: rec.id + "_idle_walk" } : null;
-    }).filter(Boolean);
-  }
-  // The party's best level (a Pokémon's or a fighter's): which of the street's gangs come out.
-  function realmBestLevel() {
-    const P = realmParty((window.WORLD_MAPS[player.location.map] || {}).realm || "yakuza");
-    return Math.max(1, ...P.party.map((rec) => (realmMon(rec) ? realmMon(rec).level : rec.lv || 1)));
-  }
-  async function realmEncounter() {
-    // (Only the groups your party's level has come to: its best's, a Pokémon's or a fighter's.)
-    const lv = realmBestLevel();
-    const groups = Ultimax.groupsFor(window.REALM_ENCOUNTERS[player.location.map], lv), total = groups.reduce((s, [w]) => s + w, 0);
-    let r = Math.random() * total, group = groups[0][1];
-    for (const [w, g] of groups) if ((r -= w) < 0) { group = g; break; }
-    await realmFight(group);
-  }
-  // A foe's picture: its battle picture, or its overworld sheet's first frame (facing you).
-  function realmFoePic(f) {
-    const d = window.REALM_FOES[f.id];
-    // (Kamurocho's own, side on: Streets of Kamurocho's, facing you from the right, as tall as on its streets)
-    if (d.street && (window.WORLD_MAPS[player.location.map] || {}).realm === "yakuza") return '<img class="rb-street" alt="" onload="this.style.height=(this.naturalHeight/2.24*' + (d.big ? 1.4 : 1) + ')+\'cqh\'" src="assets/kamurocho/people/' + (f.look || d.street) + '.png">';
-    if (d.battle) return '<div class="rb-pic big" style="background-image:url(' + d.battle + ')"></div>';
-    return '<div class="rb-pic sheet' + (d.big ? " big" : "") + '" style="background-image:url(assets/world/sprites/' + d.sprite + '.png)"></div>';
-  }
-  // The screen (ui/ultimax-screen.js, FireRed's double battle's way): the street where you stand behind it, the foes
-  // at the left with their HP bars, the party's healthboxes down the right.
-  function realmDraw(b) {
-    const m = window.WORLD_MAPS[player.location.map];
-    let back;
-    // (On Kamurocho's streets, the street behind you.)
-    if (Street.isStreet(m.name)) { const k = Street.backdrop(); back = "background-image:url(" + k.url + ");background-size:" + k.size + ";background-position:" + k.position; }
-    else {
-      const at = Overworld.position();
-      const W = m.width * 16, H = m.height * 16, cx = Math.max(0, Math.min(W - 240, at.x * 16 - 112)), cy = Math.max(0, Math.min(H - 160, at.y * 16 - 72));
-      back = 'background-image:url(assets/world/maps/' + m.name + '.png);background-size:' + (W / 2.4) + '% ' + (H / 1.6) + '%;background-position:' +
-        (cx / (W - 240) * 100) + '% ' + (cy / (H - 160) * 100) + '%';
-    }
-    show("scene");
-    scene.classList.add("evo");
-    UltimaxScreen.build(scene, b, { back, pic: realmFoePic });
-  }
-  // Each of the party's choices for the turn, or "run": for each in turn, ATTACK / DEFEND / SKILLS / BAG / PARTY / RUN
-  // (B on the second and after goes back to the one before). SKILLS: their skills (a Pokémon's moves) in FireRed's
-  // move box, a line each, what each costs and its element at the right; BAG: the items; PARTY: the party screen
-  // (ui/realm-party.js), its summaries, and one of the reserve in. Whom it's for: the ▼ over a foe, or one of the
-  // party's boxes bobbing.
-  async function realmChoices(b) {
-    const choices = b.allies.map(() => null), P = b.items || {}, I = window.REALM_ITEMS;
-    const ov = $("#overlay"), frame = GameOptions.get().frame, cursor = b.cursors || (b.cursors = {});
-    const who = b.allies.map((f, i) => i).filter((i) => b.allies[i].hp > 0);
-    const element = (e) => "TYPE/" + String(e || "Neutral").toUpperCase();
-    // (Whom: the foe or one of the party, said in the message box as you move; the last one picked first.)
-    const target = async (kind, text) => {
-      if (kind === "all" || kind === "self" || kind === "party") return 0;
-      const ally = kind === "ally", list = ally ? b.allies : b.foes;
-      const at = await UltimaxScreen.pick(ally ? "ally" : "foe", b, cursor[kind] || 0,
-        (i) => instant(text + "\n" + list[i].name + (ally ? "   HP " + list[i].hp + "/" + list[i].maxHp : "")));
-      instant("");
-      if (at != null) cursor[kind] = at;
-      return at;
-    };
-    const box = (moves, at, wide) => GbaMenus.battleMoves(ov, { moves, cursor: at || 0, frame, wide });
-    for (let k = 0; k < who.length;) {
-      const i = who[k], f = b.allies[i];
-      instant("");
-      const a = await GbaMenus.battleAction(ov, { prompt: ["What will", f.name + " do?"], labels: ["Attack", "Defend", "Skills", "Bag", "Party", "Run"],
-        actions: ["attack", "defend", "skills", "bag", "party", "run"], cursor: cursor["act" + i] || 0, frame, canBack: k > 0 });
-      cursor["act" + i] = a.cursor;
-      if (a.action === "back") { k--; continue; }
-      if (a.action === "run") return "run";
-      if (a.action === "defend") { choices[i] = { act: "defend" }; k++; continue; }
-      if (a.action === "attack") {
-        const t = await target("one", "Attack whom?");
-        if (t == null) continue;
-        choices[i] = { act: "attack", target: t }; k++; continue;
-      }
-      if (a.action === "party") {
-        // (The party screen: anyone's summary; one of the reserve in, this one's turn, each of them once a turn.)
-        const taken = (j) => choices.some((c, ci) => ci !== i && c && c.act === "swap" && c.reserve === j);
-        const r = await realmBattleParty(b, i, taken);
-        if (r == null) continue;
-        choices[i] = { act: "swap", reserve: r }; k++; continue;
-      }
-      if (a.action === "bag") {
-        const ids = Object.keys(P).filter((x) => P[x] > 0 && I[x]);
-        if (!ids.length) { await message("There are no items!"); continue; }
-        const what = (it) => [it.heal ? "HP+" + (it.heal === "all" ? "all" : it.heal * Ultimax.HP_SCALE) : "", it.mp ? "MP+" + it.mp : "", it.revive ? "Revives" : ""].filter(Boolean);
-        const r = await box(ids.map((x) => { const w = what(I[x]); return { name: I[x].name, info: [["×" + P[x] + "  " + (w[0] || "")], [w.slice(1).join(" ")]] }; }), cursor.item, true);
-        if (!r) continue;
-        cursor.item = r.cursor;
-        const t = await target("ally", "Use " + I[ids[r.index]].name + " on whom?");
-        if (t == null) continue;
-        choices[i] = { act: "item", item: ids[r.index], target: t }; k++; continue;
-      }
-      // SKILLS: each one's category, as a Pokémon move's (Physical, Magical or Status, and a damaging one's base
-      // power), then its MP and its element.
-      if (!f.skills.length) { await message(f.name + " has no skills yet!"); continue; }
-      const sk = (id) => Ultimax.skillOf(f, id);
-      const cat = (s2) => Ultimax.category(s2).toUpperCase() + (s2.kind === "phys" || s2.kind === "magic" ? " " + s2.power : "");
-      const moves = f.skills.map((id) => {
-        const s2 = sk(id), short = (s2.mp || 0) > f.mp;
-        return { name: s2.name, dim: short, info: [[cat(s2)], ["MP " + (s2.mp || 0) + " of " + f.mp, short], [element(s2.element)]] };
-      });
-      const r = await box(moves, cursor["skill" + i], true);
-      if (!r) continue;
-      cursor["skill" + i] = r.cursor;
-      const id = f.skills[r.index], s2 = sk(id);
-      if (moves[r.index].dim) { await message("Not enough MP!"); continue; }
-      const t = await target(s2.target, s2.name + ": on whom?");
-      if (t == null) continue;
-      choices[i] = { act: "skill", skill: id, target: s2.target === "self" ? i : t }; k++;
-    }
-    return choices;
-  }
-  // A whole fight: "won", "lost" or "ran". opts: intro (what's said first), after a loss you wake by the Time
-  // Machine (unless opts.keepGoing: the fight just ends).
-  async function realmFight(foeIds, opts) {
-    opts = opts || {};
-    const realm = (window.WORLD_MAPS[player.location.map] || {}).realm, P = realmParty(realm);
-    const b = Ultimax.create(P.party.map(realmMember), foeIds, { reserve: P.reserve.map(realmMember) });
-    b.items = P.items;
-    // (each foe as the gang wore them on the street, `opts.looks`, or one of their looks picked now)
-    b.foes.forEach((f, i) => { const looks = (window.REALM_FOES[f.id] || {}).looks; f.look = (opts.looks || [])[i] || (looks ? looks[Math.floor(Math.random() * looks.length)] : null); });
-    music(b.boss ? "mus_vs_gym_leader" : "mus_vs_wild");
-    realmDraw(b);
-    const names = b.foes.map((f) => f.name);
-    await message(realmWrap(opts.intro || (names.length === 1 ? names[0] + " picks a fight!" : names.slice(0, -1).join(", ") + " and " + names[names.length - 1] + " pick a fight!")));
-    while (!b.over) {
-      const choices = await realmChoices(b);
-      for (const st of Ultimax.turn(b, choices)) { UltimaxScreen.show(b, st.snap); UltimaxScreen.fx(st.fx); await message(realmWrap(st.text)); }
-    }
-    Ultimax.keep(b);
-    for (const k of Object.keys(P.items)) if (!(P.items[k] > 0)) delete P.items[k];
-    if (b.over === "won") {
-      const { exp, money } = Ultimax.spoils(b);
-      music(b.boss ? "mus_victory_gym_leader" : "mus_victory_wild");
-      Player.addMoney(player, money);
-      // (Everyone the same, the reserve and the fallen too; a Pokémon's as its own EXP, Ultimax.pokemonExp, said once
-      // with everyone's.)
-      await message(realmWrap((b.allies.length + b.reserve.length > 1 ? "Everyone gains " : player.name + " gains ") + exp + " EXP points!"));
-      if (money) await message("You picked up ¥" + money + ".");
-      for (const f of b.allies.concat(b.reserve)) {
-        if (f.mon) { await realmMonExp(f.mon, exp, true); continue; }
-        const levels = Ultimax.gainExp(f.rec, exp);
-        for (const l of levels) {
-          await fanfare("mus_level_up");
-          await message(realmName(f.rec) + " is now level " + l.lv + "!");
-          for (const s of l.learned) await message(realmWrap(realmName(f.rec) + " learned " + window.REALM_SKILLS[s].name + "!"));
-        }
-        if (levels.length) await realmPoints(f.rec);
-      }
-    }
-    // (Anyone who fell gets up with 1 HP, as after a won fight in Dragon Quest you'd have to revive them; here they
-    // walk it off.)
-    // (Who's fighting and who's in reserve, as the swaps left them.)
-    P.party = b.allies.map((f) => f.rec); P.reserve = b.reserve.map((f) => f.rec);
-    if (b.over !== "lost") for (const rec of realmAll(P)) { const r = realmMon(rec) || rec; if (r.hp <= 0) r.hp = 1; }
-    realmQuiet = 10;
-    const here = window.WORLD_MAPS[player.location.map];
-    UltimaxScreen.stop();
-    scene.classList.remove("evo");
-    Screen.say(""); clearMenu();
-    if (Street.isStreet(player.location.map)) show("street");
-    else { show("world"); await Overworld.resume(); }
-    if (b.over === "lost" && !opts.keepGoing) {
-      const lost = Math.floor(player.money / 2);
-      player.money -= lost;
-      realmRestore(P);
-      const to = window.KAMUROCHO.arrive;
-      await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing }, ["Everything goes black…", "You come to by the Time Machine,\nyour wallet ¥" + lost + " lighter."], "se_faint");
-      return b.over;
-    }
-    if (b.over === "lost") for (const rec of realmAll(P)) { const r = realmMon(rec) || rec; if (r.hp <= 0) r.hp = 1; }
-    music(here.music);
-    return b.over;
-  }
-  // The party screen (ui/realm-party.js): the four who fight and the four in reserve, each one's picture (you as your
-  // look, Kiryu and Majima as Streets of Kamurocho draws them, a Pokémon its party icon), level, HP and MP. Pick one
-  // for their summary (stats, elements, skills, EXP to the next level), to switch them with another box (you always
-  // fight), or to put in their stat points; at the Time Machine (`atMachine`), to leave them there, or to bring back
-  // one who waits there into an empty box.
-  const realmIcons = {};
-  function realmIconOf(rec, f) {
-    const img = (src) => realmIcons[src] || (realmIcons[src] = Object.assign(new Image(), { src }));
-    const mon = rec && realmMon(rec);
-    if (mon || (f && f.mon)) return { icon: img(Screen.iconUrl((mon || f.mon).species)), rect: [0, 0, 32, 32] };
-    if (f && f.form) return { icon: img(Screen.iconUrl(f.form)), rect: [0, 0, 32, 32] };
-    const id = rec && rec.id;
-    if (id === "kiryu" || id === "majima") return { icon: img("assets/kamurocho/people/" + id + "_idle.png") };
-    const look = Overworld.playerLook();
-    return look ? { icon: look, rect: [0, 0, 32, 32] } : { icon: img("assets/world/sprites/player_custom.png"), rect: [0, 0, 16, 32] };
-  }
-  const realmIconsLoaded = () => Promise.all(Object.values(realmIcons).map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; }))));
-  // (One box: a member as saved, or as a fighter in a battle.)
-  function realmSlot(rec, f) {
-    if (!rec && !f) return null;
-    f = f || realmMember(rec);
-    const s = Ultimax.skillOf, S = window.REALM_SKILLS, F = window.REALM_FIGHTERS;
-    const mon = f.mon, base = !mon && rec && F[rec.id];
-    const lines = [f.elements.join("/") + (mon ? "  Pokémon" : base && !base.name && raceName() ? "  " + raceName() : ""),
-      "HP " + f.hp + "/" + f.maxHp + "   MP " + f.mp + "/" + f.maxMp,
-      "Strength     " + f.str, "Defence      " + f.def, "Intelligence " + f.int, "Wisdom       " + f.wis, "Speed        " + f.spd];
-    if (!mon && rec) lines.push("Next Lv     " + (Ultimax.expFor(rec.lv + 1) - rec.exp) + " EXP");
-    if (!mon && rec && Ultimax.pointsOf(rec).points) lines.push("Stat points " + rec.points);
-    const skills = f.skills.map((id) => { const k = s(f, id) || S[id]; return [k.name, "MP " + (k.mp || 0)]; });
-    return Object.assign({ name: f.name, lv: f.lv, hp: f.hp, maxHp: f.maxHp, mp: f.mp, maxMp: f.maxMp, rec, summary: { lines, skills } }, realmIconOf(rec, f));
-  }
-  async function realmPartyScreen(realm, atMachine) {
-    const P = realmParty(realm), ov = $("#overlay"), frame = GameOptions.get().frame;
-    let cursor = 0;
-    for (;;) {
-      const recs = [0, 1, 2, 3].map((i) => P.party[i] || null).concat([0, 1, 2, 3].map((i) => P.reserve[i] || null));
-      const slots = recs.map((rec) => realmSlot(rec));
-      await realmIconsLoaded();
-      Screen.say(""); clearMenu();
-      const r = await RealmParty.open(ov, { slots, cursor, frame, title: P.stored.length ? P.stored.length + " at the Time Machine" : "PARTY",
-        choices: (i) => {
-          const rec = recs[i];
-          if (!rec) return atMachine && P.stored.length ? [{ key: "bring", label: "Bring" }] : [];
-          return [{ key: "summary", label: "Summary" }, { key: "switch", label: "Switch" }]
-            .concat(!realmMon(rec) && Ultimax.pointsOf(rec).points > 0 ? [{ key: "points", label: "Points" }] : [])
-            .concat(atMachine && rec !== realmMe(P) ? [{ key: "leave", label: "Leave" }] : []);
-        } });
-      if (!r) return;
-      cursor = r.cursor;
-      const rec = recs[r.index];
-      if (r.action === "summary") { await RealmParty.summary(ov, slots[r.index], frame); continue; }
-      if (r.action === "points") { show(Street.isStreet(player.location.map) ? "street" : "world"); await realmPoints(rec); await persist(); continue; }
-      if (r.action === "leave") { P[P.party.includes(rec) ? "party" : "reserve"].splice(P[P.party.includes(rec) ? "party" : "reserve"].indexOf(rec), 1); P.stored.push(rec); await persist(); continue; }
-      if (r.action === "bring") {
-        const pick = await ask("Bring whom from the Time Machine?", P.stored.map((x, k) => ({ label: realmName(x) + "  Lv " + (realmMon(x) ? realmMon(x).level : x.lv), value: k })).concat([back()]));
-        if (pick !== "back") { const x = P.stored.splice(pick, 1)[0]; (r.index < 4 && P.party.length < 4 ? P.party : P.reserve.length < 4 ? P.reserve : P.party).push(x); }
-        await persist(); continue;
-      }
-      if (r.action === "switch") {
-        const a = r.index, b2 = r.with;
-        if (a === b2) continue;
-        const me = realmMe(P);
-        if ((recs[a] === me && b2 >= 4) || (recs[b2] === me && a >= 4)) { await message("You always fight: you can't go\ninto the reserve."); continue; }
-        [recs[a], recs[b2]] = [recs[b2], recs[a]];
-        P.party = recs.slice(0, 4).filter(Boolean); P.reserve = recs.slice(4).filter(Boolean);
-        sfx("se_select");
-        await persist();
-      }
-    }
-  }
-  // Kamurocho's map (the start menu's MAP; KAMUROCHO_STREET.map), as Yakuza 0's: the grey town, its streets dark
-  // through it, West Park blue, its numbers and their names down the side; the street you're on lit, and you a
-  // blinking mark along it as far as you've walked; a red flag where the story's headed. A or B closes it.
-  async function realmMap() {
-    const K = window.KAMUROCHO_STREET, Mp = K.map.scenes, ov = $("#overlay"), loc = player.location;
-    // (where you are on it: the town's tile as it is, a room its door's; the street that is)
-    const pos = window.KMR.at(loc.map, loc.x, loc.y) || { point: null, street: null }, here = pos.street;
-    // (a point that far along a line)
-    const along = (line, t) => {
-      const seg = line.slice(1).map((p, i) => Math.hypot(p[0] - line[i][0], p[1] - line[i][1])), total = seg.reduce((x, y) => x + y, 0);
-      let d = t * total;
-      for (let i = 0; i < seg.length; i++) { if (d <= seg[i] || i === seg.length - 1) { const k = seg[i] ? d / seg[i] : 0; return [line[i][0] + (line[i + 1][0] - line[i][0]) * k, line[i][1] + (line[i + 1][1] - line[i][1]) * k]; } d -= seg[i]; }
-      return line[0];
-    };
-    // (the map's picture, as data (data/kamurocho-map.js, tools/build-kamurocho-map.py's: a page opened from its file
-    // can't read an image's pixels), and its points on the screen)
-    const Pic = K.map.picture, T = ([x, y]) => [Pic.at[0] + (x - Pic.crop[0]) * Pic.scale, Pic.at[1] + (y - Pic.crop[1]) * Pic.scale];
-    const draw = (blink) => {
-      const sf = GbaMenus.Surface(), W = [248, 248, 248], INK = [36, 32, 52], ROAD = [62, 64, 74];
-      sf.fill(0, 0, 240, 160, INK);
-      const MP = window.KAMUROCHO_MAP_PICTURE;
-      if (MP) MP.rows.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] !== ".") sf.put(Pic.at[0] + x, Pic.at[1] + y, MP.colours[row[x]]); });
-      const road = (line, w, col) => {
-        const pts = line.map(T);
-        for (let i = 1; i < pts.length; i++) {
-          const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
-          for (let k = 0; k <= n; k++) { const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n); sf.fill(x - (w >> 1), y - (w >> 1), w, w, col); }
-        }
-      };
-      // (every street's road drawn over the picture again, so none's broken where its name was written; the one you're
-      // on lit)
-      for (const [id, m] of Object.entries(Mp)) if (m.line) road(m.line, m.w, id === here ? [248, 200, 64] : ROAD);
-      // (the numbers on it, and their names down the side: where you are in yellow)
-      K.map.legend.forEach(([n, name, id, at], k) => {
-        const [x, y] = T(at).map(Math.round), t = String(n), on = id && id === here;
-        sf.text(t, x - (sf.textWidth(t, "small") >> 1), y - 5, on ? [255, 224, 120] : W, INK, "small");
-        sf.text(t, 138 + (n < 10 ? 5 : 0), 1 + k * 8, on ? [255, 224, 120] : [200, 200, 220], INK, "small");
-        sf.text(name, 150, 1 + k * 8, on ? [255, 224, 120] : W, INK, "small");
-      });
-      // (where the story's headed, Heroine: a red flag on it, its name along the bottom)
-      const wp = player.flags.kamurochoWaypoint, wm = wp && Mp[wp];
-      if (wm) {
-        const [wx, wy] = T(wm.at ? along(Mp[wm.at[0]].line, wm.at[1]) : along(wm.line, 0.5)).map(Math.round);
-        sf.fill(wx, wy - 12, 1, 12, [240, 240, 240]); sf.fill(wx + 1, wy - 12, 6, 4, [232, 48, 48]); sf.fill(wx + 1, wy - 8, 4, 1, [232, 48, 48]);
-        sf.text("\u25b6 " + ((K.scenes[wp] || {}).title || wm.title || wp), 138, 148, [255, 120, 120], INK, "small");
-      }
-      if (pos.point && blink) {
-        const [x, y] = T(pos.point).map(Math.round);
-        sf.fill(x - 3, y - 3, 7, 7, INK); sf.fill(x - 2, y - 2, 5, 5, [232, 56, 56]); sf.put(x, y, W);
-      }
-      sf.show(ov);
-    };
-    Screen.say(""); clearMenu();
-    ov.classList.remove("hidden");
-    let on = true;
-    draw(on);
-    const tick = setInterval(() => { on = !on; draw(on); }, 400);
-    await GbaMenus.keys((k) => (k === "a" || k === "b" ? true : undefined));
-    clearInterval(tick);
-    ov.classList.add("hidden");
-  }
-  // Putting a member's stat points in (Ultimax.spend): each stat as it is and what a point adds, until they're all in
-  // or "Later" keeps the rest for the party screen.
-  async function realmPoints(rec) {
-    const NAMES = { hp: "HP", mp: "MP", str: "Strength", def: "Defence", int: "Intelligence", wis: "Wisdom", spd: "Speed" };
-    const ADDS = { hp: 2 * Ultimax.HP_SCALE, mp: 2 };
-    while (Ultimax.pointsOf(rec).points > 0) {
-      const s = Ultimax.statsOf(rec);
-      const v = await ask(realmName(rec) + " has " + rec.points + " stat point" + (rec.points > 1 ? "s" : "") + ".\nWhich stat goes up?",
-        Ultimax.POINT_STATS.map((k) => ({ label: NAMES[k] + "  " + s[k] + " +" + (ADDS[k] || 1), value: k })).concat([back("Later")]));
-      if (v === "back") return;
-      Ultimax.spend(rec, v);
-      sfx("se_select");
-    }
-  }
-  // In a battle: the party screen, everyone as they stand; a summary, or one of the reserve to come in for the one
-  // choosing (b.allies[i]): -> its index in b.reserve, or null.
-  async function realmBattleParty(b, i, taken) {
-    const ov = $("#overlay"), frame = GameOptions.get().frame;
-    const fs = [0, 1, 2, 3].map((k) => b.allies[k] || null).concat([0, 1, 2, 3].map((k) => b.reserve[k] || null));
-    const slots = fs.map((f) => (f ? realmSlot(f.rec, f) : null));
-    await realmIconsLoaded();
-    let cursor = 4;
-    for (;;) {
-      const r = await RealmParty.open(ov, { slots, cursor, frame, title: "PARTY",
-        choices: (k) => (!fs[k] ? [] : [{ key: "summary", label: "Summary" }].concat(k >= 4 ? [{ key: "in", label: "Send in", disabled: fs[k].hp <= 0 || taken(k - 4) }] : [])) });
-      if (!r) return null;
-      cursor = r.cursor;
-      if (r.action === "summary") { await RealmParty.summary(ov, slots[r.index], frame); continue; }
-      if (r.action === "in") return r.index - 4;
-    }
-  }
-  // A Pokémon's share of a won fight: Ultimax EXP as its own (Ultimax.pokemonExp), and its levels, new moves and
-  // evolving as from Exp. Candies (to the level cap).
-  async function realmMonExp(mon, exp, quiet) {
-    const E = Experience, rate = E.growthRate(mon.species), top = Math.min(E.MAX_LEVEL, Player.levelCap(player)), name = Party.displayName(mon);
-    if (mon.level >= top) return;
-    const before = mon.exp;
-    mon.exp = Math.min(E.expForLevel(rate, top), mon.exp + Ultimax.pokemonExp(mon, exp));
-    if (!quiet) await message(name + " gained " + (mon.exp - before).toLocaleString("en-US") + " Exp. Points!");
-    let grew = false;
-    while (mon.level < top && mon.exp >= E.expForLevel(rate, mon.level + 1)) {
-      const moves = Bag.levelUp(mon, { here: player.location && player.location.map });
-      grew = true;
-      await fanfare("mus_level_up");
-      await message(name + " grew to Lv. " + mon.level + "!");
-      for (const move of moves) await learnMove(mon, move);
-    }
-    const evo = grew && Evolution.find(mon, { trigger: "level", party: player.party, coins: coins() });
-    if (evo) await evolve(mon, evo, true);
-  }
-  // Kiryu: joins you when you ask, at level 3 or yours, whichever's higher.
-  async function kamurochoKiryu(person) {
-    await say(person.text);
-    if (!(await confirm("Kiryu: You look like you can handle\nyourself. Want to walk with me?"))) { await say("Kiryu: Suit yourself."); return; }
-    const P = realmParty("yakuza");
-    const where = realmJoin(P, Ultimax.recruit("kiryu", Math.max(3, realmMe(P).lv)));
-    await fanfare("mus_obtain_key_item");
-    await say([realmWrap("Kazuma Kiryu joined the party!" + JOINED[where]), "Kiryu: Let's go. This town doesn't\nsleep, and neither do its punks."]);
-    await Overworld.refreshPeople();
-  }
-  // Majima: a fight, and once he's beaten, he tags along (at level 8 or more).
-  async function kamurochoMajima(person) {
-    await say(person.text);
-    if (!(await confirm("Majima: So whaddya say? You an' me,\nright here, right now!"))) { await say("Majima: Aww, ya chicken! I'll be\nwaitin'!"); return; }
-    const r = await realmFight(["majima"], { intro: "Goro Majima wants to fight!", keepGoing: true });
-    if (r !== "won") { await say("Majima: Hee hee! Come back when\nya've got some more fight in ya!"); return; }
-    const P = realmParty("yakuza");
-    const where = realmJoin(P, Ultimax.recruit("majima", Math.max(8, realmMe(P).lv)));
-    await fanfare("mus_obtain_key_item");
-    await say(["Majima: Hee hee hee! That was the\nmost fun I've had all year!", "I'm stickin' with you! Ain't\nnobody gonna stop me!", realmWrap("Goro Majima joined the party!" + JOINED[where])]);
-    await Overworld.refreshPeople();
-  }
-  // ---------- Kamurocho's scenes, top down (ui/kamurocho.js: the town and its rooms on the overworld) ----------
-  // The story's scenes are written as the side-on streets had them ({ scene }, { actor, x, y }, { walk, to }, ...:
-  // ui/street.js's cutscene); here they play on the town top down: each scene's place (a street's, as far along its
-  // line as its x; a room's, across it) a tile (KMR.tile), you out of sight where its camera is, its actors people
-  // put on the map (their top-down sheets) and walked there a tile at a time (Overworld.act), the screen shaken for
-  // a blow, faded, rained on.
-  let kmrRain = false;
-  const kmrWait = (frames) => new Promise((r) => setTimeout(r, frames * 16));
-  function kmrMoves(from, to, fast) {
-    const out = [], v = fast ? "walk_fast_" : "walk_";
-    const dx = to.x - from.x, dy = to.y - from.y;
-    for (let i = 0; i < Math.abs(dx); i++) out.push(v + (dx < 0 ? "left" : "right"));
-    for (let i = 0; i < Math.abs(dy); i++) out.push(v + (dy < 0 ? "up" : "down"));
-    return out;
-  }
-  async function kmrCutscene(steps, opts) {
-    const start = Object.assign({}, player.location), actors = {};
-    let scene = (window.KMR.sceneOf(start.map, start.x, start.y)) || "street", cam = { map: start.map, x: start.x, y: start.y };
-    const taken = () => new Set(Object.values(actors).map((a) => a.x + "," + a.y));
-    const look = (sprite) => ({ sprite: sprite === "LIMO" ? "kmr_limo" : window.KMR.sprite(sprite), width: sprite === "LIMO" ? 32 : 16, height: 32, frames: 9 });
-    await Overworld.jump(Object.assign({}, cam, { hidden: true }));
-    show("world");
-    for (const st of steps) {
-      if (st.scene) {
-        for (const id of Object.keys(actors)) { Overworld.removeObject("cs_" + id); delete actors[id]; }
-        scene = st.scene;
-        const t = window.KMR.tile(scene, (st.cam || [400])[0], (st.cam || [0, 446])[1]);
-        cam = t; await Overworld.jump(Object.assign({}, t, { hidden: true }));
-      }
-      else if (st.actor || st.thing) {
-        const id = st.actor || st.thing, t = window.KMR.tile(scene, st.x, st.y, taken());
-        if (t.map !== cam.map) continue;
-        actors[id] = { x: t.x, y: t.y };
-        Overworld.addObject("cs_" + id, { x: t.x, y: t.y, facing: st.face || "left" }, look(st.thing ? "LIMO" : st.sprite));
-      }
-      else if (st.walk || st.move) {
-        const id = st.walk || st.move, a = actors[id];
-        if (!a) continue;
-        const t = window.KMR.tile(scene, st.walk ? st.to[0] : st.to, st.walk ? st.to[1] : 446, taken());
-        const moves = kmrMoves(a, t, (st.speed || 1.2) > 1.8);
-        const tracks = [{ who: "cs_" + id, moves }];
-        if (st.follow) tracks.push({ who: "player", moves: kmrMoves(cam, { x: cam.x + (t.x - a.x), y: cam.y + (t.y - a.y) }, (st.speed || 1.2) > 1.8) });
-        if (moves.length) await Overworld.act(tracks);
-        a.x = t.x; a.y = t.y;
-      }
-      else if (st.face) { if (actors[st.face]) await Overworld.act([{ who: "cs_" + st.face, moves: ["face_" + st.dir] }]); }
-      else if (st.gone) { Overworld.removeObject("cs_" + st.gone); delete actors[st.gone]; }
-      else if (st.pan) { const t = window.KMR.tile(scene, st.pan[0], st.pan[1]); await Overworld.act([{ who: "player", moves: kmrMoves(cam, t) }]); cam = t; }
-      else if (st.say) { await opts.say(st.say); Screen.say(""); }
-      else if (st.hit) { sfx("se_m_comet_punch"); await Overworld.shake(8); }
-      else if (st.wait) await kmrWait(st.wait);
-      else if (st.fade) { if (st.fade === "out") await Overworld.fadeToBlack(); else await Overworld.fadeFromBlack(); }
-      else if ("rain" in st) kmrRain = !!st.rain;
-    }
-    for (const id of Object.keys(actors)) Overworld.removeObject("cs_" + id);
-    kmrRain = false;
-    // (back where you were, unless the scene puts you somewhere: kmrPlace)
-    await Overworld.jump(Object.assign({}, start, { hidden: false }));
-    Overworld.fadeFromBlack && await Overworld.fadeFromBlack();
-  }
-  // You, put down in a side-on scene's place (as the story moves you on: out of a taxi, out of a building).
-  async function kmrPlace(loc) {
-    const t = window.KMR.tile(loc.scene, loc.x, loc.y);
-    await Overworld.jump({ map: t.map, x: t.x, y: t.y, facing: loc.facing === "up" ? "up" : "down" });
-  }
-  // (Where you are, as a side-on scene's x: for scenes set about where you stand.)
-  function kmrHere() {
-    const loc = player.location, sc = window.KMR.sceneOf(loc.map, loc.x, loc.y), S = (window.KAMUROCHO_STREET.scenes[sc] || {});
-    return { scene: sc, x: (S.width || 1200) / 2 };
-  }
-  // (Rain over the town in the scene that has it: streaks across the screen, drawn over the map.)
-  function kmrDrawRain(g) {
-    if (!kmrRain) return;
-    const t = performance.now() / 16;
-    g.save(); g.fillStyle = "rgba(190,200,230,0.55)";
-    for (let k = 0; k < 70; k++) { const x = (k * 53 + t * 3) % 280 - 20, y = (k * 97 + t * 9) % 170; for (let j = 0; j < 5; j++) g.fillRect(x - j, y + j * 2, 1, 2); }
-    g.restore();
-  }
-  // Which street you've walked onto (its name up as you come onto it), and the story's scene there, if one's due:
-  // each step on the town (onStep); coming in through a door or the backlot, on arriving (special "enter:").
-  let kmrArea = null, kmrDue = null;
-  function kmrAreaStep() {
-    const loc = player.location;
-    if (loc.map !== "Kamurocho") { kmrArea = null; return null; }
-    const a = window.KMR.area(loc.x, loc.y);
-    if (!a || a === kmrArea) return null;
-    kmrArea = a;
-    const S = window.KAMUROCHO_STREET.scenes[a];
-    if (S && S.title) Overworld.showAreaName("Kamurocho", S.title);
-    const ev = kamurochoEnter(a);
-    return ev ? { type: "kmr-story", ev } : null;
-  }
-  function kmrEnterDue(script) {
-    const m = /^enter:(Kamurocho|Kmr_\w+)$/.exec(script || "");
-    if (!m) return false;
-    const loc = player.location, sc = m[1] === "Kamurocho" ? window.KMR.area(loc.x, loc.y) : window.KMR.sceneOf(m[1]);
-    if (m[1] === "Kamurocho") kmrArea = sc;
-    kmrDue = (!player.flags.y0Prologue && m[1] === "Kamurocho") ? { type: "prologue" } : kamurochoEnter(sc);
-    return !!kmrDue;
-  }
-  async function kmrStory(ev) {
-    if (ev.type === "prologue") await kamurochoPrologue();
-    else if (ev.type === "heroine") await kamurochoHeroine();
-    else if (ev.type === "y0-pink") await kamurochoPink();
-    else if (ev.type === "y0-morning") await kamurochoMorning();
-    else if (ev.type === "y0-toko") await kamurochoToko();
-    else if (ev.type === "y0-kazama") await kamurochoKazama();
-    else if (ev.type === "y0-c2") await kamurochoCh2Step(ev.step);
-    show("world");
-  }
-
-  // Yakuza 0's first chapter, Bound by Oath, scene by scene as the game plays it, in this game's own words (ui/street.js's
-  // cutscenes, and its fights). Its step: flags.y0Step, each next place flagged on the Map (flags.kamurochoWaypoint):
-  //   (none)     the first time out onto the street: the beating in the Empty Lot and the redevelopment in the paper;
-  //              the loan shark's limousine (Toko Credit's president), Kiryu's cut and a job turned down; a student shaken down (a fight); Nishiki
-  //   "pink"     Pink Street: two drunks brawling (a fight), and Bacchus, the old fighter, on investing in yourself
-  //   "heroine"  Heroine: the night's drinking and singing, the Dojima family's ladder, the orphanage and Kazama
-  //   "drinking" out into Theater Square: 6:50 the next morning, the news, the pager, the payphone, a taxi; the three
-  //              lieutenants at the Dojima family's headquarters; outside, Bruno and Kamoji (a fight)
-  //   "toko"     Toko Credit, over Nakamichi Street: the thugs with bats (a fight), the president, and Kuze's offer
-  //   "kazama"   the Kazama family's office: Kashiwagi, the lot's worth, Kiryu's choice; the drive back to
-  //              headquarters and the orphanage remembered; the fight up through it, Yoneda, Kuze; Dojima's verdict;
-  //              11:28 that night in the rain, and Tachibana
-  //   "ch2"      Tachibana Real Estate on Showa Street: the second chapter begins
-  //   "done"
-  // (flags.y0Prologue: the opening's been played. A save from before the chapter went this way starts again from
-  // the morning after.)
-  async function y0Fight(foes, intro) {
-    for (;;) {
-      if ((await realmFight(foes, { intro, keepGoing: true })) === "won") return;
-      realmRestore(realmParty("yakuza"));
-      await say(["Kiryu wipes the blood off his lip\nand gets back up.", "Kiryu: ...Again."]);
-    }
-  }
-  async function y0Kiryu() {
-    if (inRealmParty("yakuza", "kiryu")) return;
-    const P = realmParty("yakuza"), where = realmJoin(P, Ultimax.recruit("kiryu", Math.max(3, realmMe(P).lv)));
-    await fanfare("mus_obtain_key_item");
-    await say(realmWrap("Kazuma Kiryu joined the party!" + JOINED[where]));
-  }
-  const Y0_KIRYU = { sprite: "kiryu_idle", walk: "kiryu_idle_walk" }, Y0_NISHIKI = { sprite: "nishiki", walk: "nishiki_walk" };
-  async function kamurochoPrologue() {
-    const f = player.flags;
-    await kmrCutscene([
-      { fade: "out" },
-      { scene: "alley", cam: [300, 446] },
-      { actor: "victim", sprite: "debtor", x: 440, y: 448, face: "left" },
-      { actor: "kiryu", ...Y0_KIRYU, x: -20, y: 448, face: "right" },
-      { fade: "in" },
-      { say: ["Kamurocho, Tokyo. December 1988.", "Japan's money is rising like the\ntide, and this town drinks it all."] },
-      { walk: "kiryu", to: [380, 448] },
-      { say: ["Salaryman: W-wait! I'll get it to\nyou, I promise! Just a few more\ndays!", "Kiryu: Your few days ran out a\nmonth ago."] },
-      { hit: "victim" }, { hit: "victim" },
-      { say: ["Kiryu takes the man's wallet and\ncounts out what he owes.", "Kiryu: That's the debt squared.\nGo home."] },
-      { walk: "victim", to: [640, 456], speed: 2.4 },
-      { gone: "victim" },
-      { say: ["A newspaper tumbles across the lot\nin the wind.", "\"KAMUROCHO TO BE REBUILT: CITY BACKS\nREDEVELOPMENT\""] },
-      { fade: "out" },
-      { scene: "street", cam: [2720, 440] },
-      { thing: "limo", x: 2700, y: 436 },
-      { actor: "kiryu", ...Y0_KIRYU, x: 2990, y: 456, face: "left" },
-      { fade: "in" },
-      { walk: "kiryu", to: [2724, 460] },
-      { face: "kiryu", dir: "left" },
-      { say: ["The limousine's back window rolls\ndown. Kiryu hands the money in.", "Toko Credit's president: Every yen\nof it. You never let me down, Kiryu.",
-        "Here, your cut. And a little extra,\nfor being quick about it.", "You know, I could use a man like\nyou full-time. Name your price.",
-        "Kiryu: Thanks, but I've got a\nfamily already.", "President: The Dojima family's\nlucky, then. Have a good night."] },
-      { move: "limo", to: 2300, speed: 3 },
-      { gone: "limo" }
-    ], { say });
-    Player.addMoney(player, 30000);
-    show("world");
-    await say("Kiryu got ¥30,000: his cut, and a\nbonus.");
-    await y0Kiryu();
-    await kmrCutscene([
-      { scene: "street", cam: [2520, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 2724, y: 460, face: "left" },
-      { actor: "student", sprite: "tourist", x: 2420, y: 446, face: "right" },
-      { actor: "punk", sprite: "punk", x: 2360, y: 446, face: "right" },
-      { say: ["Kiryu: Nishiki's late again...", "Punk: C'mon, kid, empty your\npockets. Toll for walkin' our\nstreet.",
-        "Student: P-please, that's all I\nhave for the month...", "Kiryu: Leave him be."] },
-      { walk: "kiryu", to: [2480, 452] }
-    ], { say });
-    show("world");
-    await y0Fight(["punk", "punk"], "The punks turn on Kiryu!");
-    await kmrCutscene([
-      { scene: "street", cam: [2520, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 2480, y: 452, face: "left" },
-      { actor: "student", sprite: "tourist", x: 2420, y: 446, face: "right" },
-      { say: ["Student: Th-thank you, sir!"] },
-      { walk: "student", to: [2200, 446], speed: 2.4 }, { gone: "student" },
-      { actor: "nishiki", ...Y0_NISHIKI, x: 2900, y: 456, face: "left" },
-      { walk: "nishiki", to: [2560, 456], speed: 1.8 },
-      { face: "kiryu", dir: "right" },
-      { say: ["Nishiki: Playing hero while you\nwait for me? Very you, Kiryu.", "Kiryu: You're late, Nishiki.",
-        "Nishiki: Worth the wait, though.\nTonight's on the collection money.", "We start on Pink Street and see\nwhere the night takes us!"] },
-      { walk: "nishiki", to: [2300, 452], speed: 1.4 },
-      { fade: "out" }
-    ], { say });
-    f.y0Prologue = true; f.y0Step = "pink"; f.y0v2 = true; f.kamurochoWaypoint = "pink";
-    show("world");
-    await say(["Nishiki's headed for Pink Street.\nIt's marked on your Map (START,\nthen Map)."]);
-    await persist();
-  }
-  // (Coming into a street: a scene to play there, or reaching where the Map marks: for ui/street.js's enter.)
-  function kamurochoEnter(sceneId) {
-    const f = player.flags;
-    if (!f.y0Prologue) return null;   // (the opening: coming out onto the town, kmrEnterDue)
-    // (a save from before the chapter played as the game's: on from the night at Heroine)
-    if (f.y0Prologue && !f.y0v2) { f.y0v2 = true; f.y0Step = f.y0Step ? "drinking" : "heroine"; f.kamurochoWaypoint = f.y0Step === "heroine" ? "heroine" : "theater"; }
-    const step = f.y0Step;
-    if (sceneId === "pink" && step === "pink") return { type: "y0-pink" };
-    if (sceneId === "heroine" && step === "heroine") return { type: "heroine" };
-    if (sceneId === "theater" && step === "drinking") return { type: "y0-morning" };
-    if (sceneId === "toko" && step === "toko") return { type: "y0-toko" };
-    if (sceneId === "kazama" && step === "kazama") return { type: "y0-kazama" };
-    // (Chapter 2's)
-    const c2 = { shichifuku: "c2-kazama", hotels: "c2-hotels", champion: "c2-tatsu", namase: "c2-hakua", senryo: "c2-park" }[sceneId];
-    if (c2 === step || (sceneId === "champion" && step === "c2-champion")) return { type: "y0-c2", step };
-    return null;
-  }
-  // Pink Street: two drunks swinging at each other; Kiryu sobers them up. Bacchus, an old foreign fighter, watches.
-  async function kamurochoPink() {
-    const f = player.flags, x = Math.max(200, Math.min(1240, (kmrHere() || {}).x || 600));
-    await kmrCutscene([
-      { scene: "pink", cam: [x + 120, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-      { actor: "nishiki", ...Y0_NISHIKI, x: x - 50, y: 452, face: "right" },
-      { actor: "drunk1", sprite: "drunk_idle", x: x + 180, y: 444, face: "right" },
-      { actor: "drunk2", sprite: "drunk_idle", x: x + 240, y: 448, face: "left" },
-      { say: ["Drunk: Say that again! I dare ya!", "Other drunk: You heard me, ya\nbum!", "Nishiki: Every night on this street.\nGo on, Kiryu. Wake 'em up."] }
-    ], { say });
-    show("world");
-    await y0Fight(["drunk", "drunk"], "The drunks swing at Kiryu instead!");
-    await kmrCutscene([
-      { scene: "pink", cam: [x + 120, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-      { actor: "nishiki", ...Y0_NISHIKI, x: x - 50, y: 452, face: "right" },
-      { actor: "bacchus", sprite: "bacchus", x: x + 360, y: 440, face: "left" },
-      { walk: "bacchus", to: [x + 150, 440] },
-      { say: ["Old man: Hah! Good hands, boy. But\nyou fight like you have nothing to\nlose.", "Kiryu: ...Who are you?",
-        "Bacchus: Call me Bacchus. I have\nfought in more rings than you have\nyears.", "Money comes and goes in this town.\nSpend it on yourself, on your own\nstrength.",
-        "That is an investment that never\ncrashes. Remember it."] },
-      { walk: "bacchus", to: [x + 420, 440] }, { gone: "bacchus" },
-      { say: ["Nishiki: Strange old guy. Come on,\nHeroine's waiting. Theater Square!"] }
-    ], { say });
-    f.y0Step = "heroine"; f.kamurochoWaypoint = "heroine";
-    show("world");
-    await say(["Heroine is marked on your Map."]);
-    await persist();
-  }
-  // Heroine: hostesses, whisky and the microphone, and Nishiki talking about the family's ladder and where they
-  // both came from.
-  async function kamurochoHeroine() {
-    const f = player.flags;
-    f.kamurochoWaypoint = null; f.y0Step = "drinking";
-    await say(["Heroine's lights are low and the\nwhisky's flowing. A hostess pours\nanother round.",
-      "Nishiki: Look at us, Kiryu. Two kids\nfrom the Sunflower orphanage, drinking\nlike big shots.",
-      "Kiryu: Kazama-san took us in. We'd\nbe nothing without him.",
-      "Nishiki: And he's stuck in a cell\nwhile his family runs without him.", "Dojima at the top, then his three\nlieutenants... and us way down here.",
-      "One day I'll climb that ladder,\nbrother. Watch me.", "Kiryu: One drink at a time, Nishiki.",
-      "Nishiki: Then sing! The stage is\nright there. We're not leaving\ntill sunrise!"]);
-    await persist();
-  }
-  // 6:50 the next morning: the man Kiryu beat for his debt is on the news, shot dead in the Empty Lot; the pager;
-  // a payphone call to the office; a taxi to the Dojima family's headquarters and its three lieutenants. Outside
-  // again, Bacchus with a debt collector, Bruno, and Kamoji, the homeless boxer; then Bruno, for Kiryu.
-  async function kamurochoMorning() {
-    const f = player.flags;
-    await kmrCutscene([
-      { fade: "out" },
-      { scene: "theater", cam: [1120, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 1200, y: 436, face: "left" },
-      { fade: "in" },
-      { say: ["6:50 AM.", "Through a shop window, the morning\nnews on a television:",
-        "Newsreader: ...the body of a man\nwas found in an empty lot in\nKamurocho early this morning.", "Police say he had been shot...",
-        "Kiryu: ...That's him. The man I\ncollected from last night.", "I left him walking. Which makes me\nthe last one who saw him alive."] },
-      { wait: 30 },
-      { say: ["Beep beep beep. Kiryu's pager.\nThe office.", "At a payphone:", "Dojima man: Kiryu-san! Get to\nheadquarters, now. The three\nlieutenants are waiting.",
-        "Kiryu hails a taxi."] },
-      { fade: "out" },
-      { scene: "dojima", cam: [400, 440] },
-      { actor: "kuze", sprite: "kuze", x: 470, y: 440, face: "left" },
-      { actor: "awano", sprite: "awano", x: 560, y: 446, face: "left" },
-      { actor: "shibusawa", sprite: "shibusawa", x: 650, y: 436, face: "left" },
-      { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
-      { fade: "in" },
-      { walk: "kiryu", to: [300, 446] },
-      { say: ["Dojima Family HQ.", "Kuze: Kiryu. The man in the lot.\nYou beat him last night, yes?",
-        "Kiryu: I beat him for what he owed.\nI didn't shoot anybody.", "Awano: Believe it or don't, it hardly\nmatters. That lot's the whole game.",
-        "The redevelopment can't start without\nit. The boss has sunk a fortune into\ngetting it.", "Now it's a murder scene, and the\ncops won't let anyone near it.",
-        "Shibusawa: ...And the man at the\ncentre of it is one of Kazama's.",
-        "Kuze: Kazama's seat's been empty a\nlong time. Shame on his men is shame\non him.", "Here's how it goes, Kiryu. Turn\nyourself in. And leave a finger on\nthe boss's desk.",
-        "Kiryu: ...I won't confess to what I\ndidn't do."] },
-      { fade: "out" },
-      { scene: "taihei", cam: [800, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 790, y: 440, face: "right" },
-      { actor: "bacchus", sprite: "bacchus", x: 900, y: 436, face: "left" },
-      { actor: "bruno", sprite: "thug_brown", x: 1000, y: 446, face: "left" },
-      { actor: "kamoji", sprite: "kamoji", x: 1060, y: 452, face: "left" },
-      { fade: "in" },
-      { say: ["Bacchus: Ah, the boy with the good\nhands! Perfect timing.", "This brute, Bruno, says I owe his\nboss money. Watch my friend Kamoji\nhandle it."] },
-      { walk: "kamoji", to: [1020, 450], speed: 2 }, { hit: "bruno" }, { hit: "bruno" },
-      { say: ["Kamoji floors Bruno in a flurry\nof fast jabs... and Bruno gets right\nback up, looking at Kiryu.",
-        "Bacchus: Light on your feet, boy!\nHit and move, like Kamoji.", "Bruno: You're with the old man?\nThen you pay too!"] }
-    ], { say });
-    await kmrPlace({ scene: "taihei", x: 790, y: 440, facing: "right" });
-    show("world");
-    await y0Fight(["bruno"], "Bruno wants to fight!");
-    await kmrCutscene([
-      { scene: "taihei", cam: [800, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 790, y: 440, face: "right" },
-      { actor: "bacchus", sprite: "bacchus", x: 900, y: 436, face: "left" },
-      { actor: "bruno", sprite: "thug_brown", x: 1000, y: 446, face: "left" },
-      { say: ["Bruno: Okay, okay! I just collect\nfor Toko Credit!", "Kiryu: Toko Credit...?",
-        "Bruno: The loan office on Nakamichi\nStreet. And... the guy you beat? He\nowed us too.", "My boss told him where to go last\nnight. The Empty Lot.",
-        "Kiryu: Then your boss has some\nexplaining to do.", "Bacchus: Come to my ring sometime,\nboy. You'd make a fine boxer.", "Kiryu: Maybe another time."] },
-      { walk: "bruno", to: [1300, 446], speed: 2.6 }, { gone: "bruno" }
-    ], { say });
-    f.y0Step = "toko"; f.kamurochoWaypoint = "toko";
-    show("world");
-    await say(["Toko Credit, over Nakamichi Street,\nis marked on your Map."]);
-    await persist();
-  }
-  // Toko Credit: three thugs with bats at the door; upstairs, its president (the loan shark of the night before), who sent the dead man to the lot on
-  // Kuze's word; and Kuze himself, with a fist and an offer.
-  async function kamurochoToko() {
-    const f = player.flags;
-    await say(["Three thugs with baseball bats block\nthe stairs.", "Thug: Toko Credit's closed, pal.\nPermanently, for you."]);
-    await y0Fight(["thug", "thug", "thug"], "Toko Credit's thugs attack!");
-    await kmrCutscene([
-      { scene: "toko", cam: [400, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
-      { actor: "president", sprite: "president", x: 600, y: 430, face: "left" },
-      { walk: "kiryu", to: [440, 446] },
-      { say: ["President: K-Kiryu?! You collected\nfor me only last night! Why are you\nbreaking down my door?", "Kiryu: The man I collected from is\ndead. You sent him to the lot. Why?",
-        "President: I was told to! Kuze said\nsend him to the Empty Lot, and keep\nmy mouth shut!"] },
-      { actor: "kuze", sprite: "kuze", walk: "kuze_walk", x: 20, y: 446, face: "right" },
-      { walk: "kuze", to: [380, 446], speed: 1.8 },
-      { face: "kiryu", dir: "left" },
-      { hit: "kiryu" },
-      { say: ["Kuze slugs Kiryu across the jaw.", "Kuze: Sticking your nose in, Kiryu?\nThat's a bad habit.",
-        "Here's a better one. Be my eyes in\nthe Kazama family. Tell me what they\ndo, and this goes away.", "You'd keep all ten fingers. Maybe\neven move up.",
-        "Kiryu: You want me to sell out the\nman who raised me?", "...Find someone else.", "Kuze: Your funeral, kid."] },
-      { walk: "kiryu", to: [20, 446], speed: 1.4 }
-    ], { say });
-    show("world");
-    await say(["Kiryu's pager beeps. A payphone:", "Nishiki: Kiryu! Where've you been?\nGet to the Kazama office, now.\nKashiwagi-san's waiting."]);
-    f.y0Step = "kazama"; f.kamurochoWaypoint = "kazama";
-    await say(["The Kazama Family Office, off\nShichifuku Street, is marked on your\nMap."]);
-    await persist();
-  }
-  // The Kazama family's office: Kashiwagi, Kazama's captain, on the lot and the trap the Dojima family's in; Kiryu
-  // chooses to leave the family and carry it alone, and Kashiwagi's fist. Nishiki drives him to headquarters (the
-  // orphanage, remembered); the fight up through it, Yoneda and Kuze; Dojima comes; and Kiryu, out, in the rain.
-  async function kamurochoKazama() {
-    const f = player.flags;
-    await kmrCutscene([
-      { scene: "kazama", cam: [400, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
-      { actor: "nishiki", ...Y0_NISHIKI, x: 300, y: 452, face: "right" },
-      { actor: "kashiwagi", sprite: "kashiwagi", x: 560, y: 436, face: "left" },
-      { walk: "kiryu", to: [400, 446] },
-      { say: ["Kashiwagi: Sit, Kiryu. You need to\nunderstand what you've walked into.",
-        "That lot is barely bigger than a\ndesk. With the bubble on, it's worth\nnear a billion yen.",
-        "Dojima's poured money into buying\nup everything round it. Without the\nlot, all of that's wasted.", "And now it's sealed off as a crime\nscene. The boss is trapped.",
-        "Kuze sees his chance. Pin it on you,\nshame Kazama-san, and take his seat.", "Kiryu: Then it ends with me.",
-        "I'll leave the family. Whatever\nhappens to me won't touch Kazama-san.", "Nishiki: Kiryu, no!"] },
-      { walk: "kashiwagi", to: [440, 436], speed: 2 }, { hit: "kiryu" },
-      { say: ["Kashiwagi: You think that's loyalty?\nRunning off to bleed alone?", "...Damn it. You're as stubborn as\nhe is.",
-        "Kiryu: I'm going to headquarters to\ntell them myself.", "Nishiki: Then I'm driving you."] },
-      { fade: "out" },
-      { say: ["In Nishiki's car, Kiryu remembers.", "The Sunflower orphanage. Two boys\nwho swore they'd be yakuza like\nKazama-san.",
-        "Kazama beat them both bloody that\nday, to show them what the life\nreally costs.", "They joined anyway. Together."] }
-    ], { say });
-    await kmrPlace({ scene: "dojima", x: 120, y: 446, facing: "right" });
-    show("world");
-    await say(["Dojima Family HQ.", "Kuze's voice comes over the\nintercom: \"Nobody leaves till he's\ndead. Get him!\""]);
-    await y0Fight(["grunt", "grunt", "grunt"], "Dojima men pour down the stairs!");
-    await y0Fight(["grunt", "thug", "knife"], "More of them, on the next floor!");
-    await y0Fight(["yoneda"], "Yoneda blocks the way to the top\nfloor!");
-    await kmrCutscene([
-      { scene: "dojima", cam: [400, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 160, y: 446, face: "right" },
-      { actor: "kuze", sprite: "kuze", x: 500, y: 440, face: "left" },
-      { say: ["The top floor.", "Kuze: Still standing? Then I'll put\nyou down myself."] }
-    ], { say });
-    show("world");
-    await y0Fight(["kuze"], "Daisaku Kuze wants to fight!");
-    await kmrCutscene([
-      { scene: "dojima", cam: [400, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 160, y: 446, face: "right" },
-      { actor: "kuze", sprite: "kuze", x: 460, y: 452, face: "left" },
-      { actor: "dojima", sprite: "dojima", walk: "dojima_walk", x: 760, y: 436, face: "left" },
-      { actor: "awano", sprite: "awano", x: 820, y: 446, face: "left" },
-      { actor: "shibusawa", sprite: "shibusawa", x: 860, y: 436, face: "left" },
-      { walk: "dojima", to: [600, 436] }, { walk: "awano", to: [660, 446] }, { walk: "shibusawa", to: [710, 436] },
-      { say: ["Dojima: What is this mess in my\nhouse?", "Awano: Kuze put the word out to have\nKiryu killed, boss. Without asking\nyou.",
-        "Shibusawa: Our men are lying on every\nfloor.", "Dojima: Kuze.", "Kuze: ...I overstepped. I'll answer\nfor it, boss.",
-        "Kuze takes out a short blade and\ncuts off the tip of his own little\nfinger.", "Dojima: Kiryu. You're finished in\nthis family. Get out.",
-        "And Kazama answers for his man. The\nshame is his."] },
-      { fade: "out" },
-      { scene: "showa", cam: [1440, 440] },
-      { rain: true },
-      { actor: "kiryu", ...Y0_KIRYU, x: 1380, y: 452, face: "right" },
-      { fade: "in" },
-      { say: ["11:28 PM. Rain.", "Kiryu sits slumped against a wall,\nalone, soaked through."] },
-      { actor: "tachibana", sprite: "tachibana", walk: "tachibana_walk", x: 1600, y: 446, face: "left" },
-      { walk: "tachibana", to: [1450, 446] },
-      { say: ["A man with an umbrella, and a black\nglove over a hand that isn't real.", "Tachibana: Kazuma Kiryu. I've been\nhoping to meet you.",
-        "My name is Tachibana. Will you come\nwith me? I think we can help each\nother.", "End of Chapter 1: Bound by Oath."] },
-      { fade: "out" },
-      { rain: false }
-    ], { say });
-    f.y0Step = "ch2";
-    await kamurochoCh2();
-  }
-  // Yakuza 0's second chapter, The Real Estate Broker in the Shadows, scene by scene as the game plays it, in this
-  // game's own words. Its steps (flags.y0Step), each next place flagged on the Map:
-  //   "ch2"           Tachibana's penthouse, the morning after the rain: a shower, his offer, Kiryu turns it down
-  //   "c2-kazama"     outside the Kazama family's office on Shichifuku Street: Nishiki, a word for Kashiwagi
-  //   "c2-hotels"     the Hotel District: Mr. Shakedown (a fight); then Kiryu's flat, and Nishiki's news
-  //   "c2-tatsu"      the Champion District, the next day: Miss Tatsu, the debt collector, Bacchus, an ambush (a fight)
-  //   "c2-blend"      Cafe Blend, on Nakamichi Street: a Jinsei family man after his money (a fight), the owner's story
-  //   "c2-hakua"      the Namase Bar in the Hakua Building: its last tenant, Oda's offer; a homeless man's warning
-  //   "c2-park"       Senryo Avenue by West Park: the men who work for Tachibana, a round of drinks, the next target
-  //   "c2-champion"   the Champion District: its people (a fight), and Oda's invitation
-  //   "c2-penthouse"  Tachibana Real Estate: the men in the lobby (a fight), Oda (a fight), Tachibana and the watch
-  //   "ch3"           the third chapter is Majima's, in Sotenbori: not in this game yet
-  const Y0_TACHIBANA = { sprite: "tachibana", walk: "tachibana_walk" };
-  async function kamurochoCh2() {
-    const f = player.flags;
-    await kmrCutscene([
-      { fade: "out" },
-      { scene: "penthouse", cam: [400, 440] },
-      { rain: false },
-      { actor: "kiryu", ...Y0_KIRYU, x: 220, y: 446, face: "right" },
-      { actor: "tachibana", ...Y0_TACHIBANA, x: 520, y: 440, face: "left" },
-      { fade: "in" },
-      { say: ["Chapter 2: The Real Estate Broker\nin the Shadows.", "Tachibana's penthouse. Kiryu's had a\nhot shower, and his suit's back,\ndry and pressed.",
-        "Tachibana: Better? I'm Tetsu\nTachibana. I run a real estate\ncompany.", "Kiryu: ...You know my name. What else\ndo you know?",
-        "Tachibana: The Sunflower orphanage.\nKazama. Last night, at headquarters.", "I want the Empty Lot, Kiryu-san. And\nI think you'd be useful in getting it.",
-        "Kiryu: A stranger pulls me out of the\nrain with a job ready. That's too\nneat.", "I'll pass.",
-        "Tachibana: As you like. Keep my\ncard, though. You'll want it."] },
-      { fade: "out" }
-    ], { say });
-    f.y0Step = "c2-kazama"; f.kamurochoWaypoint = "kazama";
-    await kmrPlace({ scene: "showa", x: 1460, y: 440, facing: "down" });
-    show("world");
-    await say(["The Kazama Family Office, off\nShichifuku Street, is marked on your\nMap."]);
-    await persist();
-  }
-  async function kamurochoCh2Step(step) {
-    const f = player.flags, here = kmrHere() || { x: 600 }, x = Math.max(200, Math.min(1100, here.x));
-    const next = async (st, wp, text) => { f.y0Step = st; f.kamurochoWaypoint = wp; show("world"); if (text) await say(text); await persist(); };
-    if (step === "c2-kazama") {
-      await kmrCutscene([
-        { scene: "shichifuku", cam: [620, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x: 520, y: 446, face: "right" },
-        { actor: "kashiwagi", sprite: "kashiwagi", x: 660, y: 436, face: "left" },
-        { say: ["Kashiwagi comes out of the office\nand drives off. He doesn't see\nKiryu."] },
-        { gone: "kashiwagi" },
-        { actor: "nishiki", ...Y0_NISHIKI, x: 660, y: 446, face: "left" },
-        { walk: "nishiki", to: [580, 446] },
-        { say: ["Nishiki: Kiryu! Get in here, they're\nall worried sick.", "Kiryu: I can't. I'm not in the\nfamily any more. I'd only bring them\ntrouble.",
-          "Tell Kashiwagi-san I'm alright. And\ncome by my place tonight.", "Nishiki: ...Fine. Tonight, then."] }
-      ], { say });
-      return next("c2-hotels", "hotels", ["On the way home, Kiryu cuts through\nthe Hotel District."]);
-    }
-    if (step === "c2-hotels") {
-      await kmrCutscene([
-        { scene: "hotels", cam: [x + 120, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-        { actor: "egashira", sprite: "shakedown", walk: "shakedown_walk", x: x + 320, y: 446, face: "left" },
-        { walk: "egashira", to: [x + 140, 446] },
-        { say: ["Big man: You. Wallet. Hand it over\nand you walk away.", "Kiryu: Not tonight."] }
-      ], { say });
-      show("world");
-      await y0Fight(["shakedown"], "Mr. Shakedown wants your wallet!");
-      await kmrCutscene([
-        { scene: "hotels", cam: [x + 120, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-        { actor: "egashira", sprite: "shakedown", walk: "shakedown_walk", x: x + 140, y: 446, face: "left" },
-        { say: ["Egashira: Ngh... I'll train harder.\nNext time, you're mine!"] },
-        { walk: "egashira", to: [x + 420, 446], speed: 2.4 }, { gone: "egashira" },
-        { actor: "suit", sprite: "salaryman_idle", x: x - 120, y: 440, face: "right" },
-        { walk: "suit", to: [x - 50, 440] },
-        { say: ["Businessman: You beat Mr. Shakedown!\nThey say he's not the only one, you\nknow. One in every city.", "Watch your wallet."] },
-        { fade: "out" },
-        { scene: "apartment", cam: [400, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x: 340, y: 446, face: "right" },
-        { actor: "nishiki", ...Y0_NISHIKI, x: 440, y: 452, face: "left" },
-        { fade: "in" },
-        { say: ["Kiryu's flat. Instant ramen and a\ncan of beer each.", "Nishiki: Bad news. Toko Credit's\npresident is dead. Shot.",
-          "Everyone's saying Kuze shut him up.", "Kiryu: Because he talked to me.", "Nishiki: And Tachibana Real Estate...\nthey're no joke, Kiryu.",
-          "They've pushed Tojo men out of\nbuildings. Nobody knows who's behind\nthem.", "Kiryu: Then I'll find out myself."] },
-        { fade: "out" }
-      ], { say });
-      await kmrPlace({ scene: "hotels", x: 640, y: 440, facing: "down" });
-      return next("c2-tatsu", "champion", ["The next day.", "The Champion District is marked on\nyour Map."]);
-    }
-    if (step === "c2-tatsu") {
-      await kmrCutscene([
-        { scene: "champion", cam: [x + 120, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-        { actor: "tatsu", sprite: "clubgoer", x: x + 220, y: 440, face: "left" },
-        { actor: "mark", sprite: "drunk_idle", x: x + 160, y: 448, face: "right" },
-        { hit: "mark" },
-        { say: ["A woman puts a grown man on the\nground with one move and takes what\nhe owes.", "Miss Tatsu: Pay on time next time,\nand we won't have to do this."] },
-        { gone: "mark" },
-        { actor: "bacchus", sprite: "bacchus", x: x - 120, y: 440, face: "right" },
-        { walk: "bacchus", to: [x - 50, 440] },
-        { say: ["Bacchus: Magnificent! Boy, that's Miss\nTatsu. Learn from her and you'll be\ntwice the fighter."] },
-        { actor: "t1", sprite: "punk", x: x + 420, y: 446, face: "left" },
-        { actor: "t2", sprite: "punk", x: x + 460, y: 452, face: "left" },
-        { say: ["Two men creep up behind her with\nclubs.", "Kiryu: Behind you!"] }
-      ], { say });
-      show("world");
-      await y0Fight(["punk", "punk", "thug"], "The ambushers turn on Kiryu!");
-      await kmrCutscene([
-        { scene: "champion", cam: [x + 120, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-        { actor: "tatsu", sprite: "clubgoer", x: x + 220, y: 440, face: "left" },
-        { actor: "bacchus", sprite: "bacchus", x: x - 50, y: 440, face: "right" },
-        { say: ["Miss Tatsu: Not bad. I train down at\nthe pier. Come by if you want to\nlearn to fight properly.",
-          "Bacchus: And then, the championship!", "Kiryu: Maybe the training. Not the\nchampionship."] }
-      ], { say });
-      return next("c2-blend", "blend", ["Kiryu starts asking around about\nTachibana Real Estate.", "Cafe Blend, on Nakamichi Street, is\nmarked on your Map."]);
-    }
-    if (step === "c2-hakua") {
-      await kmrCutscene([
-        { scene: "namase", cam: [400, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
-        { actor: "owner", sprite: "salaryman_idle", x: 460, y: 436, face: "left" },
-        { walk: "kiryu", to: [340, 446] },
-        { say: ["The Namase Bar. Closed, but the\ndoor's open. A baby cries behind a\ncurtain.",
-          "Owner: We live here now, my wife,\nmy kid and me. Last ones in the\nbuilding.", "The Jinsei family used to lean on\nus. Then Tachibana drove them off.",
-          "Now Tachibana sends homeless men to\nbang on the walls all night, to make\nus give up."] },
-        { actor: "oda", sprite: "oda", x: 20, y: 446, face: "right" },
-        { walk: "oda", to: [220, 446], speed: 1.6 },
-        { face: "kiryu", dir: "left" },
-        { say: ["Oda: Evening. Tachibana Real Estate.\nHere's money to move. Generous, too:\nit came off the Jinsei family.",
-          "Owner: I'm not leaving.", "Oda throws the bundle of notes in\nthe owner's face.", "Kiryu: Pick it up. And say that\nagain, politely.",
-          "Oda: Kazuma Kiryu. Careful whose\nbusiness you get into.", "Oda: We'll talk again."] },
-        { walk: "oda", to: [-30, 446], speed: 1.6 }, { gone: "oda" },
-        { say: ["Owner: ...I'm staying. But I'll keep\nthe money. My kid needs it more\nthan they do."] },
-        { fade: "out" },
-        { scene: "shichifuku", cam: [1200, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x: 1290, y: 440, face: "left" },
-        { actor: "bum", sprite: "kamoji", x: 1180, y: 446, face: "right" },
-        { fade: "in" },
-        { say: ["Homeless man: You're asking about\nTachibana? Don't.", "He's worse than any yakuza. The Jinsei\nboss was skimming from the Tojo\nClan...",
-          "...and somebody told them. They took\nhis finger. Who do you think told\nthem?", "Some of us work for Tachibana. They\nsleep in the park off Senryo Avenue."] }
-      ], { say });
-      await kmrPlace({ scene: "shichifuku", x: 1290, y: 440, facing: "down" });
-      return next("c2-park", "senryo", ["Senryo Avenue, by West Park, is\nmarked on your Map."]);
-    }
-    if (step === "c2-park") {
-      await kmrCutscene([
-        { scene: "senryo", cam: [x + 120, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-        { actor: "h1", sprite: "kamoji", x: x + 160, y: 446, face: "left" },
-        { actor: "h2", sprite: "loiterer", x: x + 220, y: 440, face: "left" },
-        { say: ["Homeless men, round a fire by the\npark.", "Homeless man: Talk? Talking's thirsty\nwork. A beer. Sake. Shochu. Scotch.\nAnd champagne!",
-          "Kiryu: ...Champagne."] }
-      ], { say });
-      show("world");
-      const cost = 6000;
-      if (player.money >= cost) { player.money -= cost; await say("Kiryu buys a round from the\nconvenience stores and the discount\nstore: ¥6,000."); }
-      else await say("Kiryu scrapes together what he can\nfor a round.");
-      await kmrCutscene([
-        { scene: "senryo", cam: [x + 120, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-        { actor: "h1", sprite: "kamoji", x: x + 160, y: 446, face: "left" },
-        { actor: "h2", sprite: "loiterer", x: x + 220, y: 440, face: "left" },
-        { say: ["Homeless man: Champagne! You're alright.", "Yeah, we work for Tachibana. The Tojo\nClan too, when they're paying.",
-          "We make noise, we scare tenants. And\nthe next place on Tachibana's list...", "...is the Champion District."] }
-      ], { say });
-      return next("c2-champion", "champion", ["The Champion District is marked on\nyour Map."]);
-    }
-    if (step === "c2-champion") {
-      await kmrCutscene([
-        { scene: "champion", cam: [x + 120, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-        { actor: "r1", sprite: "drunk_idle", x: x + 180, y: 446, face: "left" },
-        { actor: "r2", sprite: "thug_idle", x: x + 240, y: 440, face: "left" },
-        { say: ["Kiryu: I'm asking about Tachibana Real\nEstate.", "Bar owner: A Tojo man, sniffing\naround here? Get him!"] }
-      ], { say });
-      show("world");
-      await y0Fight(["drunk", "punk", "drunk"], "The district's people go for Kiryu!");
-      await kmrCutscene([
-        { scene: "champion", cam: [x + 120, 440] },
-        { actor: "kiryu", ...Y0_KIRYU, x, y: 446, face: "right" },
-        { actor: "r1", sprite: "drunk_idle", x: x + 180, y: 446, face: "left" },
-        { say: ["Bar owner: You're not Tojo? ...Sorry.\nTachibana's the one keeping the\nyakuza off us."] },
-        { actor: "oda", sprite: "oda", x: x + 400, y: 446, face: "left" },
-        { walk: "oda", to: [x + 240, 446] },
-        { say: ["Oda: Kiryu-san. My boss would like to\nsee you. Where you met him.",
-          "He has his policies. People who've\nlived here all their lives have a\nright to stay. We just make sure of\nit."] },
-        { walk: "oda", to: [x + 460, 446] }, { gone: "oda" }
-      ], { say });
-      return next("c2-penthouse", "tachibana", ["Tachibana Real Estate, on Showa\nStreet, is marked on your Map."]);
-    }
-  }
-  // Cafe Blend, on Nakamichi Street: a Jinsei family man shaking down its owner; the owner, on Tachibana.
-  async function kamurochoBlend() {
-    const f = player.flags;
-    if (f.y0Step !== "c2-blend") { await say(["Cafe Blend. The coffee smells good."]); return; }
-    await kmrCutscene([
-      { scene: "nakamichi", cam: [200, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 280, y: 446, face: "left" },
-      { actor: "owner", sprite: "loiterer", x: 80, y: 440, face: "right" },
-      { actor: "jinsei", sprite: "grunt_solid", x: 140, y: 446, face: "left" },
-      { say: ["Jinsei man: Protection money. This\nmonth's, same as always.", "Owner: Protection? Where were you when\nTachibana's people pushed us out?",
-        "Jinsei man: ...You. Are you one of\nTachibana's?", "Kiryu: No. But you're leaving."] }
-    ], { say });
-    show("world");
-    await y0Fight(["grunt"], "The Jinsei family man swings!");
-    await kmrCutscene([
-      { scene: "nakamichi", cam: [200, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 280, y: 446, face: "left" },
-      { actor: "owner", sprite: "loiterer", x: 80, y: 440, face: "right" },
-      { say: ["Owner: Tachibana bought our old place\nout from under us.", "They knew everything. My debts, my\nfamily, my regulars. Everything.",
-        "If you want to see how they work,\ngo to the Hakua Building on\nShichifuku Street.", "One tenant's still holding out."] }
-    ], { say });
-    f.y0Step = "c2-hakua"; f.kamurochoWaypoint = "namase";
-    await say(["The Hakua Building, on Shichifuku\nStreet, is marked on your Map."]);
-    await persist();
-  }
-  // Tachibana Real Estate, on Showa Street: the end of the second chapter (the men in the lobby, Oda, and
-  // Tachibana's plan and the watch); before that, a locked door. (A save from before Chapter 2 came in here:
-  // its opening.)
-  async function kamurochoTachibana() {
-    const f = player.flags;
-    if (f.y0Step === "ch2") return kamurochoCh2();
-    if (f.y0Step !== "c2-penthouse") {
-      await say(f.y0Step === "ch3" ? ["Oda: The boss is out. Kazama-san's\nwatch is in good hands, Kiryu-san."]
-        : ["Tachibana Real Estate. The blinds\nare down, and nobody answers."]);
-      return;
-    }
-    await say(["In the lobby, three of Tachibana's\nmen block the way.", "Man: Oda-san said to give you a\nproper welcome."]);
-    await y0Fight(["grunt", "grunt", "thug"], "Tachibana's men attack!");
-    await kmrCutscene([
-      { scene: "penthouse", cam: [400, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 60, y: 446, face: "right" },
-      { actor: "oda", sprite: "oda", x: 460, y: 446, face: "left" },
-      { walk: "kiryu", to: [300, 446] },
-      { say: ["Oda: Sorry about downstairs. I wanted\nto see what you're made of.", "Now let's see it up close."] }
-    ], { say });
-    await kmrPlace({ scene: "penthouse", x: 300, y: 446, facing: "right" });
-    show("world");
-    await y0Fight(["oda"], "Makoto Oda draws his baton!");
-    await kmrCutscene([
-      { scene: "penthouse", cam: [400, 440] },
-      { actor: "kiryu", ...Y0_KIRYU, x: 300, y: 446, face: "right" },
-      { actor: "oda", sprite: "oda", x: 460, y: 452, face: "left" },
-      { actor: "tachibana", ...Y0_TACHIBANA, x: 760, y: 440, face: "left" },
-      { walk: "tachibana", to: [560, 440] },
-      { say: ["Tachibana: That's enough, Oda.", "Kiryu-san. I owe you the truth. It\nwasn't chance that I found you.",
-        "Shintaro Kazama asked me to. Your\noyaji, from his prison cell. He wants\nus working together.",
-        "The Tojo Clan owns this town. I mean\nto change that. Watch."] },
-      { fade: "out" },
-      { say: ["Every light in Kamurocho goes out\nat once.", "...and then comes back on."] },
-      { fade: "in" },
-      { say: ["Tachibana: All of it, at the flick\nof a switch. That's what land is.\nPower.",
-        "And the Empty Lot is the switch that\nmatters most.", "Kazama-san gave me this for you.",
-        "A pocket watch. Inside its lid, an old\nphoto: a young Kiryu, a young Nishiki,\nand Kazama.", "Kiryu: ...Oyaji.",
-        "Kiryu: Alright, Tachibana. I'll work\nwith you.", "End of Chapter 2: The Real Estate\nBroker in the Shadows."] }
-    ], { say });
-    f.y0Step = "ch3"; f.kamurochoWaypoint = null;
-    await kmrPlace({ scene: "showa", x: 1460, y: 440, facing: "down" });
-    show("world");
-    await say(["Chapter 3 is Goro Majima's story, in\nSotenbori, Osaka. It isn't in this\ngame yet."]);
-    await persist();
-  }
-  async function kamurochoKaraoke() {
-    await say("Welcome to the karaoke box!\nPick a song and give it your all!");
-    const S = window.KARAOKE_SONGS, best = player.flags.karaoke = player.flags.karaoke || {};
-    for (;;) {
-      const v = await ask("Which song?", S.map((x, i) => ({ label: x.title + (best[x.id] != null ? "  (best " + best[x.id] + ")" : ""), value: i })).concat([back("Leave")]));
-      if (v === "back") break;
-      const song = S[v], back0 = { url: "assets/world/maps/Kmr_Heroine.png" };
-      await say(realmWrap("\u266a " + song.title + ", by " + song.by + ".\nPress each button as it reaches the ring!"));
-      Screen.say(""); clearMenu();
-      const img = Object.assign(new Image(), { src: back0.url });
-      const r = await Karaoke.play($("#overlay"), { song, frame: GameOptions.get().frame, back: img });
-      show("street");
-      music((window.WORLD_MAPS[player.location.map] || {}).music);
-      if (!r) { await say("You put the mic down."); continue; }
-      const was = best[song.id];
-      if (was == null || r.score > was) best[song.id] = r.score;
-      await say(realmWrap(r.score + " points! Rank " + r.rank + ". (" + r.great + " great, " + r.good + " good, " + r.miss + " missed; best combo " + r.combo + ")" +
-        (was != null && r.score > was ? " A new best!" : "")));
-      if (r.score >= 90 && !(player.flags.karaokePrize || {})[song.id]) {
-        (player.flags.karaokePrize = player.flags.karaokePrize || {})[song.id] = true;
-        const P = realmParty("yakuza");
-        P.items.staminan_spark = (P.items.staminan_spark || 0) + 1;
-        await fanfare("mus_obtain_item");
-        await say("Staff: What a voice! Here, on the\nhouse: a Staminan Spark!");
-      }
-      await persist();
-    }
-    await say("Come sing again!");
-  }
-  // Poppo's clerk: the realm's items (REALM_ITEMS), for your money.
-  // Poppo's counter: FireRed's Poké Mart buy screen (ui/shop-screen.js), the realm's items (a Pokémon item's picture
-  // standing in for each, REALM_ITEMS' icon) for the realm's party, the shop round you at its left.
-  async function kamurochoShop() {
-    await say("Clerk: Welcome to Poppo!");
-    const P = realmParty("yakuza"), I = window.REALM_ITEMS;
-    // (the street's screen, 336x224, as the 240x160 the shop screen shows a corner of)
-    const street = $("#street"), map = Object.assign(document.createElement("canvas"), { width: 240, height: 160 });
-    if (street) { const g = map.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(street, 0, 0, 240, 160); }
-    Screen.say("");
-    clearMenu();
-    await ShopScreen.open({
-      frame: GameOptions.get().frame,
-      items: Object.keys(I).map((id) => ({ id, name: I[id].name, price: I[id].price, desc: Ultimax.itemText(id), icon: I[id].icon })),
-      money: () => player.money,
-      inBag: (id) => P.items[id] || 0,
-      limit: (id) => ({ max: Math.max(0, 99 - (P.items[id] || 0)), why: "You can't carry any more of\nthose." }),
-      buy: (id, n) => {
-        Player.addMoney(player, -I[id].price * n);
-        P.items[id] = (P.items[id] || 0) + n;
-        persist();
-        return null;
-      },
-      map: { canvas: map, x: 136, y: 80 }
-    });
-    ShopScreen.close();
-    show("street");
-    await say("Clerk: Thank you! Come again!");
-  }
-  // Domino Square's fountain (and Clock Tower Square's): back through the portal to the Realm Hub, or off round the
-  // realm: Battle City's places (The Sacred Cards'), Domino City's and the world's (Reshef of Destruction's:
-  // tools/build-reshef.py).
-  const RESHEF_DOMINO = ["Clock Tower Square", "Domino High School", "Your House", "Domino Station", "Egypt Exhibition", "Domino Pier", "KaibaLand"];
-  async function dominoFountain() {
-    await say("The fountain's water shimmers with\na golden light.");
-    const SC = window.SACRED_CARDS, RD = window.RESHEF;
-    const groups = [{ label: "Battle City", areas: SC.areas }];
-    if (RD) {
-      groups.push({ label: "Domino City", areas: RD.areas.filter((a) => RESHEF_DOMINO.includes(a.title)) });
-      groups.push({ label: "Around the world", areas: RD.areas.filter((a) => !RESHEF_DOMINO.includes(a.title)) });
-    }
-    for (;;) {
-      const v = await ask("Where would you like to go?", [{ label: "The Realm Hub", value: "hub", className: "action" }]
-        .concat(groups.map((g, i) => ({ label: g.label, value: String(i), className: "action" })), [back()]));
-      if (v === "hub") { await voyage(HUB_YUGIOH_PORTAL, ["You step into the golden light…"], "se_warp_in"); return; }
-      const g = groups[+v];
-      if (!g) return;
-      const w = await ask(g.label + ": where to?", g.areas.map((a, i) => ({ label: a.title, value: String(i), className: "action" })).concat([back()]));
-      const a = g.areas[+w];
-      if (!a) continue;
-      await voyage({ map: a.map, x: a.x, y: a.y, facing: a.facing || "down" }, [g.label === "Around the world" ? "You set off on a long journey…" : "You set off across Domino City…"], "se_door");
-      return;
-    }
-  }
-  // (Somewhere with no way back of its own: back to its square.)
-  async function dominoBackToTown() {
-    const rd = /^RD_/.test(player.location.map) && window.RESHEF;
-    const to = rd ? Object.assign({ facing: "down" }, rd.areas.find((a) => a.title === "Clock Tower Square")) : window.SACRED_CARDS.arrive;
-    if (!(await confirm(rd ? "Head back to Clock Tower Square?" : "Head back to Domino Square?"))) return;
-    await voyage({ map: to.map, x: to.x, y: to.y, facing: to.facing || "down" }, ["You head back across Domino City…"], "se_door");
-  }
-  // ---------- Domino City's map ----------
-  //
-  // As in The Sacred Cards, you go from place to place in Domino City on its map screen, the game's own
-  // (tools/build-domino-map.py): the city from above, a red marker on each place, the gold cursor over the one you're
-  // on, and at the bottom its picture and name. Step through the Realm Hub's golden portal and it comes up, and so it
-  // does as you walk out of a place (its way out: the "Domino_WorldMap" steps, tools/build-domino-high.py). There are
-  // two places on it, Domino High and the Kame Game shop, each on one of the game's own markers' spots (x, y: the
-  // marker's corner, in pixels of the 240 by 160 map), and once Yugi has sent you there (player.flags.kaibaStory),
-  // Kaiba Corporation, The Sacred Cards' (on a spot of this game's own); back to the Realm Hub is a choice below the
-  // map. (`maps`: the maps that count as being at the place.)
-  const DOMINO_PLACES = [
-    { map: "DH_00", name: "Domino High School", x: 44, y: 57, arrive: { x: 7, y: 8, facing: "up" }, maps: /^DH_/ },
-    { map: "RD_06", name: "Kame Game Shop", x: 106, y: 69, arrive: { x: 13, y: 6, facing: "left" }, maps: /^RD_0[67]$/ },
-    { map: "SC_22", name: "Kaiba Corporation", x: 164, y: 44, arrive: { x: 7, y: 8, facing: "up" }, maps: /^SC_(22|23|40|41)$/, flag: "kaibaStory" }
-  ];
-  // (the places on the map now, and the one you're at)
-  const dominoPlaces = (here) => DOMINO_PLACES.filter((p) => !p.flag || player.flags[p.flag] || p.map === here);
-  // (The arrows go to the nearest place that way, A sets off, B stays; "hub" back to the Realm Hub.)
-  async function dominoMap(here, fromHub) {
-    const PLACES = dominoPlaces(here);
-    let at = Math.max(0, PLACES.findIndex((p) => p.map === here));
-    const spot = (x, y) => "left:" + (x / 2.4) + "%;top:" + (y / 1.6) + "%";
-    show("scene");
-    clearMenu();
-    Screen.say("");
-    scene.innerHTML = '<div class="town-map domino-map"><img class="tm-map" src="assets/town-map/domino.png" alt="Map of Domino City">' +
-      PLACES.map((p) => '<img class="dm-marker" src="assets/town-map/domino-marker.png" alt="" style="' + spot(p.x, p.y) + '">').join("") +
-      '<img class="dm-cursor" src="assets/town-map/domino-cursor.png" alt="">' +
-      '<div class="dm-inset"><img class="dm-pic" alt=""><img class="dm-frame" src="assets/town-map/domino-frame.png" alt=""></div>' +
-      '<div class="dm-name"></div></div>';
-    const draw = () => {
-      const p = PLACES[at];
-      scene.querySelector(".dm-cursor").setAttribute("style", spot(p.x, p.y - 10));
-      scene.querySelector(".dm-pic").src = "assets/town-map/domino-" + p.map + ".png";
-      scene.querySelector(".dm-name").textContent = p.name;
-    };
-    draw();
-    let picked = null;
-    const choose = new Promise((resolve) => { picked = resolve; });
-    // (Down from the lowest place goes to the choices below the map, where A and B are the menu's; up, back to it.)
-    const menuBox = document.getElementById("menu");
-    const onKey = (e) => {
-      const onChoice = menuBox.contains(document.activeElement) && document.activeElement.tagName === "BUTTON";
-      if (onChoice) {
-        if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); document.activeElement.blur(); }
-        return;
-      }
-      if (["z", "Z", " ", "Enter"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); sfx("se_select"); picked(PLACES[at]); return; }
-      if (["x", "X", "Escape"].includes(e.key)) { e.preventDefault(); e.stopPropagation(); picked(null); return; }
-      const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
-      if (!d) return;
-      e.preventDefault(); e.stopPropagation();
-      const best = nearestPlace(PLACES, at, d);
-      if (best >= 0) { at = best; sfx("se_select"); draw(); }
-      else if (e.key === "ArrowDown") { const first = menuBox.querySelector("button"); if (first) first.focus(); }
-    };
-    document.addEventListener("keydown", onKey, true);
-    // (No choices below it: B closes it. The way back to the Realm Hub is the Time Machine under the manhole by the
-    // Kame Game shop.)
-    void fromHub;
-    const r = await choose;
-    clearMenu();
-    document.removeEventListener("keydown", onKey, true);
-    return r === "hub" || (r && r.map !== here) ? r : null;
-  }
-  async function dominoTravel() {
-    const loc = player.location, m = window.WORLD_MAPS[loc.map], from = DOMINO_PLACES.find((p) => p.maps.test(loc.map));
-    const fromHub = (m || {}).realm === "hub";
-    const to = await dominoMap(from ? from.map : null, fromHub);
-    show("world");
-    await Overworld.resume();
-    if (!to) { if (!fromHub) await stepBackIn(loc, m); return; }
-    if (to === "hub") {
-      await voyage(HUB_YUGIOH_PORTAL, ["You step into the golden light…", "…and come out in the Realm Hub."], "se_warp_in");
-      return;
-    }
-    if (fromHub) {
-      await voyage(Object.assign({ map: to.map }, to.arrive), ["You step into the golden light…", "The world turns inside out…"], "se_warp_in");
-      if (!player.flags.dominoVisited) await say(["You've arrived in Domino City,\nin the Yu-Gi-Oh! realm!", "Your Bag stays behind in the\nPokémon realm. Here you have\na bag of this realm's own."]);
-      player.flags.dominoVisited = true;
-      await persist();
-      return;
-    }
-    await Overworld.fadeToBlack();
-    player.location = Object.assign({ map: to.map }, to.arrive);
-    await Overworld.teleport(player.location);
-    music(window.WORLD_MAPS[to.map].music);
-    await persist();
-  }
-  // The manhole in the Kame Game shop's street, down to the room under it (tools/build-time-machine.js), where the
-  // Time Machine takes you back to the Realm Hub; and the ladder back up.
-  async function dominoManhole(down) {
-    const to = window.TIME_MACHINE;
-    if (down) {
-      await say("It's a manhole. Its cover's loose,\nand there's a ladder going down…");
-      if (!(await confirm("Climb down the ladder?"))) return;
-    } else if (!(await confirm("Climb back up to the street?"))) return;
-    await Overworld.fadeToBlack();
-    sfx("se_exit");
-    player.location = Object.assign({}, down ? to.under : to.street);
-    await Overworld.teleport(player.location);
-    music(window.WORLD_MAPS[player.location.map].music);
-    await persist();
-  }
-  async function dominoTimeMachine() {
-    await say("It's the Time Machine! It hums\nsoftly in the dark.");
-    if (!(await confirm("Travel back to the Realm Hub?"))) return;
-    await voyage(window.TIME_MACHINE.hub, ["The Time Machine whirs to life…", "Domino City fades away…", "…and you come out in the Realm Hub."], "se_warp_in");
-  }
-  // The Kame Game shop: Yugi's grandpa, Solomon Muto, on GX Duel Academy's shop screen (ui/bag-screen.js's CardShop).
-  // He sells the booster packs your duelist level has opened (window.YUGIOH_SETS, PACK_LEVEL), 300 a pack (game/bag.js's price), into your bag,
-  // opened from the Trunk's Inventory, their cards into your Trunk; he dismantles your spare cards (those not in your deck, several at once) for tokens of their
-  // rarity (window.YUGIOH_RARITY: Common, Rare, Super Rare, Ultra Rare, Secret Rare), and trades any card whose
-  // pack you've opened (only those are listed) for TOKENS_PER_CARD tokens of its rarity. (Packs of the old sets still in your bag he swaps for Pack Tokens.)
-  const PACK_SETS = ["darkhole", "spellbinding", "redeyes", "darkmagician", "trihorned", "blueeyes", "raigeki", "traphole", "necrofear", "skull", "jinzo"],
-    PACK_CARDS = 9, TOKENS_PER_CARD = 3, TOKEN_UP = { c: 50, r: 15, s: 10, u: 5 };
-  // (the duelist level each pack's sold from: the weaker Spells', Traps' and monsters' from the start; the rest as you
-  // rise, the stronger Spells and Traps with Blue-Eyes White Dragon's)
-  const PACK_LEVEL = { darkhole: 1, spellbinding: 1, redeyes: 1, darkmagician: 5, trihorned: 10, raigeki: 15, traphole: 15, blueeyes: 20, necrofear: 25, skull: 30, jinzo: 35 };
-  // (the packs before these, a save's: each a Pack Token, for one of these)
-  const OLD_PACK_ITEMS = ["legend-of-blue-eyes-pack", "metal-raiders-pack", "spell-ruler-pack", "pharaohs-servant-pack", "labyrinth-of-nightmare-pack",
-    "ultimate-great-moth-pack", "gate-guardian-pack", "des-gardius-pack", "dark-ruler-ha-des-pack", "gilford-pack", "berserk-dragon-pack",
-    "dark-magician-of-chaos-pack", "horus-pack", "blue-eyes-shining-pack", "wicked-dreadroot-pack"];
-  // ---------- Your duelist level ----------
-  // EXP after every duel (dominoDuel): 100 for beating Yugi, Téa, Joey or Tristan, 60 for one of the pupils, 25 for a
-  // loss; each level takes 10 more than the one before (50 from level 1 to 2). It opens the Kame Game shop's packs
-  // (PACK_LEVEL); the Trunk's Inventory shows it.
-  const expToNext = (lv) => 50 + 10 * (lv - 1);
-  function duelistLevel(y) {
-    let lv = 1, e = y.exp || 0;
-    while (lv < 99 && e >= expToNext(lv)) { e -= expToNext(lv); lv++; }
-    return { lv, into: e, next: expToNext(lv) };
-  }
-  const packsSold = (y) => PACK_SETS.filter((k) => duelistLevel(y).lv >= PACK_LEVEL[k]);
-  const RARITY_NAME = { c: "Common", r: "Rare", s: "Super Rare", u: "Ultra Rare", x: "Secret Rare" };
-  const rarityOf = (no) => window.YUGIOH_RARITY[no] || "c";
-  // (each card's pack, by number: its Duelist Level unlocks trading for it too)
-  let packIndex = null;
-  function packOf(no) {
-    if (!packIndex) {
-      packIndex = {};
-      for (const k of PACK_SETS) for (const [field, names] of Object.entries(window.YUGIOH_SETS[k]))
-        if (Array.isArray(names)) for (const n of names) { const m = window.DuelMonsters.numberOf(n); if (m && !packIndex[m]) packIndex[m] = k; }
-    }
-    return packIndex[no];
-  }
-  // A pack's nine cards: eight Commons and a Rare, or now and then a Super (1 in 6), an Ultra (1 in 12) or a Secret
-  // Rare (1 in 72) instead, as the sets' packs were.
-  function pullPack(set, rng) {
-    const pick = (a) => a[Math.floor(rng() * a.length)];
-    const out = [];
-    for (let j = 0; j < PACK_CARDS - 1; j++) out.push(pick(set.common));
-    const r = rng();
-    out.push(pick(r < 1 / 72 && set.secret.length ? set.secret : r < 1 / 12 && set.ultra.length ? set.ultra : r < 1 / 4 && set.super.length ? set.super : set.rare));
-    return out;
-  }
-  // (cards into your Trunk, each marked NEW if you had none)
-  function gainCards(nos) {
-    const y = yugioh();
-    return nos.map((no) => { const isNew = !(y.trunk[no] > 0); y.trunk[no] = (y.trunk[no] || 0) + 1; return { no, isNew }; });
-  }
-  function setCompletion(key) {
-    const set = window.YUGIOH_SETS[key], y = yugioh(), DM = window.DuelMonsters;
-    const all = ["common", "rare", "super", "ultra", "secret"].reduce((a, k) => a.concat(set[k]), []).map((n) => DM.numberOf(n)).filter(Boolean);
-    return all.length ? Math.floor(100 * all.filter((no) => y.trunk[no] > 0).length / all.length) : 0;
-  }
-  function openPacks(key, n) {
-    const set = window.YUGIOH_SETS[key], DM = window.DuelMonsters, packs = [];
-    for (let k = 0; k < n; k++) packs.push(gainCards(pullPack(set, Math.random).map((name) => DM.numberOf(name)).filter(Boolean)));
-    return packs;
-  }
-  async function kameGameShop() {
-    const y = yugioh(), C = window.YUGIOH_CARDS.cards;
-    y.tokens = y.tokens || {};
-    const price = Bag.price(window.YUGIOH_SETS.darkhole.item) || 300;
-    Screen.say(""); clearMenu();
-    CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
-    if (!y.gotPackTokens) {
-      // (the first time: 10 Pack Tokens, a booster pack of your choice each, to build your first deck from)
-      await CardShop.say(["Grandpa: Welcome to the Kame Game\nshop! I'm Solomon Muto, Yugi's\ngrandpa.", "So you want to be a duelist? Then\nyou'll need a deck of your own!",
-        "Here, take these: 10 Pack Tokens.\nTrade them in for any booster packs\nyou like, one pack a token.", player.name + " got 10 Pack Tokens!",
-        "Open your packs from your Trunk's\nInventory, then build a deck of 40\ncards or more. Good luck!",
-        "Duel, and your Duelist Level will\nrise. The higher it is, the more\npacks I'll have for you!"]);
-      y.gotPackTokens = true; y.packTokens = (y.packTokens || 0) + 10;
-      await persist();
-    } else await CardShop.say(["Grandpa: Welcome back to the Kame\nGame shop!"]);
-    for (;;) {
-      const options = ["Buy booster packs.", "Dismantle cards.", "Trade in tokens."].concat(y.packTokens ? ["Trade in Pack Tokens."] : []);
-      const i = await CardShop.choose("Grandpa: What'll it be?", options);
-      if (i < 0) break;
-      if (i === 3) {
-        // (Pack Tokens for packs: a token a pack, into your bag, to open from your Trunk's Inventory)
-        await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => y.packTokens || 0, price: 1, perPack: PACK_CARDS, comp: setCompletion, trunk: () => y.trunk,
-          buy: (basket) => {
-            const n = basket.reduce((a, b) => a + b.n, 0);
-            if ((y.packTokens || 0) < n) return { error: "Grandpa: You haven't that many\nPack Tokens." };
-            y.packTokens -= n;
-            for (const b of basket) Player.addItem(player, window.YUGIOH_SETS[b.key].item, b.n);
-            return { message: "Grandpa: Here you are, " + n + " pack" + (n > 1 ? "s" : "") + "!\nOpen them from your Trunk's\nInventory." };
-          } });
-        CardShop.setup({ money: () => player.money, sets: window.YUGIOH_SETS });
-        await persist();
-      } else if (i === 0) {
-        await CardShop.picker({ sets: window.YUGIOH_SETS, order: packsSold(y), money: () => player.money, price, perPack: PACK_CARDS, comp: setCompletion, trunk: () => y.trunk,
-          buy: (basket) => {
-            const n = basket.reduce((a, b) => a + b.n, 0);
-            if (player.money < n * price) return { error: "Grandpa: You can't quite afford that." };
-            Player.addMoney(player, -n * price);
-            // (into your bag: every pack opens from the Trunk's Inventory)
-            for (const b of basket) Player.addItem(player, window.YUGIOH_SETS[b.key].item, b.n);
-            return { message: "Grandpa: Thank you! Here " + (n > 1 ? "are your " + n + " packs" : "is your pack") + ".\nOpen " + (n > 1 ? "them" : "it") + " from your Trunk's\nInventory." };
-          } });
-        await persist();
-      } else if (i === 1) {
-        await CardShop.say("Grandpa: Dismantle the cards you\ndon't need, and you'll get a token\nof the card's rarity for each.");
-        await CardShop.say("(SELECT sorts your cards.)");
-        CardShop.close();
-        // (a card's copies in use: as many as the deck with the most of it has)
-        const inDeck = (no) => Math.max(...y.decks.map((d) => d.main.filter((m) => m === no).length + d.side.filter((m) => m === no).length));
-        await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, mode: "dismantle", title: "Dismantle", tokens: () => y.tokens,
-          action: (no) => {
-            const spare = (y.trunk[no] || 0) - inDeck(no), r = rarityOf(no);
-            if (spare <= 0) return { error: "That card's in one of your decks.\nTake it out first to dismantle it." };
-            const take = (n) => { y.trunk[no] -= n; if (!y.trunk[no]) delete y.trunk[no]; y.tokens[r] = (y.tokens[r] || 0) + n; };
-            if (spare > 1) return { most: spare, many: () => "Dismantle how many?",
-              run: (n) => { take(n); return "You got " + n + " " + RARITY_NAME[r] + " Token" + (n > 1 ? "s" : "") + "!"; } };
-            return { ask: "Dismantle " + C[no][0] + "?\nYou'll get " + (r === "u" ? "an " : "a ") + RARITY_NAME[r] + " Token.",
-              run: () => { take(1); return null; } };
-          } });
-        await persist();
-      } else {
-        await CardShop.say("Grandpa: Bring me " + TOKENS_PER_CARD + " tokens of a\ncard's rarity, and the card's yours!");
-        await CardShop.say("(SELECT sorts the cards.)");
-        CardShop.close();
-        // (only the cards of the packs your Duelist Level has opened)
-        const opened = packsSold(y), tradeable = window.YUGIOH_CARDS.cards.map((c, no) => no).filter((no) => no && opened.includes(packOf(no)));
-        await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, deck: y.deck, mode: "trade", title: "Trade", tokens: () => y.tokens, only: tradeable,
-          action: (no) => {
-            const r = rarityOf(no);
-            if ((y.tokens[r] || 0) < TOKENS_PER_CARD) return { error: "You need " + TOKENS_PER_CARD + " " + RARITY_NAME[r] + " Tokens\nfor this card." };
-            return { ask: "Trade " + TOKENS_PER_CARD + " " + RARITY_NAME[r] + " Tokens\nfor " + C[no][0] + "?",
-              run: () => { y.tokens[r] -= TOKENS_PER_CARD; y.trunk[no] = (y.trunk[no] || 0) + 1; return null; } };
-          } });
-        await persist();
-      }
-    }
-    await CardShop.say("Grandpa: Come again! And may the\nheart of the cards guide you!");
-    CardShop.close();
-    show("world");
-    await persist();
-  }
-  // ---------- Your Duel Monsters cards ----------
-  //
-  // The Yu-Gi-Oh! realm's cards (window.YUGIOH_CARDS: Yu-Gi-Oh! GX Duel Academy's 1200, tools/build-gx-trunk.py):
-  // the ones you have (player.flags.yugioh.trunk: how many of each, by card number) and your decks, DECK_SLOTS of
-  // them as GX Duel Academy keeps several (flags.yugioh.decks: each { name, main deck with any Fusion Monsters,
-  // side deck }; flags.yugioh.deckSlot the one you duel with, y.deck), looked through and built in the Trunk
-  // (ui/bag-screen.js's TrunkScreen, GX Duel Academy's), from the START menu in the Yu-Gi-Oh! realm.
-  const DECK_SLOTS = 20;
-  function yugioh() {
-    const y = player.flags.yugioh = player.flags.yugioh || {};
-    y.trunk = y.trunk || {};
-    // (a save from before the slots: its one deck, and its name, the first)
-    if (!Array.isArray(y.decks)) y.decks = [y.deck && y.deck.main ? Object.assign({ name: y.deckName }, y.deck) : null];
-    delete y.deck; delete y.deckName;
-    for (let i = 0; i < DECK_SLOTS; i++) {
-      const d = y.decks[i] = y.decks[i] || {};
-      d.name = d.name || "Deck " + (i + 1); d.main = d.main || []; d.side = d.side || [];
-    }
-    y.deckSlot = Math.max(0, Math.min(DECK_SLOTS - 1, y.deckSlot | 0));
-    // (y.deck: the one you duel with; not saved, the slots are)
-    Object.defineProperty(y, "deck", { get: () => y.decks[y.deckSlot], configurable: true, enumerable: false });
-    // (packs from before the packs were rewritten, in this realm's bag: a Pack Token each)
-    const ygoBag = player.flags.bagRealm === "yugioh" ? player.bag : (player.flags.realmBags || {}).yugioh;
-    if (ygoBag) for (const it of OLD_PACK_ITEMS) if (ygoBag[it]) { y.packTokens = (y.packTokens || 0) + ygoBag[it]; delete ygoBag[it]; }
-    // (the six cards GX made up, not in the game: gone from your Trunk and decks if you had any)
-    const gone = (no) => window.YUGIOH_RARITY[no] === "-";
-    for (const no of Object.keys(y.trunk)) if (gone(+no)) delete y.trunk[no];
-    for (const d of y.decks) for (const k of ["main", "side"]) if (d[k].some(gone)) d[k] = d[k].filter((no) => !gone(no));
-    return y;
-  }
-  async function trunkScreen() {
-    const y = yugioh();
-    Screen.say("");
-    clearMenu();
-    // (its INVENTORY: your booster packs, in this realm's bag, to open there; your Pack Tokens and your cards' tokens)
-    const S = window.YUGIOH_SETS;
-    await TrunkScreen.open({ cards: window.YUGIOH_CARDS, trunk: y.trunk, decks: y.decks, slot: y.deckSlot, selectDeck: (i) => { y.deckSlot = i; },
-      inventory: () => [(() => { const L = duelistLevel(y); return { label: "Duelist Level " + L.lv, count: L.into + "/" + L.next + " EXP" }; })()]
-        .concat(PACK_SETS.map((k) => ({ label: S[k].name + " Pack", count: Player.itemCount(player, S[k].item), pack: k })))
-        .concat([{ label: "Pack Tokens", count: y.packTokens || 0 }])
-        .concat(["c", "r", "s", "u", "x"].map((r) => ({ label: RARITY_NAME[r] + " Tokens", count: (y.tokens || {})[r] || 0, token: r }))),
-      // (a rarity's tokens for one of the next's: 50 Common for a Rare, 15 Rare for a Super Rare, 10 Super Rare for an
-      // Ultra Rare, 5 Ultra Rare for a Secret Rare)
-      tokenCost: TOKEN_UP,
-      tradeTokens: (r, n) => {
-        const next = "crsux"["crsux".indexOf(r) + 1];
-        y.tokens = y.tokens || {};
-        n = Math.min(n, Math.floor((y.tokens[r] || 0) / TOKEN_UP[r]));
-        y.tokens[r] -= TOKEN_UP[r] * n; y.tokens[next] = (y.tokens[next] || 0) + n;
-        return "You got " + n + " " + RARITY_NAME[next] + " Token" + (n > 1 ? "s" : "") + ".";
-      },
-      openPack: async (key, n) => {
-        n = Math.min(n || 1, Player.itemCount(player, S[key].item));
-        if (!n || !Player.removeItem(player, S[key].item, n)) return;
-        CardShop.setup({ money: () => player.money, sets: S });
-        // (every pack at once: all their cards into the Trunk, one opening with all of them, then one list of them all,
-        // the rarest first, each card once with how many came out)
-        const all = openPacks(key, n).flat(), list = [], RANK = "xusrc";
-        await CardShop.opening(key, all, n);
-        for (const c of all) {
-          const m = list.find((x) => x.no === c.no);
-          if (m) m.count++; else list.push({ no: c.no, isNew: c.isNew, count: 1 });
-        }
-        list.sort((a, b) => RANK.indexOf(rarityOf(a.no)) - RANK.indexOf(rarityOf(b.no)) || a.no - b.no);
-        await CardShop.results({ sets: S, title: S[key].name + (n > 1 ? " x" + n : ""), cards: list, comp: setCompletion(key), packKey: key });
-        CardShop.close();
-        await persist();
-      } });
-    await persist();
-  }
-  // Duels (ui/bag-screen.js's DuelScreen, GX Duel Academy's field, on DuelMonsters' rules): Yugi, Téa, Joey and
-  // Tristan in Domino High's classroom, each with their own deck (window.YUGIOH_DUELISTS). Your deck is your
-  // Trunk's, of 40 cards at least (there's no deck to borrow: you build your first from booster packs). Beat one of them and they give
-  // you a card from their deck.
-  // (A deck by its cards' names: those the game has, filled to 40 with second and third copies.)
-  function duelDeck(names) {
-    const DM = window.DuelMonsters, C = window.YUGIOH_CARDS.cards;
-    const nos = names.map((n) => DM.numberOf(n)).filter((no) => no && DM.playable(no));
-    const main = nos.filter((no) => C[no][2] !== "fusion"), deck = nos.slice();
-    for (let copy = 1; copy < 3 && deck.filter((no) => C[no][2] !== "fusion").length < 40; copy++)
-      for (const no of main) { if (deck.filter((no2) => C[no2][2] !== "fusion").length >= 40) break; deck.push(no); }
-    return deck;
-  }
-  // Domino High's three other pupils: each duels with a deck of the few boosters they've opened, the beginner's
-  // packs (window.YUGIOH_SETS): four Red-Eyes Black Dragon packs, a Dark Hole and a Spellbinding Circle, nine cards a
-  // pack, their Commons and Rares only (they've traded the rest away), 40 of them as they came (three of a card at
-  // most, about two dozen monsters, Commons that need no Tribute, 700 ATK and 900 DEF at most), filled with more Commons from the same sets. Weaker than Yugi's and
-  // his friends' decks, as a beginner's is. Each pupil's packs are their own (seeded by who they are), so their deck
-  // is the same every time.
-  function boosterDeck(seedText) {
-    let h = 2166136261;
-    for (const ch of seedText) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
-    const rng = () => { h = (h + 0x6D2B79F5) >>> 0; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    const DM = window.DuelMonsters, C = window.YUGIOH_CARDS.cards, S = window.YUGIOH_SETS;
-    const pulled = [];
-    for (const key of ["redeyes", "redeyes", "redeyes", "redeyes", "darkhole", "spellbinding"]) pulled.push(...pullPack(S[key], rng));
-    // (more Commons, to fill the deck with if the packs come up short)
-    for (let k = 0; k < 30; k++) { const s = S[k % 6 < 4 ? "redeyes" : k % 6 === 4 ? "darkhole" : "spellbinding"]; pulled.push(s.common[Math.floor(rng() * s.common.length)]); }
-    const R = window.YUGIOH_RARITY;
-    const nos = pulled.map((n) => DM.numberOf(n)).filter((no) => no && C[no] && DM.playable(no) && "cr".includes(R[no]) && C[no][2] !== "fusion");
-    const count = {}, deck = [];
-    const lv = (no) => C[no][5] || 0;
-    const isMon = (no) => ["normal", "effect", "ritual"].includes(C[no][2]) && !(DM.effectOf(no) || {}).specialOnly;
-    const take = (no) => { if ((count[no] || 0) >= 3 || deck.length >= 40) return false; count[no] = (count[no] || 0) + 1; deck.push(no); return true; };
-    // (the monsters as they came, Commons that need no Tribute, 700 ATK and 900 DEF at most; then the Spells and Traps,
-    // and more monsters to make 40)
-    const weak = (no) => isMon(no) && lv(no) <= 4 && R[no] === "c" && C[no][6] <= 700 && C[no][7] <= 900;
-    for (const no of nos.filter(weak)) { if (deck.length >= 24) break; take(no); }
-    for (const no of nos.filter((no) => !isMon(no))) take(no);
-    for (const no of nos.filter(weak)) take(no);
-    return deck;
-  }
-  // (how likely each card of their deck is to be a prize, by its rarity)
-  const DUEL_DROP = { c: 30, r: 10, s: 4, u: 2, x: 1 };
-  function classmate(script) {
-    const c = window.YUGIOH_DUELISTS.classmates, name = c.name;
-    return { name, ask: c.ask, win: name + ": " + c.win, lose: name + ": " + c.lose, nos: boosterDeck(script) };
-  }
-  async function dominoDuel(key, person) {
-    const foe = typeof key === "string" ? window.YUGIOH_DUELISTS[key] : key, y = yugioh(), C = window.YUGIOH_CARDS.cards;
-    if (person && person.text) await say(person.text);
-    if (!(await confirm(foe.name + ": " + (foe.ask || "How about a duel?")))) return;
-    // (your own deck: 40 cards at least, built in the Trunk from your packs)
-    const deck = y.deck.main.filter((no) => C[no]);
-    if (deck.filter((no) => C[no][2] !== "fusion").length < 40) {
-      await say(["Your deck has fewer than 40 cards.", "Open booster packs and build a deck\nin your Trunk first!"]);
-      return;
-    }
-    Screen.say("");
-    clearMenu();
-    const foeDeck = foe.nos || duelDeck(foe.deck);
-    const r = await DuelScreen.open({ cards: window.YUGIOH_CARDS, deck, foe: { name: foe.name, deck: foeDeck }, you: player.name });
-    show("world");
-    if (r.winner === 0) {
-      // (Yugi and his friends: who you've beaten, for the story: kaibaScene)
-      if (typeof key === "string") y.beaten = Object.assign({}, y.beaten, { [key]: true });
-      // (the prizes: money, and three cards from their deck, the rarer the rarer: DUEL_DROP's weights)
-      const money = foe.nos ? 800 : 2000;
-      Player.addMoney(player, money);
-      const weighted = foeDeck.map((no) => [no, DUEL_DROP[rarityOf(no)]]), total = weighted.reduce((a, w) => a + w[1], 0);
-      const won = [];
-      for (let k = 0; k < 3; k++) { let t = Math.random() * total; const w = weighted.find((x) => (t -= x[1]) < 0) || weighted[0]; won.push(w[0]); }
-      await say([foe.lose, player.name + " got ¥" + money + "!"]);
-      const cards = gainCards(won), merged = [];
-      for (const c of cards) { const m = merged.find((x) => x.no === c.no); if (m) { m.count++; m.isNew = m.isNew || c.isNew; } else merged.push(Object.assign({ count: 1 }, c)); }
-      Screen.say(""); clearMenu();
-      await CardShop.results({ title: foe.name + "'s cards", cards: merged });
-      CardShop.close();
-      show("world");
-      await say(player.name + " got " + merged.map((c) => C[c.no][0] + (c.count > 1 ? " x" + c.count : "")).join(", ") + "!");
-    } else await say(foe.win);
-    // (EXP, and the packs a new duelist level opens)
-    const was = duelistLevel(y).lv, exp = r.winner === 0 ? (foe.nos ? 60 : 100) : 25;
-    y.exp = (y.exp || 0) + exp;
-    const L = duelistLevel(y);
-    await say(player.name + " got " + exp + " EXP!");
-    if (L.lv > was) {
-      const opened = PACK_SETS.filter((k) => PACK_LEVEL[k] > was && PACK_LEVEL[k] <= L.lv);
-      await say(["Your Duelist Level went up to " + L.lv + "!"].concat(opened.length ? ["New packs at the Kame Game shop:\n" + opened.map((k) => window.YUGIOH_SETS[k].name).join(",\n") + "!"] : []));
-    }
-    await persist();
-    if (!player.flags.kaibaStory && ["yugi", "tea", "joey", "tristan"].every((k) => y.beaten && y.beaten[k])) await kaibaScene();
-  }
-  // ---------- Kaiba and the Blue-Eyes White Dragon (this game's own, after the anime's first episode) ----------
-  //
-  // Once you've beaten Yugi, Téa, Joey and Tristan, each at least once: meanwhile, at the Kame Game shop, Seto Kaiba
-  // walks in wanting Grandpa's Blue-Eyes White Dragon. Grandpa won't trade it, so Kaiba duels him for it, and wins
-  // with a Blue-Eyes of his own; Grandpa collapses, and Kaiba tears the Blue-Eyes in two and leaves. Back in Domino
-  // High's classroom, Yugi tells you what happened: meet them at Kaiba Corporation's headquarters, to defeat Kaiba.
-  // Kaiba Corporation is on Domino City's map from then on (player.flags.kaibaStory).
-  async function kaibaScene() {
-    const back = Object.assign({}, Overworld.position()), GRANDPA = "LOCALID_KAME_GAME_GRANDPA", KAIBA = "LOCALID_KAIBA";
-    const KAIBA_LOOK = { sprite: "rd_kaiba", width: 32, height: 32, frames: 9 };
-    await Overworld.fadeToBlack();
-    await say("Meanwhile, at the Kame Game shop…");
-    // (the shop, you not in it: Kaiba in at the door, up to the counter)
-    await Overworld.teleport({ map: "RD_07", x: 7, y: 8, facing: "up", hidden: true });
-    music("mus_encounter_rival");
-    Overworld.addObject(KAIBA, { x: 7, y: 9, facing: "up" }, KAIBA_LOOK);
-    await Overworld.act([{ who: KAIBA, moves: ["walk_up", "walk_up", "walk_up", "walk_left", "walk_left", "face_up"] },
-      { who: GRANDPA, moves: ["delay_16", "face_down"] }]);
-    await Overworld.act([{ who: GRANDPA, moves: ["emote_exclamation_mark"] }]);
-    await say(["Grandpa: Welcome! Oh… Seto Kaiba.", "Kaiba: Spare me the welcome, old man.\nI hear you have a Blue-Eyes White\nDragon. Show it to me.",
-      "Grandpa: …Here it is. A friend gave\nit to me long ago. There are only\nfour in the whole world.",
-      "Kaiba: I'll trade you for it. This case\nholds the rarest cards there are.\nTake them all.",
-      "Grandpa: I'm sorry, but this card isn't\nfor trade. It means more to me than\nany card could.",
-      "Kaiba: Then I'll win it from you.\nA duel, old man: your Blue-Eyes\nagainst my case of cards.",
-      "Grandpa: …Very well. A duelist never\nbacks down from a challenge."]);
-    // (the duel, Kaiba's way)
-    sfx("se_select");
-    await say("Kaiba and Grandpa duel!");
-    await say("Kaiba: I summon Blue-Eyes White\nDragon!");
-    await say("Grandpa: What?! You have one too?!");
-    await say("Kaiba: Blue-Eyes, attack!\nWhite Lightning!");
-    Overworld.flash();
-    await Overworld.shake(8, { y: 2 });
-    await say(["Grandpa's Life Points fell to 0!", "Kaiba: Pathetic. The Blue-Eyes is mine."]);
-    await Overworld.act([{ who: GRANDPA, moves: ["emote_x"] }]);
-    await Overworld.shake(3, { y: 1 });
-    await say(["Grandpa clutched his chest…", "…and collapsed!"]);
-    await say("Kaiba: With this, no one will ever use\na Blue-Eyes White Dragon against me.");
-    await Overworld.shake(2, { x: 1, y: 0 });
-    await say(["Kaiba tore the Blue-Eyes White Dragon\nin two!", "Kaiba: The only Blue-Eyes in this world\nwill be mine."]);
-    await Overworld.act([{ who: KAIBA, moves: ["walk_right", "walk_right", "walk_down", "walk_down", "walk_down", "set_invisible"] }]);
-    Overworld.removeObject(KAIBA);
-    // (back to the classroom, Yugi and his friends)
-    await Overworld.fadeToBlack();
-    await say("Later…");
-    await Overworld.teleport({ map: back.map, x: back.x, y: back.y, facing: back.facing });
-    music(window.WORLD_MAPS[back.map].music);
-    await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
-    await say(["Yugi: " + player.name + "! Something terrible's\nhappened!",
-      "Yugi: Seto Kaiba went to my grandpa's\nshop. He wanted Grandpa's Blue-Eyes\nWhite Dragon.",
-      "Yugi: Grandpa wouldn't trade it, so\nKaiba challenged him to a duel…\nand won.",
-      "Yugi: Grandpa collapsed. He's resting\nnow… but then Kaiba tore the\nBlue-Eyes in half!",
-      "Joey: That creep! Who does Kaiba think\nhe is?!", "Téa: Your grandpa's going to be all\nright, Yugi.",
-      "Tristan: So what do we do now?", "Yugi: We go to Kaiba Corporation.\nI'll duel Kaiba, for Grandpa!",
-      "Yugi: " + player.name + ", meet us at Kaiba\nCorporation's headquarters. Together,\nwe'll defeat Kaiba!"]);
-    player.flags.kaibaStory = 1;
-    await say("Kaiba Corporation is now on\nDomino City's map!");
-    await persist();
-  }
-  async function visitRealmHub() {
-    Screen.say("");
-    show("world");
-    Overworld.resume();
-    await voyage(window.TIME_MACHINE.hub, ["The Time Machine whirs to life…"], "se_warp_in");
-    player.flags.realmHubVisited = true;
-  }
-
   async function visitOrre() {
     Screen.say("");
     show("world");
@@ -11580,7 +9608,7 @@
     if (f.orreStory || !hasPokenav() || !hoenn.flag("FLAG_SYS_GAME_CLEAR")) return null;
     // (Out and about, not inside: the League's rooms or the Hall of Fame.)
     const here = window.WORLD_MAPS[player.location.map] || {};
-    return OUTDOORS.includes(here.type) && !here.realm ? { type: "orre-call" } : null;
+    return OUTDOORS.includes(here.type) ? { type: "orre-call" } : null;
   }
   async function orreOakCall() {
     player.flags.orreStory = 1;
@@ -11668,24 +9696,8 @@
   // triggers, tools/build-orre.js) and the map of Orre comes up, a marker on each place you can go (game/orre.js:
   // at first the Air Strip and Team Snagem's hideout). The arrows go to the nearest place that way, A sets off (your
   // icon slides across to it, then you're there, by its way in), B stays (a step back in from the edge).
-  function orreWorldMap() {
-    return placeMap({ image: "assets/town-map/orre.png", cls: "orre-map", alt: "Map of Orre", places: Orre.openPlaces(player.flags), here: player.location.map });
-  }
-  // (The nearest place to places[at] the way `d` goes: distance, with places off to the side counting for more.)
-  function nearestPlace(places, at, d) {
-    const cur = places[at];
-    let best = -1, bestScore = Infinity;
-    places.forEach((p, k) => {
-      const dx = p.x - cur.x, dy = p.y - cur.y, along = dx * d[0] + dy * d[1];
-      if (k === at || along <= 0) return;
-      const score = along + 2 * Math.abs(dx * d[1] + dy * d[0]);
-      if (score < bestScore) { bestScore = score; best = k; }
-    });
-    return best;
-  }
-  // (A map of places, Orre's: `places` [{ map, name, x, y }], where each is in pixels of its 240 by
-  // 160 `image`; `here` the place you're at. The place picked, or null.)
-  async function placeMap({ image, cls, alt, places, here }) {
+  async function orreWorldMap() {
+    const here = player.location.map, places = Orre.openPlaces(player.flags);
     let at = Math.max(0, places.findIndex((p) => p.map === here));
     const from = places[at];
     const pos = (p) => "left:" + (p.x / 2.4) + "%;top:" + (p.y / 1.6) + "%";
@@ -11693,7 +9705,7 @@
     show("scene");
     clearMenu();
     Screen.say("");
-    scene.innerHTML = '<div class="town-map ' + cls + '"><img class="tm-map" src="' + image + '" alt="' + alt + '">' +
+    scene.innerHTML = '<div class="town-map orre-map"><img class="tm-map" src="assets/town-map/orre.png" alt="Map of Orre">' +
       places.map((p) => '<div class="om-place' + (p.map === here ? " here" : "") + '" style="' + pos(p) + '"></div>').join("") +
       '<img class="tm-player" src="assets/town-map/player.png" alt="You are here" style="' + icon(from) + '">' +
       '<div class="tm-name"><b></b><small></small></div><div class="tm-cursor"></div></div>';
@@ -11712,7 +9724,15 @@
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();
-      const best = nearestPlace(places, at, d);
+      // (The nearest place that way: distance, with places off to the side counting for more.)
+      const cur = places[at];
+      let best = -1, bestScore = Infinity;
+      places.forEach((p, k) => {
+        const dx = p.x - cur.x, dy = p.y - cur.y, along = dx * d[0] + dy * d[1];
+        if (k === at || along <= 0) return;
+        const score = along + 2 * Math.abs(dx * d[1] + dy * d[0]);
+        if (score < bestScore) { bestScore = score; best = k; }
+      });
       if (best >= 0) { at = best; sfx("se_select"); draw(); }
     };
     document.addEventListener("keydown", onKey, true);
@@ -11734,7 +9754,12 @@
     show("world");
     await Overworld.resume();
     const loc = player.location, m = window.WORLD_MAPS[loc.map];
-    if (!to) { await stepBackIn(loc, m); return; }
+    if (!to) {
+      // (Back in from the edge you were leaving by.)
+      const dir = loc.y === 0 ? "down" : loc.y === m.height - 1 ? "up" : loc.x === 0 ? "right" : "left";
+      await Overworld.act([{ who: "player", moves: ["walk_" + dir] }]);
+      return;
+    }
     await Overworld.fadeToBlack();
     Overworld.setAvatar("walk");
     player.location = Object.assign({ map: to.map }, to.arrive);
@@ -11743,11 +9768,6 @@
     // (A scene as you get there: Folly and Trudly at the Outskirt Stand.)
     if (special("arrive:" + to.map)) await story({ type: "trigger", trigger: { script: "arrive:" + to.map }, map: to.map });
     await persist();
-  }
-  // (Back in from the edge you were leaving by.)
-  async function stepBackIn(loc, m) {
-    const dir = loc.y === 0 ? "down" : loc.y === m.height - 1 ? "up" : loc.x === 0 ? "right" : "left";
-    await Overworld.act([{ who: "player", moves: ["walk_" + dir] }]);
   }
   // Team Snagem's guards at the hideout's gate. Talk to one and you can ask to join Team Snagem, as Prof. Oak asked
   // (player.flags.orreStory 3 once you have): they laugh, then give you the Snag Machine and Snagem's tests for a new
@@ -14510,9 +12530,6 @@
     // (Mr. Psychic's back room, once he's given you his TM; the way to Celadon's Berry Farm, always: the same file.)
     if (map === "SaffronCity_MrPsychicsHouse") return f.gotTM29 ? ["denroom"] : [];
     if (map === "CeladonCity") return ["farmpath"];
-    // (Pallet Town's gap in its west trees, to the Time Machine, always: tools/build-time-machine.js.)
-    if (map === "PalletTown") return ["timegap"];
-    if (map === "RD_06") return ["manhole"];   // (the manhole by the Kame Game shop: tools/build-time-machine.js)
     // (Route 40's Battle Tower: no stairs.)
     if (map === "BattleTower_Lobby") return ["nostairs"];
     // (The League gate's ways west and east, to Johto's Routes 26 and 28: data/johto-maps.js.)
@@ -16398,7 +14415,6 @@
   // ---------- Exploring ----------
 
   function special(script) {
-    if (kmrEnterDue(script)) return true;   // (Kamurocho's story, coming into a room or onto the town)
     if (deltaDue(script)) return true;   // (the Delta Episode's scenes as you come in)
     // (Orre: up the road from the Air Strip to the Outskirt Stand the first time, Folly and Trudly come out.)
     if ((script === "arrive:OutskirtStand" || script === "enter:OutskirtStand") && !(player.flags.orre | 0)) return true;
@@ -16542,13 +14558,6 @@
   async function explore() {
     World.setDynamicWarp(player.flags.dynamicWarp);
     for (;;) {
-      // (Kamurocho, side on: its streets, ui/street.js, while you're there.)
-      if (Street.isStreet(player.location.map)) { await exploreStreet(); continue; }
-      // (A save from Kamurocho's side-on streets, or somewhere the town's walls are now: by the Time Machine.)
-      if (player.location.street || (player.location.map === "Kamurocho" && (window.WORLD_MAPS.Kamurocho.collision[player.location.y * window.WORLD_MAPS.Kamurocho.width + player.location.x] !== 0))) {
-        delete player.location.street;
-        if (player.location.map === "Kamurocho") Object.assign(player.location, window.KMR.arrive);
-      }
       show("world");
       // (Continuing a save, the area's name shows: FieldCB_ShowMapNameOnContinue.)
       if (continued) {
@@ -16568,7 +14577,7 @@
         diveHere: (avatar) => diveHere(avatar),
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
-        darkness: (map) => (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); kmrDrawRain(g); },
+        darkness: (map) => (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
         faced: (map, x, y, surfing) => johtoSafari.faced(map, x, y, surfing),
         boulderFell: (def) => {
           // (3F's boulder through the hole: it's on 2F now.)
@@ -16588,12 +14597,11 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || kmrAreaStep() || realmEncounterStep() || saveReminderStep();
+          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
-          Player.enterRealm(player, (window.WORLD_MAPS[m] || {}).realm);   // (each realm's own bag)
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
           if (m !== tempFlagsMap) delete player.flags.vsRematch;   // (rematches last while you stay on the map)
@@ -16640,9 +14648,6 @@
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
       else if (ev.type === "save-prompt") await savePrompt();
-      else if (ev.type === "realm-battle") await realmEncounter();
-      else if (ev.type === "kmr-story") await kmrStory(ev.ev);
-      else if (ev.type === "trigger" && kmrDue && /^enter:(Kamurocho|Kmr_)/.test(ev.trigger.script)) { const due = kmrDue; kmrDue = null; await kmrStory(due); }
       else if (ev.type === "jessie-james") await jessieJames();
       else if (ev.type === "jessie-james-later") await laterJessieJames();
       else if (ev.type === "safari-over") { if (ev.hoenn) await runHoenn("SafariZone_EventScript_TimesUp"); else await safariOver(ev.text, false); }
@@ -16676,32 +14681,6 @@
     }
   }
 
-  // A turn of Kamurocho's streets: what happened there, as the overworld's (the menu, someone to talk to, a fight).
-  async function exploreStreet() {
-    Player.enterRealm(player, "yakuza");
-    music((window.WORLD_MAPS.Kamurocho || {}).music);
-    const ev = await Street.explore({ player, look: () => Overworld.playerLook(), special, visible: (p) => visible(p, "Kamurocho"), level: realmBestLevel, followers: realmFollowers, enter: kamurochoEnter,
-      onStep: (fights) => { Player.advanceClock(player); return fights ? realmStreetStep() : saveReminderStep(); } });
-    if (ev.type === "menu") {
-      await startMenu();
-      if (fieldAction) { const act = fieldAction; fieldAction = null; await act(); }
-    } else if (ev.type === "say") await say(ev.pages);
-    else if (ev.type === "prologue") await kamurochoPrologue();
-    else if (ev.type === "heroine") await kamurochoHeroine();
-    else if (ev.type === "y0-pink") await kamurochoPink();
-    else if (ev.type === "y0-morning") await kamurochoMorning();
-    else if (ev.type === "y0-toko") await kamurochoToko();
-    else if (ev.type === "y0-kazama") await kamurochoKazama();
-    else if (ev.type === "y0-c2") await kamurochoCh2Step(ev.step);
-    else if (ev.type === "talk") await story({ type: "talk", person: ev.person, map: "Kamurocho" });
-    else if (ev.type === "spot") await story({ type: "talk", person: { script: ev.script }, map: "Kamurocho" });
-    // (A gang that walked up to you: that gang, its leader's line first.)
-    else if (ev.type === "realm-battle") { if (ev.foes) await realmFight(ev.foes, { intro: ev.bark, looks: ev.looks }); else await realmEncounter(); }
-    else if (ev.type === "save-prompt") await savePrompt();
-    if (afterScript) { const act = afterScript; afterScript = null; await act(); }
-    await persist();
-  }
-
   async function main() {
     // FireRed's opening movie and title screen; left alone, the title goes back to the movie.
     // B on the main menu goes back to the title screen.
@@ -16715,14 +14694,6 @@
         show("intro");
       }
     }
-    // (A game saved before there were races or looks: choose yours now.)
-    if (!player.race || !player.appearance) {
-      show("intro");
-      const r = await Intro.chooseRace(player.name, { race: player.race });
-      player.race = r.race; player.appearance = r.appearance;
-      await persist();
-    }
-    await applyLook();
     lastTick = Date.now();
     await explore();
   }
@@ -16730,8 +14701,6 @@
 
   window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, runHoenn: (label) => runHoenn(label),
     // (for the browser tests: a wild battle with this species, then back to the map)
-    wildBattle: async (species, level) => { await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level))] } }); show("world"); await Overworld.resume(); }, townMap: (o) => townMap(o), sailToHoenn: () => sailToHoenn(), slateportSailor: () => slateportSailor(),
-    // (and an Ultimax fight with these foes where you stand)
-    realmFight: (foes) => realmFight(foes) };
+    wildBattle: async (species, level) => { await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level))] } }); show("world"); await Overworld.resume(); }, townMap: (o) => townMap(o), sailToHoenn: () => sailToHoenn(), slateportSailor: () => slateportSailor() };
   main();
 })();

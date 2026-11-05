@@ -27,19 +27,7 @@
     "x-accuracy": "X Accuracy", "x-attack": "X Attack", "x-defense": "X Defense", "x-speed": "X Speed",
     "x-sp-atk": "X Sp. Atk", "x-sp-def": "X Sp. Def", "poke-doll": "Poké Doll", "oddish-ball": "Oddish Ball",
     "exp-candy-xs": "Exp. Candy XS", "exp-candy-s": "Exp. Candy S", "exp-candy-m": "Exp. Candy M", "exp-candy-l": "Exp. Candy L",
-    "exp-candy-xl": "Exp. Candy XL",
-    // (The Yu-Gi-Oh! realm's booster packs.)
-    "dark-hole-pack": "Dark Hole",
-    "spellbinding-circle-pack": "Spellbinding Circle",
-    "red-eyes-pack": "Red-Eyes B. Dragon",
-    "dark-magician-pack": "Dark Magician",
-    "tri-horned-dragon-pack": "Tri-Horned Dragon",
-    "blue-eyes-pack": "Blue-Eyes W. Dragon",
-    "dark-necrofear-pack": "Dark Necrofear",
-    "summoned-skull-pack": "Summoned Skull",
-    "jinzo-pack": "Jinzo",
-    "raigeki-pack": "Raigeki",
-    "trap-hole-pack": "Trap Hole",
+    "exp-candy-xl": "Exp. Candy XL"
   };
 
   // Gen 6 Poké Mart prices. Items sell for half. Anything else can't be bought or sold.
@@ -69,9 +57,6 @@
     // (FireRed's: without a price an item can't be bought, so a Mart that
     // stocks it leaves it out.)
     "guard-spec": 700, "dire-hit": 650,
-    // (The Yu-Gi-Oh! realm's booster packs, at the Kame Game shop.)
-    "dark-hole-pack": 300, "spellbinding-circle-pack": 300, "red-eyes-pack": 300, "dark-magician-pack": 300, "tri-horned-dragon-pack": 300, "blue-eyes-pack": 300,
-    "dark-necrofear-pack": 300, "summoned-skull-pack": 300, "jinzo-pack": 300, "raigeki-pack": 300, "trap-hole-pack": 300,
     "repel": 350, "super-repel": 500, "max-repel": 700, "lure": 400, "super-lure": 700, "max-lure": 900, "escape-rope": 550, "poke-doll": 1000, "lava-cookie": 200,
     // Treasures from digging (they sell for half, as in Gen 6).
     "star-piece": 9800, "rare-bone": 10000, "heart-scale": 200, "red-shard": 400, "blue-shard": 400,

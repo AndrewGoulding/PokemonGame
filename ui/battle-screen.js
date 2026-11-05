@@ -1406,7 +1406,7 @@
         // The first Pokémon out: your trainer throws its Ball.
         if (side === "p1" && trainerOut) {
           trainerOut = false;
-          return async () => { await Promise.all([throwOut(), sendOut(pos, raceHand() || THROW_FROM_HAND, ball, raceHand() ? RACE_RELEASE_MS : 210)]); await message("Go! " + nameOf(a) + "!"); };
+          return async () => { await Promise.all([throwOut(), sendOut(pos, THROW_FROM_HAND, ball, 210)]); await message("Go! " + nameOf(a) + "!"); };
         }
         if (type === "drag") { renderSide(pos); return fill("{who} was dragged out!", a); }
         // Later switch-ins: thrown in from off-screen, as in FireRed. (A tag
@@ -1906,7 +1906,7 @@
           }
           if (ev[5] === "caught") { el.ball.classList.add("caught"); return; }
           sfx("se_ball_trade");
-          hideBall();
+          el.ball.classList.add("hidden");
           view.p2.inBall = false;
           renderSide("p2");
           await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
@@ -1917,7 +1917,7 @@
           const jingle = window.GameAudio ? window.GameAudio.fanfare("mus_caught_intro") : null;
           await message("Gotcha! " + nameOf(a) + " was snagged!");
           await jingle;
-          hideBall();
+          el.ball.classList.add("hidden");
           el.ball.classList.remove("caught", "shake");
           v.inBall = false; v.fainted = true; v.hp = 0; v.substitute = false;
           renderSide(pos);
@@ -2702,8 +2702,6 @@
       trainer.style.backgroundImage = "url(assets/sprites/trainers/back/" + cfg.trainer + ".png)";
       trainer.style.backgroundPositionY = "0%";
       trainer.classList.toggle("four", !!cfg.oldMan || !!cfg.wally);   // (his picture has 4 frames, not 5; Wally's too)
-      // (a race drawn throwing: its frames 160 wide, for the arm's swing)
-      trainer.classList.toggle("wide", /^race_/.test(cfg.trainer) && (window.RACE_THROWS || []).includes(cfg.trainer.slice(5)));
       trainer.classList.remove("hidden", "leaving");
       movers.push([trainer, shift]);
       trainerOut = true;
@@ -2819,11 +2817,11 @@
     const own = mine.filter((f) => !tag || f.pos === "p1"), theirs = mine.filter((f) => tag && f.pos === "p1b");
     const text = (theirs.length ? theirs[0].sender + " sent out " + theirs[0].name + "!\n" : "") +
       (own.length ? "Go! " + own.map((f) => f.name).join(" and ") + "!" : "");
-    const from = (f) => (tag ? (f.pos === "p1b" ? THROW_FROM_PARTNER : THROW_FROM_TAG) : raceHand() || THROW_FROM_HAND);
+    const from = (f) => (tag ? (f.pos === "p1b" ? THROW_FROM_PARTNER : THROW_FROM_TAG) : THROW_FROM_HAND);
     if (trainerOut) {
       trainerOut = false;
       const throws = [throwOut()].concat(tag && config.partnerTrainer ? [throwOut(trainerEl(true))] : []);
-      await Promise.all(throws.concat(mine.map((f) => sendOut(f.pos, from(f), f.ball, !tag && raceHand() ? RACE_RELEASE_MS : 210))));
+      await Promise.all(throws.concat(mine.map((f) => sendOut(f.pos, from(f), f.ball, 210))));
       await message(text);
     } else {
       await Promise.all([message(text)].concat(mine.map((f) => sendOut(f.pos, THROW_FROM_LEFT, f.ball))));
@@ -2843,13 +2841,6 @@
   // Your trainer's throw starts where FireRed's does (pokeball.c: the ball at
   // (32, 80) of the 240x112 scene), behind and left of where your Pokémon
   // comes out, so it flies forward.
-  // (A race's own back, drawn throwing (data/race-backs.js): from its reaching fist, in its 160x64 frame, which
-  // stands 6 px from the field's left (ui/battle-screen.css's .trainer-back.wide) and 48 down.)
-  const raceHand = () => {
-    const id = config && /^race_/.test(config.trainer || "") && config.trainer.slice(5), h = id && (window.RACE_THROW_HANDS || {})[id];
-    return h ? Object.assign([(6 + h[0]) / 240 * 100, (48 + h[1]) / 112 * 100], { lob: true }) : null;
-  };
-  const RACE_RELEASE_MS = 240;
   const THROW_FROM_HAND = [32 / 240 * 100, 80 / 112 * 100], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8];
   // (A tag battle: from your hand and your partner's, 48 pixels left of the
   // usual and 10 right of it.)
@@ -2877,15 +2868,7 @@
     await b.decode().catch(() => {});
     const [x0, y0] = from, [x1, y1] = ballLand(side);
     const frames = [];
-    if (from.lob) {
-      // (a race's throw, its fist out past where your Pokémon stands: up and away out of sight from the hand, on
-      // toward the foe, then down from above onto where it stands, never back across the screen)
-      const up = (t) => { const e = 1 - (1 - t) * (1 - t); return { left: (x0 + 8 * e) + "%", top: (y0 + (-20 - y0) * e) + "%" }; };
-      const down = (t) => ({ left: x1 + "%", top: (-20 + (y1 + 20) * t * t) + "%" });
-      for (let i = 0; i <= 8; i++) frames.push(Object.assign(up(i / 8), { offset: i / 8 * 0.4, opacity: 1 }));
-      for (let i = 0; i <= 8; i++) frames.push(Object.assign(down(i / 8), { offset: 0.5 + i / 8 * 0.5, opacity: 1 }));
-      frames.forEach((f, i) => { f.transform = "translate(-50%, -50%) rotate(" + Math.round(f.offset * 720) + "deg)"; });
-    } else for (let i = 0; i <= 16; i++) {
+    for (let i = 0; i <= 16; i++) {
       const t = i / 16;
       frames.push({ left: (x0 + (x1 - x0) * t) + "%", top: (y0 + (y1 - y0) * t - 120 * t * (1 - t)) + "%",
         transform: "translate(-50%, -50%) rotate(" + Math.round(t * 720) + "deg)" });
@@ -2907,32 +2890,34 @@
   // no animation to play (the DOM one below, then).
   // (Once the browser has drawn what's on the page now.)
   const nextPaint = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  // (The caught ball, the throw's last frame held: released as the ball goes.)
-  let caughtBall = null;
-  function releaseCaughtBall() { if (caughtBall) { const r = caughtBall; caughtBall = null; r(); } }
-  function hideBall() { el.ball.classList.add("hidden"); releaseCaughtBall(); }
   async function ballThrow(pos, ball, shakes, caught, ballCase) {
     const BA = window.BattleAnim;
     if (!sceneOn() || !BA || !BA.hasAnim("special", "BALL_THROW") || !view[pos] || !view[pos].species) return false;
     const box = monBox(pos);
     if (!box) return false;
     const foe = view[pos];
+    // (The ball that stays once it's caught, loaded before the throw: else the throw's ball goes, and this one only
+    // shows once its picture has come.)
+    if (caught) {
+      el.ball.classList.add("hidden");
+      el.ball.src = ballUrl(ball);
+      try { await el.ball.decode(); } catch (e) { /* (shown when it comes) */ }
+    }
     foe.inBall = true;
     renderSide(pos);
-    // (Caught: the animation stops once the ball's shut and darkened, and its last frame stays up, the same ball,
-    // until the battle's over.)
     const o = Object.assign(animOpts("p1", pos), { anim: "special", id: "BALL_THROW", ball, ballCase: ballCase != null ? ballCase : caught ? 4 : Math.min(3, shakes),
-      shown: POSITIONS.map((p) => p === pos), hold: caught ? {} : null, untilIdle: !!caught });
-    const ok = await playAnim(o);
+      shown: POSITIONS.map((p) => p === pos), hold: caught ? {} : null });
+    await playAnim(o);
+    // (Caught: the ball that stays is drawn, and the screen shows it, before the animation's last frame goes: no gap.)
+    const release = async () => { await nextPaint(); if (o.hold && o.hold.release) o.hold.release(); };
     if (caught) {
-      if (ok && o.hold.release) { releaseCaughtBall(); caughtBall = o.hold.release; return true; }
-      // (The animation couldn't finish: the ball's picture stays instead.)
-      el.ball.src = ballUrl(ball);
+      // The ball stays shut where it came to rest (the GBA's: 24 under its target's base line).
       el.ball.style.left = ((box.cx - 8) / 240 * 100).toFixed(2) + "%";
       el.ball.style.right = "auto";
       el.ball.style.top = ((BA.ballRest(POSITIONS.indexOf(pos), !!battle.doubles) - 8) / 112 * 100).toFixed(2) + "%";
       el.ball.classList.remove("hidden", "shake");
       el.ball.classList.add("caught");
+      await release();
       return true;
     }
     foe.inBall = false;
@@ -3063,10 +3048,7 @@
   // (`t`: a tag partner's picture instead.)
   async function throwOut(t) {
     t = t || trainerEl();
-    // (a race's own throw, drawn bigger (.wide): slower, its follow-through held before it goes; it lets go after its
-    // wind-up and throw, RACE_RELEASE_MS in)
-    const steps = t.classList.contains("wide") ? [[1, 130], [2, RACE_RELEASE_MS - 130], [3, 160], [4, 360]] : [[1, 70], [2, 70], [3, 70], [4, 70]];
-    for (const [f, ms] of steps) { t.style.backgroundPositionY = (f * 25) + "%"; await wait(ms); }
+    for (const f of [1, 2, 3, 4]) { t.style.backgroundPositionY = (f * 25) + "%"; await wait(70); }
     t.classList.add("leaving");
     await wait(350);
     t.classList.add("hidden");
@@ -3099,7 +3081,7 @@
       battle.events.splice(n);
       teraShown["p2:" + m.teamIndex] = m.terastallized;
     }
-    hideBall();
+    el.ball.classList.add("hidden");
     for (const k of POSITIONS) renderSide(k);
     await intro(Object.assign({}, config, { trainer: "old_man", p2: { team: [{}] } }));
     say("");
@@ -3124,7 +3106,7 @@
     await jingle;
     await wait(500);
     hbStop();
-    hideBall();
+    el.ball.classList.add("hidden");
     trainerEl().classList.remove("four");
     config = null;
   }
@@ -3227,7 +3209,7 @@
       battle.events.splice(n);
       teraShown["p2:" + m.teamIndex] = m.terastallized;
     }
-    hideBall();
+    el.ball.classList.add("hidden");
     for (const k of POSITIONS) renderSide(k);
     await intro(cfg);
     if (!cfg.wild) {

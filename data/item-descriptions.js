@@ -272,16 +272,4 @@ window.ITEM_DESCRIPTIONS = {
   "storage-key": "The key to the\nstorage inside the\nAbandoned Ship.",
   "magma-emblem": "A medal-like item in\nthe same shape as\nTeam Magma's mark.",
   // (End of Emerald's items.)
-  // (The Kame Game shop's booster packs.)
-  "dark-hole-pack": "A booster pack of\nDark Hole\nDuel Monsters cards.",
-  "spellbinding-circle-pack": "A booster pack of\nSpellbinding Circle\ncards.",
-  "red-eyes-pack": "A booster pack of\nRed-Eyes Black Dragon\ncards.",
-  "dark-magician-pack": "A booster pack of\nDark Magician\nDuel Monsters cards.",
-  "tri-horned-dragon-pack": "A booster pack of\nTri-Horned Dragon\nDuel Monsters cards.",
-  "blue-eyes-pack": "A booster pack of\nBlue-Eyes White Dragon\ncards.",
-  "dark-necrofear-pack": "A booster pack of\nDark Necrofear\nDuel Monsters cards.",
-  "summoned-skull-pack": "A booster pack of\nSummoned Skull\nDuel Monsters cards.",
-  "jinzo-pack": "A booster pack of\nJinzo\nDuel Monsters cards.",
-  "raigeki-pack": "A booster pack of\nRaigeki\nDuel Monsters cards.",
-  "trap-hole-pack": "A booster pack of\nTrap Hole\nDuel Monsters cards.",
 };

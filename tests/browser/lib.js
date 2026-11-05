@@ -33,8 +33,6 @@ function makeSave(edit, location) {
   p.flags.pokedex = true;
   p.flags.gotStarter = true;
   p.party = [Party.create("Charizard", 50)];
-  p.race = "hylian";   // (delete it for the character creator on CONTINUE)
-  p.appearance = { body: "link", face: "link_face", hairstyle: "link_hair", hair: "own", outfit: "own", trim: "own", skin: "own" };
   if (location) p.location = Object.assign({ facing: "down" }, location);
   if (edit) edit(p);
   return Player.serialize(p);

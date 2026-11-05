@@ -500,9 +500,6 @@
     rod.resolve = null;
     if (done) done();
   }
-  // (Your look fishing: the rod alone, player_rod.png, cut from the trainer's frames by what isn't the trainer standing;
-  // and where the trainer's body is in each frame, [x, y], for your look to stand there.)
-  const ROD_BODY = [[10, 1], [16, 0], [13, 1], [16, 0], [7, -4], [7, 2], [8, -1], [8, -1], [9, -2], [9, -8], [9, -6], [8, -9]];
   // The frame to draw, and where (AlignFishingAnimationFrames: the cast
   // frames sideways sit 8 pixels toward the rod, up 8 higher, down 8 lower).
   function rodFrame() {
@@ -1029,16 +1026,6 @@
   // Fades to black, moves the player (a scene's warp), and fades back in.
   function fadeOut() { return new Promise((resolve) => { fadeDir = 1; afterFade = resolve; }); }
   function fadeIn() { return fade ? new Promise((resolve) => { fadeDir = -1; afterFade = resolve; }) : Promise.resolve(); }
-  // Straight to a place, with no fade (a scene's camera, ui/game.js's Kamurocho cutscenes): `hidden` keeps you out
-  // of sight there.
-  async function jump(loc) {
-    me.map = loc.map; me.x = loc.x; me.y = loc.y; if (loc.facing) me.facing = loc.facing;
-    me.move = null; me.hidden = !!loc.hidden; me.emote = null;
-    checkAvatar(); checkLight(); tuckFollower(); followerLook();
-    loadPeople();
-    await preloadMap(me.map);
-    savePosition();
-  }
   async function teleport(loc) {
     if (!fade) await fadeOut();
     me.map = loc.map; me.x = loc.x; me.y = loc.y; me.facing = loc.facing || "down";
@@ -1233,12 +1220,12 @@
   const JUMP_OFF_BIRD = [-2, -4, -5, -6, -7, -8, -8, -8, -7, -7, -6, -5, -3, -2, 0, 2, 4, 8];
 
   const look = () => "player_" + (ctx.player.look || "custom");
-  // The player as one of its sheets' frames, centred at (x, y). (Your look from the character creator, below: 32 wide.)
-  const standing = (facing) => ({ sheet: mine() ? "player_look" : look(), w: mine() ? 32 : 16, frame: frameFor(facing, false, 0, 9), flip: facing === "right", x: PLAYER_CX, y: PLAYER_CY });
+  // The player as one of its sheets' frames, centred at (x, y).
+  const standing = (facing) => ({ sheet: look(), w: 16, frame: frameFor(facing, false, 0, 9), flip: facing === "right", x: PLAYER_CX, y: PLAYER_CY });
   const riding = (x, y) => ({ sheet: look() + "_ride", w: 32, frame: 2, x, y });
   // The field-move pose (sAnim_FieldMove), or standing still for a look without one.
   async function fieldMovePose() {
-    const has = !mine() && ready(spriteImage(look() + "_item"));
+    const has = ready(spriteImage(look() + "_item"));
     await everyFrame((t) => {
       fly.player = has ? { sheet: look() + "_item", w: 16, frame: t < 16 ? t >> 2 : 4, x: PLAYER_CX, y: PLAYER_CY } : standing(me.facing);
       return t >= 23;
@@ -1700,10 +1687,6 @@
   // and 15, a bridge, leaves it as it was).
   const OVER_TOP = [0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0];
   function overTop(a, map, x, y, tmap, tx, ty) {
-    // (A map with its own say, tile by tile, whether who stands there is drawn over its top layer: the Yu-Gi-Oh!
-    // realm's screens, from The Sacred Cards' depth plane: tools/build-sacred-cards.py.)
-    const tm = World.map(tmap);
-    if (tm && tm.overTop) return !!tm.overTop[ty * tm.width + tx];
     if (a.elev == null) a.elev = 3;
     const prev = World.blockAt(map, x, y).elevation, cur = World.blockAt(tmap, tx, ty).elevation;
     if (cur !== 15 && prev !== 15 && cur !== 0) a.elev = cur;
@@ -1862,143 +1845,6 @@
     }
     if (sunk) drawHotSpring(x + w / 2, y + sh);
   }
-  // ---------- Your look (the character creator: ui/intro.js's race page) ----------
-  //
-  // You're put together from data/type-chart.js's PLAYER_LOOK_PARTS (tools/build-player-looks.py): a body, a face
-  // and a hairstyle on it (player.appearance: body, face, hairstyle), or a whole character. Each part's sheet is its
-  // own colours, then 16 masks: its hair, clothes, trim and skin, four shades each, darkest first; each mask is
-  // filled with that shade of the colour you chose (LOOK_COLOURS), or of the part's own ("own"). Only compositing,
-  // never reading pixels back, so it works when the game's opened straight from disk. -> a sheet of FireRed's nine
-  // frames, then the six between its steps (lookFrame), 32x32 each.
-  // (Riding the Bicycle and surfing, your look sits on Red's Bicycle or the water he Surfs on: composeRide. Fishing,
-  // your look holds the trainer's rod: ROD_BODY.)
-  const LOOK_ROLES = ["hair", "outfit", "trim", "skin"];
-  function lookParts(a) {
-    const P = window.PLAYER_LOOK_PARTS || {};
-    if (!a || !P[a.body]) return [];
-    if (P[a.body].kind === "whole") return [a.body];
-    return [a.body].concat([a.face, a.hairstyle].filter((n) => n && P[n] && (P[n].kind === "face" || P[n].kind === "hair")));
-  }
-  // (A look's frame walking: a step, the frame between, the other step, the frame between; each step's frames in the
-  // sheet as FireRed's, the betweens after them: lookFrame(facing, quarter of the stride 0-3).)
-  function lookFrame(facing, q) {
-    const d = { down: 0, up: 1, left: 2, right: 2 }[facing];
-    return [3 + 2 * d, 9 + 2 * d, 4 + 2 * d, 10 + 2 * d][q & 3];
-  }
-  function lookRamp(a, part, role) {
-    const list = (window.LOOK_COLOURS || {})[role === "outfit" || role === "trim" ? "cloth" : role] || [];
-    const c = a[role] && list.find((x) => x[0] === a[role]);
-    return c ? c.slice(2) : (part.own && part.own[role]) || null;
-  }
-  async function composeLook(a) {
-    const names = lookParts(a);
-    if (!names.length) return null;
-    const imgs = names.map((n) => spriteImage("looks/" + n));
-    await Promise.all(imgs.map((i) => i.loaded));
-    const out = document.createElement("canvas"), tmp = document.createElement("canvas");
-    const N = Math.max(9, Math.round((imgs[0].width || 288) / 32)), Wd = N * 32;
-    out.width = tmp.width = Wd; out.height = tmp.height = 32;
-    const o = out.getContext("2d"), t = tmp.getContext("2d");
-    // (A face and hair on a body go where the body's head is, frame by frame: moved by where the body's neck is less
-    // where theirs is.)
-    // (A head too tall for where the neck is, a Frieza's on King Cold's shoulders, goes down into them until its top
-    // is in the frame: each part's `top`, its top row.)
-    const P = window.PLAYER_LOOK_PARTS, body = P[names[0]];
-    const offs = names.map((n) => { const part = P[n]; return [...Array(N)].map((_, f) => (part.ref && body.headAt && body.headAt[f] && part.ref[f] ? [body.headAt[f][0] - part.ref[f][0], body.headAt[f][1] - part.ref[f][1]] : [0, 0])); });
-    for (let f = 0; f < N; f++) {
-      const top = Math.min(...names.map((n, k) => (P[n].top && k ? P[n].top[f] + offs[k][f][1] : 0)));
-      if (top < 0) names.forEach((n, k) => { if (k) offs[k][f] = [offs[k][f][0], offs[k][f][1] - top]; });
-    }
-    names.forEach((n, k) => {
-      const img = imgs[k], part = P[n], off = offs[k];
-      if (!ready(img)) return;
-      const row = (ctx, sy) => {
-        for (let f = 0; f < N; f++) {
-          ctx.save(); ctx.beginPath(); ctx.rect(f * 32, 0, 32, 32); ctx.clip();
-          ctx.drawImage(img, f * 32, sy, 32, 32, f * 32 + off[f][0], off[f][1], 32, 32);
-          ctx.restore();
-        }
-      };
-      row(o, 0);
-      LOOK_ROLES.forEach((role, r) => {
-        const ramp = part.roles.includes(role) && lookRamp(a, part, role);
-        if (!ramp) return;
-        for (let l = 0; l < 4; l++) {
-          t.globalCompositeOperation = "copy";
-          t.clearRect(0, 0, Wd, 32);
-          t.globalCompositeOperation = "source-over";
-          row(t, (1 + r * 4 + l) * 32);
-          t.globalCompositeOperation = "source-in";
-          t.fillStyle = ramp[l];
-          t.fillRect(0, 0, Wd, 32);
-          o.drawImage(tmp, 0, 0);
-        }
-      });
-    });
-    out.ride = await composeRide(out, names[0]);
-    return out;
-  }
-  // Your look on the Bicycle and on the water (tools/build-ride-parts.py: Red's, without him, ride_bike.png and
-  // ride_surf.png; RIDE_PARTS): sitting as he does, from the waist up (the body's `waist` row, standing that way), its
-  // waist at the seat, leaning as he leans. 32x40 frames (RIDE_H: room over the seat for the tall), the Bicycle or the
-  // water where it is in his 32x32 ones. -> { bike, surf, wheelie } sheets as player_<look>_bike, _surf, _wheelie.
-  const RIDE_H = 40;
-  async function composeRide(look, body) {
-    const R = window.RIDE_PARTS;
-    if (!R) return null;
-    const waist = R.waist[body] || [20, 20, 20];
-    const sheet = (n) => { const c = document.createElement("canvas"); c.width = n * 32; c.height = RIDE_H; return c; };
-    const ride = {};
-    for (const name of ["bike", "surf"]) {
-      const img = spriteImage("ride_" + name);
-      await img.loaded;
-      const frames = R[name], c = ride[name] = sheet(frames.length), o = c.getContext("2d");
-      frames.forEach(([f, dx, seat], i) => {
-        const w = waist[f];
-        o.save(); o.beginPath(); o.rect(i * 32, 0, 32, RIDE_H); o.clip();
-        o.drawImage(look, f * 32, 0, 32, w, i * 32 + dx, RIDE_H - 32 + seat - w, 32, w);
-        o.restore();
-        if (ready(img)) o.drawImage(img, i * 32, 0, 32, 32, i * 32, RIDE_H - 32, 32, 32);
-      });
-    }
-    ride.wheelie = wheelieSheet(ride.bike);
-    return ride;
-  }
-  // The wheelie frames from the Bicycle's standing ones, as tools/build-wheelie.js makes the trainer's: facing down
-  // rising, up on the back wheel; up; left (a row or a pixel at a time: no reading pixels back).
-  function wheelieSheet(bike) {
-    const c = document.createElement("canvas"); c.width = 6 * 32; c.height = RIDE_H;
-    const o = c.getContext("2d"), bottom = RIDE_H - 1, wheelTop = bottom - 5;
-    const rows = (i, src, from) => {
-      for (let y = 0; y < RIDE_H; y++) { const sy = from(y); if (sy >= 0 && sy < RIDE_H) o.drawImage(bike, src * 32, sy, 32, 1, i * 32, y, 32, 1); }
-    };
-    const down = (i, lift) => rows(i, 0, (y) => (y + lift < wheelTop ? y + lift : Math.max(wheelTop, y + lift - 1)));
-    const up = (i, lift) => rows(i, 1, (y) => (y >= wheelTop ? y : y + lift < wheelTop ? y + lift : wheelTop));
-    // (Red's Bicycle facing left goes from x 6 to 25: tipped back on its back wheel, at the right.)
-    const left = (i, lift) => {
-      const x0 = 6, pivot = 25 - 4, span = pivot - x0, waist = bottom - 9;
-      const tilt = (x) => (x < pivot ? Math.round(lift * (pivot - x) / span) : 0), mid = tilt(Math.round((x0 + 25) / 2));
-      for (let x = 0; x < 32; x++) for (let y = 0; y < RIDE_H; y++) {
-        const below = y + tilt(x), sy = below >= waist ? below : Math.min(waist - 1, y + mid);
-        if (sy < RIDE_H) o.drawImage(bike, 2 * 32 + x, sy, 1, 1, i * 32 + x, y, 1, 1);
-      }
-    };
-    down(0, 2); down(1, 4); up(2, 1); up(3, 2); left(4, 2); left(5, 5);
-    return c;
-  }
-  // The look you walk about as (a composeLook sheet; null: the trainer's own). Wes, in Orre, is always Wes.
-  let myLook = null;
-  function setPlayerLook(sheet) {
-    myLook = sheet;
-    if (sheet) Object.assign(sheet, { complete: true, naturalWidth: sheet.width, loaded: Promise.resolve() });
-    for (const k of ["", "_bike", "_surf", "_wheelie"]) {
-      const c = !sheet ? null : k ? sheet.ride && sheet.ride[k.slice(1)] : sheet;
-      if (c) images["assets/world/sprites/player_look" + k + ".png"] = Object.assign(c, { complete: true, naturalWidth: c.width, loaded: Promise.resolve() });
-      else delete images["assets/world/sprites/player_look" + k + ".png"];
-    }
-  }
-  const mine = () => !!myLook && !!ctx && (ctx.player.look || "custom") !== "wes";
-
   // ---------- Reflections (Emerald's: src/field_effect_helpers.c SetUpReflection) ----------
   //
   // Someone standing above still water (a pond, a puddle, Sootopolis's deep water, the water under a bridge) or ice
@@ -2093,10 +1939,9 @@
     s.text(name, 8 + Math.floor((W - tw) / 2), 10, [98, 98, 98], [213, 213, 205]);
     return s.canvas();
   }
-  // (`text`: a name of the place's own, not its map's: a street of Kamurocho's, ui/game.js.)
-  function showAreaName(mapName, text) {
+  function showAreaName(mapName) {
     mapName = mapName || me.map;
-    const name = text || areaName(mapName);
+    const name = areaName(mapName);
     if (popup) { popup.next = [name, mapName]; popup.state = "out"; return; }
     popup = { canvas: popupCanvas(name, mapName), pos: 0, state: "in", t: 0, next: null };
   }
@@ -2133,9 +1978,7 @@
       if (me.move.bikeHop) hop = -JUMP_Y_LOW[Math.min(15, Math.floor(t))];
       else if (me.move.jump || me.move.dismount || me.move.hop) hop = Math.sin((t / me.move.dist) * Math.PI) * (me.move.jump ? 10 : 6);
     }
-    // (A map that is one screen, as The Sacred Cards' are, stays still: the camera on the whole of it.)
-    const fixed = m && m.fixedCamera;
-    const camX = fixed ? (m.width * TILE - VIEW_W) / 2 + panX : px - PLAYER_X + panX, camY = fixed ? (m.height * TILE - VIEW_H) / 2 + panY : py - PLAYER_Y + panY;
+    const camX = px - PLAYER_X + panX, camY = py - PLAYER_Y + panY;
 
     g.fillStyle = "#000";
     g.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -2209,13 +2052,7 @@
     } else {
       frame = frameFor(me.facing, !!me.move && !me.move.slip && (me.move.t % TILE) < TILE / 2, me.parity, 9);
     }
-    let w = 16, h = 32, dx = 0, bob = 0;
-    // (Your look, walking or running: its steps, a stride a tile.)
-    if (mine()) {
-      sheet = "player_look"; w = 32; dx = -8;
-      // (a stride a tile: its step for the first half, then the frame between; the next tile the other step)
-      if (me.move && !me.move.slip) frame = lookFrame(me.facing, ((me.move.t % TILE) < TILE / 2 ? 0 : 1) + 2 * me.parity);
-    }
+    let w = 16, dx = 0, bob = 0;
     if (me.avatar === "bike") {
       // The Bicycle's sheet (32 wide): standing, and pedalling while moving.
       sheet = look + "_bike"; w = 32; dx = -8;
@@ -2228,8 +2065,6 @@
         sheet = look + "_wheelie";
         frame = { down: 0, up: 2, left: 4, right: 4 }[me.facing] + pose;
       }
-      // (Your look rides it: composeRide's sheets, as tall as RIDE_H.)
-      if (mine() && myLook.ride) { sheet = sheet === look + "_wheelie" ? "player_look_wheelie" : "player_look_bike"; h = RIDE_H; }
     } else if (me.avatar === "dive") {
       // Under the water (Emerald's Brendan, diving): down, up or left.
       sheet = "em_brendan_underwater"; w = 32; dx = -8;
@@ -2240,16 +2075,9 @@
       sheet = look + "_surf"; w = 32; dx = -8;
       frame = { down: 0, up: 2, left: 4, right: 4 }[me.facing];
       bob = Math.floor(performance.now() / 500) % 2;
-      if (mine() && myLook.ride) { sheet = "player_look_surf"; h = RIDE_H; }
     }
-    let dy = 0, rodOver = null;
-    if (rod && me.avatar !== "surf" && mine()) {
-      // (Your look fishing: it stands as it is, moved as the trainer's body is in the frame, and the rod alone over it.)
-      const r = rodFrame(), [ox, oy] = ROD_BODY[r.frame];
-      sheet = "player_look"; h = 32; frame = frameFor(me.facing, false, 0, 9);
-      dx = -8 + r.dx + (me.facing === "right" ? 16 - ox : ox); dy = r.dy + oy;
-      rodOver = { frame: r.frame, dx: r.dx, dy: r.dy };
-    } else if (rod && me.avatar !== "surf") {
+    let dy = 0;
+    if (rod && me.avatar !== "surf") {
       // (Fishing on the water, you stay as you are on it.)
       const r = rodFrame();
       sheet = look + "_fish"; w = 32; frame = r.frame; dx = r.dx; dy = r.dy;
@@ -2258,11 +2086,8 @@
     // (Up in the air on an Escape Rope: over everything once a tile up.)
     const lift = me.lift || 0;
     const meSunk = !me.move && me.avatar === "walk" && !lift ? sunkAt(me.map, me.x, me.y) : 0;
-    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => {
-      drawSprite(sheet, w, h, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk);
-      if (rodOver) drawSprite("player_rod", 32, 32, rodOver.frame, me.facing === "right", px - camX + rodOver.dx, py - camY + rodOver.dy);
-    },
-      refl: () => !lift && drawReflection(sheet, w, h, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy,
+    if (!me.hidden && !(fly && fly.player !== undefined)) sprites.push({ y: py, over: meOver || lift >= 16, draw: () => drawSprite(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy - lift, meSunk),
+      refl: () => !lift && drawReflection(sheet, w, 32, frame, me.facing === "right", px - camX + dx, py - camY - hop + bob + dy,
         [[me.x, me.y]].concat(me.move && (me.move.tmap || me.map) === me.map ? [[me.move.tx, me.move.ty]] : []), camX, camY) });
     if (heal) drawHeal(camX, camY);   // the healing machine's balls and screen, under people
     for (const s of tallGrassSprites(camX, camY, shade)) sprites.push(s);
@@ -2370,7 +2195,7 @@
       });
     }
     const look = "player_" + (ctx.player.look || "custom");
-    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_wheelie", "_surf", "_fish"].map((k) => spriteImage(look + k).loaded), spriteImage("em_brendan_underwater").loaded, spriteImage("player_rod").loaded]);
+    await Promise.all([preloadMap(me.map), ...["_run", "_bike", "_wheelie", "_surf", "_fish"].map((k) => spriteImage(look + k).loaded), spriteImage("em_brendan_underwater").loaded]);
     showControls();
     hint();
     ignoreInputUntil = performance.now() + 200;
@@ -2406,8 +2231,8 @@
   window.Overworld = {
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, unbury: (def) => { for (const p of people) if (p.def.id === def.id && p.def.script === def.script) p.unburied = true; }, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn, escapeRopeOut, escapeRopeIn,
-    fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake, jump,
-    setAvatar, avatar: () => me.avatar, composeLook, setPlayerLook, playerLook: () => myLook, lookParts, lookFrame, bikeFastest: () => me.avatar === "bike" && (me.bikeRun || 0) >= BIKE_SPEEDS.length - 1, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
+    fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
+    setAvatar, avatar: () => me.avatar, bikeFastest: () => me.avatar === "bike" && (me.bikeRun || 0) >= BIKE_SPEEDS.length - 1, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.
     ahead: () => {
