@@ -112,6 +112,8 @@ beat("Violet Gym: Falkner's Zephyr Badge and TM51", async (g) => {
 beat("Out of the Gym: Elm's call about the Egg", async (g) => {
   await g.go("VioletCity_Gym", 15, 26, "down");
   for (let i = 0; i < 3; i++) await g.walk("down", 1);
+  // (A step lost to the follower's shuffle leaves you a tile short of the mat: on down till you're out.)
+  for (let i = 0; i < 3 && (await g.where()).map === "VioletCity_Gym"; i++) await g.s.walk("down", 1);
   await g.mash();
   await g.expect("FLAG_GOT_PICK_UP_EGG_CALL_FROM_ELM");
 });

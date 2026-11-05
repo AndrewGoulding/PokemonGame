@@ -2188,7 +2188,7 @@ for its landmarks, new buildings in the library). `tools/build-maps.js`
 (Kanto) and the painter share `tools/lib/fr-tiles.js` (FireRed's tilesets
 and drawing metatiles).
 
-## Johto (in progress)
+## Johto
 
 **Johto's maps are Pokémon Heart & Soul's**
 ([PokemonHnS-Development/pokemonHnS](https://github.com/PokemonHnS-Development/pokemonHnS), a GBA
