@@ -268,7 +268,7 @@ window.REALM_FIGHTERS = {
   zora:   { name: null, elements: ["Water"], base: { hp: 28, mp: 16, str: 11, def: 10, int: 16, wis: 13, spd: 12 },
             growth: { hp: 4.6, mp: 2.8, str: 1.6, def: 1.5, int: 2.2, wis: 1.9, spd: 1.6 },
             skills: [[1, "boomerang_fin"], [2, "healing_water"], [4, "zora_scale"], [7, "zora_barrier"], [10, "nayrus_wave"], [13, "miphas_grace"], [18, "tidal_fins"]] },
-  gerudo: { name: null, elements: ["Ground"], base: { hp: 32, mp: 10, str: 16, def: 11, int: 9, wis: 10, spd: 12 },
+  gerudo: { name: null, elements: ["Ground", "Dark"], base: { hp: 32, mp: 10, str: 16, def: 11, int: 9, wis: 10, spd: 12 },
             growth: { hp: 5.4, mp: 1.8, str: 2.5, def: 1.6, int: 1.2, wis: 1.4, spd: 1.6 },
             skills: [[1, "scimitar"], [3, "desert_stance"], [5, "twin_blades"], [8, "sandstorm"], [11, "fire_arrow"], [14, "urbosas_fury"], [19, "gerudo_fang"]] },
   human:  { name: null, elements: ["Neutral"], base: { hp: 28, mp: 14, str: 13, def: 10, int: 12, wis: 11, spd: 13 },
