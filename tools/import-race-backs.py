@@ -11,10 +11,10 @@
 #
 # Then the throws (source/throws.webp: five panels a race, ready, wind-up, throw, release, follow-through): each race's
 # five keyed the same way, the ball let go of taken off (the game throws its own), all five brought down by the one
-# amount and placed alike, so the arm swings and the body stays put: 128x64 frames, as the arm reaches past FireRed's
-# 64 (ui/battle-screen.css's .trainer-back.wide).
+# amount and placed alike, so the arm swings and the body stays put: 160x64 frames, as the arm reaches past FireRed's
+# 64, the body in the middle (ui/battle-screen.css's .trainer-back.wide).
 #
-# Writes assets/sprites/trainers/back/race_<id>.png (128x320, or 64x320 for a race with no throw) and data/race-backs.js (window.RACE_BACKS: the races
+# Writes assets/sprites/trainers/back/race_<id>.png (160x320, or 64x320 for a race with no throw) and data/race-backs.js (window.RACE_BACKS: the races
 # that have one; ui/game.js gives you yours in battle).
 import json, os
 from collections import deque
@@ -118,7 +118,8 @@ def shrink(im, k):
     return Image.fromarray(b.astype(np.uint8), 'RGBA')
 
 def throw(rid):
-    """A race's five throw frames -> its 128x320 sheet."""
+    """A race's five throw frames -> its 160x320 sheet: its body, standing ready, in the middle of each frame (where a
+    64-wide back's is), the swing out to either side of it."""
     big = np.array(Image.open(os.path.join(SRC, 'throws.webp')).convert('RGB')).astype(int)
     y0, y1 = THROW_ROWS[rid]; w = min(x1 - x0 for x0, x1 in THROW_COLS) - 12
     # (each panel the same width from its left, inside its border; the first two keep their ball, held)
@@ -127,12 +128,14 @@ def throw(rid):
     boxes = [f.getbbox() for f in fr]
     ux0, uy0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
     ux1, uy1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+    # (its body's middle: half its ready frame on either side, column by column)
+    cols = np.cumsum((np.array(fr[0])[..., 3] > 0).sum(0)); mid = int(np.searchsorted(cols, cols[-1] / 2))
     # (as drawn, no bigger; smaller only if its swing would leave the frame)
-    k = min(1, 128 / (ux1 - ux0), 64 / (uy1 - uy0))
-    out = Image.new('RGBA', (128, 320), (0, 0, 0, 0))
+    k = min(1, 80 / max(1, mid - ux0), 80 / max(1, ux1 - mid), 64 / (uy1 - uy0))
+    out = Image.new('RGBA', (160, 320), (0, 0, 0, 0))
     for i, f in enumerate(fr):
         s = shrink(f.crop((ux0, uy0, ux1, uy1)), k)
-        out.alpha_composite(s, ((128 - s.width) // 2, i * 64 + 64 - s.height))
+        out.alpha_composite(s, (80 - round((mid - ux0) * k), i * 64 + 64 - s.height))
     return out
 
 def main():
@@ -166,7 +169,7 @@ def main():
     open(os.path.join(ROOT, 'data/race-backs.js'), 'w').write(
         '// Your back in battle by your race (tools/import-race-backs.py: assets/sprites/trainers/back/race_<id>.png).\n'
         'window.RACE_BACKS = ' + json.dumps(sorted(have)) + ';\n'
-        '// (those drawn throwing: 128 wide, ui/battle-screen.css\'s .trainer-back.wide)\n'
+        '// (those drawn throwing: 160 wide, ui/battle-screen.css\'s .trainer-back.wide)\n'
         'window.RACE_THROWS = ' + json.dumps(sorted(THROW_ROWS)) + ';\n')
     print(len(have), 'backs')
 

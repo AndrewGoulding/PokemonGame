@@ -328,9 +328,9 @@ body {
 }
 /* (The old man's: 4 frames.) */
 .trainer-back.four { background-size: 100% 400%; }
-/* (A race's own, drawn throwing (tools/import-race-backs.py): 128x64 frames, as the arm swings out past 64; its body
-   where a 64 one's stands.) */
-.trainer-back.wide { width: 53.3333%; aspect-ratio: 2; margin-left: -3.3333%; }
+/* (A race's own, drawn throwing (tools/import-race-backs.py): 160x64 frames, as the arm swings out past 64; its body in
+   the frame's middle, put where a 64-wide one's body stands (its middle 38 px into its frame: 42 px further left).) */
+.trainer-back.wide { width: 66.6667%; aspect-ratio: 2.5; margin-left: -17.5%; }
 .trainer-back.leaving { transform: translateX(-150%); opacity: 0; }
 /* A tag battle: you at x 32, your partner at 90 (PlayerHandleDrawTrainerPic). */
 .field.tag .trainer-back { left: 0; }

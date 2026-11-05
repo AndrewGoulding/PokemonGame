@@ -7457,13 +7457,13 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       }
     }
   }
-  // (Every race's back in battle drawn throwing (tools/import-race-backs.py, source/throws.webp): five 128x64 frames.)
+  // (Every race's back in battle drawn throwing (tools/import-race-backs.py, source/throws.webp): five 160x64 frames.)
   {
     const fs = require("fs"), path = require("path");
     for (const r of window.REALM_RACES) {
       assert(window.RACE_BACKS.includes(r.id) && window.RACE_THROWS.includes(r.id), r.id + " throws");
       const png = fs.readFileSync(path.join(__dirname, "..", "assets/sprites/trainers/back", "race_" + r.id + ".png"));
-      assert(png.readUInt32BE(16) === 128 && png.readUInt32BE(20) === 320, r.id + "'s throw sheet");
+      assert(png.readUInt32BE(16) === 160 && png.readUInt32BE(20) === 320, r.id + "'s throw sheet");
     }
   }
   // (The colours: each four shades, darkest first, its id once in its list; a good many of each, and seven skins or
