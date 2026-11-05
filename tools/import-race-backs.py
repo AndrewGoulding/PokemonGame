@@ -118,13 +118,15 @@ def shrink(im, k):
     return Image.fromarray(b.astype(np.uint8), 'RGBA')
 
 def throw(rid):
-    """A race's five throw frames -> its 160x320 sheet: its body, standing ready, in the middle of each frame (where a
+    """A race's five throw frames -> its 160x320 sheet, and where in its frame it lets go of the ball: its body, standing ready, in the middle of each frame (where a
     64-wide back's is), the swing out to either side of it."""
     big = np.array(Image.open(os.path.join(SRC, 'throws.webp')).convert('RGB')).astype(int)
     y0, y1 = THROW_ROWS[rid]; w = min(x1 - x0 for x0, x1 in THROW_COLS) - 12
     # (each panel the same width from its left, inside its border; the first two keep their ball, held)
     fr = [key(big[y0 + 3:y1 - 2, x0 + 8:x0 + 8 + w], crop=False) for x0, _ in THROW_COLS]
     fr = [f if i < 3 else body(f) for i, f in enumerate(fr)]
+    # (where the ball leaves the hand: the reaching fist, its release frame's furthest point out)
+    ra = np.array(fr[3])[..., 3] > 0; hx = np.nonzero(ra.any(0))[0][-1]; hy = np.nonzero(ra[:, hx - 3:hx + 1].any(1))[0].mean()
     boxes = [f.getbbox() for f in fr]
     ux0, uy0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
     ux1, uy1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
@@ -132,11 +134,13 @@ def throw(rid):
     cols = np.cumsum((np.array(fr[0])[..., 3] > 0).sum(0)); mid = int(np.searchsorted(cols, cols[-1] / 2))
     # (as drawn, no bigger; smaller only if its swing would leave the frame)
     k = min(1, 80 / max(1, mid - ux0), 80 / max(1, ux1 - mid), 64 / (uy1 - uy0))
-    out = Image.new('RGBA', (160, 320), (0, 0, 0, 0))
+    out = Image.new('RGBA', (160, 320), (0, 0, 0, 0)); left = 80 - round((mid - ux0) * k)
     for i, f in enumerate(fr):
         s = shrink(f.crop((ux0, uy0, ux1, uy1)), k)
-        out.alpha_composite(s, (80 - round((mid - ux0) * k), i * 64 + 64 - s.height))
-    return out
+        out.alpha_composite(s, (left, i * 64 + 64 - s.height))
+    top = 64 - round((uy1 - uy0) * k)
+    hand = [round(left + (hx - ux0) * k), round(top + (hy - uy0) * k)]
+    return out, hand
 
 def main():
     big = np.array(Image.open(os.path.join(SRC, 'races.webp')).convert('RGB')).astype(int)
@@ -165,12 +169,16 @@ def main():
     goomba = out
     sheet(fit(goomba)).save(os.path.join(OUT, 'race_goomba.png'), optimize=True); have.append('goomba')
     # (the throws, over the standing backs, for the races drawn throwing)
-    for rid in THROW_ROWS: throw(rid).save(os.path.join(OUT, 'race_' + rid + '.png'), optimize=True)
+    hands = {}
+    for rid in THROW_ROWS:
+        im, hands[rid] = throw(rid); im.save(os.path.join(OUT, 'race_' + rid + '.png'), optimize=True)
     open(os.path.join(ROOT, 'data/race-backs.js'), 'w').write(
         '// Your back in battle by your race (tools/import-race-backs.py: assets/sprites/trainers/back/race_<id>.png).\n'
         'window.RACE_BACKS = ' + json.dumps(sorted(have)) + ';\n'
         '// (those drawn throwing: 160 wide, ui/battle-screen.css\'s .trainer-back.wide)\n'
-        'window.RACE_THROWS = ' + json.dumps(sorted(THROW_ROWS)) + ';\n')
+        'window.RACE_THROWS = ' + json.dumps(sorted(THROW_ROWS)) + ';\n'
+        '// (where in its 160x64 frame each lets go of the ball: ui/battle-screen.js throws yours from there)\n'
+        'window.RACE_THROW_HANDS = ' + json.dumps(hands, sort_keys=True) + ';\n')
     print(len(have), 'backs')
 
 if __name__ == '__main__':

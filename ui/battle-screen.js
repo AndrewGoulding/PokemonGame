@@ -1406,7 +1406,7 @@
         // The first Pokémon out: your trainer throws its Ball.
         if (side === "p1" && trainerOut) {
           trainerOut = false;
-          return async () => { await Promise.all([throwOut(), sendOut(pos, THROW_FROM_HAND, ball, 210)]); await message("Go! " + nameOf(a) + "!"); };
+          return async () => { await Promise.all([throwOut(), sendOut(pos, raceHand() || THROW_FROM_HAND, ball, 210)]); await message("Go! " + nameOf(a) + "!"); };
         }
         if (type === "drag") { renderSide(pos); return fill("{who} was dragged out!", a); }
         // Later switch-ins: thrown in from off-screen, as in FireRed. (A tag
@@ -2819,7 +2819,7 @@
     const own = mine.filter((f) => !tag || f.pos === "p1"), theirs = mine.filter((f) => tag && f.pos === "p1b");
     const text = (theirs.length ? theirs[0].sender + " sent out " + theirs[0].name + "!\n" : "") +
       (own.length ? "Go! " + own.map((f) => f.name).join(" and ") + "!" : "");
-    const from = (f) => (tag ? (f.pos === "p1b" ? THROW_FROM_PARTNER : THROW_FROM_TAG) : THROW_FROM_HAND);
+    const from = (f) => (tag ? (f.pos === "p1b" ? THROW_FROM_PARTNER : THROW_FROM_TAG) : raceHand() || THROW_FROM_HAND);
     if (trainerOut) {
       trainerOut = false;
       const throws = [throwOut()].concat(tag && config.partnerTrainer ? [throwOut(trainerEl(true))] : []);
@@ -2843,6 +2843,12 @@
   // Your trainer's throw starts where FireRed's does (pokeball.c: the ball at
   // (32, 80) of the 240x112 scene), behind and left of where your Pokémon
   // comes out, so it flies forward.
+  // (A race's own back, drawn throwing (data/race-backs.js): from its reaching fist, in its 160x64 frame, which
+  // stands 6 px from the field's left (ui/battle-screen.css's .trainer-back.wide) and 48 down.)
+  const raceHand = () => {
+    const id = config && /^race_/.test(config.trainer || "") && config.trainer.slice(5), h = id && (window.RACE_THROW_HANDS || {})[id];
+    return h ? [(6 + h[0]) / 240 * 100, (48 + h[1]) / 112 * 100] : null;
+  };
   const THROW_FROM_HAND = [32 / 240 * 100, 80 / 112 * 100], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8];
   // (A tag battle: from your hand and your partner's, 48 pixels left of the
   // usual and 10 right of it.)
