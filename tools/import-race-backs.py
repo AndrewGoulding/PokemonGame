@@ -9,7 +9,12 @@
 #
 #   python3 tools/import-race-backs.py
 #
-# Writes assets/sprites/trainers/back/race_<id>.png (64x320) and data/race-backs.js (window.RACE_BACKS: the races
+# Then the throws (source/throws.webp: five panels a race, ready, wind-up, throw, release, follow-through): each race's
+# five keyed the same way, the ball let go of taken off (the game throws its own), all five brought down by the one
+# amount and placed alike, so the arm swings and the body stays put: 128x64 frames, as the arm reaches past FireRed's
+# 64 (ui/battle-screen.css's .trainer-back.wide).
+#
+# Writes assets/sprites/trainers/back/race_<id>.png (128x320, or 64x320 for a race with no throw) and data/race-backs.js (window.RACE_BACKS: the races
 # that have one; ui/game.js gives you yours in battle).
 import json, os
 from collections import deque
@@ -29,7 +34,7 @@ PANELS = {
     'sheikah': (468, 872, 878, 1008),
 }
 
-def key(c, thr=34):
+def key(c, thr=34, least=0.03, crop=True):
     """An RGB panel -> RGBA, its beige ground flooded away from its edges (each row's ground its own colour)."""
     h, w = c.shape[:2]
     beige = (c[..., 0] > 190) & (c[..., 1] > 175) & (c[..., 2] > 140) & (c[..., 0] >= c[..., 2])
@@ -55,11 +60,11 @@ def key(c, thr=34):
     big = max((len(k) for k in comps), default=0)
     mask = np.zeros((h, w), bool)
     for k in comps:
-        if len(k) >= big * 0.03:
+        if len(k) >= big * least:
             for u, v in k: mask[v, u] = True
     rgba = np.zeros((h, w, 4), np.uint8); rgba[..., :3] = c; rgba[..., 3] = np.where(mask, 255, 0)
     im = Image.fromarray(rgba, 'RGBA')
-    return im.crop(im.getbbox())
+    return im.crop(im.getbbox()) if crop else im
 
 def fit(im):
     k = min(64 / im.height, 64 / im.width)
@@ -73,6 +78,61 @@ def fit(im):
 def sheet(f):
     out = Image.new('RGBA', (64, 320), (0, 0, 0, 0))
     for i in range(5): out.alpha_composite(f, (0, i * 64))
+    return out
+
+# throws.webp: its rows of panels (y0, y1), by race (its second Human, the Mushroom Kingdom's, and its Pokémon
+# Trainer not used), and its five columns (x0, x1)
+THROW_ROWS = {'hylian': (91, 142), 'kokiri': (150, 196), 'zora': (205, 251), 'gerudo': (259, 308), 'human': (322, 366),
+              'majin': (374, 416), 'saiyan': (423, 463), 'namekian': (470, 511), 'android': (519, 559),
+              'arcosian': (567, 606), 'kai': (613, 656), 'toad': (712, 748), 'pianta': (755, 791), 'goomba': (799, 836),
+              'koopa': (841, 882), 'sheikah': (958, 1007)}
+THROW_COLS = [(362, 582), (592, 815), (823, 1045), (1056, 1281), (1292, 1522)]
+
+def body(im):
+    """Only the pieces over the biggest one (not a ball flying off to the side)."""
+    a = np.array(im); al = a[..., 3] > 0; h, w = al.shape
+    lab = np.zeros((h, w), int); n = 0; boxes = {}
+    for y0 in range(h):
+        for x0 in range(w):
+            if not al[y0, x0] or lab[y0, x0]: continue
+            n += 1; st = [(x0, y0)]; lab[y0, x0] = n; xs = []
+            while st:
+                u, v = st.pop(); xs.append(u)
+                for du in (-1, 0, 1):
+                    for dv in (-1, 0, 1):
+                        p_, q = u + du, v + dv
+                        if 0 <= p_ < w and 0 <= q < h and al[q, p_] and not lab[q, p_]: lab[q, p_] = n; st.append((p_, q))
+            boxes[n] = (min(xs), max(xs), len(xs))
+    if not boxes: return im
+    big = max(boxes, key=lambda k: boxes[k][2]); bx0, bx1 = boxes[big][:2]
+    keep = [k for k, (x0, x1, _) in boxes.items() if x1 >= bx0 - 2 and x0 <= bx1 + 2]
+    a[..., 3] = np.where(np.isin(lab, keep), a[..., 3], 0)
+    return Image.fromarray(a, 'RGBA')
+
+def shrink(im, k):
+    """Brought down by k (each pixel the average of those under it), its edge kept hard."""
+    w, h = max(1, round(im.width * k)), max(1, round(im.height * k))
+    a = np.array(im).astype(float); a[..., :3] *= a[..., 3:4] / 255
+    b = np.array(Image.fromarray(a.astype(np.uint8), 'RGBA').resize((w, h), Image.BOX)).astype(float); al = b[..., 3:4]
+    b[..., :3] = np.where(al > 0, b[..., :3] * 255 / np.maximum(al, 1), 0); b[..., 3] = np.where(b[..., 3] > 110, 255, 0)
+    return Image.fromarray(b.astype(np.uint8), 'RGBA')
+
+def throw(rid):
+    """A race's five throw frames -> its 128x320 sheet."""
+    big = np.array(Image.open(os.path.join(SRC, 'throws.webp')).convert('RGB')).astype(int)
+    y0, y1 = THROW_ROWS[rid]; w = min(x1 - x0 for x0, x1 in THROW_COLS) - 12
+    # (each panel the same width from its left, inside its border; the first two keep their ball, held)
+    fr = [key(big[y0 + 3:y1 - 2, x0 + 8:x0 + 8 + w], crop=False) for x0, _ in THROW_COLS]
+    fr = [f if i < 3 else body(f) for i, f in enumerate(fr)]
+    boxes = [f.getbbox() for f in fr]
+    ux0, uy0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    ux1, uy1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+    # (as drawn, no bigger; smaller only if its swing would leave the frame)
+    k = min(1, 128 / (ux1 - ux0), 64 / (uy1 - uy0))
+    out = Image.new('RGBA', (128, 320), (0, 0, 0, 0))
+    for i, f in enumerate(fr):
+        s = shrink(f.crop((ux0, uy0, ux1, uy1)), k)
+        out.alpha_composite(s, ((128 - s.width) // 2, i * 64 + 64 - s.height))
     return out
 
 def main():
@@ -101,9 +161,13 @@ def main():
     out.alpha_composite(goomba, (0, ball.height - 3)); out.alpha_composite(ball, ((goomba.width - ball.width) // 2, 0))
     goomba = out
     sheet(fit(goomba)).save(os.path.join(OUT, 'race_goomba.png'), optimize=True); have.append('goomba')
+    # (the throws, over the standing backs, for the races drawn throwing)
+    for rid in THROW_ROWS: throw(rid).save(os.path.join(OUT, 'race_' + rid + '.png'), optimize=True)
     open(os.path.join(ROOT, 'data/race-backs.js'), 'w').write(
         '// Your back in battle by your race (tools/import-race-backs.py: assets/sprites/trainers/back/race_<id>.png).\n'
-        'window.RACE_BACKS = ' + json.dumps(sorted(have)) + ';\n')
+        'window.RACE_BACKS = ' + json.dumps(sorted(have)) + ';\n'
+        '// (those drawn throwing: 128 wide, ui/battle-screen.css\'s .trainer-back.wide)\n'
+        'window.RACE_THROWS = ' + json.dumps(sorted(THROW_ROWS)) + ';\n')
     print(len(have), 'backs')
 
 if __name__ == '__main__':

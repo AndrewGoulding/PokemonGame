@@ -2702,6 +2702,8 @@
       trainer.style.backgroundImage = "url(assets/sprites/trainers/back/" + cfg.trainer + ".png)";
       trainer.style.backgroundPositionY = "0%";
       trainer.classList.toggle("four", !!cfg.oldMan || !!cfg.wally);   // (his picture has 4 frames, not 5; Wally's too)
+      // (a race drawn throwing: its frames 128 wide, for the arm's swing)
+      trainer.classList.toggle("wide", /^race_/.test(cfg.trainer) && (window.RACE_THROWS || []).includes(cfg.trainer.slice(5)));
       trainer.classList.remove("hidden", "leaving");
       movers.push([trainer, shift]);
       trainerOut = true;
