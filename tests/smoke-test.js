@@ -7457,13 +7457,15 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       }
     }
   }
-  // (Every race's back in battle drawn throwing (tools/import-race-backs.py, source/throws.webp): five 160x64 frames.)
+  // (Every race's man and woman in battle (tools/import-race-backs.py, source/battle64): a back of five 64x64 frames, a
+  // 64x64 front.)
   {
-    const fs = require("fs"), path = require("path");
-    for (const r of window.REALM_RACES) {
-      assert(window.RACE_BACKS.includes(r.id) && window.RACE_THROWS.includes(r.id), r.id + " throws");
-      const png = fs.readFileSync(path.join(__dirname, "..", "assets/sprites/trainers/back", "race_" + r.id + ".png"));
-      assert(png.readUInt32BE(16) === 160 && png.readUInt32BE(20) === 320, r.id + "'s throw sheet");
+    const fs = require("fs"), path = require("path"), A = path.join(__dirname, "..", "assets/sprites/trainers");
+    for (const r of window.REALM_RACES) for (const id of [r.id, r.id + "_f"]) {
+      assert(window.RACE_BACKS.includes(id), id + " has a back");
+      const back = fs.readFileSync(path.join(A, "back", "race_" + id + ".png")), front = fs.readFileSync(path.join(A, "front", "race_" + id + ".png"));
+      assert(back.readUInt32BE(16) === 64 && back.readUInt32BE(20) === 320, id + "'s back sheet");
+      assert(front.readUInt32BE(16) === 64 && front.readUInt32BE(20) === 64, id + "'s front");
     }
   }
   // (The colours: each four shades, darkest first, its id once in its list; a good many of each, and seven skins or

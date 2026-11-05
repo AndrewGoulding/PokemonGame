@@ -296,6 +296,15 @@
     await persist();
   }
 
+  // Your picture in battle (its back) and on your card and in the Pokédex (its front), by your race and whether you
+  // chose its man or its woman (race_<id>_f): tools/import-race-backs.py's, where your race has one.
+  function racePic() {
+    const have = window.RACE_BACKS || [], id = player.race;
+    if (!id || !have.includes(id)) return null;
+    const woman = !!player.appearance && /_f$/.test(player.appearance.body || "");
+    return "race_" + id + (woman && have.includes(id + "_f") ? "_f" : "");
+  }
+
   // Your look from the character creator (player.appearance: ui/intro.js's race page), as you walk about everywhere.
   async function applyLook() {
     Overworld.setPlayerLook(player.appearance ? await Overworld.composeLook(player.appearance) : null);
@@ -447,7 +456,7 @@
       record: !!opts.record,   // (the choices and seed kept, to play it back: a Frontier battle's)
       expShare: expShareOn(),
       // (your back: your race's, where it has one, tools/import-race-backs.py)
-      trainer: player.race && (window.RACE_BACKS || []).includes(player.race) ? "race_" + player.race : Player.LOOKS[player.look].back,
+      trainer: racePic() || Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
       victoryMusic: opts.victoryMusic || johtoMusic.win || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
       terrain: battleTerrain(opts),
@@ -2424,7 +2433,7 @@
       entries: dexList().map((e) => ({ id: e.id, species: e.species, seen: seen.has(e.species), caught: caught.has(e.species) })),
       areas: speciesAreas,
       areaRegions: dexAreaRegions(),
-      trainer: "assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png",
+      trainer: "assets/sprites/trainers/front/" + (racePic() || Player.LOOKS[player.look].front) + ".png",
       cry: (sp) => cry(sp),
       // (The National Pokédex from the start: Player.nationalDex.)
       national: Player.nationalDex(player)
@@ -2521,7 +2530,7 @@
     const dir = "assets/trainer-card/" + region;
     const pics = { front: cardImage(dir + "-front-" + stars + ".png"), back: cardImage(dir + "-back-" + stars + ".png"),
       badges: cardImage(dir + "-badges.png"), star: cardImage(dir + "-star.png"),
-      me: cardImage("assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png") };
+      me: cardImage("assets/sprites/trainers/front/" + (racePic() || Player.LOOKS[player.look].front) + ".png") };
     await Promise.all(Object.values(pics).map((p) => p.loaded));
     const ok = (img) => img.complete && img.naturalWidth > 0;
     const BADGES = { kanto: ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"],

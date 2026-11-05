@@ -163,6 +163,25 @@ def steady(fr, rows=8, feet=False):
         out.append(Image.fromarray(y, 'RGBA'))
     return out
 
+B64 = os.path.join(SRC, 'battle64')
+def battle64():
+    """source/battle64/<race>_<male|female>_<front|back>.png -> back/race_<id>[_f].png (its back, five frames: standing,
+    then the throw by the picture's moving: down as it winds up, back, out as it throws, settling) and
+    front/race_<id>[_f].png; the ids done."""
+    FRONT = os.path.join(ROOT, 'assets/sprites/trainers/front'); have = []
+    for f in sorted(os.listdir(B64)):
+        m = f[:-4].split('_')
+        if not f.endswith('.png') or len(m) != 3 or m[1] not in ('male', 'female'): continue
+        rid = 'race_' + m[0] + ('_f' if m[1] == 'female' else '')
+        im = Image.open(os.path.join(B64, f)).convert('RGBA')
+        if m[2] == 'front': im.save(os.path.join(FRONT, rid + '.png'), optimize=True); continue
+        out = Image.new('RGBA', (64, 320), (0, 0, 0, 0))
+        for i, (dx, dy) in enumerate([(0, 0), (0, 1), (-2, 1), (3, 0), (1, 0)]):
+            fr = Image.new('RGBA', (64, 64), (0, 0, 0, 0)); fr.alpha_composite(im, (max(0, dx), max(0, dy)), (max(0, -dx), max(0, -dy)))
+            out.alpha_composite(fr, (0, i * 64))
+        out.save(os.path.join(OUT, rid + '.png'), optimize=True); have.append(rid[5:])
+    return sorted(have)
+
 def main():
     big = np.array(Image.open(os.path.join(SRC, 'races.webp')).convert('RGB')).astype(int)
     have = []
@@ -193,11 +212,16 @@ def main():
     hands = {}
     for rid in THROW_ROWS:
         im, hands[rid] = throw(rid); im.save(os.path.join(OUT, 'race_' + rid + '.png'), optimize=True)
+    # (source/battle64, where it is: each race's man and woman drawn at 64x64, front and back; they take over: the
+    # back a 64x320 sheet, the front a 64x64 picture as other trainers have)
+    throws = sorted(THROW_ROWS)
+    if os.path.isdir(B64):
+        have, throws, hands = battle64(), [], {}
     open(os.path.join(ROOT, 'data/race-backs.js'), 'w').write(
         '// Your back in battle by your race (tools/import-race-backs.py: assets/sprites/trainers/back/race_<id>.png).\n'
         'window.RACE_BACKS = ' + json.dumps(sorted(have)) + ';\n'
         '// (those drawn throwing: 160 wide, ui/battle-screen.css\'s .trainer-back.wide)\n'
-        'window.RACE_THROWS = ' + json.dumps(sorted(THROW_ROWS)) + ';\n'
+        'window.RACE_THROWS = ' + json.dumps(throws) + ';\n'
         '// (where in its 160x64 frame each lets go of the ball: ui/battle-screen.js throws yours from there)\n'
         'window.RACE_THROW_HANDS = ' + json.dumps(hands, sort_keys=True) + ';\n')
     print(len(have), 'backs')
