@@ -19,7 +19,7 @@
 import json, os
 from collections import deque
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(ROOT, 'assets/sprites/trainers/back/source')
@@ -125,6 +125,10 @@ def throw(rid):
     # (each panel the same width from its left, inside its border; the first two keep their ball, held)
     fr = [key(big[y0 + 3:y1 - 2, x0 + 8:x0 + 8 + w], crop=False) for x0, _ in THROW_COLS]
     fr = [f if i < 3 else body(f) for i, f in enumerate(fr)]
+    # (its head held still through the throw, as the drawings lean into it: each frame moved so its head's top is
+    # where the lowest one's is (the rest of it below the frame's bottom), and its middle where the ready frame's is;
+    # the Goomba's, the ball on its head its top, by its feet: kept across where the ready frame's are)
+    fr = steady(fr, feet=rid == 'goomba')
     # (where the ball leaves the hand: the reaching fist, its release frame's furthest point out)
     ra = np.array(fr[3])[..., 3] > 0; hx = np.nonzero(ra.any(0))[0][-1]; hy = np.nonzero(ra[:, hx - 3:hx + 1].any(1))[0].mean()
     boxes = [f.getbbox() for f in fr]
@@ -140,7 +144,28 @@ def throw(rid):
         out.alpha_composite(s, (left, i * 64 + 64 - s.height))
     top = 64 - round((uy1 - uy0) * k)
     hand = [round(left + (hx - ux0) * k), round(top + (hy - uy0) * k)]
-    return out, hand
+    # (turned round, the arm reaching to the left: so the ball, as FireRed's does, flies on from the hand to where your
+    # Pokémon stands, to its right, not back)
+    flip = Image.new('RGBA', out.size, (0, 0, 0, 0))
+    for i in range(5): flip.alpha_composite(ImageOps.mirror(out.crop((0, i * 64, 160, i * 64 + 64))), (0, i * 64))
+    return flip, [159 - hand[0], hand[1]]
+
+def steady(fr, rows=8, feet=False):
+    """Frames moved so their heads (the top `rows` rows of each) stay put: their tops down to the lowest's, their middles
+    across to the first's. (feet: by the bottom rows' middles, across only.)"""
+    a = [np.array(f) for f in fr]; tops, mids = [], []
+    for x in a:
+        al = x[..., 3] > 0; ys = np.nonzero(al.any(1))[0]; t = ys[0]
+        tops.append(0 if feet else t)
+        mids.append(np.nonzero(al[ys[-1] + 1 - rows:ys[-1] + 1] if feet else al[t:t + rows])[1].mean())
+    low = max(tops); out = []
+    for x, t, m in zip(a, tops, mids):
+        dy, dx = low - t, round(mids[0] - m)
+        y = np.zeros_like(x); h, w = x.shape[:2]
+        src = x[0:h - dy, max(0, -dx):w - max(0, dx)]
+        y[dy:h, max(0, dx):max(0, dx) + src.shape[1]] = src
+        out.append(Image.fromarray(y, 'RGBA'))
+    return out
 
 def main():
     big = np.array(Image.open(os.path.join(SRC, 'races.webp')).convert('RGB')).astype(int)

@@ -1406,7 +1406,7 @@
         // The first Pokémon out: your trainer throws its Ball.
         if (side === "p1" && trainerOut) {
           trainerOut = false;
-          return async () => { await Promise.all([throwOut(), sendOut(pos, raceHand() || THROW_FROM_HAND, ball, 210)]); await message("Go! " + nameOf(a) + "!"); };
+          return async () => { await Promise.all([throwOut(), sendOut(pos, raceHand() || THROW_FROM_HAND, ball, raceHand() ? RACE_RELEASE_MS : 210)]); await message("Go! " + nameOf(a) + "!"); };
         }
         if (type === "drag") { renderSide(pos); return fill("{who} was dragged out!", a); }
         // Later switch-ins: thrown in from off-screen, as in FireRed. (A tag
@@ -2823,7 +2823,7 @@
     if (trainerOut) {
       trainerOut = false;
       const throws = [throwOut()].concat(tag && config.partnerTrainer ? [throwOut(trainerEl(true))] : []);
-      await Promise.all(throws.concat(mine.map((f) => sendOut(f.pos, from(f), f.ball, 210))));
+      await Promise.all(throws.concat(mine.map((f) => sendOut(f.pos, from(f), f.ball, !tag && raceHand() ? RACE_RELEASE_MS : 210))));
       await message(text);
     } else {
       await Promise.all([message(text)].concat(mine.map((f) => sendOut(f.pos, THROW_FROM_LEFT, f.ball))));
@@ -2843,12 +2843,14 @@
   // Your trainer's throw starts where FireRed's does (pokeball.c: the ball at
   // (32, 80) of the 240x112 scene), behind and left of where your Pokémon
   // comes out, so it flies forward.
-  // (A race's own back, drawn throwing (data/race-backs.js): from its reaching fist, in its 160x64 frame, which
+  // (A race's own back, drawn throwing (data/race-backs.js): from its reaching fist (to the left, so the ball flies on
+  // to your Pokémon's right), in its 160x64 frame, which
   // stands 6 px from the field's left (ui/battle-screen.css's .trainer-back.wide) and 48 down.)
   const raceHand = () => {
     const id = config && /^race_/.test(config.trainer || "") && config.trainer.slice(5), h = id && (window.RACE_THROW_HANDS || {})[id];
     return h ? [(6 + h[0]) / 240 * 100, (48 + h[1]) / 112 * 100] : null;
   };
+  const RACE_RELEASE_MS = 240;
   const THROW_FROM_HAND = [32 / 240 * 100, 80 / 112 * 100], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8];
   // (A tag battle: from your hand and your partner's, 48 pixels left of the
   // usual and 10 right of it.)
@@ -3054,7 +3056,10 @@
   // (`t`: a tag partner's picture instead.)
   async function throwOut(t) {
     t = t || trainerEl();
-    for (const f of [1, 2, 3, 4]) { t.style.backgroundPositionY = (f * 25) + "%"; await wait(70); }
+    // (a race's own throw, drawn bigger (.wide): slower, its follow-through held before it goes; it lets go after its
+    // wind-up and throw, RACE_RELEASE_MS in)
+    const steps = t.classList.contains("wide") ? [[1, 130], [2, RACE_RELEASE_MS - 130], [3, 160], [4, 360]] : [[1, 70], [2, 70], [3, 70], [4, 70]];
+    for (const [f, ms] of steps) { t.style.backgroundPositionY = (f * 25) + "%"; await wait(ms); }
     t.classList.add("leaving");
     await wait(350);
     t.classList.add("hidden");
