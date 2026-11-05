@@ -79,23 +79,40 @@ def palette_of(cells, n=12):
     return sample.quantize(n, method=Image.Quantize.MEDIANCUT)
 
 def small(im, k, pal):
-    """A cell brought down by k as pixel art is: its colours first put in the race's palette, then each new pixel the
-    colour that covers most of what's under it (none blended: crisp), clear where it's mostly clear. Cut to the
-    figure, with where its middle was in its cell (so a walk keeps still what doesn't move)."""
-    idx = np.array(im.convert('RGB').quantize(palette=pal, dither=Image.Dither.NONE)); al = np.array(im)[..., 3] > 0
+    """A cell brought down by k as pixel art is, in the race's palette: each new pixel the palette colour nearest the
+    average of what's under it (smooth, no specks), but its dark if dark lines cover much of it (eyes, a mouth, an
+    edge kept); clear where it's mostly clear; then its edge drawn round in its darkest, as GBA sprites are. Its cell's
+    middle kept (so a walk keeps still what doesn't move)."""
+    n = len(set(np.array(pal).flatten().tolist())) or 1
+    cols = np.array(pal.getpalette()[:3 * n]).reshape(n, 3).astype(float)
+    src = np.array(im).astype(float); al = src[..., 3] > 0
+    idx = np.array(im.convert('RGB').quantize(palette=pal, dither=Image.Dither.NONE))
+    lum = cols @ [0.3, 0.59, 0.11]; darks = np.argsort(lum)[:2]
     w, h = max(1, round(im.width * k)), max(1, round(im.height * k))
-    cols = pal.getpalette()[:3 * 256]
-    out = np.zeros((h, w, 4), np.uint8)
+    out = np.zeros((h, w, 4), np.uint8); mask = np.zeros((h, w), bool)
     for v in range(h):
         y0, y1 = int(v / k), max(int(v / k) + 1, int((v + 1) / k))
         for u in range(w):
             x0, x1 = int(u / k), max(int(u / k) + 1, int((u + 1) / k))
             m = al[y0:y1, x0:x1]
             if m.mean() < 0.45: continue
-            c = np.bincount(idx[y0:y1, x0:x1][m]).argmax()
-            out[v, u, :3] = cols[3 * c:3 * c + 3]; out[v, u, 3] = 255
-    f = Image.fromarray(out, 'RGBA')
-    return f, (im.width * k / 2)
+            ii = idx[y0:y1, x0:x1][m]; px = src[y0:y1, x0:x1][m][:, :3]; dk = np.isin(ii, darks)
+            if dk.mean() >= 0.3: c = np.bincount(ii[dk]).argmax()
+            else: c = ((cols - (px[~dk] if (~dk).any() else px).mean(0)) ** 2).sum(1).argmin()
+            out[v, u, :3] = cols[c]; out[v, u, 3] = 255; mask[v, u] = True
+    pad = np.pad(mask, 1); edge = mask & ~(pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:])
+    out[edge, :3] = cols[lum.argmin()]
+    return Image.fromarray(out, 'RGBA'), (im.width * k / 2)
+
+def legs(stand, step, n=5):
+    """A step facing away: its standing frame (turned straight away), its bottom n rows (the legs) the step's, put
+    under it where they were (so walking north it doesn't turn from side to side)."""
+    a, b = np.array(stand), np.array(step); out = a.copy()
+    ys = np.nonzero(a[..., 3].any(1))[0]; cut = ys[-1] + 1 - n
+    bx, ax = np.nonzero(b[cut:, :, 3].any(0))[0], np.nonzero(a[cut:, :, 3].any(0))[0]
+    dx = 0 if not len(bx) or not len(ax) else round((ax[0] + ax[-1]) / 2 - (bx[0] + bx[-1]) / 2)
+    out[cut:] = 0; out[cut:] = np.roll(b[cut:], dx, axis=1)
+    return Image.fromarray(out, 'RGBA')
 
 def place(fr):
     """A brought-down cell into a 32x32 frame: its feet on the bottom row, its cell's middle the frame's."""
@@ -105,7 +122,7 @@ def place(fr):
     out.alpha_composite(f.crop(bb), (16 - round(mid) + bb[0], 32 - (bb[3] - bb[1])))
     return out
 
-TALL = 19   # (a race's standing height: as Kanto's people stand, 19 high)
+TALL = 20   # (a race's standing height: as Kanto's people stand, 19 or 20 high)
 def scale_for(stand):
     boxes = [x.getbbox() for x in stand]
     t = max(b[3] - b[1] for b in boxes); wid = max(b[2] - b[0] for b in boxes)
@@ -123,6 +140,7 @@ def fifteen(stand, walks, k, ups=None, kb=None):
     if ups:
         B = lambda c: place(small(c, kb, pal))
         s[1] = B(ups[0]); w['up'] = [B(ups[1]), B(ups[2])]
+    w['up'] = [legs(s[1], x) for x in w['up']]
     return s + [w['down'][0], w['down'][1], w['up'][0], w['up'][1], w['left'][0], w['left'][1],
                 s[0], s[0], s[1], s[1], s[2], s[2]]
 
