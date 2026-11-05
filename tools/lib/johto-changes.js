@@ -160,7 +160,10 @@ function apply({ maps, scripts, trainers }) {
   }
   // Scenes whose step HGSS has where Heart & Soul's ground is solid (they'd never start): on the way they're walked.
   // The Bell Tower's roof, Ho-Oh's: the step up from its stairs; Route 34's trio, Irene's: the way into their nook.
-  for (const [name, re, at] of [["BellTower_Roof", /scr_seq_D17R0110_006/, [[10, 13]]], ["Route34", /scr_seq_R34_00[45]/, [[22, 84]]]]) {
+  // The Radio Tower's 1F, the rival in your Rocket uniform (scr_seq_D23R0101_009): its step went onto the stairs,
+  // where the Grunt stands; the two tiles you come up to them by.
+  for (const [name, re, at] of [["BellTower_Roof", /scr_seq_D17R0110_006/, [[10, 13]]], ["Route34", /scr_seq_R34_00[45]/, [[22, 84]]],
+    ["GoldenrodCity_RadioTower_1F", /scr_seq_D23R0101_009/, [[21, 5], [22, 6]]]]) {
     const m = maps[name];
     if (!m || !m.triggers) continue;
     const moved = m.triggers.filter((t) => re.test(t.script || ""));

@@ -3506,7 +3506,7 @@ node tools/build-sinnoh.js <path to the Essentials project>
 | `assets/world/` | Generated map images and transparent overworld sprites |
 | `assets/intro/` | Generated opening movie, title screen and Oak's speech graphics |
 | `assets/battle/` | Generated battle backgrounds (FireRed's battle terrains) |
-| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles, 120 random double battles and 100 random battles each of Gen 7, Gen 8 and Gen 9 teams; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register); `tests/browser/johto-story.js` plays Johto's story in the page from Elm's Lab to Azalea (16 beats, one save the whole way: `node tests/browser/johto-story.js [first] [last]`, resuming from the save after the beat before) |
+| `tests/` | Loads every non-UI script and checks formulas, engine regressions, progression rules and AI choices, plus 200 random battles, 120 random double battles and 100 random battles each of Gen 7, Gen 8 and Gen 9 teams; `tests/browser/lib.js` is a Playwright helper for checking things in the real page (it serves the game, loads a save made in Node, and presses keys long enough to register); `tests/browser/johto-story.js` plays Johto's story in the page from Elm's Lab to Johto's League and the Hall of Fame (40 beats, one save the whole way: `node tests/browser/johto-story.js [first] [last]`, resuming from the save after the beat before) |
 
 ## Script load order
 

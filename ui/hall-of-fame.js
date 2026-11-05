@@ -411,7 +411,7 @@
       frame++;
       L.g.fillStyle = "#000"; L.g.fillRect(0, 0, W, H);
       if (scene) {
-        const m = window.WORLD_MAPS[scene.map], below = image("assets/world/maps/" + scene.map + ".png"), top = image("assets/world/maps/" + scene.map + "-top.png");
+        const m = window.WORLD_MAPS[scene.map], below = image("assets/world/maps/" + scene.map + ".png");
         const border = image("assets/world/maps/" + scene.map + "-border.png");
         if (frame % 2 === 0) { scene.cx += scene.dx; scene.cy += scene.dy; }
         const ox = Math.round(112 - scene.cx), oy = Math.round(64 - scene.cy);
@@ -429,8 +429,10 @@
         }).filter(Boolean));
         for (const [k, x, y] of maps) { const img = k === scene.map ? below : image("assets/world/maps/" + k + ".png"); if (ok(img)) L.g.drawImage(img, ox + x, oy + y); }
         for (const [k, x, y] of maps) {
-          const img = k === scene.map ? top : image("assets/world/maps/" + k + "-top.png");
-          if ((window.WORLD_MAPS[k] || {}).top && ok(img)) L.g.drawImage(img, ox + x, oy + y);
+          // (Only a map with a top layer has its picture: Route 3 hasn't.)
+          if (!(window.WORLD_MAPS[k] || {}).top) continue;
+          const img = image("assets/world/maps/" + k + "-top.png");
+          if (ok(img)) L.g.drawImage(img, ox + x, oy + y);
         }
         // (The darkened band, rows 36 to 124: BLDY 10 toward black.)
         L.g.fillStyle = "rgba(0, 0, 0, " + 10 / 16 + ")";
@@ -454,8 +456,10 @@
       const [map, x, y, dx, dy] = SCENES[key];
       scene = { map, cx: x * 16, cy: y * 16, dx, dy };
       const joined = ((window.WORLD_MAPS[map] || {}).connections || []).map((c) => c.map);
-      return Promise.all(["", "-top", "-border"].map((p) => image("assets/world/maps/" + map + p + ".png").loaded)
-        .concat(joined.flatMap((k) => ["", "-top"].map((p) => image("assets/world/maps/" + k + p + ".png").loaded))));
+      // (A map's top layer only where it has one.)
+      const tops = (k) => ((window.WORLD_MAPS[k] || {}).top ? ["-top"] : []);
+      return Promise.all(["", "-border"].concat(tops(map)).map((p) => image("assets/world/maps/" + map + p + ".png").loaded)
+        .concat(joined.flatMap((k) => [""].concat(tops(k)).map((p) => image("assets/world/maps/" + k + p + ".png").loaded))));
     };
     const fadeScreen = async (from, to) => { const st = from < to ? 1 : -1; for (let f = from; f !== to + st && !skip; f += st) { draw(f); await tick(); } };
 

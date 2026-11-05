@@ -427,8 +427,10 @@
           // Elevators: the floor chosen is where its doors open (FireRed's dynamic warp), and the floor it's at.
           case "SetDynamicWarp": env.setDynamicWarp(a[0], +getVar(a[2]) || 0, +getVar(a[3]) || 0); break;
           case "GetDynamicWarpFloorNo": {
-            const m = /_(B?)(\d+)F$/.exec(env.dynamicWarpMap() || "");
-            setVar(a[0], m ? (m[1] ? 1 - +m[2] : +m[2]) : 1);
+            // (The Radio Tower's lift has two stops, numbered from 0: 5F, then the Observation Deck.)
+            const at = env.dynamicWarpMap() || "", lift = { GoldenrodCity_RadioTower_5F: 0, GoldenrodCity_RadioTowerObservationDeck: 1 }[at];
+            const m = /_(B?)(\d+)F$/.exec(at);
+            setVar(a[0], lift != null ? lift : m ? (m[1] ? 1 - +m[2] : +m[2]) : 1);
             break;
           }
           case "Random": setVar(a[0], Math.floor(Math.random() * (+getVar(a[1]) || 1))); break;
@@ -619,7 +621,9 @@
             break;
           }
           case "CheckBattleWon": setVar(a[0], lastBattle === "won" || lastBattle === "caught" ? 1 : 0); break;
-          case "GetStaticEncounterOutcome": case "StaticWildWonOrCaughtCheck": setVar(a[0], lastBattle === "caught" ? 4 : lastBattle === "won" ? 1 : 0); break;
+          case "GetStaticEncounterOutcome": setVar(a[0], lastBattle === "caught" ? 4 : lastBattle === "won" ? 1 : 0); break;
+          // (Whether the Pokémon's still there, run from: 0 once it's knocked out or caught, as HGSS's scripts read it.)
+          case "StaticWildWonOrCaughtCheck": setVar(a[0], lastBattle === "won" || lastBattle === "caught" ? 0 : 1); break;
           case "WhiteOut": return;
 
           // The Bug-Catching Contest (ui/bug-contest.js).
