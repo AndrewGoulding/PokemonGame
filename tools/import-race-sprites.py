@@ -35,6 +35,8 @@ COLS = {'stand': [(239, 271), (293, 326), (353, 386), (412, 444)], 'down': [(479
         'left': [(618, 650), (660, 693), (702, 737)], 'up': [(761, 791), (802, 833), (842, 873)]}
 # (how far above a row's middle its cells start: the Majin's tighter, the Humans' feet just above them)
 TOP = {'majin': 19}
+# (and how far below it they end: the Android's just above the Arcosian's head, which nearly touches its feet)
+BOTTOM = {'android': 17}
 # sheikah.webp: the man's (top) and the woman's (bottom) cells' middles: standing down, left, up (the first panel's
 # first column, rows one to three); each walk's first row, its two frames.
 SHEIKAH = {'sheikah': 0, 'sheikah_f': 1}
@@ -155,10 +157,13 @@ def races():
     a = np.array(Image.open(os.path.join(SRC, 'races.webp')).convert('RGB')).astype(int)
     bg = np.array([23, 19, 31]); out = {}
     for rid, yc in ROWS:
-        top = TOP.get(rid, 23)
-        cell = lambda xr: cut(a, ((xr[0] + xr[1]) // 2 - 22, yc - top, (xr[0] + xr[1]) // 2 + 22, yc + 24), bg, 30)
+        top, bot = TOP.get(rid, 23), BOTTOM.get(rid, 24)
+        cell = lambda xr: cut(a, ((xr[0] + xr[1]) // 2 - 22, yc - top, (xr[0] + xr[1]) // 2 + 22, yc + bot), bg, 30)
         stand = [cell(COLS['stand'][i]) for i in (0, 1, 2)]
         walks = {d: [cell(x) for x in COLS[d]] for d in ('down', 'left', 'up')}
+        # (side-on: only the walk's first two frames, which face its way (the sheet's standing 'left' and the walk's
+        # third frame turn toward you, so going sideways it would spin round): standing the first, both steps the second)
+        wl = walks['left']; stand[2] = wl[0]; walks['left'] = [wl[1], None, wl[1]]
         k = scale_for(stand)
         # (its back views, as tall as its front stands)
         sb = stand[0].getbbox(); ups, kb = back_views(rid, (sb[3] - sb[1]) * k)
