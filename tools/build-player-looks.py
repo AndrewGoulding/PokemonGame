@@ -1171,7 +1171,7 @@ SIDE_ART['don_pianta'] = SIDE_ART['frankie'] = SIDE_ART['francesca'] = SIDE_ART[
 
 # ---------- The creator's people: one for each race ----------
 # From the sprite sheets given for the game (tools/import-race-sprites.py: tools/data/race-sprites.png, a race's
-# fifteen frames a row), in their own colours ("race_<id>"; the Sheikah's woman "race_sheikah_f"); a race not there
+# fifteen frames a row), in their own colours ("race_<id>"; its woman, where there is one, "race_<id>_f"); a race not there
 # is this game's own drawing (tools/race_looks.py), its colours yours to choose.
 RACE_SPRITES = os.path.join(ROOT, 'tools/data/race-sprites')
 def own_people():
@@ -1181,9 +1181,12 @@ def own_people():
         order = json.load(open(RACE_SPRITES + '.json')); img = Image.open(RACE_SPRITES + '.png').convert('RGBA'); p = img.load()
         for j, rid in enumerate(order):
             have[rid] = [{(x, y): (None, p[i * 32 + x, j * 32 + y][:3]) for y in range(32) for x in range(32) if p[i * 32 + x, j * 32 + y][3] > 128} for i in range(N)]
-    NAMES = {'sheikah': 'Sheikah', 'sheikah_f': 'Sheikah Woman'}
+    NAMES = {'sheikah': 'Sheikah'}
     for rid, frames in have.items():
-        name = NAMES.get(rid) or race_looks.RACES.get(rid, {}).get('name', rid)
+        # (a race's woman, race_<id>_f: "<its name> Woman")
+        base = rid[:-2] if rid.endswith('_f') else rid
+        name = NAMES.get(base) or race_looks.RACES.get(base, {}).get('name', base)
+        if rid.endswith('_f'): name += ' Woman'
         character('race_' + rid, name, 'custom', frames, (0, 0), split=False)
     for rid, spec in race_looks.RACES.items():
         if rid not in have: character('race_' + rid, spec['name'], 'custom', race_looks.frames(rid), (0, 0), split=False)

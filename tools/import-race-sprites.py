@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # The races' people (the character creator's, and you as you walk), from the sprite sheets given for the game
-# (assets/world/sprites/looks-source): races.webp, a row for each race; backs.webp, their back views (four each:
+# (assets/world/sprites/looks-source). Now: races16/, each race's man and woman drawn at the game's size, used as they
+# are (races16() below). Before them, and still read if that folder goes: races.webp, a row for each race; backs.webp, their back views (four each:
 # standing, two steps, standing again, for facing away) (standing facing down, up, left and right;
 # then three frames each of walking down, left, up and right, and of running), and sheikah.webp, the Sheikah's man
 # and woman (their standing views down the first panel, and each walk's first row its way).
@@ -216,8 +217,27 @@ def shift(im, dy):
 def pad(im, w):
     out = Image.new('RGBA', (w, im.height), (0, 0, 0, 0)); out.alpha_composite(im, ((w - im.width) // 2, 0)); return out
 
+# looks-source/races16: the races drawn at the game's own size (their README): <race>_male.png and _female.png, each
+# fifteen 16x20 frames in the game's order (standing down, up, left; the walks' steps; between them). Where they are,
+# they're used as they are, nothing brought down: each into its 32x32 frame, its middle the frame's, its feet on the
+# bottom row; the man race_<id>, the woman race_<id>_f.
+RACES16 = os.path.join(SRC, 'races16')
+def races16():
+    out = {}
+    for f in sorted(os.listdir(RACES16)):
+        m = f[:-4].rsplit('_', 1)
+        if not f.endswith('.png') or len(m) != 2 or m[1] not in ('male', 'female'): continue
+        im = Image.open(os.path.join(RACES16, f)).convert('RGBA'); fw, fh = im.width // 15, im.height
+        frames = []
+        for i in range(15):
+            fr = Image.new('RGBA', (32, 32), (0, 0, 0, 0)); fr.alpha_composite(im.crop((i * fw, 0, i * fw + fw, fh)), ((32 - fw) // 2, 32 - fh))
+            frames.append(fr)
+        out[m[0] + ('_f' if m[1] == 'female' else '')] = frames
+    # (men first, then women, each in its race's order)
+    return dict(sorted(out.items(), key=lambda kv: (kv[0].endswith('_f'), kv[0])))
+
 def main():
-    people = races(); people.update(sheikah())
+    people = races16() if os.path.isdir(RACES16) else dict(races(), **sheikah())
     order = list(people)
     sheet = Image.new('RGBA', (32 * 15, 32 * len(order)), (0, 0, 0, 0))
     for j, rid in enumerate(order):
