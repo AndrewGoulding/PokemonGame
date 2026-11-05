@@ -3,4 +3,4 @@ window.RACE_BACKS = ["android", "arcosian", "gerudo", "goomba", "human", "hylian
 // (those drawn throwing: 160 wide, ui/battle-screen.css's .trainer-back.wide)
 window.RACE_THROWS = ["android", "arcosian", "gerudo", "goomba", "human", "hylian", "kai", "kokiri", "koopa", "majin", "namekian", "pianta", "saiyan", "sheikah", "toad", "zora"];
 // (where in its 160x64 frame each lets go of the ball: ui/battle-screen.js throws yours from there)
-window.RACE_THROW_HANDS = {"android": [26, 50], "arcosian": [33, 48], "gerudo": [5, 46], "goomba": [55, 54], "human": [26, 41], "hylian": [10, 44], "kai": [20, 46], "kokiri": [32, 48], "koopa": [25, 47], "majin": [19, 44], "namekian": [29, 42], "pianta": [27, 52], "saiyan": [29, 49], "sheikah": [22, 44], "toad": [28, 51], "zora": [19, 45]};
+window.RACE_THROW_HANDS = {"android": [133, 50], "arcosian": [126, 48], "gerudo": [154, 46], "goomba": [104, 54], "human": [133, 41], "hylian": [149, 44], "kai": [139, 46], "kokiri": [127, 48], "koopa": [134, 47], "majin": [140, 44], "namekian": [130, 42], "pianta": [132, 52], "saiyan": [130, 49], "sheikah": [137, 44], "toad": [131, 51], "zora": [140, 45]};

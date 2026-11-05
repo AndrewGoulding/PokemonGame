@@ -2843,12 +2843,11 @@
   // Your trainer's throw starts where FireRed's does (pokeball.c: the ball at
   // (32, 80) of the 240x112 scene), behind and left of where your Pokémon
   // comes out, so it flies forward.
-  // (A race's own back, drawn throwing (data/race-backs.js): from its reaching fist (to the left, so the ball flies on
-  // to your Pokémon's right), in its 160x64 frame, which
+  // (A race's own back, drawn throwing (data/race-backs.js): from its reaching fist, in its 160x64 frame, which
   // stands 6 px from the field's left (ui/battle-screen.css's .trainer-back.wide) and 48 down.)
   const raceHand = () => {
     const id = config && /^race_/.test(config.trainer || "") && config.trainer.slice(5), h = id && (window.RACE_THROW_HANDS || {})[id];
-    return h ? [(6 + h[0]) / 240 * 100, (48 + h[1]) / 112 * 100] : null;
+    return h ? Object.assign([(6 + h[0]) / 240 * 100, (48 + h[1]) / 112 * 100], { lob: true }) : null;
   };
   const RACE_RELEASE_MS = 240;
   const THROW_FROM_HAND = [32 / 240 * 100, 80 / 112 * 100], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8];
@@ -2878,7 +2877,15 @@
     await b.decode().catch(() => {});
     const [x0, y0] = from, [x1, y1] = ballLand(side);
     const frames = [];
-    for (let i = 0; i <= 16; i++) {
+    if (from.lob) {
+      // (a race's throw, its fist out past where your Pokémon stands: up and away out of sight from the hand, on
+      // toward the foe, then down from above onto where it stands, never back across the screen)
+      const up = (t) => { const e = 1 - (1 - t) * (1 - t); return { left: (x0 + 8 * e) + "%", top: (y0 + (-20 - y0) * e) + "%" }; };
+      const down = (t) => ({ left: x1 + "%", top: (-20 + (y1 + 20) * t * t) + "%" });
+      for (let i = 0; i <= 8; i++) frames.push(Object.assign(up(i / 8), { offset: i / 8 * 0.4, opacity: 1 }));
+      for (let i = 0; i <= 8; i++) frames.push(Object.assign(down(i / 8), { offset: 0.5 + i / 8 * 0.5, opacity: 1 }));
+      frames.forEach((f, i) => { f.transform = "translate(-50%, -50%) rotate(" + Math.round(f.offset * 720) + "deg)"; });
+    } else for (let i = 0; i <= 16; i++) {
       const t = i / 16;
       frames.push({ left: (x0 + (x1 - x0) * t) + "%", top: (y0 + (y1 - y0) * t - 120 * t * (1 - t)) + "%",
         transform: "translate(-50%, -50%) rotate(" + Math.round(t * 720) + "deg)" });

@@ -19,7 +19,7 @@
 import json, os
 from collections import deque
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(ROOT, 'assets/sprites/trainers/back/source')
@@ -144,11 +144,7 @@ def throw(rid):
         out.alpha_composite(s, (left, i * 64 + 64 - s.height))
     top = 64 - round((uy1 - uy0) * k)
     hand = [round(left + (hx - ux0) * k), round(top + (hy - uy0) * k)]
-    # (turned round, the arm reaching to the left: so the ball, as FireRed's does, flies on from the hand to where your
-    # Pokémon stands, to its right, not back)
-    flip = Image.new('RGBA', out.size, (0, 0, 0, 0))
-    for i in range(5): flip.alpha_composite(ImageOps.mirror(out.crop((0, i * 64, 160, i * 64 + 64))), (0, i * 64))
-    return flip, [159 - hand[0], hand[1]]
+    return out, hand
 
 def steady(fr, rows=8, feet=False):
     """Frames moved so their heads (the top `rows` rows of each) stay put: their tops down to the lowest's, their middles
