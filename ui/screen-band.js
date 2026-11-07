@@ -71,8 +71,10 @@
       if (Math.abs(r.top - top.top) > 2 || r.width < top.width - 2) continue;
       layers.push({ el, z: +getComputedStyle(el).zIndex || 0 });
     }
-    // (an HTML scene with nothing at its top but its background: its colour)
-    if (scene && shown(scene) && !layers.some((l) => l.el === scene)) layers.push({ el: scene, z: 0 });
+    // (an HTML scene with nothing at its top but its background: its colour; not one that reaches the screen's top
+    // itself, as the berry tree's and mining's do, with their header up there)
+    const reachesTop = scene && scene.getBoundingClientRect().top < top.top - 2;
+    if (scene && shown(scene) && !reachesTop && !layers.some((l) => l.el === scene)) layers.push({ el: scene, z: 0 });
     const d = out.data;
     d.fill(0);
     let any = false;

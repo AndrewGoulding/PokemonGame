@@ -310,6 +310,8 @@
 
 /* ---------- Digging (Explorer Kit) ---------- */
 .scene:has(> .dig) { padding: 0 !important; overflow: hidden; }
+/* (The berry tree and mining, with their header along the top: the whole 240x192 screen, the header at its top.) */
+.gba > .scene:has(> .dig > .dig-top) { position: absolute; left: 0; right: 0; bottom: 0; height: 120%; z-index: 1; }
 /* The dig's text box: in the panel under the screen. */
 /* (FireRed's message box too: assets/text/message-box.png, its window x 16-224 of 240.) */
 .panel-text { grid-column: 1 / -1; aspect-ratio: 240 / 48; padding: 3.75% 6.667% 0; overflow: hidden;
@@ -494,6 +496,8 @@
 
 /* The berry tree (ui/berry-picking.js): its canvas as big as the space under the bars allows. */
 .berry-pick { background: #2e4a26; }
+/* (On the full screen the tree's board keeps its 3:2, as wide as it goes, in the middle of what's under the header.) */
+.berry-pick .berry-board { flex: 0 0 auto; width: 100%; height: auto; margin-block: auto; }
 .berry-blend { background: #283048; }
 .berry-board { display: block; align-self: center; flex: 1 1 auto; min-height: 0; max-width: 100%; aspect-ratio: 240 / 160;
   image-rendering: pixelated; border: 2px solid #1d150d; border-radius: 4px; touch-action: none; }
