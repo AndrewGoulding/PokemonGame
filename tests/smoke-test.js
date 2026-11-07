@@ -3127,9 +3127,10 @@ if (window.JOHTO_TOWN_MAP) {
   assert.strictEqual(O.patches.truck.collision.length, 4);
   // Who's there as the opening goes on.
   const who = (step) => O.people.concat(D.people).filter((p) => Orre.visible(p, { orre: step }) !== false).map((p) => p.localId.replace("LOCALID_ORRE_", ""));
-  assert.deepStrictEqual(who(0).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), ["TRUCK", "DINER_WILLIE"]);
-  assert.deepStrictEqual(who(2).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), ["DINER_WILLIE"], "no Wes, no bike");
-  assert(!who(3).includes("DINER_WILLIE") && !who(3).includes("FOLLY") && !who(3).includes("WILLIE"), "Willie's gone once battled; Folly and Trudly only in their scene");
+  // (Willie waits for Colosseum's story proper: not there yet.)
+  assert.deepStrictEqual(who(0).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), ["TRUCK"]);
+  assert.deepStrictEqual(who(2).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), [], "no Wes, no bike, no Willie yet");
+  assert(!who(3).includes("FOLLY") && !who(3).includes("WILLIE"), "Folly and Trudly only in their scene");
   // Going to Orre as yourself, and back where you were.
   const me = Player.create("Ash");
   me.party = [Party.create("Pikachu", 12)];

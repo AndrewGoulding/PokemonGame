@@ -4472,7 +4472,6 @@
       // ---------- Cerulean Cave ----------
       // ---------- Faraway Island ----------
       // ---------- Orre ----------
-      case "enter:OutskirtStand": await willieChallenge(); return;
       case "OutskirtStand_Diner_EventScript_Bartender": await orreBartender(); return;
       case "arrive:OutskirtStand": case "enter:OutskirtStand": if (!(f.orre | 0)) await orreArrival(); return;
       case "OrreAirStrip_EventScript_Pilot": await orrePilot(); return;
@@ -9817,25 +9816,41 @@
     await persist();
   }
   // Team Snagem's guards at the hideout's gate. Talk to one and you can ask to join Team Snagem, as Prof. Oak asked:
-  // they laugh, then battle you two on two, a Lv. 5 Pokémon each (you've come as a Champion, but with your Pokémon
-  // made Lv. 5 again by the Rejuvenator, as for any new region). Beat them and they give you the Snag Machine and
+  // they laugh, then battle you one after the other, each two on two with Lv. 5 Pokémon (you've come as a Champion,
+  // but with your Pokémon made Lv. 5 again by the Rejuvenator, as for any new region; player.flags.orreGrunts: how
+  // many you've beaten, so losing to the second has you face only him again). Beat both and they give you the Snag Machine and
   // Snagem's tests for a new recruit (player.flags.orreStory 3). The first: go to Phenac City (it opens on Orre's map)
   // and snag a Trainer's Makuhita (phenacKodo); come back with it (4) and they pass you (5) and send you straight on
-  // to the second (6): snag Breeder Lena's Eevee at the Outskirt Stand (it opens on the map; outskirtLena); back
-  // with it (7), they report you to Master Gonzap (8). Fail a test, by losing or without snagging its Pokémon, and
+  // to the second (6): snag both of Breeder Lena's Eevee at the Outskirt Stand (it opens on the map; outskirtLena);
+  // back with them (7), they report you to Master Gonzap (8). Fail a test, by losing or without snagging its Pokémon, and
   // you're brought back to the guards to try again. (What comes after is for later.)
   const SNAGEM_GUARDS = [ORRE("GUARD_1"), ORRE("GUARD_2")];
-  const SNAGEM_GRUNTS = () => [{ name: "Snagem Grunt", team: [Party.create("Poochyena", 5)], pic: "snagem_grunt" },
-    { name: "Snagem Grunt", team: [Party.create("Zubat", 5)], pic: "snagem_grunt", prizeClass: "Team Rocket", defeatText: ["Ugh… The rookie's got some bite!"] }];
+  const SNAGEM_GRUNTS = () => [
+    { name: "Snagem Grunt", team: [Party.create("Poochyena", 5), Party.create("Zubat", 5)], pic: "snagem_grunt", defeatText: ["Gah! Lucky shot, rookie!"] },
+    { name: "Snagem Grunt", team: [Party.create("Zigzagoon", 5), Party.create("Ekans", 5)], pic: "snagem_grunt", defeatText: ["Ugh… The rookie's got some bite!"] }];
+  // One of the guards' battles (0: the first, 1: the other): won?
+  async function snagemGruntBattle(i) {
+    const g = SNAGEM_GRUNTS()[i];
+    const outcome = await battle("trainer", { foe: g, double: true, prizeClass: "Team Rocket", noBlackout: true, music: "mus_vs_trainer",
+      defeatText: g.defeatText });
+    show("world");
+    await Overworld.resume();
+    music(window.WORLD_MAPS.SnagemHideout.music);
+    if (outcome === "won") return true;
+    await say(["Grunt: Hah! Is that all you've got?", "Come back when your Pokémon can\nactually fight, kid!"]);
+    player.party.forEach(Party.heal);
+    await persist();
+    return false;
+  }
   // Snagem's second test, given with the first passed (or later, to a save that passed it before there was one).
   async function snagemTestTwo() {
     await say(["Grunt: Test two. Head south-west to the\nOutskirt Stand, the diner out in the\ndesert.",
-      "There's a Pokémon Breeder in there\nwith an Eevee. A real prize, that one.", "Snag it, and bring it back here!"]);
+      "There's a Pokémon Breeder in there\nwith two Eevee. Real prizes, those.", "Snag them both, and bring them back\nhere!"]);
     player.flags.orreStory = 6;
     if (Orre.unlock(player.flags, "OutskirtStand")) await say("The Outskirt Stand was marked on\nthe Orre Map!");
   }
   // A failed test: taken back to the hideout's guards to try again.
-  async function snagemTestFailed(what) {
+  async function snagemTestFailed(what, plural) {
     Screen.say("");
     await Overworld.fadeToBlack();
     player.party.forEach(Party.heal);
@@ -9843,7 +9858,7 @@
     await Overworld.teleport(player.location);
     music(window.WORLD_MAPS.SnagemHideout.music);
     await say(["Grunt: You call that a snag?\nYou came back empty-handed!", "Pathetic. Get back out there and\ntry again!",
-      "And this time, snag that " + what + "\nbefore it goes down!"]);
+      plural ? "And this time, snag those " + what + "\nbefore they go down!" : "And this time, snag that " + what + "\nbefore it goes down!"]);
     await persist();
   }
   async function snagemGuard(person) {
@@ -9857,8 +9872,8 @@
       return;
     }
     if (step === 7) {
-      await say(fill("Grunt: Well? Let's see it, then.\nYou got that Eevee?"));
-      await say(["Grunt: Hah! You snagged that one too!", "Other grunt: This rookie's the real\ndeal!"]);
+      await say(fill("Grunt: Well? Let's see them, then.\nYou got those Eevee?"));
+      await say(["Grunt: Hah! Both of them!", "Other grunt: This rookie's the real\ndeal!"]);
       await say(["Grunt: That's test two passed.\nI'll tell Master Gonzap about you.",
         "But don't get cocky. A Snagem's got a\nlot more to prove than that.", "Hang around. We'll have your next\ntest ready soon."]);
       f.orreStory = 8;
@@ -9866,8 +9881,9 @@
       return;
     }
     if (step === 6) {
-      await say(["Grunt: What're you doing back here?", "Your test's at the Outskirt Stand! The\nBreeder in the diner has an Eevee.",
-        "Snag it, and bring it back here!"]);
+      const left = 2 - (f.orreLenaSnagged | 0);
+      await say(["Grunt: What're you doing back here?", "Your test's at the Outskirt Stand! The\nBreeder in the diner has two Eevee.",
+        left === 1 ? "You've got one. Snag the other, and\nbring it back here!" : "Snag them both, and bring them back\nhere!"]);
       return;
     }
     if (step === 5) {
@@ -9890,6 +9906,12 @@
         "Snag it, and bring it back here!"]);
       return;
     }
+    if ((f.orreGrunts | 0) === 1) {
+      // (The first beaten, the second not yet.)
+      await say(["Other grunt: Back for more, rookie?", "You beat him, sure. But you still\ngotta get past me!"]);
+      if (!(await snagemGruntBattle(1))) return;
+      return snagemJoin(f);
+    }
     await say(["Grunt: Hey! Who are you? This is\nTeam Snagem's hideout!", "Nobody gets through this gate without\nthe boss's say-so."]);
     if (!(await confirm("Ask to join Team Snagem?"))) { await say("Grunt: Then beat it, kid!"); return; }
     await say([fill("{PLAYER}: I want to join Team Snagem!")]);
@@ -9900,19 +9922,18 @@
     await say(["Other grunt: Gahahaha! You hear that?\nThe kid wants to be a Snagem!"]);
     await say(["Grunt: Team Snagem's no playground,\nkid. We snag other Trainers' Pokémon\nfor a living.",
       "…Then again, Master Gonzap's always\nsaying we need more hands."]);
-    await say(["Other grunt: Not so fast. Snagem don't\ntake weaklings.", "Let's see what your Pokémon can do.\nTwo on two, the both of us!"]);
-    const [g1, g2] = SNAGEM_GRUNTS();
-    const outcome = await battle("trainer", { foe: g1, foe2: g2, prizeClass: "Team Rocket", noBlackout: true, music: "mus_vs_trainer",
-      defeatText: ["Gah! Lucky shot, rookie!"] });
-    show("world");
-    await Overworld.resume();
-    music(window.WORLD_MAPS.SnagemHideout.music);
-    if (outcome !== "won") {
-      await say(["Grunt: Hah! Is that all you've got?", "Come back when your Pokémon can\nactually fight, kid!"]);
-      player.party.forEach(Party.heal);
-      await persist();
-      return;
-    }
+    await say(["Other grunt: Not so fast. Snagem don't\ntake weaklings.", "You'll have to beat the both of us.\nOne at a time!"]);
+    await say(["Grunt: Me first. Let's see what your\nPokémon can do!"]);
+    if (!(await snagemGruntBattle(0))) return;
+    f.orreGrunts = 1;
+    await persist();
+    await say(["Grunt: Hngh… Not bad, kid.", "Other grunt: Outta the way. My turn!"]);
+    if (!(await snagemGruntBattle(1))) return;
+    return snagemJoin(f);
+  }
+  // Both guards beaten: the Snag Machine and Snagem's first test.
+  async function snagemJoin(f) {
+    f.orreGrunts = 2;
     await say(["Grunt: …Huh. The kid can battle.", "Fine. You want in? You pass our tests.",
       "And for those, you'll need this."]);
     Player.addItem(player, "snag-machine", 1);
@@ -9951,30 +9972,35 @@
     await say(outcome === "lost" ? ["Black Belt Kodo: Hah! Not so tough\nafter all!"] : ["Black Belt Kodo: That was a great\nbattle! My Makuhita needs a rest."]);
     await snagemTestFailed("Makuhita");
   }
-  // Snagem's second test, at the Outskirt Stand: Breeder Lena in the diner (the third traveller) and her Eevee
-  // (Lv. 10, to be snagged) and Skitty (Lv. 9). Snag it and keep it (orreStory 7); lose, or knock it out without
-  // snagging it, and you're taken back to the guards to try again. Before the test she's just a traveller.
-  const LENA_TEAM = () => [Party.create("Eevee", 10), Party.create("Skitty", 9)];
+  // Snagem's second test, at the Outskirt Stand: Breeder Lena in the diner (the third traveller) and her two Eevee
+  // (Lv. 10, both to be snagged) and Skitty (Lv. 9). Snag both and win (orreStory 7). Lose, or knock one out without
+  // snagging it, and you're taken back to the guards to try again; one you did snag is yours, and she has only the
+  // other next time (player.flags.orreLenaSnagged). Before the test she's just a traveller.
+  const LENA_EEVEE = 2;
+  const LENA_TEAM = (eevee) => Array.from({ length: eevee }, () => Party.create("Eevee", 10)).concat([Party.create("Skitty", 9)]);
   async function outskirtLena(person) {
-    const step = player.flags.orreStory | 0;
-    if (step >= 7) { await say(["Breeder Lena: My Eevee… I raised it\nfrom an Egg.", "Team Snagem… I'll never forgive you!"]); return; }
+    const f = player.flags, step = f.orreStory | 0;
+    if (step >= 7) { await say(["Breeder Lena: My Eevee… I raised them\nfrom Eggs.", "Team Snagem… I'll never forgive you!"]); return; }
     if (step < 6) { if (person && person.text) await say(person.text); return; }
-    await say(["Breeder Lena: Oh, hello! Are you a\nTrainer too?", "I'm taking my Eevee and Skitty to\nPhenac City. They're my pride and joy!",
-      "Would you like to battle? Two on two!"]);
-    const opts = { foe: { name: "Breeder Lena", team: LENA_TEAM(), pic: "pokemon_breeder" }, double: true, prizeClass: "Pokémon Breeder",
+    const left = LENA_EEVEE - (f.orreLenaSnagged | 0);
+    await say(left < LENA_EEVEE ? ["Breeder Lena: You again!", "You took one of my Eevee… You won't\nget the other!"]
+      : ["Breeder Lena: Oh, hello! Are you a\nTrainer too?", "I'm taking my two Eevee and Skitty to\nPhenac City. They're my pride and joy!",
+        "Would you like to battle? Two on two!"]);
+    const opts = { foe: { name: "Breeder Lena", team: LENA_TEAM(left), pic: "pokemon_breeder" }, double: true, prizeClass: "Pokémon Breeder",
       noBlackout: true, snag: ["Eevee"], music: "mus_vs_trainer", defeatText: ["Oh my! You're very strong!"] };
     const outcome = await battle("trainer", opts);
     show("world");
     await Overworld.resume();
     music(window.WORLD_MAPS.OutskirtStand_Diner.music);
-    if (outcome !== "lost" && (opts.snagged || []).includes("Eevee")) {
-      await say(["Breeder Lena: My Eevee!\nGive it back!", "That machine on your arm…\nYou're with Team Snagem!"]);
-      player.flags.orreStory = 7;
+    f.orreLenaSnagged = (f.orreLenaSnagged | 0) + (opts.snagged || []).filter((sp) => sp === "Eevee").length;
+    if (outcome !== "lost" && f.orreLenaSnagged >= LENA_EEVEE) {
+      await say(["Breeder Lena: My Eevee! Both of them!\nGive them back!", "That machine on your arm…\nYou're with Team Snagem!"]);
+      f.orreStory = 7;
       await persist();
       return;
     }
     await say(outcome === "lost" ? ["Breeder Lena: Better luck next time!"] : ["Breeder Lena: What a lovely battle!\nMy Eevee needs a rest now."]);
-    await snagemTestFailed("Eevee");
+    await snagemTestFailed("Eevee", LENA_EEVEE - f.orreLenaSnagged > 1);
   }
   // The pilot: back to Kanto, outside Prof. Oak's lab.
   async function orrePilot() {
@@ -10029,7 +10055,8 @@
     await Overworld.act([{ who: ORRE("TRUCK"), moves: ["delay_16"].concat(Array(12).fill("walk_fast_right"), ["set_invisible"]) }]);
     Overworld.removeObject(ORRE("FOLLY")); Overworld.removeObject(ORRE("TRUDLY"));
   }
-  // Coming back out of the diner, Willie follows.
+  // Coming back out of the diner, Willie follows. (Not yet: Willie and his battle wait for Colosseum's story proper,
+  // once Orre has enough before it for your Pokémon to be around Lv. 26; Orre.visible hides him till then.)
   async function willieChallenge() {
     const door = window.WORLD_MAPS.OutskirtStand.warps[0];
     await Overworld.act([{ who: "player", moves: ["walk_down", "walk_down"] }]);
@@ -10058,14 +10085,14 @@
     Overworld.removeObject(ORRE("WILLIE"));
   }
   // The bartender: a hot meal (the party rested) any time, and the bar's
-  // stock once Willie's been battled.
+  // stock once Folly and Trudly have gone with their delivery.
   async function orreBartender() {
     await say(["Welcome to the Outskirt Stand!"]);
     if (await confirm("You look beat. How about a hot meal?\nOn the house, for a new face.")) {
       player.party.forEach(Party.heal);
       await sayWithJingle("mus_heal", "{PLAYER} and the Pokémon ate their fill.\nEveryone's rested!");
     }
-    if ((player.flags.orre | 0) < 3) { await say(["Sorry, kid, the shop's shut till I've\nsorted out the morning's delivery."]); return; }
+    if ((player.flags.orre | 0) < 2) { await say(["Sorry, kid, the shop's shut till I've\nsorted out the morning's delivery."]); return; }
     await mart(Orre.SHOP);
   }
   // The jukebox: another song.
@@ -14597,7 +14624,8 @@
     if (script === "enter:FarawayIsland_Interior") { player.flags.farawaySteps = 0; return !player.flags.foughtMew; }
     // Orre: in the diner after the truck's gone, Willie follows you out.
     if (script === "enter:OutskirtStand_Diner") { if ((player.flags.orre | 0) === 2) player.flags.orreInside = true; return false; }
-    if (script === "enter:OutskirtStand") return (player.flags.orre | 0) === 2 && !!player.flags.orreInside;
+    // (Willie's challenge as you come out of the diner (willieChallenge) waits for Colosseum's story proper.)
+    if (script === "enter:OutskirtStand") return false;
     // Walking into the Route 4 Pokémon Center makes it where you go after
     // blacking out (FireRed's setrespawn there).
     if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }

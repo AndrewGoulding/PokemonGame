@@ -21,7 +21,7 @@
 //   0 / undefined  not yet at the Outskirt Stand (Folly and Trudly's truck by it)
 //   1              arrived from the Air Strip, and they've come out of the diner
 //   2              they've driven off with their sack
-//   3              Willie's battled (he points you to Phenac City; the bar sells)
+//   3              Willie's battled (he points you to Phenac City; not yet: he waits for the story proper)
 (function () {
   "use strict";
 
@@ -117,19 +117,22 @@
   }
 
   const ID = (k) => "LOCALID_ORRE_" + k;
+  // (Rider Willie, and his battle as you leave the diner, wait for Colosseum's story proper: not yet.)
+  const WILLIE_YET = false;
   function visible(person, flags) {
     const step = flags.orre | 0;
     switch (person.localId) {
       case ID("TRUCK"): return step < 2;
       case ID("BIKE"): return false;   // (Wes's, parked: you came on foot, from the Air Strip)
       case ID("FOLLY"): case ID("TRUDLY"): case ID("WILLIE"): return false;   // (only in their scenes)
-      case ID("DINER_WILLIE"): return step < 3;
+      case ID("DINER_WILLIE"): return WILLIE_YET && step < 3;
       default: return undefined;
     }
   }
   const patches = (map, flags) => (map === "OutskirtStand" && (flags.orre | 0) < 2 ? ["truck"] : []);
 
-  // Rider Willie's two Zigzagoon (Lv. 10 and 11: met on Snagem's second test, under Orre's cap of 15).
+  // Rider Willie's two Zigzagoon (Lv. 10 and 11, for now: he waits for Colosseum's story proper, and his team
+  // will be set for then).
   const willieTeam = () => [window.Party.create("Zigzagoon", 10), window.Party.create("Zigzagoon", 11)];
 
   window.Orre = { PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };

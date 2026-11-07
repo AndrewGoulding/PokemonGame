@@ -3121,20 +3121,24 @@ vests as in Colosseum, guard the gate; a third keeps a lookout in the canyon.
 
 **Joining Team Snagem** (this game's own, as Oak asked: you're to go undercover). Talk to either guard and you can
 ask to join Team Snagem. The guards laugh, but Master Gonzap always wants more hands, and first they want to see
-you battle: **the two grunts battle you together**, two on two, with a Poochyena and a Zubat (Lv. 5 each). Lose and
-they tell you to come back when your Pokémon can fight. Win and you're in if you pass Snagem's tests: they give you
+you battle: **each grunt battles you in turn**, two on two, the first with a Poochyena and a Zubat, the second with
+a Zigzagoon and an Ekans (Lv. 5 each). Lose and they tell you to come back when your Pokémon can fight (beat the
+first and lose to the second, and next time only the second battles you). Beat both and you're in if you pass
+Snagem's tests: they give you
 the **Snag Machine** (a key item: worn on the arm, it turns your Poké Balls into Snag Balls that can catch another
 Trainer's Pokémon) and the first test.
 - **Test one: Phenac City.** Phenac opens on Orre's map. By its fountain, Black Belt Kodo battles you two on two with
   a Makuhita and a Machop (Lv. 7 each): snag his Makuhita (a Ball thrown at it, with the Snag Machine) and win, and
   it's yours. Back at the hideout the guards pass you and send you straight on to the next test.
 - **Test two: the Outskirt Stand.** The Stand opens on Orre's map. In its diner, **Breeder Lena** (one of the
-  travellers) battles you two on two with an Eevee (Lv. 10) and a Skitty (Lv. 9): snag her Eevee and win, and it's
-  yours. Back at the hideout the guards pass you and report you to Master Gonzap.
+  travellers) battles you two on two with two Eevee (Lv. 10) and a Skitty (Lv. 9): snag both her Eevee and win, and
+  they're yours. Snag only one and the test isn't passed, but that one's yours, and next time she has only the
+  other. Back at the hideout the guards pass you and report you to Master Gonzap.
 - Fail a test (lose, or knock its Pokémon out without snagging it) and you're taken back to the guards to try again.
 - The tests after that are still to be written. `player.flags.orreStory`: 1 after Oak's call, 2 once you've flown to
-  Orre, 3 with test one set, 4 with the Makuhita snagged, 5 with test one passed, 6 with test two set, 7 with the
-  Eevee snagged, 8 once the guards have seen it.
+  Orre, 3 with test one set, 4 with the Makuhita snagged, 5 with test one passed, 6 with test two set, 7 with both
+  Eevee snagged, 8 once the guards have seen them. (`orreGrunts`: the guards beaten; `orreLenaSnagged`: her Eevee
+  snagged so far.)
 
 **Snagging** (`engine/battle.js`, `opts.snag`): a trainer battle can be given the species that may be snagged in it.
 While one is out, you can throw a Ball (the Bag's Poké Balls pocket, as in a wild battle) and it's aimed at that
@@ -3156,14 +3160,17 @@ the desert. Its townspeople say Colosseum's own words (`assets/text/colosseum.js
 **The Outskirt Stand**, out in Orre's desert, opens on the map with Snagem's second test: a diner made from an old
 locomotive. The first time you get there, two men come out of the diner, **Folly** and **Trudly**. They talk about
 their meal and the sack in their truck, see you, tell you to mind your own business, and drive off with it. Inside,
-**Rider Willie** sits at the back, and **Breeder Lena**, one of the travellers, has the Eevee Snagem want. When you
-come out again, Willie follows and challenges you to a **double battle** (every battle in Colosseum is one) with two
-Zigzagoon (Lv. 10 and 11). Afterwards he points you north to Phenac City. Losing to Willie doesn't make you black
-out: he goes back in and challenges you again next time.
+**Breeder Lena**, one of the travellers, has the two Eevee Snagem want.
+
+**Not yet: Rider Willie.** Colosseum's own story proper starts once Orre has enough before it for your Pokémon to be
+around Lv. 26. Until then Willie isn't at the Stand: his scene is built (he sits at the back of the diner, then
+follows you out and challenges you to a double battle; afterwards he points you north to Phenac City, and losing
+doesn't make you black out) but switched off (`game/orre.js`'s `WILLIE_YET`, and `willieChallenge` in `ui/game.js`),
+and his team will be set for then.
 
 In the diner:
 - The bartender serves a free meal that heals your Pokémon, and runs the
-  shop once Willie's been battled.
+  shop once Folly and Trudly have gone with their delivery.
 - The TV shows the news.
 - The jukebox plays another song.
 - The travellers in the booths talk about the road.
