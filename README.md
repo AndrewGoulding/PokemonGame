@@ -3207,6 +3207,23 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   Bandana Guy Divel (Quagsire), Roller Boy Lon (Slugma) and Hunters Doken (Qwilfish) and Zalo (Swablu). Each battles you
   until you've snagged their Shadow Pokémon (`Orre.SHADOW_TRAINERS`, `shadowTrainer`; `orreShadowDone`). The words are
   this game's own telling, after Colosseum's. Cipher's Peons are Team Rocket's grunts in Cipher's purple.
+- **Agate Village** (`orreStory` 28 to 31; `eagunsHouseScene`, `agateShrine` in `ui/game.js`). In Rui's grandparents'
+  house (the cabin top right; Verdanturf's house inside) Rui tells Eagun and Beluh about the kidnapping and the Shadow
+  Pokémon, and a villager runs in: strangers at the Relic Stone! At the shrine Eagun faces Cipher's Peons; beat Skrub
+  (Shadow Hitmontop, Lv. 38) and his partner. Beluh finds the family's old tablet: the Relic can open the last door of a
+  heart shut by shadows. Then Eagun calls: crooks have taken over Mt. Battle.
+- **Purifying Shadow Pokémon** (this game's own take on Colosseum's heart gauge: `heartStep`, `relicStone`). A
+  snagged Shadow Pokémon's heart starts shut (`record.heart`, 100); it opens a point every 8 steps you walk with it and
+  6 for each battle won with it in your party, and you're told when it's open. Then Agate's Relic Stone purifies it
+  (from `orreStory` 30): no longer a Shadow Pokémon, its Shadow moves give way to the moves it would know at its level.
+  The stone tells you how open a heart is till then. (`orrePurified` lists them.)
+- **Mt. Battle** (`orreStory` 31 to 33; new, drawn in `tools/build-orre.js`: three rocky terraces each with a stone
+  battle court, stairs up the faces, the Pokémon Center by the way in; on Orre's map in the north-east). Orre's cap goes
+  up to 40. Two of the mountain's Trainers, Cipher Peons Turo and Berin on the slopes, and at the summit Cipher Admin
+  **Dakim** (Shadow Entei, Lv. 40, with Golem, Claydol and Marowak), who has beaten Area Leader Vander for his Time
+  Flute. Beaten, Dakim pulls out and sends Skrub off to "Ein's lab"; Vander gives you the **Time Flute** (a key item).
+- In a tag battle, snagging the second Trainer's Pokémon now gets you that Pokémon (the engine lists the partner's
+  Pokémon after the Trainer's).
 - **Colosseum's Shadow Pokémon** (`Orre.SHADOW` in `game/orre.js`): all 47 of them, in Colosseum's order, each with its
   level, its Trainer and where you meet them (Trudly's Makuhita, Lv. 30, at the Mayor's house; Rogue Cail's Furret,
   Lv. 33, in Pyrite Town; on to Evice's Tyranitar). From Colosseum's story proper on, a Trainer who has a Shadow Pokémon

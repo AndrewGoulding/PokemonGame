@@ -1856,6 +1856,110 @@ const PCG = pokemonCenterInside("AgateVillage_PokemonCenter_1F", "Agate Village"
     ["My grandpa trains Pokémon up on\nMt. Battle, past the village.", "I want to be as strong as him\nsomeday!"])
 ]);
 
+// ---------- Mt. Battle (after Colosseum's; drawn here) ----------
+//
+// The mountain where Trainers come to train, north of Agate: grey-brown rock and sparse grass in three terraces, each
+// with a stone battle court laid out in white lines; stairs cut up through the terraces' faces; the Pokémon Center by
+// the way in at the bottom; at the top, the summit court, where Area Leader Vander trains (and, in Colosseum's
+// story, where Cipher's Dakim attacks him). Drawn here, the Pokémon Center Emerald's as elsewhere in Orre.
+const BW = 34, BH = 32;
+const BPC = { x: 25, y: 23, w: 4, h: 4 }, BPC_DOOR = { x: 26, y: 26 };
+const BWALLS = [[21, 15, 2], [11, 25, 2]];   // (terrace faces: row, stairs' left column, stairs' width)
+const BCOURTS = [{ x: 4, y: 23, w: 10, h: 5 }, { x: 9, y: 13, w: 16, h: 6 }, { x: 8, y: 3, w: 18, h: 6 }];
+const BEXIT = { x: 15, w: 4 }, BSIGN = { x: 14, y: 29 };
+const BBOULDERS = [[6, 15], [28, 16], [3, 8], [30, 5], [21, 28], [30, 19]];
+const bRock = (x, y) => x < 2 || x >= BW - 2 || y < 2 || (y === BH - 1 && (x < BEXIT.x || x >= BEXIT.x + BEXIT.w))
+  || BWALLS.some(([row, sx, sw]) => y === row && !(x >= sx && x < sx + sw));
+const bblocks = new Array(BW * BH).fill(SAND);
+{
+  const L = layouts.LAYOUT_MAUVILLE_CITY, mv = fs.readFileSync(path.join(EM, L.blockdata_filepath));
+  for (let y = 0; y < BPC.h; y++) for (let x = 0; x < BPC.w; x++) bblocks[(BPC.y + y) * BW + BPC.x + x] = mv.readUInt16LE(((2 + y) * L.width + 21 + x) * 2);
+}
+const mtBattle = E.render(bblocks, BW, BH, general, mauville, false);
+const MROCK = [[184, 168, 144], [152, 136, 112], [120, 104, 88], [88, 76, 64], [56, 48, 44]];
+const MGROUND = [[176, 168, 136], [160, 152, 120], [140, 132, 104], [112, 104, 84]];
+function drawMtBattle() {
+  const c = canvas(BW * 16, BH * 16);
+  seed = 171;
+  for (let ty = 0; ty < BH; ty++) for (let tx = 0; tx < BW; tx++) {
+    if (tx >= BPC.x && tx < BPC.x + BPC.w && ty >= BPC.y && ty < BPC.y + BPC.h) continue;
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const n = Math.sin((tx * 16 + x) * 0.11 + (ty * 16 + y) * 0.07) + Math.sin((tx * 16 + x) * 0.04 - (ty * 16 + y) * 0.13) * 0.7;
+      c.set(tx * 16 + x, ty * 16 + y, MGROUND[n > 1.1 ? 0 : n > -0.8 ? 1 : 2]);
+    }
+    for (let k = 0; k < 4; k++) c.set(tx * 16 + Math.floor(rand() * 16), ty * 16 + Math.floor(rand() * 16), MGROUND[3]);
+    if (rand() < 0.18) { const x = tx * 16 + 3 + Math.floor(rand() * 10), y = ty * 16 + 4 + Math.floor(rand() * 9); c.set(x, y, [104, 152, 72]); c.set(x + 1, y - 1, [104, 152, 72]); c.set(x + 2, y, [80, 128, 64]); }
+  }
+  // The battle courts: pale stone, a white line round, a centre line and circle.
+  for (const b of BCOURTS) {
+    const x0 = b.x * 16, y0 = b.y * 16, w = b.w * 16, h = b.h * 16;
+    c.box(x0, y0, w, h, { fill: [200, 192, 176], light: [224, 216, 200], dark: [168, 160, 144], line: [120, 112, 100] });
+    for (let k = 0; k < (w * h) / 40; k++) c.set(x0 + 2 + Math.floor(rand() * (w - 4)), y0 + 2 + Math.floor(rand() * (h - 4)), [184, 176, 160]);
+    c.frame(x0 + 6, y0 + 6, w - 12, h - 12, [248, 248, 240]);
+    c.vl(x0 + w / 2, y0 + 6, y0 + h - 7, [248, 248, 240]);
+    c.ring(x0 + w / 2, y0 + h / 2, Math.min(18, h / 2 - 8), [248, 248, 240]);
+  }
+  rockTiles(c, bRock, BW, BH, MROCK);
+  // The stairs up through the terrace faces.
+  for (const [row, sx, sw] of BWALLS) for (let k = 0; k < 4; k++) {
+    c.rect(sx * 16, row * 16 + k * 4, sw * 16, 4, k % 2 ? MROCK[1] : MROCK[0]);
+    c.hl(sx * 16, sx * 16 + sw * 16 - 1, row * 16 + k * 4 + 3, MROCK[3]);
+  }
+  return c;
+}
+pasteOn(mtBattle, BW, BH, drawMtBattle(), 0, 0, -1);
+function boulder() {
+  const c = canvas(16, 20);
+  c.rect(1, 15, 15, 4, C.shadow);
+  c.disc(8, 10, 7, MROCK[3]); c.disc(8, 10, 6, MROCK[1]); c.disc(6, 8, 3, MROCK[0]); c.set(10, 12, MROCK[2]); c.set(11, 13, MROCK[2]);
+  return c;
+}
+for (const [x, y] of BBOULDERS) pasteOn(mtBattle, BW, BH, boulder(), x * 16, y * 16 - 4, 4);
+pasteOn(mtBattle, BW, BH, signPost(C.wood), BSIGN.x * 16, BSIGN.y * 16 - 16, 16);
+pcCorners(mtBattle, BW, BPC);
+const MTBATTLE = {
+  name: "MtBattle", title: "Mt. Battle", width: BW, height: BH, type: "route", music: "em_route120",
+  region: "orre", battleScene: "mountain", cycling: false, showName: true, top: true, borderWidth: 2, borderHeight: 2,
+  collision: [], elevation: [], behavior: [], encounter: [], connections: [], triggers: [], hidden: [],
+  warps: [{ x: BPC_DOOR.x, y: BPC_DOOR.y, map: "MtBattle_PokemonCenter_1F", warp: 0 }],
+  signs: [{ x: BSIGN.x, y: BSIGN.y, script: "MtBattle_EventScript_Sign", text: ["MT. BATTLE", "Where Trainers come to test\nthemselves."] }],
+  people: [
+    person(0, "BATTLE_TRAINER_1", 8, 25, "black_belt", "face_right", "MtBattle_EventScript_Trainer1", null),
+    person(1, "BATTLE_TRAINER_2", 12, 27, "cooltrainer_f", "face_left", "MtBattle_EventScript_Trainer2", null),
+    person(2, "TURO", 12, 15, "orre_peon_m", "face_right", "MtBattle_EventScript_Turo", null),
+    person(3, "BERIN", 21, 17, "orre_peon_m", "face_left", "MtBattle_EventScript_Berin", null),
+    person(4, "DAKIM", 17, 5, "black_belt", "face_down", "MtBattle_EventScript_Dakim", null),
+    person(5, "SUMMIT_SKRUB", 19, 5, "orre_peon_m", "face_down", "MtBattle_EventScript_SummitSkrub", null),
+    person(6, "VANDER", 17, 7, "cooltrainer_m", "face_up", "MtBattle_EventScript_Vander", null),
+    person(7, "BATTLE_PC_HIKER", 22, 27, "hiker", "wander_around", "MtBattle_EventScript_Hiker",
+      ["Mt. Battle's the place to get strong.\nBut lately, purple-suited types have\nbeen chasing everyone off."], { rangeX: 1, rangeY: 1 })
+  ],
+  wild: null
+};
+{
+  const solid = new Set(), fill = (b) => { for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) solid.add(x + "," + y); };
+  for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) if (bRock(x, y)) solid.add(x + "," + y);
+  fill(BPC);
+  solid.delete(BPC_DOOR.x + "," + BPC_DOOR.y);
+  for (const [x, y] of [...BBOULDERS, [BSIGN.x, BSIGN.y]]) solid.add(x + "," + y);
+  for (let i = 0; i < BW * BH; i++) {
+    const x = i % BW, y = Math.floor(i / BW);
+    MTBATTLE.collision.push(solid.has(x + "," + y) ? 1 : 0);
+    MTBATTLE.elevation.push(3);
+    MTBATTLE.behavior.push(x === BPC_DOOR.x && y === BPC_DOOR.y ? 0x69 : 0);
+    MTBATTLE.encounter.push(0);
+  }
+  writePng(path.join(outMaps, "MtBattle.png"), BW * 16, BH * 16, mtBattle.below);
+  writePng(path.join(outMaps, "MtBattle-top.png"), BW * 16, BH * 16, mtBattle.above);
+  const b = canvas(32, 32);
+  rockTiles(b, () => true, 2, 2, MROCK);
+  save(b, path.join(outMaps, "MtBattle-border.png"));
+}
+const PCB = pokemonCenterInside("MtBattle_PokemonCenter_1F", "Mt. Battle", "MtBattle", 0, [
+  person(1, "BATTLE_PC_GIRL", 11, 5, "em_woman_5", "face_left", "MtBattle_PokemonCenter_1F_EventScript_Girl",
+    ["Area Leader Vander trains at the top\nof the mountain. He's the strongest\nof all of us."])
+]);
+
 // ---------- Colosseum's story proper: Pyrite Town's insides, and Miror B.'s hideout ----------
 //
 // For now each an Emerald room (its picture and layout), as Orre's Pokémon Centers are: Duking's house (Mossdeep's
@@ -1920,6 +2024,23 @@ for (const [m, list] of [[PYRITE, SHADOW_TRAINERS.PyriteTown], [PYCAVE, SHADOW_T
   const id = Math.max(-1, ...m.people.map((p) => p.id)) + 1;
   m.people.push(person(id, "SHADOW_" + key, x, y, sprite, facing, m.name + "_EventScript_Shadow_" + key, null));
 }
+// Agate Village, in Colosseum's story: Eagun and Beluh's house (the cabin top right; Verdanturf's house inside), and
+// Cipher's Peons at the Relic Stone's shrine (Skrub, with Colosseum's Shadow Hitmontop).
+const AGATE_EAGUN_DOOR = doorBelow(GCABINS[1]);
+const EAGUN_HOUSE = emeraldRoom("VerdanturfTown_House", "AgateVillage_EaguansHouse", "Agate Village",
+  [{ x: 3, y: 8, map: "AgateVillage", warp: 1 }, { x: 4, y: 8, map: "AgateVillage", warp: 1 }], [
+    person(0, "EAGUN", 6, 3, "old_man_2", "face_down", "AgateVillage_EaguansHouse_EventScript_Eagun", null),
+    person(1, "BELUH", 8, 4, "old_woman", "face_left", "AgateVillage_EaguansHouse_EventScript_Beluh", null),
+    person(2, "AGATE_RUNNER", 3, 7, "man", "face_up", "AgateVillage_EaguansHouse_EventScript_Runner", null),
+    person(3, "EAGUN_RUI", 4, 7, "orre_rui", "face_up", "AgateVillage_EaguansHouse_EventScript_Rui", null)
+  ], { music: "em_fallarbor" });
+AGATE.warps.push({ x: AGATE_EAGUN_DOOR.x, y: AGATE_EAGUN_DOOR.y, map: "AgateVillage_EaguansHouse", warp: 0 });
+AGATE.signs = AGATE.signs.filter((s) => !(s.x === AGATE_EAGUN_DOOR.x && s.y === AGATE_EAGUN_DOOR.y));
+AGATE.behavior[AGATE_EAGUN_DOOR.y * GW + AGATE_EAGUN_DOOR.x] = 0x69;
+for (const [key, x, y, sprite, facing, script] of [["SKRUB", 17, 6, "orre_peon_m", "face_up", "AgateVillage_EventScript_Skrub"],
+  ["AGATE_PEON", 18, 7, "orre_peon_f", "face_up", "AgateVillage_EventScript_Peon"], ["SHRINE_EAGUN", 15, 7, "old_man_2", "face_right", "AgateVillage_EventScript_ShrineEagun"]]) {
+  AGATE.people.push(person(Math.max(...AGATE.people.map((p) => p.id)) + 1, key, x, y, sprite, facing, script, null));
+}
 // Pyrite Cave's north end, back open to Miror B.'s hideout in the story (its collision and arrow, as Fiery Path's).
 PYCAVE.warps.push({ x: 26, y: 4, map: "PyriteCave_MirorBHideout", warp: 0 });
 PYCAVE.patches = { hideout: { x: 26, y: 4, w: 1, h: 1, top: false, collision: [[26, 4, 0, 0x65]] } };
@@ -1949,7 +2070,7 @@ function edgeExits(m, rows) {
   for (const y of rows) for (let x = 0; x < m.width; x++) if (!m.collision[y * m.width + x]) m.triggers.push({ x, y, script: "Orre_WorldMap" });
 }
 OUT.connections = []; AIR.connections = [];
-edgeExits(OUT, [0, H - 1]); edgeExits(AIR, [0]); edgeExits(HIDE, [HH - 1]); edgeExits(PHENAC, [PHH - 1]); edgeExits(PYRITE, [YH - 1]); edgeExits(AGATE, [GH - 1]);
+edgeExits(OUT, [0, H - 1]); edgeExits(AIR, [0]); edgeExits(HIDE, [HH - 1]); edgeExits(PHENAC, [PHH - 1]); edgeExits(PYRITE, [YH - 1]); edgeExits(AGATE, [GH - 1]); edgeExits(MTBATTLE, [BH - 1]);
 AIR.signs[0].text = ["ORRE AIR STRIP", "Through the gate: the desert roads\nof Orre."];
 
 // The map of Orre (240 by 160, the town map's size): a desert of dunes, red mesas and canyons, the mountains to the
@@ -2012,6 +2133,6 @@ fs.writeFileSync(orreFile,
   "// Orre's Outskirt Stand and Snagem Hideout, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
   "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE, PhenacCity: PHENAC, PhenacCity_PokemonCenter_1F: PCP, PhenacCity_MayorsHouse: MAYOR_HOUSE,
     PyriteTown: PYRITE, PyriteTown_PokemonCenter_1F: PCY, PyriteCave: PYCAVE, PyriteTown_DukingsHouse: DUKING_HOUSE,
-    PyriteTown_PyriteBuilding_1F: BUILDING_1F, PyriteTown_PyriteBuilding_4F: BUILDING_4F, PyriteCave_MirorBHideout: MIROR_HIDEOUT, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG }) + ");\n" + sinnohPart);
+    PyriteTown_PyriteBuilding_1F: BUILDING_1F, PyriteTown_PyriteBuilding_4F: BUILDING_4F, PyriteCave_MirorBHideout: MIROR_HIDEOUT, AgateVillage_EaguansHouse: EAGUN_HOUSE, MtBattle: MTBATTLE, MtBattle_PokemonCenter_1F: PCB, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG }) + ");\n" + sinnohPart);
 console.log("wrote Pyrite Town (" + YW + "x" + YH + "), Pyrite Cave and Agate Village (" + GW + "x" + GH + ")");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");

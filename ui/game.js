@@ -516,8 +516,12 @@
     opts.snagged = [];
     if (b.snagged && b.snagged.length && result.outcome !== "lost") {
       const balls = b.events.filter((e) => e[0] === "caught" && e[3] === "snag").map((e) => e[2]);
+      // (In a tag battle the partner's Pokémon follow the trainer's, three each: engine/battle.js's side.pokemon.)
+      const foeTeam = foe2 && double ? foe.team.slice(0, 3).concat(foe2.team.slice(0, 3)) : foe.team;
       for (let i = 0; i < b.snagged.length; i++) {
-        const m = b.snagged[i], record = Party.caught(foe.team[m.teamIndex], m, balls[i] || "poke-ball");
+        const m = b.snagged[i], record = Party.caught(foeTeam[m.teamIndex], m, balls[i] || "poke-ball");
+        // (A Shadow Pokémon's heart starts shut tight: Orre's heart gauge, heartStep and the Relic Stone.)
+        if (record.shadow) record.heart = SHADOW_HEART;
         delete record.teraAce;
         opts.snagged.push(record.species);
         await addCaught(record, opts.keepCaught);
@@ -538,6 +542,8 @@
     } else if (result.outcome === "lost" || !canBattle()) {
       await blackout(wild ? null : foe);
     } else {
+      // (A Shadow Pokémon's heart opens a little with each battle it's along for.)
+      for (const r of player.party) if (r.shadow && r.heart > 0) r.heart = Math.max(0, r.heart - SHADOW_HEART_BATTLE);
       for (const record of leveledUp) {
         const evo = Evolution.find(record, { trigger: "level", party: player.party, coins: coins() });
         if (evo) await evolve(record, evo, true);
@@ -2971,6 +2977,11 @@
       "arrive:PyriteTown", "enter:PyriteTown", "PyriteTown_DukingsHouse_EventScript_Duking", "PyriteTown_DukingsHouse_EventScript_Marcia",
       "PyriteTown_DukingsHouse_EventScript_Secc", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", "enter:PyriteTown_PyriteBuilding_4F",
       "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS),
+      "enter:AgateVillage_EaguansHouse", "AgateVillage_EaguansHouse_EventScript_Eagun", "AgateVillage_EaguansHouse_EventScript_Beluh",
+      "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone",
+      "arrive:MtBattle", "enter:MtBattle", "MtBattle_EventScript_Dakim", "MtBattle_EventScript_SummitSkrub", "MtBattle_EventScript_Vander",
+      "MtBattle_EventScript_Trainer1", "MtBattle_EventScript_Trainer2", "MtBattle_EventScript_Turo", "MtBattle_EventScript_Berin",
+      "MtBattle_PokemonCenter_1F_EventScript_Nurse",
       "PyriteTown_PokemonCenter_1F_EventScript_Nurse", "AgateVillage_PokemonCenter_1F_EventScript_Nurse",
       ...Object.keys(Orre.FILLERS),
       "PhenacCity_PokemonCenter_1F_EventScript_Nurse"
@@ -4498,6 +4509,14 @@
       case "PyriteTown_PyriteBuilding_1F_EventScript_Nore": await pyriteNore(); return;
       case "enter:PyriteTown_PyriteBuilding_4F": await pyriteTopFloor(); return;
       case "enter:PyriteCave_MirorBHideout": await mirorBHideout(); return;
+      case "enter:AgateVillage_EaguansHouse": await eagunsHouseScene(); return;
+      case "AgateVillage_EaguansHouse_EventScript_Eagun": case "AgateVillage_EaguansHouse_EventScript_Beluh": await eagunsHouse(script); return;
+      case "AgateVillage_EventScript_Skrub": case "AgateVillage_EventScript_Peon": await agateShrine(); return;
+      case "AgateVillage_EventScript_RelicStone": await relicStone(); return;
+      case "arrive:MtBattle": case "enter:MtBattle": await mtBattleArrival(); return;
+      case "MtBattle_EventScript_Dakim": case "MtBattle_EventScript_SummitSkrub": case "MtBattle_EventScript_Vander": await mtBattleSummit(script); return;
+      case "MtBattle_EventScript_Trainer1": case "MtBattle_EventScript_Trainer2": case "MtBattle_EventScript_Turo": case "MtBattle_EventScript_Berin":
+        await orreTrainer(script); return;
       case "OrreAirStrip_EventScript_Pilot": await orrePilot(); return;
       case "Orre_WorldMap": await orreTravel(); return;
       case "SnagemHideout_EventScript_Guard1": case "SnagemHideout_EventScript_Guard2": await snagemGuard(ev.person); return;
@@ -9964,6 +9983,16 @@
       robbed: ["My Aipom!", "I'll find you, Snagem. I'll get it\nback. I swear it!"],
       snagged: ["Give my Aipom back, thief!"],
       won: ["Leave Agate, Snagem! And don't come\nback!"], lost: ["My partners and I won't be beaten\nby a Snagem!"] },
+    // (Mt. Battle's, in Colosseum's story: two of its Trainers, and Cipher's Peons Turo and Berin on the slopes.)
+    MtBattle_EventScript_Trainer1: { name: "Black Belt Garo", cls: "Black Belt", pic: "black_belt", team: () => [Party.create("Hariyama", 35), Party.create("Machoke", 35)],
+      intro: ["Mt. Battle's training grounds are\nclosed! Purple goons everywhere! But\nI'll still battle you!"], defeat: ["Oof!"],
+      after: ["Area Leader Vander's up at the summit.\nThose crooks went after him!"] },
+    MtBattle_EventScript_Trainer2: { name: "Cooltrainer Mira", cls: "Cooltrainer", pic: "cooltrainer_f", team: () => [Party.create("Kirlia", 35), Party.create("Grovyle", 36)],
+      intro: ["I came to train, not to run from\ncrooks! Let's battle!"], defeat: ["You're strong!"], after: ["Go on up. Show those crooks!"] },
+    MtBattle_EventScript_Turo: { name: "Cipher Peon Turo", cls: "Team Rocket", pic: "cipher_peon", team: () => [Party.create("Graveler", 37), Party.create("Golbat", 36)],
+      intro: ["No one goes up the mountain! Master\nDakim's orders!"], defeat: ["Urrgh… Master Dakim will have my\nhead…"], after: ["Master Dakim's at the summit. He'll\ncrush you!"] },
+    MtBattle_EventScript_Berin: { name: "Cipher Peon Berin", cls: "Team Rocket", pic: "cipher_peon", team: () => [Party.create("Mightyena", 37), Party.create("Sealeo", 37)],
+      intro: ["You beat Turo? Don't get a swelled\nhead!"], defeat: ["Tch!"], after: ["Master Dakim will deflate your pride\nreal quick!"] },
     PyriteCave_EventScript_Rowe: { name: "Hiker Rowe", cls: "Hiker", pic: "hiker", team: () => [Party.create("Gligar", 23), Party.create("Graveler", 22)],
       before: ["I've been digging in this cave for\nthirty years. Found all kinds of\nthings!"],
       intro: ["Eh? Snagem, down here? My Gligar's\nthe best digging partner there is!", "You'll not have it!"], defeat: ["Rock-solid, you are…"],
@@ -10515,6 +10544,169 @@
     Overworld.removeObject(R);
     f.orreStory = 21;
     if (snagged) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(shadow.species);
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // ---------- Orre: Shadow Pokémon's hearts, and the Relic Stone (this game's own, after Colosseum's heart gauge) ----------
+  //
+  // A Shadow Pokémon you snag comes with its heart shut tight (record.heart, SHADOW_HEART). Walking with it and
+  // battling with it opens it little by little (a point every 8 steps; SHADOW_HEART_BATTLE for each battle won).
+  // Once it's open, Agate Village's Relic Stone can purify it (from orreStory 30, when Eagun's family tablet has told
+  // you how): it's a Shadow Pokémon no more, and its Shadow moves give way to the moves it would know at its level.
+  const SHADOW_HEART = 100, SHADOW_HEART_BATTLE = 6, HEART_STEPS = 8;
+  let heartSteps = 0;
+  function heartStep() {
+    if (++heartSteps < HEART_STEPS) return null;
+    heartSteps = 0;
+    for (const r of player.party) if (r.shadow && r.heart > 0) {
+      r.heart--;
+      if (!r.heart) return { type: "heart-open", text: Party.displayName(r) + "'s heart has opened!\nThe Relic Stone can purify it now." };
+    }
+    return null;
+  }
+  const heartWords = (h) => (h <= 0 ? "open" : h <= 25 ? "nearly open" : h <= 60 ? "opening, little by little" : "still shut tight");
+  async function relicStone() {
+    const f = player.flags, shadows = player.party.filter((r) => r.shadow);
+    await say(["It's the Relic Stone, the village's\nholy stone.", "It feels warm, somehow, as if it\nwere glad you came."]);
+    if ((f.orreStory | 0) < 30 || !shadows.length) return;
+    for (const r of shadows) {
+      const name = Party.displayName(r);
+      if ((r.heart | 0) > 0) { await say([name + "'s heart is " + heartWords(r.heart) + ".", "Battle and travel together, and it will\nopen in time."]); continue; }
+      if (!(await confirm("Purify " + name + " at the\nRelic Stone?"))) continue;
+      await Overworld.flash();
+      sfx("se_m_reflect");
+      r.shadow = false;
+      delete r.heart;
+      r.moves = Party.create(r.species, r.level).moves;   // (the moves it would know at its level)
+      await sayWithJingle("mus_heal", [name + "'s heart opened all the way!", name + " is a Shadow Pokémon no more!"]);
+      (f.orrePurified = f.orrePurified || []).push(r.species);
+      await persist();
+    }
+  }
+
+  // ---------- Orre: Colosseum's story, Agate Village (orreStory 28 to 31) ----------
+  //
+  // 28: in Eagun and Beluh's house, Rui tells her grandparents about the kidnapping and the Shadow Pokémon; a villager
+  // runs in: strangers at the Relic Stone! Eagun goes after them (29). At the shrine, Cipher's Peons and Skrub (Shadow
+  // Hitmontop, Lv. 38): beat them, and Eagun tells of the family's old tablet; Beluh finds it: the Relic can open the
+  // last door of a heart shut by shadows (30: purifying at the Relic Stone). Then a call: crooks have taken over
+  // Mt. Battle (31).
+  async function eagunsHouse(script) {
+    const f = player.flags, story = f.orreStory | 0;
+    if (script === "AgateVillage_EaguansHouse_EventScript_Beluh") {
+      await say(story === 29 ? ["Beluh: Please, go after my husband!\nHe's no spring chicken!"]
+        : story >= 30 ? ["Beluh: Look after each other, you two.\nAnd come home safe."] : ["Beluh: Oh! Welcome, welcome!"]);
+      return;
+    }
+    await say(story >= 31 ? ["Eagun: Mt. Battle is to the north. You\ncan see it from the edge of the\nvillage. Hurry!"]
+      : story >= 30 ? ["Eagun: The Relic Stone can open a\nPokémon's heart. Use it well."] : ["Eagun: Welcome to Agate, young one."]);
+  }
+  async function eagunsHouseScene() {
+    const f = player.flags, R = ORRE("EAGUN_RUI"), V = ORRE("AGATE_RUNNER"), E = ORRE("EAGUN"), B = ORRE("BELUH");
+    const me = player.location;
+    Overworld.addObject(R, { x: me.x + 1, y: me.y, facing: "up" });
+    await Overworld.act([{ who: "player", moves: ["walk_up", "walk_up", "walk_up"] }, { who: R, moves: ["walk_up", "walk_up", "walk_up"] }]);
+    await say(["Rui: Grandpa! Grandma! I missed you!"]);
+    await say(["Beluh: Rui, dear! We were so worried\nwhen you didn't arrive!"]);
+    await say(["Rui: It was awful. On the way here,\nsome creepy men grabbed me…", "I think it's because I can see them:\nShadow Pokémon. Pokémon made into\nfighting machines, their hearts shut.",
+      "{PLAYER} saved me. And we've been\nsnagging those poor Pokémon back from\nthe crooks ever since."]);
+    await say(["Eagun: Shadow Pokémon? Hearts shut by\nforce? What wickedness…", "Thank you for looking after our Rui,\n{PLAYER}."]);
+    sfx("se_door");
+    Overworld.addObject(V, { x: 3, y: 8, facing: "up" });
+    await Overworld.act([{ who: V, moves: ["walk_up"] }, { who: "player", moves: ["face_down"] }, { who: R, moves: ["face_down"] }]);
+    await say(["Villager: Eagun! There's trouble!\nStrangers have gone up to the Relic\nStone! Purple-suited, the lot of them!"]);
+    await say(["Eagun: What?! At the Relic Stone?\nThat's enough talk! I'm off!"]);
+    Screen.say("");
+    await Overworld.act([{ who: E, moves: ["walk_down", "walk_down", "walk_left", "walk_left", "walk_down", "walk_down", "walk_down", "set_invisible"] }]);
+    sfx("se_door");
+    Overworld.removeObject(E); Overworld.removeObject(V);
+    await say(["Beluh: Oh, that man! Has he forgotten\nhis age? Rui, {PLAYER}, please, go\nafter him!"]);
+    Overworld.removeObject(R);
+    f.orreStory = 29;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  async function agateShrine() {
+    const f = player.flags, S = ORRE("SKRUB"), P = ORRE("AGATE_PEON"), E = ORRE("SHRINE_EAGUN");
+    Overworld.addObject(E, { x: 15, y: 7, facing: "right" });
+    await say(["Eagun: Get away from the Relic Stone,\nyou ruffians!"]);
+    await say(["Skrub: Hah! Out of the way, old man.\nCipher wants a good look at this rock.",
+      "…And who are you? Oh, the brat who's\nbeen snagging our Pokémon! Perfect!"]);
+    const shadows = Orre.shadowOf("Skrub");
+    const opts = { foe: { name: "Cipher Peon Skrub", team: shadows.map(Orre.shadowMon).concat(teamOf([["Golbat", 36]])), pic: "cipher_peon" },
+      foe2: { name: "Cipher Peon", team: teamOf([["Mightyena", 36], ["Weezing", 36]]), pic: "cipher_peon_f", prizeClass: "Team Rocket", defeatText: ["Eek!"] },
+      prizeClass: "Team Rocket", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["Gah! Not again!"] };
+    const outcome = await storyBattle(opts);
+    if (outcome !== "won") { await say(["Skrub: Hah! Go home, kid."]); Overworld.removeObject(E); return; }
+    if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
+    await say(["Skrub: Tch! Forget the rock! We're\nout of here!"]);
+    Screen.say("");
+    await Overworld.act([{ who: S, moves: ["walk_fast_right", "walk_fast_down", "walk_fast_down", "set_invisible"] },
+      { who: P, moves: ["walk_fast_down", "walk_fast_down", "set_invisible"] }]);
+    Overworld.removeObject(S); Overworld.removeObject(P);
+    await Overworld.act([{ who: E, moves: ["face_right"] }]);
+    await say(["Eagun: Hohoho! Well done, the both of\nyou!", "Hm. Why would Cipher want the Relic\nStone? Unless…",
+      "Our family has an old tablet about the\nstone. Beluh will know where it is. Let's\nhead home."]);
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    Overworld.removeObject(E);
+    f.orreStory = 30;
+    Overworld.refreshPeople();
+    await Overworld.fadeFromBlack();
+    await say(["(Back at Eagun's house, Beluh brought\nout a small stone tablet.)",
+      "Words are carved on it: the Relic\nholds a gentle power, and a heart shut\nby shadows can have its last door\nopened by it.",
+      "Eagun: So that's it! A Shadow Pokémon\nwhose heart has begun to open can be\npurified at the Relic Stone!",
+      "Battle and travel with them, and when\ntheir hearts are ready, bring them to\nthe stone."]);
+    await persist();
+    await gear.storyCall(["Eagun: {PLAYER}? Is this thing on?\nIt's Eagun!", "Bad news. A Trainer from Mt. Battle just\nran down the hill. Crooks have taken\nover the mountain!",
+      "Mt. Battle is to the north of here.\nPlease, go and help them!"].map((p) => fill(p)));
+    f.orreStory = 31;
+    Orre.unlock(f, "MtBattle");
+    await persist();
+  }
+  // ---------- Orre: Colosseum's story, Mt. Battle (orreStory 31 to 33) ----------
+  //
+  // 31: Mt. Battle, up the terraces past Cipher's Peons (Orre's cap up to 40; 32). At the summit Dakim has beaten Area
+  // Leader Vander for his Time Flute; battle him (Shadow Entei, Lv. 40). He pulls out, sending Skrub off to "Ein's
+  // lab"; Vander gives you the Time Flute (33).
+  const ORRE_MTBATTLE_CAP = 40;
+  async function mtBattleArrival() {
+    const f = player.flags;
+    await say(["Rui: This is Mt. Battle… It should be\nfull of Trainers training. But it's so\nquiet.", "Those purple suits again! Cipher's\nhere, {PLAYER}. Let's get to the top!"]);
+    f.orreStory = 32;
+    f.orreLevelCap = Math.max(f.orreLevelCap | 0, ORRE_MTBATTLE_CAP);
+    await say("Your Pokémon can now grow up to\nLv. " + ORRE_MTBATTLE_CAP + " in Orre!");
+    await persist();
+  }
+  async function mtBattleSummit(script) {
+    const f = player.flags, story = f.orreStory | 0;
+    if (script === "MtBattle_EventScript_Vander") {
+      await say(story >= 33 ? ["Vander: Train here any time, you two.\nIt'll toughen you up like nothing else."]
+        : ["Vander: Urgh… They're after the Time\nFlute… Don't let them have it…"]);
+      return;
+    }
+    if (story < 32) return;
+    await say(["Dakim: Dahahaha! So you're the pests\nwho've been snagging our Pokémon!", "That fool Vander wouldn't hand over the\nTime Flute without a fuss. Now look at\nhim.",
+      "The mighty Dakim will crush you too!"]);
+    const shadows = Orre.shadowOf("Dakim");
+    const opts = { foe: { name: "Cipher Admin Dakim", team: shadows.map(Orre.shadowMon).concat(teamOf([["Golem", 38], ["Claydol", 38], ["Marowak", 38]])), pic: "black_belt" },
+      prizeClass: "Leader", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["This can't be! The mighty Dakim\nloses?!"] };
+    const outcome = await storyBattle(opts);
+    if (outcome !== "won") { await say(["Dakim: Dahahaha! Come back when you're\nstronger!"]); return; }
+    if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
+    await say(["Dakim: The way you handle your Pokémon…\nWho are you?", "Skrub! We're pulling out. Go to Ein's\nlab and help out there.",
+      "This isn't over. Stronger Pokémon are\nbeing made even now. Dahahaha!"]);
+    Screen.say("");
+    const D = ORRE("DAKIM"), K = ORRE("SUMMIT_SKRUB");
+    await Overworld.act([{ who: D, moves: ["walk_fast_left", "walk_fast_down", "walk_fast_down", "set_invisible"] },
+      { who: K, moves: ["walk_fast_right", "walk_fast_down", "walk_fast_down", "set_invisible"] }]);
+    Overworld.removeObject(D); Overworld.removeObject(K);
+    await say(["Vander: Ugh… Thank you. I'm Vander,\nArea Leader of Mt. Battle.", "They wanted this: the Time Flute. They\nsay it can call a Pokémon from across\ntime to Agate's Relic Forest.",
+      "I'd rather you had it than those crooks.\nUse it to save the Shadow Pokémon from\nwhatever they're planning."]);
+    Player.addItem(player, "time-flute", 1);
+    await sayWithJingle("mus_obtain_key_item", fill("{PLAYER} obtained the Time Flute!"));
+    await say(["Rui: \"Ein's lab\"… Dakim said they're\nmaking stronger Pokémon there.", "{PLAYER}, that must be where Shadow\nPokémon come from! We have to find it."]);
+    f.orreStory = 33;
     Overworld.refreshPeople();
     await persist();
   }
@@ -15246,6 +15438,8 @@
     if ((script === "arrive:PyriteTown" || script === "enter:PyriteTown") && (player.flags.orreStory | 0) === 21) return true;
     if (script === "enter:PyriteTown_PyriteBuilding_4F" && (player.flags.orreStory | 0) === 25) return true;
     if (script === "enter:PyriteCave_MirorBHideout" && (player.flags.orreStory | 0) === 26) return true;
+    if (script === "enter:AgateVillage_EaguansHouse" && (player.flags.orreStory | 0) === 28) return true;
+    if ((script === "arrive:MtBattle" || script === "enter:MtBattle") && (player.flags.orreStory | 0) === 31) return true;
     if (script === "Orre_WorldMap") return true;   // (Orre: out of a place, its map: orreTravel())
     // Johto: its scripts (a step's, while its var has its value), its
     // Apricorn trees, and its maps' frame tables as you come in.
@@ -15424,7 +15618,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return orreCallStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
+          return orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -15471,6 +15665,7 @@
       else if (ev.type === "egg-hatch") await eggHatches(ev.record);
       else if (ev.type === "phone") await gear.ring();
       else if (ev.type === "orre-call") await orreOakCall();
+      else if (ev.type === "heart-open") await say(ev.text);
       else if (ev.type === "viridian-stop") await viridianOldManStop();
       else if (ev.type === "red-forest") await redForest();
       else if (ev.type === "leaf-vermilion") await leafVermilion();
