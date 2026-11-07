@@ -3183,6 +3183,22 @@ if (window.JOHTO_TOWN_MAP) {
   assert.deepStrictEqual(who(0).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), ["TRUCK"]);
   assert.deepStrictEqual(who(2).filter((k) => ["TRUCK", "BIKE", "DINER_WILLIE"].includes(k)), [], "no Wes, no bike, no Willie yet");
   assert(!who(3).includes("FOLLY") && !who(3).includes("WILLIE"), "Folly and Trudly only in their scene");
+  // Colosseum's story proper (orreStory): the hideout's people gone once it's blown up; the truck back at the Stand
+  // till Folly and Trudly drive off, then Willie in the diner; at Phenac, the truck and the two of them; the
+  // Mayor's house's scene's people only in it.
+  {
+    const vis = (map, key, fl) => Orre.visible(WORLD_MAPS[map].people.find((p) => p.localId === "LOCALID_ORRE_" + key), fl) !== false;
+    assert(vis("SnagemHideout", "GUARD_1", { orreStory: 17 }) && !vis("SnagemHideout", "GUARD_1", { orreStory: 18 }) && !vis("SnagemHideout", "ROCCO", { orreStory: 18 }));
+    assert(vis("OutskirtStand", "TRUCK", { orre: 3, orreStory: 18 }) && !vis("OutskirtStand", "TRUCK", { orre: 3, orreStory: 18, orreStandFT: true }));
+    assert(!vis("OutskirtStand_Diner", "DINER_WILLIE", { orre: 3, orreStory: 17 }) && vis("OutskirtStand_Diner", "DINER_WILLIE", { orre: 3, orreStory: 18, orreStandFT: true }));
+    assert(vis("PhenacCity", "PHENAC_TRUCK", { orreStory: 19 }) && !vis("PhenacCity", "PHENAC_TRUCK", { orreStory: 20 }) && !vis("PhenacCity", "PHENAC_FOLLY", { orreStory: 19, orreFT: true }));
+    assert.deepStrictEqual(Orre.patches("PhenacCity", { orreStory: 19 }), ["truck"]);
+    assert(!vis("PhenacCity_MayorsHouse", "MAYOR_RUI", { orreStory: 20 }) && vis("PhenacCity_MayorsHouse", "MAYOR_ES_CADE", { orreStory: 21 }));
+    const P = WORLD_MAPS.PhenacCity, M = WORLD_MAPS.PhenacCity_MayorsHouse;
+    assert(World.warpTarget(P.warps[1]).map === M.name && M.warps.every((w) => World.warpTarget(w).map === P.name), "the Mayor's house, in and out");
+    assert(fs.existsSync(path.join(root, "assets/world/sprites/orre_rui.png")) && fs.existsSync(path.join(root, "assets/world/maps/PhenacCity-patch-truck.png")));
+    for (const pic of ["burglar", "cue_ball", "snagem_grunt", "rider_willie"]) assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + pic + ".png")), pic);
+  }
   // Going to Orre as yourself, and back where you were.
   const me = Player.create("Ash");
   me.party = [Party.create("Pikachu", 12)];
@@ -3221,7 +3237,7 @@ if (window.JOHTO_TOWN_MAP) {
   const back = Player.load(JSON.parse(JSON.stringify(pl))).player;
   assert.deepStrictEqual([back.name, back.look, back.bag], ["Wes", "wes", {}]);
   // Rider Willie, and the bar's stock (no Escape Rope: it would take Wes to Kanto).
-  assert.deepStrictEqual(Orre.willieTeam().map((r) => [r.species, r.level]), [["Zigzagoon", 10], ["Zigzagoon", 11]]);
+  assert.deepStrictEqual(Orre.willieTeam().map((r) => [r.species, r.level]), [["Zigzagoon", 25], ["Zigzagoon", 26]]);
   assert(Orre.SHOP.every((id) => ITEMS[id]) && !Orre.SHOP.includes("escape-rope"));
   for (const f of ["trainers/back/wes", "trainers/front/wes", "trainers/front/rider_willie"]) assert(fs.existsSync(path.join(root, "assets/sprites/" + f + ".png")), f);
   for (const k of ["", "_run", "_bike", "_surf", "_fish"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/player_wes" + k + ".png")));

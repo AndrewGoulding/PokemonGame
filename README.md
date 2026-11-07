@@ -3140,7 +3140,7 @@ Trainer's Pokémon) and the first test.
   Pokémon people have been seeing, battles you with an Aipom (Lv. 19) and a Shroomish (Lv. 18): snag her Aipom.
 - **Test five: Pyrite Cave**, in Pyrite Town's east wall. At its far end **Hiker Rowe** battles you with a Gligar
   (Lv. 23) and a Graveler (Lv. 22): snag his Gligar. Back at the hideout the guards say Master Gonzap wants to meet you
-  himself, when he's ready: Colosseum's story proper, still to come.
+  himself: the end of the prologue, and the start of Colosseum's story proper (below).
 - The tests' Pokémon are kinds that are Shadow Pokémon in Colosseum (Makuhita, Murkrow, Aipom, Gligar), here a
   Trainer's own.
 - Fail a test (lose, or knock its Pokémon out without snagging it) and you're taken back to the guards to try again.
@@ -3162,8 +3162,37 @@ fainting, no Exp. lost) and the battle goes on, their next Pokémon coming out. 
 lose the battle.
 
 **Orre's level cap** (`Player.levelCap`, this game's own caps): your Pokémon gain no Exp. past it, and one over it
-may not obey. It's **26** for the whole prologue (Snagem's tests), the level Colosseum's story proper is pitched for;
-`player.flags.orreLevelCap` can raise it then.
+may not obey. It's **26** for the whole prologue (Snagem's tests), the level Colosseum's story proper is pitched for,
+and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
+
+**Colosseum's story proper** (this game's own telling of it, mostly in Colosseum's own words, `assets/text/colosseum.json`;
+`snagemBreak`, `orreStandStory`, `phenacFT`, `phenacTruck` and `mayorScene` in `ui/game.js`):
+- **The break with Team Snagem.** With the five tests passed, the guards take you through the gate to meet Master
+  Gonzap (on a dark screen, as Colosseum's opening is a cutscene). He boasts that Team Snagem only got its Snag
+  Machines from Cipher, snags strong Pokémon for them, and that Cipher shuts the door to those Pokémon's hearts to make
+  Shadow Pokémon; tomorrow the hideout's big Snag Machine starts snagging for Cipher in earnest. That night you set it
+  running until it overloads: the hideout blows up, Gonzap shouts "TRAITOR!", and you're out in the canyon with the Snag
+  Machine still on your arm. The hideout's people are gone from then on, Orre's level cap is 30, and Prof. Oak calls:
+  keep the Snag Machine, and use it to snag back Cipher's Shadow Pokémon, and only those.
+- **The Outskirt Stand.** Folly and Trudly's truck is back. They come out of the diner pleased with "a great big catch"
+  for their boss, recognise you, and drive off with the sack in the back, which moves. Then **Rider Willie** runs out
+  after you ("Yo! Wait! Wait up!") and battles you with two Zigzagoon (Lv. 25 and 26); afterwards he points you to
+  Phenac City, where the truck was headed. Lose, and he's in the diner to battle again; after, he chats there.
+- **Phenac City.** Folly and Trudly are by their truck in the entrance plaza; they battle you together, Folly with a
+  Whismur and a Baltoy, Trudly with a Lotad and a Zigzagoon (Lv. 25), then run off, leaving the truck. Undo the knot of
+  the squirming sack in the back and out comes **Rui**, kidnapped from Pyrite Town; she asks you to stay with her and
+  take her to the Mayor.
+- **The Mayor's house** (the big house with the blue dome; for now Emerald's Dewford Hall inside). Mayor **Es Cade**
+  hears Rui out (a Pokémon with a black aura, like a fighting machine, that attacks people) and goes to look into it
+  himself. Two Snagem grunts burst in for their traitor and the Snag Machine (a tag battle, Lv. 26-27), and Rui learns
+  you were with Team Snagem; it doesn't matter to her. Then Folly (Loudred and Baltoy, Lv. 27), and Trudly, whose Furret
+  (Lv. 28) is a **Shadow Pokémon**: Rui can see its black aura, and asks you to snag it back. Miror B. calls them back
+  to Pyrite, and Rui says that's where you should go next. A battle lost there ends the scene; go back in to carry on
+  from it (`player.flags.orreMayor`).
+- `player.flags.orreStory` 18 once you've broken with Team Snagem, 19 with Willie battled, 20 with Rui out of the sack,
+  21 with the Mayor's house's scene done (`orreFurret`: the Furret snagged). Pyrite Town is next.
+- **Shadow Pokémon** show a dark purple aura in battle all the time, not only when they use a Shadow move. A snagged
+  one stays a Shadow Pokémon; purifying them (Colosseum's heart gauge and the Relic Stone) is still to come.
 
 **Orre's filler Trainers** (this game's own, `Orre.FILLERS` in `game/orre.js`, placed by `tools/build-orre.js`): two to
 five more Trainers in each place of the prologue, each battling you once, two on two (some with three Pokémon), their
@@ -3196,13 +3225,8 @@ the desert. Its townspeople say Colosseum's own words (`assets/text/colosseum.js
 **The Outskirt Stand**, out in Orre's desert, opens on the map with Snagem's second test: a diner made from an old
 locomotive. The first time you get there, two men come out of the diner, **Folly** and **Trudly**. They talk about
 their meal and the sack in their truck, see you, tell you to mind your own business, and drive off with it. Inside,
-**Breeder Lena**, one of the travellers, has the two Eevee Snagem want.
-
-**Not yet: Rider Willie.** Colosseum's own story proper starts once Orre has enough before it for your Pokémon to be
-around Lv. 26. Until then Willie isn't at the Stand: his scene is built (he sits at the back of the diner, then
-follows you out and challenges you to a double battle; afterwards he points you north to Phenac City, and losing
-doesn't make you black out) but switched off (`game/orre.js`'s `WILLIE_YET`, and `willieChallenge` in `ui/game.js`),
-and his team will be set for then.
+**Breeder Lena**, one of the travellers, has the two Eevee Snagem want. **Rider Willie** comes with Colosseum's story
+proper (above); the diner's TV has the news of Team Snagem's hideout once it's blown up.
 
 In the diner:
 - The bartender serves a free meal that heals your Pokémon, and runs the

@@ -14,7 +14,7 @@
 //   Orre.unlock(flags, map)          // a place opens on the map
 //   Orre.visible(person, flags)      // ui/game.js's visible() for Orre's people (or undefined)
 //   Orre.patches(map, flags)         // the Stand's patches on now (the truck parked)
-//   Orre.willieTeam()                // Rider Willie's two Zigzagoon (Lv. 10 and 11)
+//   Orre.willieTeam()                // Rider Willie's two Zigzagoon (Lv. 25 and 26)
 //   Orre.SHOP                        // what the Stand's bar sells, once Willie's been beaten
 //   Orre.FILLERS                     // Orre's filler Trainers, by script: { name, cls, pic, team, intro, defeat, after }
 //
@@ -22,7 +22,9 @@
 //   0 / undefined  not yet at the Outskirt Stand (Folly and Trudly's truck by it)
 //   1              arrived from the Air Strip, and they've come out of the diner
 //   2              they've driven off with their sack
-//   3              Willie's battled (he points you to Phenac City; not yet: he waits for the story proper)
+//   3              (Willie's battled, in an older save)
+// and Colosseum's story proper by player.flags.orreStory: 17 the prologue's tests passed, 18 out of Team Snagem
+// (the hideout blown up), 19 Willie battled, 20 Rui out of the sack, 21 the Mayor's house's scene done.
 (function () {
   "use strict";
 
@@ -120,19 +122,33 @@
   }
 
   const ID = (k) => "LOCALID_ORRE_" + k;
-  // (Rider Willie, and his battle as you leave the diner, wait for Colosseum's story proper: not yet.)
-  const WILLIE_YET = false;
+  // (Rider Willie, at the Stand from Colosseum's story proper: player.flags.orreStory 18.)
+  const WILLIE_YET = (flags) => (flags.orreStory | 0) >= 18;
+  // (Colosseum's story proper, player.flags.orreStory from 18: Team Snagem's hideout wrecked and its people gone;
+  // Folly and Trudly's truck back at the Stand (18), then at Phenac City (19); Willie in the diner once they've gone;
+  // Rui, the Snagem grunts and Folly and Trudly at the Mayor's house only in its scene. ui/game.js's Orre scenes.)
   function visible(person, flags) {
-    const step = flags.orre | 0;
+    const step = flags.orre | 0, story = flags.orreStory | 0;
     switch (person.localId) {
-      case ID("TRUCK"): return step < 2;
+      case ID("TRUCK"): return step < 2 || (story === 18 && !flags.orreStandFT);
       case ID("BIKE"): return false;   // (Wes's, parked: you came on foot, from the Air Strip)
       case ID("FOLLY"): case ID("TRUDLY"): case ID("WILLIE"): return false;   // (only in their scenes)
-      case ID("DINER_WILLIE"): return WILLIE_YET && step < 3;
+      case ID("DINER_WILLIE"): return WILLIE_YET(flags) && !!flags.orreStandFT;
+      case ID("GUARD_1"): case ID("GUARD_2"): case ID("LOOKOUT"): case ID("ROCCO"): case ID("VIC"): return story < 18 ? undefined : false;
+      case ID("PHENAC_TRUCK"): return story === 19;
+      case ID("PHENAC_FOLLY"): case ID("PHENAC_TRUDLY"): return story === 19 && !flags.orreFT;
+      case ID("MAYOR_ES_CADE"): return !(story === 20 && (flags.orreMayor | 0) >= 1);   // (out on his investigation)
+      case ID("PHENAC_RUI"): case ID("MAYOR_RUI"): case ID("MAYOR_FOLLY"): case ID("MAYOR_TRUDLY"):
+      case ID("MAYOR_GRUNT_1"): case ID("MAYOR_GRUNT_2"): return false;   // (only in their scenes)
       default: return undefined;
     }
   }
-  const patches = (map, flags) => (map === "OutskirtStand" && (flags.orre | 0) < 2 ? ["truck"] : []);
+  const patches = (map, flags) => {
+    const story = flags.orreStory | 0;
+    if (map === "OutskirtStand") return (flags.orre | 0) < 2 || (story === 18 && !flags.orreStandFT) ? ["truck"] : [];
+    if (map === "PhenacCity") return story === 19 ? ["truck"] : [];
+    return [];
+  };
 
   // Orre's filler Trainers (this game's own; tools/build-orre.js places them): by their script, each battles you
   // once, two on two; `team` as [species, level]. So your Pokémon can grow toward the prologue's cap (Lv. 26).
@@ -158,9 +174,8 @@
     "PyriteCave_EventScript_Filler_REX": {"name": "Cooltrainer Rex", "cls": "Cooltrainer", "pic": "cooltrainer_m", "team": [["Machoke", 25], ["Vibrava", 25]], "intro": ["Training in the dark sharpens the mind.\nLet's see how sharp yours is!"], "defeat": ["Sharp indeed!"], "after": ["Push your Pokémon hard, but never\nfurther than they can go."]},
     "PyriteCave_EventScript_Filler_BOULDER": {"name": "Hiker Boulder", "cls": "Hiker", "pic": "hiker", "team": [["Steelix", 26], ["Golem", 26]], "intro": ["Name's Boulder. Hardest Hiker in Orre!\nNobody passes without a battle!"], "defeat": ["Crumbled! Me!"], "after": ["Rowe's just round there. Tough old\nfellow. Tougher Gligar."]}};
 
-  // Rider Willie's two Zigzagoon (Lv. 10 and 11, for now: he waits for Colosseum's story proper, and his team
-  // will be set for then).
-  const willieTeam = () => [window.Party.create("Zigzagoon", 10), window.Party.create("Zigzagoon", 11)];
+  // Rider Willie's two Zigzagoon (Lv. 25 and 26: met at the start of Colosseum's story proper).
+  const willieTeam = () => [window.Party.create("Zigzagoon", 25), window.Party.create("Zigzagoon", 26)];
 
   window.Orre = { FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
 })();

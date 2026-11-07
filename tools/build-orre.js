@@ -185,6 +185,9 @@ function recolorRGBA(file, map, rows, fh) {
   }
   return c;
 }
+// Rui (Colosseum's): Emerald's Lass, her pigtails red-orange.
+save(recolorRGBA(path.join(outSprites, "em_lass.png"),
+  { "57,74,98": [216, 80, 48], "106,139,172": [248, 144, 88], "8,16,32": [112, 32, 24] }, 22, 32), path.join(outSprites, "orre_rui.png"));
 // Rider Willie: FireRed's Cool Trainer with pink hair; his battle picture,
 // FireRed's Biker with a pink mohawk.
 save(recolorRGBA(path.join(outSprites, "cooltrainer_m.png"),
@@ -1217,6 +1220,7 @@ const BRIDGES = [6, 19, 30];   // (rows where the channels are bridged)
 const FOUNTAIN = { cx: 20 * 16, cy: 18 * 16 + 8, r: 44 };
 const PALMS = [[13, 27], [26, 27], [13, 32], [26, 32], [13, 15], [26, 22], [2, 9], [37, 9]];
 const PSIGN = { x: 16, y: 33 };
+const PTRUCK = { x: 14, y: 30 };   // (Folly and Trudly's truck, in Colosseum's story: its four tiles from here)
 // (Each of the city's doors: the door's tile, below its building.)
 const doorOf = (b) => ({ x: b.x + Math.floor(b.w / 2), y: b.y + b.h - 1 });
 const PDOORS = { MAYOR: doorOf(MAYOR), HOUSE_NE: doorOf(HOUSE_NE), HOUSE_W: doorOf(HOUSE_W), HOUSE_SW: doorOf(HOUSE_SW), HOUSE_SE: doorOf(HOUSE_SE) };
@@ -1413,24 +1417,34 @@ for (let y = PC2.y * 16; y < (PC2.y + PC2.h) * 16; y++) for (let x = PC2.x * 16;
 const COLO = JSON.parse(fs.readFileSync(path.join(root, "assets/text/colosseum.json"), "utf8"));
 const NAMES_COLO = [["POKéMON", "Pokémon"], ["PHENAC CITY", "Phenac City"], ["PYRITE TOWN", "Pyrite Town"], ["PYRITE", "Pyrite"], ["PRE GYM", "Pre Gym"],
   ["JUSTY", "Justy"], ["LEADER", "Leader"], ["MAYOR", "Mayor"], ["TEAM SNAGEM", "Team Snagem"], ["ORRE", "Orre"]];
+const colo2 = (file, id) => COLO[file][id].split("\f").map((p) => NAMES_COLO.reduce((t, [a, b]) => t.split(a).join(b), p.replace(/^\{speaker\}: /, "")));
 const colo = (id) => COLO["M1_out/M1_out"][id].split("\f").map((p) => NAMES_COLO.reduce((t, [a, b]) => t.split(a).join(b), p.replace(/^\{speaker\}: /, "")));
 const PHENAC = {
   name: "PhenacCity", title: "Phenac City", width: PW, height: PHH, type: "city", music: "em_lilycove",
   region: "orre", battleScene: "sand", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
   collision: [], elevation: [], behavior: [], encounter: [],
   connections: [], triggers: [], hidden: [],
-  warps: [{ x: PC2_DOOR.x, y: PC2_DOOR.y, map: "PhenacCity_PokemonCenter_1F", warp: 0 }],
+  warps: [{ x: PC2_DOOR.x, y: PC2_DOOR.y, map: "PhenacCity_PokemonCenter_1F", warp: 0 },
+    { x: PDOORS.MAYOR.x, y: PDOORS.MAYOR.y, map: "PhenacCity_MayorsHouse", warp: 0 }],
+  // (Folly and Trudly's truck in the entrance plaza, while Colosseum's story has it there: ui/game.js's mapPatches.)
+  patches: { truck: { x: PTRUCK.x, y: PTRUCK.y, w: 4, h: 1, top: false, collision: Array.from({ length: 4 }, (_, i) => [PTRUCK.x + i, PTRUCK.y, 1]) } },
   signs: [{ x: PSIGN.x, y: PSIGN.y, script: "PhenacCity_EventScript_Sign", text: ["PHENAC CITY", "The city of water in the desert."] },
     ...[0, 1].map((k) => ({ x: ST_DOOR.x + k, y: STADIUM.y + STADIUM.h - 1, script: "PhenacCity_EventScript_Stadium",
       text: ["PHENAC STADIUM", "The doors are shut. A notice says the\nnext tournament is coming soon."] })),
-    { x: PDOORS.MAYOR.x, y: PDOORS.MAYOR.y, script: "PhenacCity_EventScript_MayorsHouse", text: ["The Mayor's house.", "The door is locked."] },
     ...["HOUSE_NE", "HOUSE_W", "HOUSE_SW", "HOUSE_SE"].map((k) => ({ x: PDOORS[k].x, y: PDOORS[k].y, script: "PhenacCity_EventScript_LockedDoor", text: ["The door is locked."] }))],
   people: [
     person(0, "PHENAC_TRAINER", 17, 23, "black_belt", "face_up", "PhenacCity_EventScript_Kodo", null),
     person(1, "PHENAC_MAN", 24, 29, "man", "wander_around", "PhenacCity_EventScript_Man", colo(20121), { rangeX: 2, rangeY: 1 }),
     person(2, "PHENAC_WOMAN", 8, 22, "woman_1", "look_around", "PhenacCity_EventScript_Woman", colo(20169)),
     person(3, "PHENAC_BOY", 23, 15, "boy", "wander_around", "PhenacCity_EventScript_Boy", colo(20009), { rangeX: 2, rangeY: 1 }),
-    person(4, "PHENAC_LASS", 33, 21, "lass", "face_left", "PhenacCity_EventScript_Lass", colo(20170))
+    person(4, "PHENAC_LASS", 33, 21, "lass", "face_left", "PhenacCity_EventScript_Lass", colo(20170)),
+    // (Colosseum's story: Folly and Trudly's truck, the sack in it, and them; Rui, who comes out of the sack.
+    // game/orre.js's visible() and ui/game.js's scenes say when.)
+    person(5, "PHENAC_TRUCK", PTRUCK.x + 1, PTRUCK.y, "orre_truck", "face_left", "PhenacCity_EventScript_Truck",
+      ["It's Folly and Trudly's beat-up truck."], { width: 64, height: 48, frames: 3, offsetX: -16, inanimate: true }),
+    person(6, "PHENAC_FOLLY", 19, 30, "man", "face_down", "PhenacCity_EventScript_Folly", null),
+    person(7, "PHENAC_TRUDLY", 18, 30, "fat_man", "face_down", "PhenacCity_EventScript_Trudly", null),
+    person(8, "PHENAC_RUI", 15, 31, "orre_rui", "face_down", "PhenacCity_EventScript_Rui", null)
   ],
   wild: null
 };
@@ -1450,15 +1464,37 @@ const PHENAC = {
     const x = i % PW, y = Math.floor(i / PW);
     PHENAC.collision.push(solid.has(x + "," + y) ? 1 : 0);
     PHENAC.elevation.push(3);
-    PHENAC.behavior.push(x === PC2_DOOR.x && y === PC2_DOOR.y ? 0x69 : 0);
+    PHENAC.behavior.push((x === PC2_DOOR.x && y === PC2_DOOR.y) || (x === PDOORS.MAYOR.x && y === PDOORS.MAYOR.y) ? 0x69 : 0);
     PHENAC.encounter.push(0);
   }
   writePng(path.join(outMaps, "PhenacCity.png"), PW * 16, PHH * 16, phenac.below);
   writePng(path.join(outMaps, "PhenacCity-top.png"), PW * 16, PHH * 16, phenac.above);
+  writePng(path.join(outMaps, "PhenacCity-patch-truck.png"), 4 * 16, 16, new Uint8ClampedArray(4 * 16 * 16 * 4));
   const b = canvas(32, 32);
   for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) b.set(x, y, [[240, 216, 160], [232, 200, 144]][((x >> 3) + (y >> 3) + (Math.sin(x * 0.5 + y) > 0.6 ? 1 : 0)) % 2]);
   save(b, path.join(outMaps, "PhenacCity-border.png"));
 }
+// The Mayor's house (Es Cade's): for now Emerald's Dewford Hall (its picture and its layout), its shelves of difficult
+// books and its TV; Es Cade by the window. Rui, Folly, Trudly and two Snagem grunts are there for Colosseum's story's
+// scene in it (ui/game.js's mayorScene; game/orre.js's visible() keeps them out of sight till then).
+const MAYOR_HOUSE = (() => {
+  const m = JSON.parse(JSON.stringify(emeraldMaps.DewfordTown_Hall));
+  return Object.assign(m, {
+    name: "PhenacCity_MayorsHouse", title: "Phenac City", image: "DewfordTown_Hall", region: "orre", music: "em_lilycove", showName: false,
+    connections: [], triggers: [], hidden: [], weatherSteps: undefined,
+    warps: m.warps.map((w) => ({ x: w.x, y: w.y, map: "PhenacCity", warp: 1 })),
+    signs: [{ x: 0, y: 1, script: "PhenacCity_MayorsHouse_EventScript_Bookshelf", text: colo2("M1_houseA_1F/M1_houseA_1F", 15268) },
+      { x: 7, y: 1, script: "PhenacCity_MayorsHouse_EventScript_Painting", text: ["It's a painting of Phenac City's\nfountain."] }],
+    people: [
+      person(0, "MAYOR_ES_CADE", 5, 3, "gentleman", "face_down", "PhenacCity_MayorsHouse_EventScript_EsCade", null),
+      person(1, "MAYOR_RUI", 6, 8, "orre_rui", "face_up", "PhenacCity_MayorsHouse_EventScript_Rui", null),
+      person(2, "MAYOR_FOLLY", 5, 8, "man", "face_up", "PhenacCity_MayorsHouse_EventScript_Folly", null),
+      person(3, "MAYOR_TRUDLY", 6, 8, "fat_man", "face_up", "PhenacCity_MayorsHouse_EventScript_Trudly", null),
+      person(4, "MAYOR_GRUNT_1", 5, 8, "orre_snagem_m", "face_up", "PhenacCity_MayorsHouse_EventScript_Grunt", null),
+      person(5, "MAYOR_GRUNT_2", 6, 8, "orre_snagem_m", "face_up", "PhenacCity_MayorsHouse_EventScript_Grunt", null)
+    ]
+  });
+})();
 const PCP = pokemonCenterInside("PhenacCity_PokemonCenter_1F", "Phenac City", "PhenacCity", 0, [
   person(1, "PHENAC_PC_GIRL", 11, 5, "em_woman_5", "face_left", "PhenacCity_PokemonCenter_1F_EventScript_Girl",
     ["Phenac's water comes up from deep\nunder the desert.", "That's why there's a city here at all!"])
@@ -1905,7 +1941,7 @@ const sinnohPart = fs.existsSync(orreFile) && fs.readFileSync(orreFile, "utf8").
 fs.writeFileSync(orreFile,
   "// Auto-generated by tools/build-orre.js (Emerald's desert tiles, and pictures drawn there). Do not edit by hand.\n" +
   "// Orre's Outskirt Stand and Snagem Hideout, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
-  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE, PhenacCity: PHENAC, PhenacCity_PokemonCenter_1F: PCP,
+  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE, PhenacCity: PHENAC, PhenacCity_PokemonCenter_1F: PCP, PhenacCity_MayorsHouse: MAYOR_HOUSE,
     PyriteTown: PYRITE, PyriteTown_PokemonCenter_1F: PCY, PyriteCave: PYCAVE, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG }) + ");\n" + sinnohPart);
 console.log("wrote Pyrite Town (" + YW + "x" + YH + "), Pyrite Cave and Agate Village (" + GW + "x" + GH + ")");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");

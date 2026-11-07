@@ -913,6 +913,8 @@
     // The box: a new Pokémon's shows its HP and EXP at once; after that the
     // bars move to what changed.
     const b = hb[id], mon = battle.sides[side].pokemon[v.teamIndex] || {};
+    // (A Shadow Pokémon, Orre's: its black aura, always.)
+    sprite.classList.toggle("shadow-mon", !!mon.shadow);
     const key = v.teamIndex + ":" + v.species;
     b.data = {
       name: v.name, level: v.level, status: v.status,

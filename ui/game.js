@@ -2966,6 +2966,8 @@
       "OutskirtStand_Diner_EventScript_Traveller3", "PyriteTown_EventScript_Cail", "AgateVillage_EventScript_Fay", "PyriteCave_EventScript_Rowe",
       "PyriteTown_EventScript_Zeke", "PyriteTown_EventScript_Rina", "AgateVillage_EventScript_Ted", "AgateVillage_EventScript_Sue",
       "PyriteCave_EventScript_Dex", "PyriteCave_EventScript_Taro",
+      "arrive:PhenacCity", "enter:PhenacCity", "enter:PhenacCity_MayorsHouse", "PhenacCity_EventScript_Truck", "PhenacCity_EventScript_Folly",
+      "PhenacCity_EventScript_Trudly", "PhenacCity_MayorsHouse_EventScript_EsCade",
       "PyriteTown_PokemonCenter_1F_EventScript_Nurse", "AgateVillage_PokemonCenter_1F_EventScript_Nurse",
       ...Object.keys(Orre.FILLERS),
       "PhenacCity_PokemonCenter_1F_EventScript_Nurse"
@@ -4478,7 +4480,14 @@
       // ---------- Faraway Island ----------
       // ---------- Orre ----------
       case "OutskirtStand_Diner_EventScript_Bartender": await orreBartender(); return;
-      case "arrive:OutskirtStand": case "enter:OutskirtStand": if (!(f.orre | 0)) await orreArrival(); return;
+      case "arrive:OutskirtStand": case "enter:OutskirtStand":
+        if ((f.orreStory | 0) === 18 && !f.orreStandFT) await orreStandStory(); else if (!(f.orre | 0)) await orreArrival();
+        return;
+      case "arrive:PhenacCity": case "enter:PhenacCity": await phenacFT(); return;
+      case "enter:PhenacCity_MayorsHouse": await mayorScene(); return;
+      case "PhenacCity_EventScript_Truck": await phenacTruck(ev.person); return;
+      case "PhenacCity_EventScript_Folly": case "PhenacCity_EventScript_Trudly": await say(["Folly: Back for more, rookie?"]); await phenacFTBattle(); return;
+      case "PhenacCity_MayorsHouse_EventScript_EsCade": await esCade(); return;
       case "OrreAirStrip_EventScript_Pilot": await orrePilot(); return;
       case "Orre_WorldMap": await orreTravel(); return;
       case "SnagemHideout_EventScript_Guard1": case "SnagemHideout_EventScript_Guard2": await snagemGuard(ev.person); return;
@@ -4487,12 +4496,11 @@
       case "PyriteTown_EventScript_Cail": case "AgateVillage_EventScript_Fay": case "PyriteCave_EventScript_Rowe": await snagemTarget(script, ev.person); return;
       case "PyriteTown_EventScript_Zeke": case "PyriteTown_EventScript_Rina": case "AgateVillage_EventScript_Ted": case "AgateVillage_EventScript_Sue":
       case "PyriteCave_EventScript_Dex": case "PyriteCave_EventScript_Taro": await orreTrainer(script); return;
-      case "OutskirtStand_Diner_EventScript_Willie":
-        await say(["Willie: You walked all the way out\nhere? In this heat?",
-          "And those Pokémon of yours… Tell you\nwhat, when you head out, I'll follow you."]);
-        return;
+      case "OutskirtStand_Diner_EventScript_Willie": await dinerWillie(); return;
       case "OutskirtStand_Diner_EventScript_TV":
-        await say(["It's the news.", "\"…and the Colosseums of Orre are packed\nas ever this week…\"", "The picture fizzles into static."]);
+        if ((f.orreStory | 0) >= 18) await say(["It's the news.", "\"Authorities have made a stunning\nannouncement on the mysterious building\nthat exploded in Eclo Canyon.",
+          "It was Team Snagem's hideout. Team\nSnagem is a gang of Pokémon thieves…\"", "The picture fizzles into static."]);
+        else await say(["It's the news.", "\"…and the Colosseums of Orre are packed\nas ever this week…\"", "The picture fizzles into static."]);
         return;
       case "OutskirtStand_Diner_EventScript_Jukebox": await orreJukebox(); return;
       case "FarawayIsland_Entrance_EventScript_Sailor": await farawaySailor(ev.person); return;
@@ -9984,11 +9992,7 @@
     if ((f.orreStory === 3 || f.orreStory === 4) && !Player.itemCount(player, "snag-machine")) f.orreStory = 2;
     const step = f.orreStory | 0;
     const me = (person && person.localId) || SNAGEM_GUARDS[0], other = SNAGEM_GUARDS.find((g) => g !== me);
-    if (step >= SNAGEM_DONE) {
-      await say(["Grunt: Master Gonzap's heard all about\nyou, recruit. He wants to see you\nhimself.",
-        "Not today. When the boss is ready,\nyou'll know."]);
-      return;
-    }
+    if (step >= SNAGEM_DONE) { await snagemBreak(); return; }   // (Colosseum's story proper)
     // (Tests three to five: SNAGEM_TESTS.)
     const t = SNAGEM_TESTS.find((x) => step === x.snagged);
     if (t) {
@@ -10191,34 +10195,330 @@
     await Overworld.act([{ who: ORRE("TRUCK"), moves: ["delay_16"].concat(Array(12).fill("walk_fast_right"), ["set_invisible"]) }]);
     Overworld.removeObject(ORRE("FOLLY")); Overworld.removeObject(ORRE("TRUDLY"));
   }
-  // Coming back out of the diner, Willie follows. (Not yet: Willie and his battle wait for Colosseum's story proper,
-  // once Orre has enough before it for your Pokémon to be around Lv. 26; Orre.visible hides him till then.)
-  async function willieChallenge() {
-    const door = window.WORLD_MAPS.OutskirtStand.warps[0];
-    await Overworld.act([{ who: "player", moves: ["walk_down", "walk_down"] }]);
-    await say(["Hey! Wait up!"]);
+  // ---------- Orre: Colosseum's story proper (this game's own telling of it, with Colosseum's own words) ----------
+  //
+  // player.flags.orreStory 17: the prologue's tests passed. The guards take you in to meet Master Gonzap, who boasts
+  // that Team Snagem snags Pokémon for Cipher, who make them into Shadow Pokémon; that night you overload the
+  // hideout's big Snag Machine and run, the hideout blowing up behind you, the Snag Machine still on your arm (18,
+  // Orre's level cap up to 30); Prof. Oak calls. At the Outskirt Stand Folly and Trudly drive off with a sack, and
+  // Rider Willie battles you (19). At Phenac City you battle Folly and Trudly by their truck, and out of the sack comes
+  // Rui, who asks you to take her to the Mayor (20). At the Mayor's house: Es Cade hears her out and goes to look
+  // into it; Snagem grunts come for their traitor and the Snag Machine; then Folly and Trudly, Trudly with a Shadow
+  // Pokémon (a Furret) that Rui can see the black aura of, to be snagged; Miror B. calls them back to Pyrite, and Rui
+  // says you should follow (21). (orreStandFT: Folly and Trudly gone from the Stand; orreFT: beaten at Phenac;
+  // orreMayor: how far the Mayor's house's scene has got, 1 Es Cade gone, 2 the grunts beaten, 3 Folly beaten.)
+  const ORRE_STORY_CAP = 30;
+  async function snagemBreak() {
+    const f = player.flags;
+    await say(["Grunt: There you are, rookie! Master\nGonzap's ready for you.", "Through the gate. Don't keep the boss\nwaiting!"]);
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    music(null);
+    await say(["Gonzap: Gwahaha! So you're the rookie\nwho passed all five tests!", "I'm Gonzap, the boss of Team Snagem.\nAnd don't you forget it!",
+      "Let me tell you a secret, rookie. We\nwere just thieves before we got hold of\nthe Snag Machines.",
+      "And where did we get them?\nFrom Cipher.", "What they wanted was this: go snag\nsuperior-grade Pokémon from Trainers\neverywhere!",
+      "Cipher pays big for 'em. They've got a\nway of shutting the door to a\nPokémon's heart.",
+      "Turns 'em into fighting machines.\nShadow Pokémon, they call 'em.",
+      "Downstairs is the big Snag Machine.\nTomorrow we fire it up, and Team\nSnagem snags for Cipher in earnest!",
+      "And you're in on it, rookie! Now get\nsome sleep. Big day tomorrow! Gwahaha!"]);
+    await say(["(So that's it. Team Snagem steals\nPokémon, and Cipher turns them into\nShadow Pokémon.)", "(Prof. Oak was right. This has to\nstop, tonight.)"]);
+    await say(["That night, when the hideout was quiet,\n{PLAYER} crept down to the big Snag\nMachine…", "…and set it running, faster and faster,\nuntil it overloaded!"]);
+    sfx("se_m_explosion");
+    await Overworld.shake(16, { x: 3, y: 3, delay: 2 });
+    await say(["KA-BOOOOOM!"]);
+    await say(["Gonzap: WHAT?! The Snag Machine!", "…Where's that rookie?! TRAITOR!\nAfter that kid! Don't let 'em get away!"]);
+    await say(["{PLAYER} ran out through the smoke,\nthe Snag Machine still worn on one arm…"]);
+    f.orreStory = 18;
+    f.orreLevelCap = Math.max(f.orreLevelCap | 0, ORRE_STORY_CAP);
+    player.party.forEach(Party.heal);
+    player.location = { map: "SnagemHideout", x: 12, y: 18, facing: "down" };
+    await Overworld.teleport(player.location);
+    music(window.WORLD_MAPS.SnagemHideout.music);
+    sfx("se_m_explosion");
+    await Overworld.shake(8, { x: 2, y: 2, delay: 3 });
+    await say(["Behind {PLAYER}, smoke poured out of\nTeam Snagem's hideout."]);
+    await say("Your Pokémon can now grow up to\nLv. " + ORRE_STORY_CAP + " in Orre!");
+    await persist();
+    await gear.storyCall(["Prof. Oak: {PLAYER}! Are you all right?\nThere's news of an explosion in Orre,\nin Eclo Canyon!",
+      "Team Snagem snags Pokémon for Cipher,\nand Cipher makes Shadow Pokémon of\nthem? Then it's worse than I feared.",
+      "Listen, {PLAYER}. Keep that Snag\nMachine. Use it to snag back the Shadow\nPokémon Cipher has made…",
+      "…and only those! A Pokémon whose heart\nhas been shut can be opened again, I'm\nsure of it.",
+      "Find out what Cipher is up to. The\nOutskirt Stand, in the desert, would\nbe a good place to start.", "Good luck, {PLAYER}!"].map((p) => fill(p)));
+    await persist();
+  }
+  // At the Outskirt Stand (orreStory 18): Folly and Trudly come out of the diner and drive off with their sack; Willie
+  // comes after you.
+  async function orreStandStory() {
+    const f = player.flags, door = window.WORLD_MAPS.OutskirtStand.warps[0];
+    f.orre = Math.max(f.orre | 0, 2);
+    await sleep(400);
+    sfx("se_door");
+    Overworld.addObject(ORRE("TRUDLY"), { x: door.x, y: door.y, facing: "down" });
+    await Overworld.act([{ who: ORRE("TRUDLY"), moves: ["walk_down", "walk_right", "walk_right"] }]);
+    sfx("se_door");
+    Overworld.addObject(ORRE("FOLLY"), { x: door.x, y: door.y, facing: "down" });
+    await Overworld.act([{ who: ORRE("FOLLY"), moves: ["walk_down", "walk_right"] }, { who: ORRE("TRUDLY"), moves: ["delay_16", "face_left"] }]);
+    await say(["Trudly: Fwaah! We sure pigged out, eh?\nI love chowing down after a job!", "It adds to the flavor, I swear."]);
+    await say(["Folly: Heheheh, yeah. And we bagged\nourselves a great big catch, too.", "Boss'll be sure to fix us up good with\nbig rewards. It doesn't get any better\nthan this!"]);
+    sfx("se_pin");
+    await Overworld.act([{ who: ORRE("FOLLY"), moves: ["face_down", "emote_exclamation_mark"] }]);
+    await say(["Folly: …Hey! Ain't you that Snagem\nrookie? Word is somebody blew their\nhideout sky-high!", "Trudly: Who cares, Folly? Our boss is\nwaiting on this sack! Let's scram!"]);
+    Screen.say("");
+    const truck = window.WORLD_MAPS.OutskirtStand.patches.truck, right = (n) => Array(n).fill("walk_right");
+    await Overworld.act([{ who: ORRE("TRUDLY"), moves: right(truck.x + 1 - door.x - 2).concat(["walk_down", "set_invisible"]) },
+      { who: ORRE("FOLLY"), moves: right(truck.x - door.x - 1).concat(["walk_down", "set_invisible"]) }]);
+    sfx("se_door");
+    await sleep(500);
+    await say(["There's something squirming in the\nsack!"]);
+    Screen.say("");
+    f.orreStandFT = true;
+    applyPatches("OutskirtStand");
+    sfx("se_truck_move");
+    await Overworld.act([{ who: ORRE("TRUCK"), moves: ["delay_16"].concat(Array(12).fill("walk_fast_right"), ["set_invisible"]) }]);
+    Overworld.removeObject(ORRE("FOLLY")); Overworld.removeObject(ORRE("TRUDLY"));
+    await persist();
+    // Willie, out of the diner after you.
+    await say(["Yo! Wait! Wait up!"]);
     sfx("se_door");
     Overworld.addObject(ORRE("WILLIE"), { x: door.x, y: door.y, facing: "down" });
-    await Overworld.act([{ who: ORRE("WILLIE"), moves: ["walk_down"] }, { who: "player", moves: ["face_up"] }]);
-    await say(["Willie: Name's Willie. I ride these roads\nall day, and I've never seen you before.",
-      "Those Pokémon of yours look like they\ncould use a workout. Let's see them!",
-      "Two on two, the way we battle in Orre!"]);
-    const outcome = await battle("trainer", { foe: { name: "Rider Willie", team: Orre.willieTeam(), pic: "rider_willie" },
-      double: true, prizeClass: "Rider", noBlackout: true, music: "mus_rs_vs_trainer",
-      defeatText: ["Whoa! You're the real deal!"] });
-    show("world");
-    await Overworld.resume();
-    music(window.WORLD_MAPS.OutskirtStand.music);
-    if (outcome === "won") {
-      player.flags.orre = 3;
-      await say(["Willie: Man, you've got skills!",
-        "If you're looking for Trainers, head up\nthe road north to Phenac City.",
-        "It's a nice town. Fountains everywhere!\nSee you around!"]);
-    } else await say(["Willie: Ha! Not bad, but not good\nenough. Come find me any time!"]);
+    const toMe = [];
+    for (let y = door.y + 1; y < player.location.y - 1; y++) toMe.push("walk_down");
+    await Overworld.act([{ who: ORRE("WILLIE"), moves: toMe }, { who: "player", moves: ["face_up"] }]);
+    await say(["Willie: Hey, my name's Willie. After I\ngot a good look at you, well, I got this\nurge to battle you.",
+      "Any way I look at it, it's obvious that\nyou're no ordinary Joe."]);
+    const won = await willieBattle();
     Screen.say("");
-    await Overworld.act([{ who: ORRE("WILLIE"), moves: ["walk_up", "set_invisible"] }]);
+    await Overworld.act([{ who: ORRE("WILLIE"), moves: toMe.map(() => "walk_up").concat(["set_invisible"]) }]);
     sfx("se_door");
     Overworld.removeObject(ORRE("WILLIE"));
+    Overworld.refreshPeople();
+    if (!won) await say(["(Willie went back into the diner.)"]);
+  }
+  // Willie's battle (Colosseum's words): won?
+  async function willieBattle() {
+    await say(["Willie: Yeeeeeeaaaah! I'm burning now!\nI'm on fire! It's full-throttle time!", "Vrum! Vrooom! Let's roll!"]);
+    const outcome = await battle("trainer", { foe: { name: "Rider Willie", team: Orre.willieTeam(), pic: "rider_willie" },
+      double: true, prizeClass: "Rider", noBlackout: true, music: "mus_rs_vs_trainer", defeatText: ["Whoa! You're the real deal!"] });
+    show("world");
+    await Overworld.resume();
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    if (outcome !== "won") { await say(["Willie: Hah! Not bad, but not good\nenough. Come find me any time!"]); await persist(); return false; }
+    await say(["Willie: But, yeah, you're tough. Real\ntough. You did a real number on us.",
+      "Hey, I know. Why not test your skills in\nPhenac City? It's out west of here.",
+      "Those two in the truck were headed\nthat way too. In a real hurry."]);
+    player.flags.orreStory = Math.max(player.flags.orreStory | 0, 19);
+    Orre.unlock(player.flags, "PhenacCity");
+    await persist();
+    return true;
+  }
+  // Willie in the diner: a battle if you haven't won one yet (story 18), else a word.
+  async function dinerWillie() {
+    if ((player.flags.orreStory | 0) === 18) {
+      await say(["Willie: Oh, hey. It's you…\nReady for another go?"]);
+      await willieBattle();
+      Overworld.refreshPeople();
+      return;
+    }
+    await say(["Willie: Phenac City's out west from\nhere.", "Since we battled, I've been having\nbattles with you in my head!"]);
+  }
+  // At Phenac City (orreStory 19): Folly and Trudly by their truck, and a battle; then the sack.
+  const FOLLY_PIC = "burglar", TRUDLY_PIC = "cue_ball";
+  async function phenacFT() {
+    const F = ORRE("PHENAC_FOLLY"), T = ORRE("PHENAC_TRUDLY");
+    sfx("se_pin");
+    await Overworld.act([{ who: F, moves: ["emote_exclamation_mark"] }]);
+    const me = player.location, near = Math.max(0, me.y - 31);
+    if (near > 0) await Overworld.act([{ who: F, moves: Array(near).fill("walk_down") }, { who: T, moves: Array(near).fill("walk_down") }]);
+    await say(["Folly: You again?! The Snagem rookie,\nright on our tail!", "Trudly: What do we do, Folly? This\nsack's for the boss!",
+      "Folly: We take care of 'em, that's what!\nTwo on two!"]);
+    await phenacFTBattle();
+  }
+  async function phenacFTBattle() {
+    const outcome = await battle("trainer", {
+      foe: { name: "Folly", team: [Party.create("Whismur", 25), Party.create("Baltoy", 25)], pic: FOLLY_PIC },
+      foe2: { name: "Trudly", team: [Party.create("Lotad", 25), Party.create("Zigzagoon", 25)], pic: TRUDLY_PIC, prizeClass: "Team Rocket", defeatText: ["Awww, no!"] },
+      prizeClass: "Team Rocket", noBlackout: true, music: "mus_vs_trainer", defeatText: ["Wha…?!"] });
+    show("world");
+    await Overworld.resume();
+    music(window.WORLD_MAPS.PhenacCity.music);
+    if (outcome !== "won") { await say(["Folly: Hah! Not so tough without your\nhideout, are you?"]); await persist(); return; }
+    await say(["Folly: You took out my Whismur…\nYou're no ordinary Trainer, are you?!", "Huh? Wait a sec… That face… Might you\nbe… Team Snagem's…",
+      "Folly: Don't get all happy just on\naccount of winning this once.", "The next time we meet, I'll trash you,\nyour Pokémon, and all!"]);
+    await say(["Trudly: What do we do?\nWhat is there to do?", "Run away!"]);
+    Screen.say("");
+    const F = ORRE("PHENAC_FOLLY"), T = ORRE("PHENAC_TRUDLY");
+    await Overworld.act([{ who: F, moves: ["walk_fast_up", "walk_fast_up", "walk_fast_up", "set_invisible"] }, { who: T, moves: ["walk_fast_up", "walk_fast_up", "walk_fast_up", "set_invisible"] }]);
+    Overworld.removeObject(F); Overworld.removeObject(T);
+    player.flags.orreFT = true;
+    Overworld.refreshPeople();
+    await say(["(They left their truck behind… The\nsack in the back is moving!)"]);
+    await persist();
+  }
+  // Folly and Trudly's truck at Phenac: the sack, and Rui.
+  async function phenacTruck(person) {
+    const f = player.flags;
+    if ((f.orreStory | 0) !== 19 || !f.orreFT) { await say((person && person.text) || ["It's a beat-up old truck."]); return; }
+    await say(["There's something squirming in the\nsack!", "The sack's mouth is firmly closed with\na tightly knotted rope."]);
+    if (!(await confirm("Undo the knot?"))) return;
+    await say(["{PLAYER} tugged hard on the tightly\nknotted rope.", "The knot gradually loosened.", "{PLAYER} undid the knot…"]);
+    Screen.say("");
+    const at = player.location, R = ORRE("PHENAC_RUI");
+    sfx("se_door");
+    Overworld.addObject(R, { x: at.x + 1, y: at.y, facing: "left" });
+    await Overworld.act([{ who: "player", moves: ["face_right"] }]);
+    await say(["???: Phew…! Thank you! I thought I'd\nnever get out of there!", "My name's Rui. I'm sure glad I met you!",
+      "Rui: I was in the neighboring town when\nthose two grabbed me…"]);
+    await say(["{PLAYER}: Phenac's Mayor might know\nsomething about those two."]);
+    await say(["Rui: The Mayor? Yes, that's true!\nThe Mayor might know something!", "Oh, but… Those men might come back…",
+      "Please, can I get you to stick with me\nfor just a while?"]);
+    await confirm("Let Rui come along?");
+    await say(["Rui: Thank you, {PLAYER}! Eheh, I\nthought you might say that!", "If you're with me, it won't matter if\nthose guys come back again!",
+      "Thank you! Thanks for joining me for\na while!"]);
+    await say(["The Mayor's house is the big house\nwith the blue dome, at the top of\nthe city."]);
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    Overworld.removeObject(R);
+    f.orreStory = 20;
+    f.orreRui = true;
+    applyPatches("PhenacCity");
+    Overworld.refreshPeople();
+    await Overworld.fadeFromBlack();
+    await sayWithJingle("mus_obtain_key_item", "Rui is coming along with {PLAYER}!");
+    await persist();
+  }
+  // The Mayor's house (orreStory 20): Es Cade, the grunts, Folly, Trudly and his Shadow Pokémon, Miror B.'s call.
+  // A battle lost ends it there; come back in to go on from where it got to (player.flags.orreMayor).
+  async function mayorScene() {
+    const f = player.flags, R = ORRE("MAYOR_RUI"), E = ORRE("MAYOR_ES_CADE");
+    const me = player.location;
+    Overworld.addObject(R, { x: me.x + 1, y: me.y, facing: "up" });
+    const up = (who, n) => ({ who, moves: Array(n).fill("walk_up") });
+    await Overworld.act([up("player", 4), up(R, 4)]);
+    if (!(f.orreMayor | 0)) {
+      await say(["Es Cade: Ah, you must be travelers!\nWelcome to Phenac City! I am Es Cade,\nthe Mayor.",
+        "Now, you wanted to see me. Is there\nsomething that I may be able to assist\nyou with?"]);
+      await say(["Rui: Um… Er…", "I… I saw it!"]);
+      await say(["Es Cade: Saw it? And what did you see?"]);
+      await say(["Rui: I saw a peculiar Pokémon… No,\nthat's not quite right.", "What I saw was a Pokémon that gave off\na black aura. It was like a fighting\nmachine!",
+        "And, that Pokémon would attack people!"]);
+      await say(["Es Cade: O-o-o-oh, my! Pokémon like a\nfighting machine? And it attacks people?!",
+        "Now, if that were true, that would be\ntruly frightening. However, it is a\nlittle hard to believe."]);
+      await say(["Rui: It's true! It's true, Mr. Mayor!", "Because I saw that Pokémon, I was made\nthe prisoner of some frightening men\nuntil just a little while ago."]);
+      await say(["Es Cade: Hmm… I see. I understand.\nI will order an investigation at once."]);
+      await say(["Rui: You will? Thank you, Mr. Mayor!"]);
+      await say(["Es Cade: Oh, no, no. There is no need\nfor thanks.", "We mustn't allow thugs to do as they\nwish. I'll see to it myself, this\nminute!",
+        "Do make yourselves at home while I'm\nout."]);
+      Screen.say("");
+      await Overworld.act([{ who: E, moves: ["walk_right", "walk_right", "walk_down", "walk_down", "walk_down", "walk_down", "walk_down", "set_invisible"] }]);
+      sfx("se_door");
+      Overworld.removeObject(E);
+      f.orreMayor = 1;
+      await persist();
+    }
+    const comeIn = async (a, b) => {
+      sfx("se_door");
+      const door = window.WORLD_MAPS.PhenacCity_MayorsHouse.warps;
+      Overworld.addObject(a, { x: door[0].x, y: door[0].y, facing: "up" });
+      Overworld.addObject(b, { x: door[1].x, y: door[1].y, facing: "up" });
+      await Overworld.act([up(a, 2), up(b, 2), { who: "player", moves: ["face_down"] }, { who: R, moves: ["face_down"] }]);
+    };
+    const leave = async (...who) => {
+      Screen.say("");
+      await Overworld.act(who.map((w) => ({ who: w, moves: ["walk_fast_down", "walk_fast_down", "set_invisible"] })));
+      sfx("se_door");
+      who.forEach((w) => Overworld.removeObject(w));
+    };
+    const lost = async (...who) => { await leave(...who); Overworld.removeObject(R); player.party.forEach(Party.heal); await persist(); };
+    if ((f.orreMayor | 0) === 1) {
+      const G1 = ORRE("MAYOR_GRUNT_1"), G2 = ORRE("MAYOR_GRUNT_2");
+      await comeIn(G1, G2);
+      await say(["Grunt: Found you, traitor! Blowing up\nour hideout and running off with the\nSnag Machine?!",
+        "Master Gonzap wants that machine back,\nand your hide with it!"]);
+      await say(["Rui: Who are these people? Huh? Are\nthey Team Snagem?!", "And what did they mean by traitor?\n{PLAYER}… You mean…"]);
+      await say(["Other grunt: Hand over that Snag\nMachine, rookie!"]);
+      await say(["Rui: Snag Machine? {PLAYER}, do you\nreally have something like that?"]);
+      const outcome = await battle("trainer", {
+        foe: { name: "Snagem Grunt", team: [Party.create("Mightyena", 27), Party.create("Golbat", 26)], pic: "snagem_grunt" },
+        foe2: { name: "Snagem Grunt", team: [Party.create("Weezing", 26), Party.create("Linoone", 27)], pic: "snagem_grunt", prizeClass: "Team Rocket", defeatText: ["Nngh!"] },
+        prizeClass: "Team Rocket", noBlackout: true, music: "mus_vs_trainer", defeatText: ["Gah! Master Gonzap'll hear about this!"] });
+      show("world");
+      await Overworld.resume();
+      music(window.WORLD_MAPS.PhenacCity_MayorsHouse.music);
+      if (outcome !== "won") { await say(["Grunt: Hah! We'll be back for that\nmachine, traitor!"]); await lost(G1, G2); return; }
+      await say(["Grunt: Gah! Master Gonzap'll hear\nabout this!"]);
+      await leave(G1, G2);
+      await Overworld.act([{ who: R, moves: ["face_left"] }, { who: "player", moves: ["face_right"] }]);
+      await say(["Rui: Well, what do you know, {PLAYER}.\nSo you're from Team Snagem.", "Oh, right. To be accurate, I should say\nformer Team Snagem.",
+        "It's okay. {PLAYER}, it doesn't matter\nto me who you are.", "After all, you're my gallant prince who\nrescued me when I was in trouble.",
+        "So, it doesn't matter. Besides, that\nmachine of yours… I've thought of\nsomething good it could do."]);
+      f.orreMayor = 2;
+      await persist();
+    }
+    const F = ORRE("MAYOR_FOLLY"), T = ORRE("MAYOR_TRUDLY");
+    if ((f.orreMayor | 0) === 2) {
+      await comeIn(F, T);
+      await say(["Folly: You, you, you! The last time, you\ncaught me off guard!", "That's not gonna happen again!"]);
+      const outcome = await battle("trainer", { foe: { name: "Folly", team: [Party.create("Loudred", 27), Party.create("Baltoy", 27)], pic: FOLLY_PIC },
+        double: true, prizeClass: "Team Rocket", noBlackout: true, music: "mus_vs_trainer", defeatText: ["Awww, blast it!\nI got tripped up again!"] });
+      show("world");
+      await Overworld.resume();
+      music(window.WORLD_MAPS.PhenacCity_MayorsHouse.music);
+      if (outcome !== "won") { await say(["Folly: Heh! You should've stayed home,\nkid!"]); await lost(F, T); return; }
+      f.orreMayor = 3;
+      await persist();
+    } else {
+      await comeIn(F, T);
+      await say(["Trudly: You again?! We'll get you this\ntime!"]);
+    }
+    // Trudly, and the Shadow Pokémon.
+    await say(["Trudly: My turn now! I'm not going to\nend up like Folly!"]);
+    await say(["Rui: {PLAYER}! That's it! It's that\nPokémon!", "Those guys kidnapped me because I saw\nthat Pokémon!",
+      "I can see it! That Pokémon has a black\naura! They've done something to it!"]);
+    await say(["Rui: {PLAYER}, be careful! Just as I\nthought, that Pokémon will attack people!",
+      "{PLAYER}, I know! It's not something I\nlike, but this is a desperate situation.",
+      "Please, snag that poor Pokémon back from\nthose horrible thugs!", "You can… No. Only you can do it!"]);
+    const furret = Party.create("Furret", 28);
+    furret.shadow = true;
+    furret.moves = [{ name: "Shadow Rush", pp: 5 }].concat(furret.moves.filter((m) => m.name !== "Shadow Rush").slice(0, 3));
+    const opts = { foe: { name: "Trudly", team: [furret, Party.create("Zigzagoon", 27)], pic: TRUDLY_PIC }, double: true, prizeClass: "Team Rocket",
+      noBlackout: true, snag: ["Furret"], music: "mus_vs_trainer", defeatText: ["Darn it, but you're good!"] };
+    const outcome = await battle("trainer", opts);
+    show("world");
+    await Overworld.resume();
+    music(window.WORLD_MAPS.PhenacCity_MayorsHouse.music);
+    if (outcome === "lost") { await say(["Trudly: Hah! How'd you like that?"]); await lost(F, T); return; }
+    const snagged = (opts.snagged || []).includes("Furret");
+    await say(snagged ? ["Trudly: Darn it, but you're good!\nYou snagged my Pokémon!"] : ["Trudly: Darn it, but you're good!\nYou knocked out my Pokémon!"]);
+    await say(snagged ? ["Rui: You did it, {PLAYER}! You snagged\nthat Pokémon from that goon!", "But I'm sure there are others like it.",
+      "Let's get all of them back from the\nbad guys!"]
+      : ["Rui: Oh, it's disappointing that we\ncouldn't snag that Pokémon off them.", "But I'm sure there are others like it.",
+        "Let's get all of them back from the\nbad guys!"]);
+    await say(["Trudly: What do we do? What is there\nto do?"]);
+    await say(["???: Boys! Oh, boys!"]);
+    await say(["Folly: M-Master Miror B.!"]);
+    await say(["Miror B.: Boys, I shall make my return\nto Pyrite now.", "Do remember that I will be waiting for\nyou to return with the little lady.",
+      "Am I making myself clear? I won't accept\nfailure from you again, boys.", "Fuhohoho…"]);
+    await say(["Folly: Y-Yes! Yes, we will!", "Trudly: Run away!"]);
+    await leave(F, T);
+    await say(["Rui: Just as I thought… There are\nmany other Pokémon with that black\naura.",
+      "{PLAYER}, let's go. Those guys are\nprobably headed for Pyrite Town.", "After all, it was in Pyrite that they\ncaptured me.",
+      "That town must be hiding a big secret!"]);
+    Overworld.removeObject(R);
+    f.orreStory = 21;
+    f.orreFurret = snagged;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Es Cade, at home.
+  async function esCade() {
+    const story = player.flags.orreStory | 0;
+    if (story >= 21) {
+      await say(["Es Cade: Ah, it's you two! I'm so glad\nto see that you're safe!", "I have heard. The thugs from our\nneighboring town came here, even going\nso far as entering my own home!",
+        "They did this deliberately while I was\naway. How dare they!", "I will continue with our investigation.\nWhatever you do, please take care!"]);
+      return;
+    }
+    await say(["Es Cade: Ah, a traveler! Welcome to\nPhenac City! I am Es Cade, the Mayor.", "You appear to be a Pokémon Trainer\nyourself.",
+      "If so, I urge you to visit our city's\npride and joy, our Pokémon Stadium!"]);
   }
   // The bartender: a hot meal (the party rested) any time, and the bar's
   // stock once Folly and Trudly have gone with their delivery.
@@ -12805,7 +13105,7 @@
     // its observation deck's rock aglow and stars in line while you wish.)
     if (map === "MossdeepCity_SpaceCenter_2F") return [(f.delta | 0) >= 4 ? "open" : "sealed"];
     if (map === "MossdeepCity_SpaceCenter_ObservationDeck") return [...deckFx];
-    if (map === "OutskirtStand") return Orre.patches(map, f);
+    if (map === "OutskirtStand" || map === "PhenacCity") return Orre.patches(map, f);
     if (map === "VermilionCity_Gym") {
       if (f.vermilionGymLocksOpen) return ["off"];
       if (gymCans && gymCans.foundFirst) return ["half"];
@@ -14728,7 +15028,10 @@
   function special(script) {
     if (deltaDue(script)) return true;   // (the Delta Episode's scenes as you come in)
     // (Orre: up the road from the Air Strip to the Outskirt Stand the first time, Folly and Trudly come out.)
-    if ((script === "arrive:OutskirtStand" || script === "enter:OutskirtStand") && !(player.flags.orre | 0)) return true;
+    if ((script === "arrive:OutskirtStand" || script === "enter:OutskirtStand") && (!(player.flags.orre | 0) || ((player.flags.orreStory | 0) === 18 && !player.flags.orreStandFT))) return true;
+    // (Colosseum's story proper: Folly and Trudly at Phenac City; the Mayor's house's scene.)
+    if ((script === "arrive:PhenacCity" || script === "enter:PhenacCity") && (player.flags.orreStory | 0) === 19 && !player.flags.orreFT) return true;
+    if (script === "enter:PhenacCity_MayorsHouse" && (player.flags.orreStory | 0) === 20) return true;
     if (script === "Orre_WorldMap") return true;   // (Orre: out of a place, its map: orreTravel())
     // Johto: its scripts (a step's, while its var has its value), its
     // Apricorn trees, and its maps' frame tables as you come in.
@@ -14758,10 +15061,8 @@
     // Into Faraway Island's grass (FarawayIsland_Interior_OnTransition): the
     // step count starts again, and Mew, if it's there, is spotted and hides.
     if (script === "enter:FarawayIsland_Interior") { player.flags.farawaySteps = 0; return !player.flags.foughtMew; }
-    // Orre: in the diner after the truck's gone, Willie follows you out.
-    if (script === "enter:OutskirtStand_Diner") { if ((player.flags.orre | 0) === 2) player.flags.orreInside = true; return false; }
-    // (Willie's challenge as you come out of the diner (willieChallenge) waits for Colosseum's story proper.)
-    if (script === "enter:OutskirtStand") return false;
+    // (Orre: Willie comes after you as Folly and Trudly drive off, in Colosseum's story proper: orreStandStory.)
+    if (script === "enter:OutskirtStand_Diner" || script === "enter:OutskirtStand") return false;
     // Walking into the Route 4 Pokémon Center makes it where you go after
     // blacking out (FireRed's setrespawn there).
     if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }
