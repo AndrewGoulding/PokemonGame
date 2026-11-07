@@ -1856,6 +1856,75 @@ const PCG = pokemonCenterInside("AgateVillage_PokemonCenter_1F", "Agate Village"
     ["My grandpa trains Pokémon up on\nMt. Battle, past the village.", "I want to be as strong as him\nsomeday!"])
 ]);
 
+// ---------- Colosseum's story proper: Pyrite Town's insides, and Miror B.'s hideout ----------
+//
+// For now each an Emerald room (its picture and layout), as Orre's Pokémon Centers are: Duking's house (Mossdeep's
+// house), Cipher's Pyrite Building (Devon's lobby, and its top floor), and Miror B.'s hideout off the far end of Pyrite
+// Cave (the room off Granite Cave), its way in the cave's fallen-in north end, open once the story gets there (the
+// "hideout" patch: ui/game.js's mapPatches). Their people, and Pyrite's Trainers with Shadow Pokémon (Colosseum's:
+// game/orre.js's SHADOW), are for Colosseum's story (game/orre.js's visible(), ui/game.js's Pyrite scenes).
+function emeraldRoom(from, name, title, warps, people, extra) {
+  const m = JSON.parse(JSON.stringify(emeraldMaps[from]));
+  return Object.assign(m, { name, title, image: from, region: "orre", showName: false, allowEscaping: false, connections: [], triggers: [], hidden: [],
+    signs: [], weatherSteps: undefined, wild: null, warps, people }, extra || {});
+}
+// (Cipher's peons: Team Rocket's grunts in Cipher's purple.)
+{
+  const PURPLE = { "74,74,90": [104, 64, 136], "139,139,148": [168, 120, 200], "197,197,213": [216, 192, 232] };
+  save(recolorRGBA(path.join(outSprites, "rocket_m.png"), PURPLE, 32, 32), path.join(outSprites, "orre_peon_m.png"));
+  save(recolorRGBA(path.join(outSprites, "rocket_f.png"), PURPLE, 32, 32), path.join(outSprites, "orre_peon_f.png"));
+  const PIC = { "82,82,106": [104, 64, 136], "57,57,74": [72, 40, 96], "123,123,148": [152, 104, 184], "156,156,172": [184, 144, 208], "180,180,197": [208, 176, 224] };
+  save(recolorRGBA(path.join(root, "assets/sprites/trainers/front/rocket_grunt_m.png"), PIC, 64), path.join(root, "assets/sprites/trainers/front/cipher_peon.png"));
+  save(recolorRGBA(path.join(root, "assets/sprites/trainers/front/rocket_grunt_f.png"), PIC, 64), path.join(root, "assets/sprites/trainers/front/cipher_peon_f.png"));
+}
+const PYRITE_DUKING_DOOR = doorBelow(YSHACKS[0]), PYRITE_BUILDING_DOOR = doorBelow(YSHACKS[1]);
+const DUKING_HOUSE = emeraldRoom("MossdeepCity_House1", "PyriteTown_DukingsHouse", "Pyrite Town",
+  [{ x: 3, y: 7, map: "PyriteTown", warp: 2 }, { x: 4, y: 7, map: "PyriteTown", warp: 2 }], [
+    person(0, "DUKING", 7, 3, "black_belt", "face_down", "PyriteTown_DukingsHouse_EventScript_Duking", null),
+    person(1, "MARCIA", 2, 3, "little_girl", "face_right", "PyriteTown_DukingsHouse_EventScript_Marcia", null),
+    person(2, "SECC", 9, 5, "little_boy", "face_left", "PyriteTown_DukingsHouse_EventScript_Secc", null),
+    person(3, "SILVA", 3, 7, "camper", "face_up", "PyriteTown_DukingsHouse_EventScript_Silva", null)
+  ]);
+const BUILDING_1F = emeraldRoom("RustboroCity_DevonCorp_1F", "PyriteTown_PyriteBuilding_1F", "Pyrite Building",
+  [{ x: 5, y: 8, map: "PyriteTown", warp: 3 }, { x: 6, y: 8, map: "PyriteTown", warp: 3 }, { x: 14, y: 1, map: "PyriteTown_PyriteBuilding_4F", warp: 0 }], [
+    person(0, "NORE", 14, 2, "orre_peon_m", "face_down", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", null),
+    person(1, "BUILDING_DUKING", 5, 7, "black_belt", "face_up", "PyriteTown_PyriteBuilding_1F_EventScript_Duking", null)
+  ], { music: "em_aqua_magma_hideout", showName: true });
+const BUILDING_4F = emeraldRoom("RustboroCity_DevonCorp_3F", "PyriteTown_PyriteBuilding_4F", "Pyrite Building",
+  [{ x: 2, y: 1, map: "PyriteTown_PyriteBuilding_1F", warp: 2 }], [
+    person(0, "MIROR_B", 14, 3, "rocker", "face_left", "PyriteTown_PyriteBuilding_4F_EventScript_MirorB", null),
+    person(1, "NASCOUR", 14, 2, "gentleman", "face_left", "PyriteTown_PyriteBuilding_4F_EventScript_Nascour", null),
+    person(2, "REATH", 5, 3, "orre_peon_f", "face_left", "PyriteTown_PyriteBuilding_4F_EventScript_Reath", null),
+    person(3, "FERMA", 5, 4, "orre_peon_f", "face_left", "PyriteTown_PyriteBuilding_4F_EventScript_Ferma", null),
+    person(4, "BUILDING_SILVA", 12, 7, "camper", "face_up", "PyriteTown_PyriteBuilding_4F_EventScript_Silva", null)
+  ], { music: "em_aqua_magma_hideout" });
+const MIROR_HIDEOUT = emeraldRoom("GraniteCave_StevensRoom", "PyriteCave_MirorBHideout", "Miror B.'s Hideout",
+  [{ x: 7, y: 3, map: "PyriteCave", warp: 1 }], [
+    person(0, "HIDEOUT_MIROR_B", 7, 8, "rocker", "face_up", "PyriteCave_MirorBHideout_EventScript_MirorB", null),
+    person(1, "HIDEOUT_PLUSLE", 11, 9, "follow/311", "face_left", "PyriteCave_MirorBHideout_EventScript_Plusle", null,
+      { width: 32, height: 32, frames: 9, offsetX: -8 }),
+    person(2, "HIDEOUT_DUKING", 7, 4, "black_belt", "face_down", "PyriteCave_MirorBHideout_EventScript_Duking", null)
+  ], { music: "em_aqua_magma_hideout", showName: true });
+// Pyrite Town: Duking's house and the Pyrite Building open; its Trainers with Shadow Pokémon (Colosseum's, Orre.SHADOW).
+PYRITE.warps.push({ x: PYRITE_DUKING_DOOR.x, y: PYRITE_DUKING_DOOR.y, map: "PyriteTown_DukingsHouse", warp: 0 },
+  { x: PYRITE_BUILDING_DOOR.x, y: PYRITE_BUILDING_DOOR.y, map: "PyriteTown_PyriteBuilding_1F", warp: 0 });
+PYRITE.signs = PYRITE.signs.filter((s) => !((s.x === PYRITE_DUKING_DOOR.x && s.y === PYRITE_DUKING_DOOR.y) || (s.x === PYRITE_BUILDING_DOOR.x && s.y === PYRITE_BUILDING_DOOR.y)));
+for (const d of [PYRITE_DUKING_DOOR, PYRITE_BUILDING_DOOR]) { PYRITE.behavior[d.y * YW + d.x] = 0x69; PYRITE.collision[d.y * YW + d.x] = 1; }
+const SHADOW_TRAINERS = {
+  PyriteTown: [["CAIL", 14, 27, "man", "face_right"], ["VANT", 11, 9, "biker", "face_down"], ["NOVER", 21, 11, "biker", "face_down"],
+    ["DIOGO", 13, 15, "em_artist", "face_down"], ["LEBA", 24, 18, "biker", "face_left"], ["DIVEL", 5, 26, "rocker", "face_right"],
+    ["LON", 28, 26, "youngster", "face_left"], ["DOKEN", 31, 8, "cooltrainer_m", "face_left"]],
+  PyriteCave: [["TWAN", 20, 13, "biker", "face_left"], ["SOSH", 21, 21, "biker", "face_right"], ["ZALO", 20, 3, "cooltrainer_m", "face_right"]]
+};
+for (const [m, list] of [[PYRITE, SHADOW_TRAINERS.PyriteTown], [PYCAVE, SHADOW_TRAINERS.PyriteCave]]) for (const [key, x, y, sprite, facing] of list) {
+  const id = Math.max(-1, ...m.people.map((p) => p.id)) + 1;
+  m.people.push(person(id, "SHADOW_" + key, x, y, sprite, facing, m.name + "_EventScript_Shadow_" + key, null));
+}
+// Pyrite Cave's north end, back open to Miror B.'s hideout in the story (its collision and arrow, as Fiery Path's).
+PYCAVE.warps.push({ x: 26, y: 4, map: "PyriteCave_MirorBHideout", warp: 0 });
+PYCAVE.patches = { hideout: { x: 26, y: 4, w: 1, h: 1, top: false, collision: [[26, 4, 0, 0x65]] } };
+writePng(path.join(outMaps, "FieryPath-patch-hideout.png"), 16, 16, new Uint8ClampedArray(16 * 16 * 4));
+
 // ---------- Orre's filler Trainers ----------
 //
 // More Trainers in each place, each battling you once (game/orre.js's FILLERS: their teams and words), so your Pokémon
@@ -1942,6 +2011,7 @@ fs.writeFileSync(orreFile,
   "// Auto-generated by tools/build-orre.js (Emerald's desert tiles, and pictures drawn there). Do not edit by hand.\n" +
   "// Orre's Outskirt Stand and Snagem Hideout, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
   "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE, PhenacCity: PHENAC, PhenacCity_PokemonCenter_1F: PCP, PhenacCity_MayorsHouse: MAYOR_HOUSE,
-    PyriteTown: PYRITE, PyriteTown_PokemonCenter_1F: PCY, PyriteCave: PYCAVE, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG }) + ");\n" + sinnohPart);
+    PyriteTown: PYRITE, PyriteTown_PokemonCenter_1F: PCY, PyriteCave: PYCAVE, PyriteTown_DukingsHouse: DUKING_HOUSE,
+    PyriteTown_PyriteBuilding_1F: BUILDING_1F, PyriteTown_PyriteBuilding_4F: BUILDING_4F, PyriteCave_MirorBHideout: MIROR_HIDEOUT, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG }) + ");\n" + sinnohPart);
 console.log("wrote Pyrite Town (" + YW + "x" + YH + "), Pyrite Cave and Agate Village (" + GW + "x" + GH + ")");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");

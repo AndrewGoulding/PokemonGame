@@ -2968,6 +2968,9 @@
       "PyriteCave_EventScript_Dex", "PyriteCave_EventScript_Taro",
       "arrive:PhenacCity", "enter:PhenacCity", "enter:PhenacCity_MayorsHouse", "PhenacCity_EventScript_Truck", "PhenacCity_EventScript_Folly",
       "PhenacCity_EventScript_Trudly", "PhenacCity_MayorsHouse_EventScript_EsCade",
+      "arrive:PyriteTown", "enter:PyriteTown", "PyriteTown_DukingsHouse_EventScript_Duking", "PyriteTown_DukingsHouse_EventScript_Marcia",
+      "PyriteTown_DukingsHouse_EventScript_Secc", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", "enter:PyriteTown_PyriteBuilding_4F",
+      "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS),
       "PyriteTown_PokemonCenter_1F_EventScript_Nurse", "AgateVillage_PokemonCenter_1F_EventScript_Nurse",
       ...Object.keys(Orre.FILLERS),
       "PhenacCity_PokemonCenter_1F_EventScript_Nurse"
@@ -3438,6 +3441,7 @@
     if (slots) { await slotMachine(+slots[1]); return; }
 
     if (Orre.FILLERS[script]) { await orreTrainer(script); return; }
+    if (Orre.SHADOW_TRAINERS[script]) { await shadowTrainer(script); return; }
     switch (script) {
       case "PalletTown_EventScript_SignLady":
         await signLady(ev.person);
@@ -4488,6 +4492,12 @@
       case "PhenacCity_EventScript_Truck": await phenacTruck(ev.person); return;
       case "PhenacCity_EventScript_Folly": case "PhenacCity_EventScript_Trudly": await say(["Folly: Back for more, rookie?"]); await phenacFTBattle(); return;
       case "PhenacCity_MayorsHouse_EventScript_EsCade": await esCade(); return;
+      case "arrive:PyriteTown": case "enter:PyriteTown": await pyriteArrival(); return;
+      case "PyriteTown_DukingsHouse_EventScript_Duking": case "PyriteTown_DukingsHouse_EventScript_Marcia":
+      case "PyriteTown_DukingsHouse_EventScript_Secc": await dukingsHouse(script); return;
+      case "PyriteTown_PyriteBuilding_1F_EventScript_Nore": await pyriteNore(); return;
+      case "enter:PyriteTown_PyriteBuilding_4F": await pyriteTopFloor(); return;
+      case "enter:PyriteCave_MirorBHideout": await mirorBHideout(); return;
       case "OrreAirStrip_EventScript_Pilot": await orrePilot(); return;
       case "Orre_WorldMap": await orreTravel(); return;
       case "SnagemHideout_EventScript_Guard1": case "SnagemHideout_EventScript_Guard2": await snagemGuard(ev.person); return;
@@ -10508,6 +10518,207 @@
     Overworld.refreshPeople();
     await persist();
   }
+  // ---------- Orre: Colosseum's story, Pyrite Town (orreStory 21 to 28) ----------
+  //
+  // 21: you and Rui come to Pyrite (Orre's cap up to 35). Its Trainers have Shadow Pokémon they won as prizes at the
+  // Pyrite Colosseum; Rogue Cail, by the entrance, says so (22: his battle; 23 after it). Duking, who runs the
+  // Colosseum, won't help, and his friend Silva storms out on him; his daughter Marcia tells you why: Miror B. has
+  // Duking's Plusle hostage, in the Pyrite Building (24). There Nore guards the stairs; beaten, Duking comes in and
+  // owns up (25). On the top floor Miror B. and Cipher's Nascour; Reath and Ferma battle you, Silva lies beaten, and
+  // Miror B. dares you to come to his cave (26: Pyrite Cave's north end opens). In his hideout you beat him, he runs,
+  // and Plusle's free; Duking thanks you, and Rui wants to see her grandparents in Agate Village (28).
+  // Each of the story's Trainers with a Shadow Pokémon battles you until you've snagged it (orreShadowDone).
+  const ORRE_PYRITE_CAP = 35;
+  const storyBattle = async (opts) => {
+    const outcome = await battle("trainer", Object.assign({ double: true, music: "mus_vs_trainer" }, opts));
+    show("world");
+    await Overworld.resume();
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    return outcome;
+  };
+  const teamOf = (list) => list.map(([sp, lv]) => Party.create(sp, lv));
+  async function shadowTrainer(script) {
+    const f = player.flags, d = Orre.SHADOW_TRAINERS[script], done = (f.orreShadowDone = f.orreShadowDone || []);
+    if (done.includes(script)) { await say(d.after); return; }
+    const shadows = Orre.shadowOf(d.trainer);
+    await say(d.intro);
+    const opts = { foe: { name: d.name, team: shadows.map(Orre.shadowMon).concat(teamOf(d.partners)), pic: d.pic }, prizeClass: d.cls,
+      snag: shadows.map((s) => s.species), defeatText: ["Wh-what?!"] };
+    const outcome = await storyBattle(opts);
+    const snagged = (opts.snagged || []).filter((sp) => shadows.some((s) => s.species === sp));
+    if (snagged.length) { (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...snagged); done.push(script); }
+    if (outcome === "won" && script === "PyriteTown_EventScript_Shadow_CAIL" && (f.orreStory | 0) < 23) {
+      await say(["Cail: Tch. You're tough.", "Where'd I get it? I won a challenge at\nthe Pyrite Colosseum. The winners get\na \"special\" Pokémon on the quiet.",
+        "Want to know more? Ask Duking. He runs\nthe Colosseum. His place is up at the\ntop of town, on the left."]);
+      await say(["Rui: {PLAYER}, that Furret had the\nsame black aura! Someone's handing\nout Shadow Pokémon as prizes!", "Let's go and see this Duking."]);
+      f.orreStory = 23;
+    } else if (outcome === "won") await say(snagged.length ? d.after : d.kept);
+    await persist();
+  }
+  async function pyriteArrival() {
+    const f = player.flags;
+    await say(["Rui: This is Pyrite Town… This is where\nthose two grabbed me.", "Everyone here looks so rough. But\nsomething's wrong, {PLAYER}. I can\nfeel it.",
+      "Some of these Trainers' Pokémon… They\nhave that black aura!", "Let's ask around. That man by the\nentrance looks like he knows the town."]);
+    f.orreStory = 22;
+    f.orreLevelCap = Math.max(f.orreLevelCap | 0, ORRE_PYRITE_CAP);
+    await say("Your Pokémon can now grow up to\nLv. " + ORRE_PYRITE_CAP + " in Orre!");
+    await persist();
+  }
+  // Duking's house: before the story, a busy man; at 23, Silva storms out and Marcia tells you about Plusle.
+  async function dukingsHouse(script) {
+    const f = player.flags, story = f.orreStory | 0;
+    if (script === "PyriteTown_DukingsHouse_EventScript_Secc") {
+      await say(story >= 27 ? ["Secc: Hi! I'm Secc, Marcia's friend.", "I'm trying to get in touch with kids in\nother towns. It's the age of networking!"]
+        : ["Secc: Shh! Marcia and I are talking\nabout something really important!"]);
+      return;
+    }
+    if (script === "PyriteTown_DukingsHouse_EventScript_Marcia") {
+      await say(story >= 27 ? ["Marcia: Papa's Plusle is home! Thank\nyou, big people!"]
+        : story >= 24 ? ["Marcia: Big people, please help Papa's\nPlusle!"] : ["Marcia: Hello! I'm Marcia. Papa's\nbusy right now…"]);
+      return;
+    }
+    if (story >= 27) {
+      await say(["Duking: {PLAYER}! We owe you a great\ndeal. Plusle's safe, thanks to you.", "I'm going to look into whoever's behind\nMiror B. If I learn anything, I'll be in\ntouch."]);
+      return;
+    }
+    if (story !== 23) { await say(["Duking: The name's Duking. I run the\nColosseum here.", "Sorry, I'm busy. You'll have to excuse\nme."]); return; }
+    // (Silva in the doorway, then Marcia.)
+    const S = ORRE("SILVA"), door = window.WORLD_MAPS.PyriteTown_DukingsHouse.warps[0];
+    await say(["Duking: The name's Duking. I run the\nColosseum here.", "…Prizes? Shadow Pokémon? I… I don't\nknow anything about that. I'm busy."]);
+    sfx("se_door");
+    Overworld.addObject(S, { x: door.x, y: door.y - 1, facing: "up" });
+    await Overworld.act([{ who: S, moves: ["walk_up", "walk_up"] }]);
+    await say(["???: Duking! How much more are you going\nto take from Miror B. and his goons?!", "They're using you and the Colosseum!\nHave they sucked the fight right out of\nyou?!"]);
+    await say(["Duking: …"]);
+    await say(["???: Tch. So you just clam up. Fine!\nI'll deal with Miror B. myself!"]);
+    Screen.say("");
+    await Overworld.act([{ who: S, moves: ["walk_fast_down", "walk_fast_down", "set_invisible"] }]);
+    sfx("se_door");
+    Overworld.removeObject(S);
+    const M = ORRE("MARCIA");
+    await Overworld.act([{ who: M, moves: ["walk_right", "face_right"] }]);
+    await say(["Marcia: That was Silva, Papa's friend.\nHe's really angry…", "Big lady, I'm Marcia. Papa can't do\nanything, because…",
+      "Because Miror B. took Papa's Plusle!\nThey're keeping it as a prisoner!", "Papa says they're in the Pyrite\nBuilding, at the top of town, on the\nright."]);
+    await say(["Rui: That's horrible! Using a Pokémon\nas a hostage…", "{PLAYER}, we have to rescue Plusle!"]);
+    await Overworld.act([{ who: M, moves: ["walk_left", "face_right"] }]);
+    f.orreStory = 24;
+    await persist();
+  }
+  // The Pyrite Building: Nore on the stairs; then Duking.
+  async function pyriteNore() {
+    const f = player.flags, story = f.orreStory | 0;
+    const shadows = Orre.shadowOf("Nore");
+    if (story < 24) { await say(["Peon: This building's private property.\nBeat it, kid."]); return; }
+    await say(["Peon: Here's our latest challenge\nchampion, is it? Wait…", "You're the brat who messed with us in\nPhenac! You're not going upstairs!"]);
+    const opts = { foe: { name: "Cipher Peon Nore", team: shadows.map(Orre.shadowMon).concat(teamOf([["Kecleon", 31]])), pic: "cipher_peon" },
+      prizeClass: "Team Rocket", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["It's no use! I can't win!"] };
+    const outcome = await storyBattle(opts);
+    if (outcome !== "won") { await say(["Nore: Hah! Get lost!"]); return; }
+    if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
+    await say(["Nore: Gah! I'm out of here!"]);
+    Screen.say("");
+    const N = ORRE("NORE");
+    await Overworld.act([{ who: N, moves: ["walk_fast_up", "set_invisible"] }]);
+    Overworld.removeObject(N);
+    // Duking, in at the door.
+    const D = ORRE("BUILDING_DUKING"), door = window.WORLD_MAPS.PyriteTown_PyriteBuilding_1F.warps[0];
+    sfx("se_door");
+    Overworld.addObject(D, { x: door.x, y: door.y - 1, facing: "up" });
+    await say(["Duking: You're safe! I heard you'd come\nin here. I was worried."]);
+    await say(["Rui: Duking, this is where they give out\nShadow Pokémon to the challenge\nwinners!"]);
+    await say(["Duking: Shadow Pokémon? Those vicious\nPokémon that attack people? They were\nusing the Colosseum for that?!",
+      "…It's humiliating. But with Plusle in\ntheir hands, my own hands are tied.", "I have no choice but to depend on you.\nBe careful. Miror B. looks like a clown,\nbut his battling is all business!"]);
+    await say(["Rui: We'll get Plusle back for you!\nRight, {PLAYER}?"]);
+    Screen.say("");
+    await Overworld.act([{ who: D, moves: ["walk_down", "set_invisible"] }]);
+    Overworld.removeObject(D);
+    f.orreStory = 25;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // The top floor (25): Miror B. and Nascour; Reath and Ferma; Silva; Miror B.'s dare.
+  async function pyriteTopFloor() {
+    const f = player.flags, M = ORRE("MIROR_B"), N = ORRE("NASCOUR"), R = ORRE("REATH"), F = ORRE("FERMA"), S = ORRE("BUILDING_SILVA");
+    for (const [who, x, y, facing] of [[M, 14, 3, "left"], [N, 14, 2, "down"], [R, 5, 3, "left"], [F, 5, 4, "left"], [S, 12, 7, "up"]]) Overworld.addObject(who, { x, y, facing });
+    await say(["???: Our plan is coming along in a\nlovely, peachy-keen way, Master\nNascour!", "Duking's spirit is broken. We do as we\nplease at the Colosseum, and hand out\nShadow Pokémon to the winners!"]);
+    await say(["Nascour: Good. The others are doing\ntheir parts as well.", "Our Shadow Pokémon plan is falling into\nplace. The final phase is not far off.",
+      "Save your dancing until it succeeds,\nMiror B. I'm off."]);
+    Screen.say("");
+    await Overworld.act([{ who: N, moves: ["walk_down", "walk_down", "walk_left", "walk_left", "set_invisible"] }]);
+    Overworld.removeObject(N);
+    await say(["Miror B.: Fuhohoho! Oh, I feel like\ndancing!"]);
+    sfx("se_pin");
+    await Overworld.act([{ who: M, moves: ["emote_exclamation_mark"] }, { who: R, moves: ["face_right"] }, { who: F, moves: ["face_right"] }]);
+    await say(["Miror B.: Oh my, we have company!\nThe darling who's been meddling in\nPhenac!", "Reath, Ferma! Show our guests the door!"]);
+    await say(["Rui: {PLAYER}, look! Over there!\nSomeone's hurt!"]);
+    const shadowsR = Orre.shadowOf("Reath"), shadowsF = Orre.shadowOf("Ferma");
+    const opts = {
+      foe: { name: "Peon Reath", team: shadowsR.map(Orre.shadowMon).concat(teamOf([["Lombre", 32]])), pic: "cipher_peon_f" },
+      foe2: { name: "Peon Ferma", team: shadowsF.map(Orre.shadowMon).concat(teamOf([["Lombre", 32]])), pic: "cipher_peon_f", prizeClass: "Team Rocket", defeatText: ["Nooo!"] },
+      prizeClass: "Team Rocket", noBlackout: true, snag: shadowsR.concat(shadowsF).map((s) => s.species), defeatText: ["You're no ordinary Trainer!"] };
+    const outcome = await storyBattle(opts);
+    if (outcome !== "won") {
+      await say(["Miror B.: Fuhohoho! Run along home,\ndarlings!"]);
+      [M, R, F, S].forEach((w) => Overworld.removeObject(w));
+      return;
+    }
+    if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
+    await say(["Ferma: Reath, let's make ourselves\nscarce!"]);
+    Screen.say("");
+    await Overworld.act([{ who: R, moves: ["walk_fast_up", "set_invisible"] }, { who: F, moves: ["walk_fast_up", "walk_fast_up", "set_invisible"] }]);
+    Overworld.removeObject(R); Overworld.removeObject(F);
+    await say(["Silva: Urgh… Owww… Thanks. Who are\nyou people? Do you know Duking?",
+      "I came to take Miror B. down myself…\nand got creamed. I didn't know they\nhad Duking's Plusle as a hostage!"]);
+    await say(["Rui: That's why we're here. We came to\nrescue Plusle. You stay here and rest."]);
+    await say(["Miror B.: Taking a hostage is a\nperfectly fine bargaining tactic,\ndarlings!", "If you want the little dear back, come\nto my cave. Pyrite Cave, at the very\nend. I'll be waiting! Fuhohoho!"]);
+    Screen.say("");
+    await Overworld.act([{ who: M, moves: ["walk_down", "walk_down", "walk_down", "set_invisible"] }]);
+    Overworld.removeObject(M);
+    await say(["Silva: Be careful in that cave. His\npeople are tough."]);
+    Overworld.removeObject(S);
+    f.orreStory = 26;
+    applyPatches("PyriteCave");
+    await say(["(Pyrite Cave's far north end has been\ndug open: the way to Miror B.'s hideout.)"]);
+    await persist();
+  }
+  // Miror B.'s hideout (26): the battle, then Plusle and Duking.
+  async function mirorBHideout() {
+    const f = player.flags, M = ORRE("HIDEOUT_MIROR_B");
+    await say(["Miror B.: You kept me waiting so long,\nI've worked up a little perspiration!\nFuhohoho!",
+      "You've been ever so naughty, messing\nup our plans. But this is where the\nmusic stops for you!", "Let the music play! Let's get it on!"]);
+    const shadows = Orre.shadowOf("Miror B.");
+    const opts = { foe: { name: "Miror B.", team: shadows.map(Orre.shadowMon).concat(teamOf([["Ludicolo", 34], ["Lombre", 33], ["Ludicolo", 34]])), pic: "rocker" },
+      prizeClass: "Leader", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["How, how, how dare you!"] };
+    const outcome = await storyBattle(opts);
+    if (outcome !== "won") { await say(["Miror B.: Fuhohoho! Come back when\nyou've learned to dance, darlings!"]); return; }
+    if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
+    await say(["Miror B.: Don't you dare think you'll get\naway with this outrage!", "And I'm not giving up our Shadow\nPokémon plan! Let's go! Escape!"]);
+    Screen.say("");
+    await Overworld.act([{ who: M, moves: ["walk_fast_left", "walk_fast_left", "walk_fast_down", "set_invisible"] }]);
+    Overworld.removeObject(M);
+    cry("Plusle");
+    await say(["Rui: {PLAYER}! Did you hear that cry?\nIt must be Plusle!"]);
+    const P = ORRE("HIDEOUT_PLUSLE"), D = ORRE("HIDEOUT_DUKING");
+    sfx("se_door");
+    Overworld.addObject(D, { x: 7, y: 4, facing: "down" });
+    await Overworld.act([{ who: D, moves: ["walk_down", "walk_down"] }]);
+    await say(["Duking: {PLAYER}! Plusle!"]);
+    await Overworld.act([{ who: P, moves: ["walk_left", "walk_left", "walk_up"] }]);
+    cry("Plusle");
+    await say(["Duking: Plusle! You're safe! And\nMiror B.'s been driven out, thanks to\n{PLAYER}!",
+      "Hm? What's that, Plusle? Hungry, out of\nrelief? Wahahah!", "Come on, let's get out of this moldy\ncave. I owe you both a great deal."]);
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    Overworld.removeObject(P); Overworld.removeObject(D);
+    f.orreStory = 27;
+    Overworld.refreshPeople();
+    await Overworld.fadeFromBlack();
+    await say(["Rui: Plusle's safe, and Miror B.'s gone!\nBut they said there's a \"final phase\"…",
+      "{PLAYER}, my grandparents live in Agate\nVillage. Grandpa knows all about\nPokémon. Let's go and ask him!"]);
+    f.orreStory = 28;
+    Orre.unlock(f, "AgateVillage");
+    await persist();
+  }
   // Es Cade, at home.
   async function esCade() {
     const story = player.flags.orreStory | 0;
@@ -13104,7 +13315,7 @@
     // its observation deck's rock aglow and stars in line while you wish.)
     if (map === "MossdeepCity_SpaceCenter_2F") return [(f.delta | 0) >= 4 ? "open" : "sealed"];
     if (map === "MossdeepCity_SpaceCenter_ObservationDeck") return [...deckFx];
-    if (map === "OutskirtStand" || map === "PhenacCity") return Orre.patches(map, f);
+    if (map === "OutskirtStand" || map === "PhenacCity" || map === "PyriteCave") return Orre.patches(map, f);
     if (map === "VermilionCity_Gym") {
       if (f.vermilionGymLocksOpen) return ["off"];
       if (gymCans && gymCans.foundFirst) return ["half"];
@@ -15031,6 +15242,10 @@
     // (Colosseum's story proper: Folly and Trudly at Phenac City; the Mayor's house's scene.)
     if ((script === "arrive:PhenacCity" || script === "enter:PhenacCity") && (player.flags.orreStory | 0) === 19 && !player.flags.orreFT) return true;
     if (script === "enter:PhenacCity_MayorsHouse" && (player.flags.orreStory | 0) === 20) return true;
+    // (Colosseum's story, Pyrite: coming to town, the Pyrite Building's top floor, Miror B.'s hideout.)
+    if ((script === "arrive:PyriteTown" || script === "enter:PyriteTown") && (player.flags.orreStory | 0) === 21) return true;
+    if (script === "enter:PyriteTown_PyriteBuilding_4F" && (player.flags.orreStory | 0) === 25) return true;
+    if (script === "enter:PyriteCave_MirorBHideout" && (player.flags.orreStory | 0) === 26) return true;
     if (script === "Orre_WorldMap") return true;   // (Orre: out of a place, its map: orreTravel())
     // Johto: its scripts (a step's, while its var has its value), its
     // Apricorn trees, and its maps' frame tables as you come in.

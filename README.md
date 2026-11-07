@@ -3191,6 +3191,22 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   from it (`player.flags.orreMayor`).
 - `player.flags.orreStory` 18 once you've broken with Team Snagem, 19 with Willie battled, 20 with Rui out of the sack,
   21 with the Mayor's house's scene done (`orreShadowSnagged`: the Shadow Pokémon you've snagged). Pyrite Town is next.
+- **Pyrite Town** (`orreStory` 21 to 28; `pyriteArrival`, `dukingsHouse`, `pyriteNore`, `pyriteTopFloor` and
+  `mirorBHideout` in `ui/game.js`). You and Rui come to Pyrite (Orre's level cap goes up to 35). Its Trainers carry
+  Shadow Pokémon they won as prizes at the Pyrite Colosseum: Rogue Cail by the entrance (Furret) tells you so, and that
+  Duking runs the Colosseum. At **Duking's house** (the shack top left; Mossdeep's house inside) Duking won't talk, his
+  friend Silva storms out on him, and his daughter Marcia tells you why: Miror B. has Duking's Plusle hostage in the
+  **Pyrite Building** (the shack top right; Devon's lobby and top floor inside). There Cipher Peon Nore (Yanma) guards
+  the stairs; beat him and Duking comes in and owns up. On the top floor Miror B. reports to Cipher's Nascour that the
+  plan's going nicely; Peons Reath (Remoraid) and Ferma (Mantine) battle you together, Silva lies beaten, and Miror B.
+  dares you to come to his cave. Pyrite Cave's fallen-in north end is open from then on, the way into **Miror B.'s
+  hideout** (the room off Granite Cave): beat Miror B. (his Shadow Sudowoodo, Lv. 35, and his Ludicolo and Lombre) and
+  he runs; Plusle's free, Duking thanks you, and Rui wants to ask her grandfather in Agate Village about Cipher's "final
+  phase". Around Pyrite Town and Pyrite Cave are the rest of the story's Trainers with Shadow Pokémon: Riders Vant
+  (Misdreavus), Nover (Noctowl), Leba (Skiploom), Twan (Meditite) and Sosh (Dunsparce), St. Performer Diogo (Flaaffy),
+  Bandana Guy Divel (Quagsire), Roller Boy Lon (Slugma) and Hunters Doken (Qwilfish) and Zalo (Swablu). Each battles you
+  until you've snagged their Shadow Pokémon (`Orre.SHADOW_TRAINERS`, `shadowTrainer`; `orreShadowDone`). The words are
+  this game's own telling, after Colosseum's. Cipher's Peons are Team Rocket's grunts in Cipher's purple.
 - **Colosseum's Shadow Pokémon** (`Orre.SHADOW` in `game/orre.js`): all 47 of them, in Colosseum's order, each with its
   level, its Trainer and where you meet them (Trudly's Makuhita, Lv. 30, at the Mayor's house; Rogue Cail's Furret,
   Lv. 33, in Pyrite Town; on to Evice's Tyranitar). From Colosseum's story proper on, a Trainer who has a Shadow Pokémon
