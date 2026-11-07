@@ -355,8 +355,13 @@ fills all of it, so you see two more rows of it above you than in FireRed
 its screen, 32 lines down). Everything else (battles, menus, the Bag, the
 party, the Pokédex, minigames, the intro and the text box) is FireRed's
 240x160, under those 32 lines (`.gba` in `index.html`), so FireRed's screen
-positions hold for all of it. Over a menu the map still shows in the top 32
-lines, as it was when the menu opened; over a battle, the battle's backdrop
+positions hold for all of it. A full-screen menu, minigame or scene fills the
+top 32 lines too (`ui/screen-band.js`): each column of them is that column's
+colour at the top of whatever covers the 240x160 there (its first coloured
+pixel in the top 8 lines, so a window's frame is never stacked; an HTML scene
+gives its own background colour, or its minigame frame's), a few times a
+second. With nothing covering the top (the map with the Start menu or a
+window over it) the map shows there as it is; over a battle, the battle's backdrop
 does (its top 32 rows again, sliding in with the foe's half: `.field-sky`),
 room for battles with more Pokémon on the field. The opening, the title
 screen, the main menu, the Option screen and Prof. Oak's speech fill the whole

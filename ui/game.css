@@ -294,6 +294,9 @@
 /* A window over the whole 240x192 screen (the Trainer Card). */
 .overlay-full { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 9; image-rendering: pixelated; pointer-events: none; }
 .overlay-full.hidden { display: none; }
+/* The top 32 lines over a full-screen menu: its top carried on up (ui/screen-band.js; 240 columns, 1 line, stretched). */
+.screen-band { display: none; position: absolute; left: 0; top: 0; width: 100%; height: 16.6667%; z-index: 8; image-rendering: pixelated; pointer-events: none; }
+.screen-band.on { display: block; }
 #intro.hidden { display: none; }
 .intro-name { grid-column: 1 / -1; display: flex; }
 .intro-name input { flex: 1; font: inherit; font-size: 20px; padding: 8px 10px; border: 3px solid #2c3550; border-radius: 8px; }
