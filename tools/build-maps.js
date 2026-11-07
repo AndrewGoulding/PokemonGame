@@ -951,13 +951,16 @@ const FISHING_CHANGES = {
 };
 // Whole fishing tables changed from FireRed's (10 slots: the Old Rod's 70 30, the Good Rod's 60 20 20, the Super
 // Rod's 40 40 15 4 1 percent; game/fishing.js picks which rod's by fishing level), as [species, min, max, alt].
-// Route 24's: at its grass's levels (7-14), and no Gyarados. FISHING_EXTRA: Pokémon that bite at any fishing level,
+// Route 24's and Route 25's: at their grass's levels (7-14, 8-14), with nothing that only comes later (no Gyarados,
+// no Poliwhirl). FISHING_EXTRA: Pokémon that bite at any fishing level,
 // [species, min, max, percent]: Route 24's Squirtle, 5% (as the other starters in the wild).
 const FISHING_EXTRA = { Route24: [["Squirtle", 8, 12, 5]] };
 const FISHING_SLOTS = {
   Route24: [["Magikarp", 7, 10], ["Magikarp", 7, 10], ["Horsea", 8, 12, "Krabby"], ["Magikarp", 8, 12], ["Krabby", 8, 12, "Horsea"],
     ["Horsea", 10, 14, "Krabby"], ["Krabby", 10, 14, "Horsea"], ["Krabby", 10, 14, "Horsea"], ["Horsea", 12, 14, "Krabby"],
-    ["Psyduck", 12, 14, "Slowpoke"]]
+    ["Psyduck", 12, 14, "Slowpoke"]],
+  Route25: [["Magikarp", 8, 10], ["Magikarp", 8, 10], ["Poliwag", 8, 12], ["Magikarp", 8, 12], ["Goldeen", 8, 12],
+    ["Poliwag", 10, 14], ["Goldeen", 10, 14], ["Goldeen", 11, 14], ["Psyduck", 12, 14, "Slowpoke"], ["Psyduck", 13, 14, "Slowpoke"]]
 };
 function fishingChanges(name, t) {
   if (t && FISHING_SLOTS[name]) return Object.assign({}, t, { slots: FISHING_SLOTS[name].map(([species, min, max, alt]) => Object.assign({ species, min, max }, alt ? { alt } : {})) },

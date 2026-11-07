@@ -3476,6 +3476,10 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
     assert(sq > 140 && sq < 260, "Squirtle about 5% of Route 24's bites at fishing level " + lv + " (" + sq + " of 4000)");
   }
   assert(!grass.some((s) => s.species === "Squirtle"), "no Squirtle in Route 24's grass");
+  // (Route 25's fishing at its grass's levels, Lv. 8-14, and nothing that only comes later.)
+  const fish25 = window.WORLD_MAPS.Route25.fishing.slots;
+  assert(fish25.length === 10 && fish25.every((s) => s.min >= 8 && s.max <= 14), "Route 25's fishing is Lv. 8-14");
+  assert(!fish25.some((s) => ["Gyarados", "Poliwhirl"].includes(s.species) || ["Gyarados", "Poliwhirl"].includes(s.alt)), "no Gyarados or Poliwhirl fished on Route 25");
   assert(m.cycling && !window.WORLD_MAPS.PewterCity_PokemonCenter_1F.cycling, "cycling outdoors only");
   assert(World.facingWater({ map: "Route24", x: 5, y: 16 }, "right"));
   assert(!World.step({ map: "Route24", x: 5, y: 16 }, "right").ok, "can't walk onto water");
