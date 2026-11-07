@@ -1,4 +1,4 @@
-// The card tables' panel under the screen (ui/poker.js, ui/blackjack.js,
+// The card tables' windows along the screen's bottom (ui/poker.js, ui/blackjack.js,
 // ui/mahjong.js), the way FireRed asks in a battle: what's happening in a
 // message window on the left (the standard frame), the choices in a window
 // in your frame (the Option screen's FRAME) on the right, ▶ at the one
@@ -65,5 +65,5 @@
     el.classList.remove("table-menu");
     el.innerHTML = "";
   }
-  window.TableUI = { panel, move, clear };
+  window.TableUI = { panel, move, clear, frameUrl };
 })();

@@ -382,6 +382,14 @@ below it (the title screen's orange and dark red bands, as far as they've slid
 in). So does the Trainer Card (`#overlay-full`), its border's pattern carried on
 round the card.
 
+
+Nothing is drawn under the screen: the controls sit right below it. A
+question's choices that aren't one of FireRed's own windows (a move to
+forget, a list of Berries, the debug menu; `Screen.ask`) come up in a window
+on the screen in your frame, one a line with FireRed's ▶, just over the text
+box at the right as FireRed's multichoice is (a long list scrolls in it; the
+D-pad and A, B for Cancel, or tap one); a name you type goes in a window there
+too, and mining's messages in the text box.
 ## Overworld maps
 
 The maps are FireRed's, converted from the [pret/pokefirered](https://github.com/pret/pokefirered)
@@ -468,10 +476,11 @@ overworld sprite. It's fixed limit: bets and raises of the big blind before
 the flop and on it, and twice that on the turn and river, four bets a round
 at most (the table shows its stakes); short stacks go all
 in, with side pots. At all three tables what's happening and your choices
-are in FireRed's windows in the panel under the screen (`ui/table-ui.js`):
-the message in the standard frame, the choices in the frame you picked in
-the Options with FireRed's ▶, in FireRed's font; the screen above is all
-table, the cards, tiles and portraits as big as it allows. On your turn pick Fold, Check or Call, or Bet or Raise
+are in FireRed's windows along the screen's bottom, where the text box goes
+(`ui/table-ui.js`): the message in the standard frame, the choices in the
+frame you picked in the Options with FireRed's ▶, in FireRed's font; the
+whole screen above them is table, the cards, tiles and portraits as big as it
+allows. On your turn pick Fold, Check or Call, or Bet or Raise
 (the D-pad and A, or tap). Your hand so far is named in the middle of the
 table ("Your hand: Pair of Kings"; from the flop on, your best five-card hand,
 its five cards outlined in gold among yours and the board's). The

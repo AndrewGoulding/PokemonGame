@@ -139,12 +139,8 @@
     });
   }
 
-  // The text box in the panel under the screen.
-  function panel(text) {
-    const menu = document.getElementById("menu");
-    menu.innerHTML = text ? '<div class="panel-text"><span></span></div>' : "";
-    if (text) menu.firstChild.firstChild.textContent = text;
-  }
+  // The screen's text box (along its bottom, over the board).
+  function panel(text) { window.Screen.say(text || ""); }
   // A message there, staying up a while (A moves it on).
   async function message(text) {
     panel(text);

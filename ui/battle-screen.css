@@ -254,50 +254,36 @@ body {
   text-shadow: calc(100cqw / 240) calc(100cqw / 240) 0 #6a5a73;
 }
 
-/* Under the screen, the choices (FIGHT's moves, Yes / No, a list's options):
-   always the same height; more choices than fit scroll. */
-.panel {
-  height: 150px;
-  padding: 8px 10px;
-  background: #2e3440;
-  overflow: hidden;
-}
-
+/* The choices (Yes / No, a list's options, a move to forget), on the screen: FireRed's window in your frame
+   (the Option screen's FRAME, --frame, set by ui/screen.js), one choice a line, ▶ at the one picked, just over
+   the text box at the right as FireRed's multichoice is; a long list scrolls in it. --p is a game pixel. */
 .menu {
-  height: 100%;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-auto-rows: min-content;
-  align-content: start;
-  gap: 5px;
-  overflow-y: auto;
-  padding: 3px;           /* room for the highlight's outline */
-  margin: -3px;
+  --p: calc(100cqw / 240);
+  position: absolute; right: calc(var(--p) * 2); bottom: 30%; z-index: 7;
+  display: flex; flex-direction: column; align-items: stretch;
+  min-width: calc(var(--p) * 64); max-width: calc(100% - var(--p) * 4); max-height: calc(70% - var(--p) * 2);
+  overflow-y: auto; scrollbar-width: none;
+  border: calc(var(--p) * 8) solid transparent; border-image: var(--frame) 8 fill / calc(var(--p) * 8) round;
+  background: #fff; background-clip: padding-box; image-rendering: pixelated;
+  padding: calc(var(--p) * 1) calc(var(--p) * 2);
+  font-size: calc(var(--p) * 16); font-size-adjust: none; line-height: 1; color: #626262; text-shadow: var(--p) var(--p) 0 #d5d5cd;
+  user-select: none;
 }
-.menu button { grid-column: span 3; }
-.menu button.small { grid-column: span 2; }
-.menu button.wide { grid-column: 1 / -1; }
-
-.menu button {
-  padding: 5px 9px;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 8px;
-  background: #e8e8e8;
-  color: #111;
-  font: inherit;
-  font-size: 20px;
-  line-height: 1.1;
-  text-align: left;
+.menu:empty { display: none; }
+.menu > button {
+  all: unset; position: relative; display: block; box-sizing: border-box;
+  padding: calc(var(--p) * 1) calc(var(--p) * 4) calc(var(--p) * 1) calc(var(--p) * 10);
+  min-height: calc(var(--p) * 16); white-space: nowrap; cursor: pointer;
+  font: inherit; color: inherit; text-shadow: inherit; background: none !important;
 }
-.menu button:disabled { opacity: 0.45; cursor: not-allowed; }
+.menu > button:focus { outline: none; }
+.menu > button:focus::before { content: "▶"; position: absolute; left: calc(var(--p) * 1); }
+.menu > button:disabled { color: #b4b4b4; cursor: default; }
+.menu > button.wide, .menu > button.action { text-align: left; }
 
-.move-name { display: block; font-size: 20px; }
-.move-meta { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; opacity: 0.85; }
-
-.menu button.action { text-align: center; background: #f4f1e6; }
-.menu button.empty-move { text-align: center; color: #888; background: #e9e6dc; }
-.menu button.empty-move:disabled { opacity: 0.6; cursor: default; }
-.menu small { font-weight: 600; opacity: 0.7; }
+.move-name { display: block; }
+.move-meta { display: flex; gap: calc(var(--p) * 8); justify-content: space-between; font-size: calc(var(--p) * 11); opacity: 0.85; }
+.menu small { opacity: 0.7; }
 
 /* Type colours for move buttons (text stays dark for contrast) */
 .type-Normal   { background: #c6c6a7 !important; }

@@ -192,10 +192,6 @@
 .dex-entry.unseen { color: #99a; font-size: 18px; cursor: default; background: #eef1f4; }
 .dex-entry.unseen span { font-size: 10px; }
 
-/* The panel under the screen (#menu: the few menus and messages still drawn as buttons and text there) takes no
-   room while it's empty, which is nearly always: the controls sit right under the screen. */
-.panel:has(> .menu:empty) { height: 0; padding: 0; }
-
 /* ---------- Overworld ---------- */
 
 .world {
@@ -216,7 +212,7 @@
 .starters img.look { width: 64px; height: 128px; object-fit: cover; object-position: 0 0; image-rendering: pixelated; }
 
 /* The highlighted choice (the D-pad moves it, A picks it, B goes back). */
-#menu button:focus, #scene [data-pick]:focus, #scene [data-swap]:focus { outline: 3px solid #f3b400; outline-offset: 2px; }
+#scene [data-pick]:focus, #scene [data-swap]:focus { outline: 3px solid #f3b400; outline-offset: 2px; }
 /* A card picked up with Select, to swap with the next one. */
 #scene [data-swap].held { box-shadow: 0 0 0 4px #2b6fd6; }
 
@@ -302,8 +298,9 @@
 .screen-band { display: none; position: absolute; left: 0; top: 0; width: 100%; height: 16.6667%; z-index: 8; image-rendering: pixelated; pointer-events: none; }
 .screen-band.on { display: block; }
 #intro.hidden { display: none; }
-.intro-name { grid-column: 1 / -1; display: flex; }
-.intro-name input { flex: 1; font: inherit; font-size: 20px; padding: 8px 10px; border: 3px solid #2c3550; border-radius: 8px; }
+.intro-name { display: flex; min-width: calc(var(--p) * 120); }
+.intro-name input { flex: 1; min-width: 0; font: inherit; font-size: inherit; color: #404040; padding: calc(var(--p) * 1) calc(var(--p) * 2);
+  border: 0; border-bottom: var(--p) solid #a0a0a0; background: transparent; outline: none; }
 
 /* Caught / not-caught Poké Ball icons (Pokédex, wild Pokémon's battle box) */
 .ball-icon { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 3px; flex-shrink: 0; }
@@ -477,10 +474,13 @@
   border: calc(var(--u) * 2 / 3) solid transparent; border-radius: calc(var(--u) * 2); }
 .mj-riichi-row.cursor { border-color: #ffe066; }
 
-/* The tables' panel under the screen (ui/table-ui.js): FireRed's windows,
-   twice a game pixel (--p): what's happening in the standard frame, the
-   choices in yours with the ▶. */
-.menu.table-menu { display: block; height: 100%; margin: 0; padding: 0; }
+/* The tables' windows (ui/table-ui.js), along the screen's bottom where the text box goes (40 lines of it):
+   what's happening in the standard frame, the choices in yours with the ▶; the table itself has the whole
+   screen above them. */
+.menu.table-menu { left: 0; right: 0; bottom: 0; height: 25%; max-height: none; max-width: none; min-width: 0;
+  border: 0; background: none; padding: 0; overflow: hidden; text-shadow: none; }
+.gba > .scene:has(> .dig.poker) { position: absolute; left: 0; right: 0; bottom: 0; height: 120%; z-index: 1;
+  padding-bottom: 20.8333% !important; background: #163f23; }
 .tbl-panel { --p: calc(100cqw / 360); display: flex; gap: calc(var(--p) * 2); height: 100%; font-size: calc(var(--p) * 16); font-size-adjust: none;
   line-height: 1.05; color: #626262; text-shadow: var(--p) var(--p) 0 #d5d5cd; user-select: none; }
 .tbl-win { border: calc(var(--p) * 8) solid transparent; border-image: var(--std) 8 fill / calc(var(--p) * 8) round; image-rendering: pixelated;

@@ -2076,6 +2076,8 @@
   function enterText(prompt, value, max) {
     Screen.say(prompt, prompt.length);
     const menu = $("#menu");
+    // (In a window on the screen, over the text box, in your frame.)
+    Screen.frameMenu();
     menu.innerHTML = '<div class="intro-name"><input id="enter-text" maxlength="' + max + '" autocomplete="off" aria-label="' + escapeHtml(prompt) + '"></div>';
     const input = $("#enter-text");
     input.value = value || "";

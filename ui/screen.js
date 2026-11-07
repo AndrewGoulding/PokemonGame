@@ -106,6 +106,12 @@
   }
 
   function clearMenu() { asking++; menu.innerHTML = ""; }
+  // The choices' window on the screen: in your frame (the Option screen's FRAME), drawn from data/gba-menus.js.
+  function frameMenu() {
+    const n = (window.GameOptions && window.GameOptions.get().frame) || 0;
+    const url = window.TableUI && window.TableUI.frameUrl && window.TableUI.frameUrl("type" + (n + 1));
+    if (url) menu.style.setProperty("--frame", "url(" + url + ")");
+  }
 
   function addButton(opt, onClick) {
     const b = document.createElement("button");
@@ -116,6 +122,7 @@
     if (opt.value === "back" || opt.value === false) b.dataset.back = "";   // what X / Esc picks
     if (opt.focus) b.dataset.focus = "";   // highlighted first, instead of the first button
     b.addEventListener("click", onClick);
+    if (!menu.firstChild) frameMenu();
     menu.appendChild(b);
     return b;
   }
@@ -340,5 +347,5 @@
   const setTextSpeed = (f) => { textSpeed = f; };
   const setCharDelay = (ms) => { charMs = ms; };
 
-  window.Screen = { MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, iconUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, prompt, yesNo, clearMenu, learnMovePrompt, waitForA };
+  window.Screen = { frameMenu, MESSAGE_MS, setTextSpeed, setCharDelay, printed, spriteUrl, iconUrl, setSprite, clearSprite, spriteTag, ballIcon, escapeHtml, say, wait, read, message, ask, prompt, yesNo, clearMenu, learnMovePrompt, waitForA };
 })();
