@@ -3168,7 +3168,7 @@ if (window.JOHTO_TOWN_MAP) {
   const back = Player.load(JSON.parse(JSON.stringify(pl))).player;
   assert.deepStrictEqual([back.name, back.look, back.bag], ["Wes", "wes", {}]);
   // Rider Willie, and the bar's stock (no Escape Rope: it would take Wes to Kanto).
-  assert.deepStrictEqual(Orre.willieTeam().map((r) => [r.species, r.level]), [["Zigzagoon", 23], ["Zigzagoon", 24]]);
+  assert.deepStrictEqual(Orre.willieTeam().map((r) => [r.species, r.level]), [["Zigzagoon", 10], ["Zigzagoon", 11]]);
   assert(Orre.SHOP.every((id) => ITEMS[id]) && !Orre.SHOP.includes("escape-rope"));
   for (const f of ["trainers/back/wes", "trainers/front/wes", "trainers/front/rider_willie"]) assert(fs.existsSync(path.join(root, "assets/sprites/" + f + ".png")), f);
   for (const k of ["", "_run", "_bike", "_surf", "_fish"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/player_wes" + k + ".png")));
