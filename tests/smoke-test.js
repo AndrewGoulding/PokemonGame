@@ -7269,6 +7269,28 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   done.then(() => console.log("ok: Hoenn's scripts, Norman's scene and Wally's lesson, Dive, trades, " + Object.keys(HS.s).length + " scripts"));
 }
 
+// Curse: anyone but a Ghost raises Attack and Defense and lowers Speed (the target untouched); a Ghost pays half its
+// max HP to curse the target, which loses a quarter of its own each turn after; a second Curse on it fails.
+{
+  const mk = (species, moves) => ({ species, level: 50, moves });
+  const go = (b) => { b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 }); };
+  const a = new Battle({ seed: 3, p1: { name: "A", team: [mk("Snorlax", ["Curse"])] }, p2: { name: "B", team: [mk("Chansey", ["Splash"])] } });
+  a.start(); go(a);
+  const s = a.sides.p1.active.boosts;
+  assert(s.atk === 1 && s.def === 1 && s.spe === -1, "a non-Ghost's Curse: +1 Atk, +1 Def, -1 Spe");
+  assert(!a.sides.p2.active.volatiles.curse && a.sides.p2.active.hp === a.sides.p2.active.maxhp, "and its target untouched");
+  const g = new Battle({ seed: 3, p1: { name: "A", team: [mk("Gengar", ["Curse"])] }, p2: { name: "B", team: [mk("Snorlax", ["Splash"])] } });
+  g.start(); go(g);
+  const me = g.sides.p1.active, foe = g.sides.p2.active;
+  assert(me.hp === me.maxhp - Math.floor(me.maxhp / 2) && !me.boosts.atk, "a Ghost's Curse costs it half its HP, no boosts");
+  assert(foe.volatiles.curse && foe.hp === foe.maxhp - Math.floor(foe.maxhp / 4), "its target cursed: a quarter of its HP at the turn's end");
+  const before = me.hp;
+  go(g);
+  assert(g.events.some((e) => e[0] === "-fail" && e[1] === me.ident) && me.hp === before, "Curse on a cursed target fails, free");
+  assert(foe.hp === foe.maxhp - 2 * Math.floor(foe.maxhp / 4), "and the curse goes on");
+}
+console.log("ok: Curse, a Ghost's and anyone else's");
+
 // The reeling game: held in your zone it's landed, perfectly; never reeled, it gets away; a hard fight's zone smaller.
 {
   require("../game/fishing-game.js");

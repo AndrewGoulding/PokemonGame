@@ -102,6 +102,23 @@
     b.add("-setboost", user, "atk", 6, "[from] move: Belly Drum");
     return true;
   };
+  // Curse: a Ghost (as it stands now: Terastallized or Forest's Curse'd too) halves its own HP to curse the target,
+  // which then loses a quarter of its max HP at the end of every turn (data/conditions.js: curse); anyone else
+  // raises its Attack and Defense a stage and lowers its Speed a stage (no target needed, and Protect doesn't stop it).
+  status.curse = (b, user, target) => {
+    const effect = E("Move", "curse", "Curse");
+    if (!user.hasType("Ghost")) return b.boost(user, { spe: -1, atk: 1, def: 1 }, user, effect) ? "done" : false;
+    if (!target || target === user || target.fainted || target.volatiles.curse) return false;
+    if (!b.addVolatile(target, "curse", user, effect)) return false;
+    // (Who laid it, on its "-start": "Gengar cut its own HP and laid a curse on …!")
+    const ev = [...b.events].reverse().find((e) => e[0] === "-start" && e[1] === target.ident && /curse/i.test(e[2]));
+    if (ev) ev[3] = user.ident;
+    // (Its HP paid straight off, even to fainting: Magic Guard doesn't spare it.)
+    user.hp = Math.max(0, user.hp - Math.floor(user.maxhp / 2));
+    b.add("-damage", user, b.hpStr(user));
+    if (user.hp <= 0) b.faint(user, user, effect);
+    return "done";
+  };
   status.haze = (b) => {
     for (const m of b.getActives()) for (const k of Object.keys(m.boosts)) m.boosts[k] = 0;
     b.add("-clearallboost");

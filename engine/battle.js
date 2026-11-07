@@ -1373,7 +1373,7 @@
         this.runEvent("onEnd", old, { only: "ability" });
         if (o.copy) carried = { boosts: Object.assign({}, old.boosts), volatiles: {} };
         if (carried) {
-          for (const id of ["substitute", "leechseed", "ingrain", "aquaring", "focusenergy", "dragoncheer", "healblock", "magnetrise", "taunt", "encore", "disable", "torment", "yawn", "perishsong"]) {
+          for (const id of ["substitute", "leechseed", "curse", "ingrain", "aquaring", "focusenergy", "dragoncheer", "healblock", "magnetrise", "taunt", "encore", "disable", "torment", "yawn", "perishsong"]) {
             if (old.volatiles[id]) carried.volatiles[id] = old.volatiles[id];
           }
         }

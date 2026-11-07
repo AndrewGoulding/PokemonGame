@@ -1763,6 +1763,8 @@
         const stock = /^stockpile(\d)$/.exec(id);
         if (stock) return fill("{who} stockpiled " + stock[1] + "!", a);
         if (id === "disable" && c) return fill("{who}'s " + c + " was disabled!", a);
+        // (A Ghost's Curse names who laid it: "Gengar cut its own HP and laid a curse on the wild Snorlax!")
+        if (id === "curse" && c && /^p\d/.test(c)) return fill("{who}", c) + " cut its own HP and laid a curse on " + fill("{whom}", a) + "!";
         const text = fill(lookup(VOLATILE_START, id, null), a);
         if (id === "substitute") {
           // The doll: dropped in by the move's own animation (or, after Shed

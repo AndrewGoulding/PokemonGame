@@ -121,6 +121,11 @@
         if (dealt && src && src.isActive && !src.fainted) ctx.heal(src, dealt, ctx.pokemon, E("Volatile", "leechseed", "Leech Seed"));
       }
     },
+    // Curse (a Ghost's): a quarter of its max HP at the end of every turn, till it switches out (Baton Pass passes it on).
+    curse: {
+      name: "Curse",
+      onResidual(ctx) { ctx.damage(ctx.pokemon, hpFrac(ctx.pokemon, 1, 4), ctx.pokemon, E("Volatile", "curse", "Curse")); }
+    },
     protect: { name: "Protect", duration: 1 },
     kingsshield: { name: "King's Shield", duration: 1 },
     spikyshield: { name: "Spiky Shield", duration: 1 },
