@@ -36,7 +36,10 @@
     // Chamber's wall.)
     { move: "Dig", badge: null, johto: null, hoenn: null, desc: "Escape from a cave." },
     // (Teleport, like Dig, for a Pokémon that knows it: back to the last Pokémon Center, from wherever Fly could go.)
-    { move: "Teleport", badge: null, johto: null, hoenn: null, desc: "Return to a healing spot." }
+    { move: "Teleport", badge: null, johto: null, hoenn: null, desc: "Return to a healing spot." },
+    // (Sweet Scent, for a Pokémon that knows it: in the grass, a wild Pokémon comes out; where hordes live, a horde,
+    // as in X and Y: game/hordes.js.)
+    { move: "Sweet Scent", badge: null, johto: null, hoenn: null, desc: "Lure wild Pokémon." }
   ];
   const inJohto = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "johto");
   const inHoenn = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "hoenn");

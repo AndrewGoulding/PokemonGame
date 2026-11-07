@@ -88,6 +88,14 @@ body {
 .field.doubles .sprite.player.slot-b { left: 16.6667%; bottom: -5.3571%; }
 .field.doubles .sprite.foe { right: 1.6667%; }
 .field.doubles .sprite.foe.slot-b { right: 21.6667%; top: -12.5%; }
+/* A horde (X and Y's horde battles): five foes, slots a to e, smaller, at
+   the places ui/battle-screen.js's HORDE_LAYOUT gives them (inline). */
+.sprite.slot-c, .sprite.slot-d, .sprite.slot-e { display: none; }
+.field.horde .sprite.foe.slot-b, .field.horde .sprite.slot-c, .field.horde .sprite.slot-d, .field.horde .sprite.slot-e { display: block; }
+/* Their panel (drawHordePanel): over the screen's top, under the menus and the text box. */
+.horde-panel { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; image-rendering: pixelated; pointer-events: none; }
+.horde-panel.hidden { display: none; }
+.screen:has(> .gba > .party-menu:not(.hidden)) > .horde-panel { display: none; }
 
 
 /* The Poké Ball thrown out at the start and on switching in. */

@@ -1380,6 +1380,44 @@ piece when you win, and you get each one's prize. Only the three you chose
 are changed by the battle (HP, PP, experience, levels); the rest of your party
 is left as it was.
 
+### Horde battles
+
+**Hordes** are X and Y's: five wild Pokémon at once, all out together against
+your one. Where a map has hordes (`data/horde-encounters.js`: most of Kanto's,
+Johto's and Hoenn's routes and caves up to the Elite Four), one encounter in
+twenty in its grass, or on a cave's floor, is a horde (never on the water, nor
+Pokémon Tower's unidentified Ghosts), and **Sweet Scent** always draws one out:
+it's a field move now, for a Pokémon that knows it ("Oddish used Sweet Scent!"),
+from the party screen in the grass (where there are no hordes, a wild Pokémon
+comes out at once, as in FireRed; anywhere else, "Looks like there's nothing
+here…"). A horde is often five of a kind, sometimes four and one (four Oddish
+and a Gloom, two Nidoran♂ and three Nidoran♀), a few levels below the map's
+own wild Pokémon, as X and Y's are; a Repel keeps them away as it would the
+weakest of them (`game/hordes.js`: `Hordes.pick`, `Hordes.roll`).
+
+The battle (`engine/battle.js`'s `"horde"` format, `ui/battle-screen.js`): the
+five slide in, three behind and two in front, smaller than a lone wild
+Pokémon (`HORDE_LAYOUT`, 0.58 of the size), and light up together: "Whoa! A
+horde of Zubat appeared!" (X and Y's words; "A horde of wild Pokémon" when
+they're not all one kind). Their boxes are one panel at the top left of the
+screen, up in the 32 lines above the battle scene: one of FireRed's boxes
+(its border, cream and shadow) with a row each, the name and gender in the
+small font and FireRed's HP bar, a fainted one's row greyed "Fainted"; yours is
+the usual box. A move that aims at one Pokémon brings up the target cursor:
+Up and Down go down the panel's rows (and round), the row lit with ▶ and its
+Pokémon blinking; A picks, B goes back. Every one of the five is next to your
+Pokémon, so a spread move (Discharge, Surf, Earthquake) hits all of them still
+standing, at 0.75x each, their bars going down together. They choose their
+own moves, as wild Pokémon do. One knocked out isn't replaced; Exp. comes for
+each as it faints. You can run, as from any wild battle. A Ball while more
+than one is left: "You can't aim when there's more than one Pokémon!" (this
+game's own words: X and Y's weren't to hand), and you choose again; with one
+left, throw away. The moves' animations play on the Pokémon they're about,
+wherever it stands (ui/battle-anim.js is given yours, that one and another of
+the five as its four battlers: `hordeAnimSlots`). Each one knocked out drops
+what it was holding. For trying them out, `Game.hordeBattle("Zubat", 12, 5)`
+(or a list of species) starts one from the map.
+
 ### Prof. Oak's Mega Evolution test
 
 This game's own story beat. Once you have four badges and Pokémon Tower is put
@@ -3553,7 +3591,7 @@ and later files read those globals, so scripts must load in this order:
 24. `game/opponent-ai.js` → `OpponentAI`
 25. `game/party.js` → `Party`
 26. `game/evolution.js` → `Evolution`
-27. `game/encounters.js` → `Encounters`
+27. `game/encounters.js` → `Encounters` (then `game/hordes.js` → `Hordes`: horde encounters, from `data/horde-encounters.js` → `HORDE_ENCOUNTERS`)
 28. `game/player.js` → `Player`
 29. `game/bag.js` → `Bag`
 30. `game/save.js` → `Save`
@@ -3634,6 +3672,14 @@ empty, while the partner fights on. `getRequest("p1")` / `choose("p1", …)` cov
 the trainer's slot, `"p1b"` the partner's — the game drives it with
 `OpponentAI.choose(battle, "p1b")`. `switch` events carry the trainer's name,
 `-withdraw` marks a Pokémon called back. Only p1's own Pokémon earn experience.
+
+**Hordes** (X and Y's): `format: "horde"` with `wild: true` and up to five
+wild Pokémon in p2's team puts them all out at once (`side.actives[0..4]`,
+`p2a: Zubat` to `p2e: Zubat`) against p1's one (slot a). It runs as doubles
+does (`battle.doubles` and `battle.horde` are both true; requests have `format:
+"horde"`); targets are `1` to `5`, spread moves hit all five still standing
+(0.75x), no one has an ally, and the wild ones aren't replaced when they faint.
+A Ball with more than one left is refused with `Battle.MANY_TO_AIM`.
 
 In the game, `BattleScreen.run({ format: "doubles", ... })` shows a double
 battle (the header of `ui/battle-screen.js` has the options for a tag partner

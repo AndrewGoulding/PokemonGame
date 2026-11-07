@@ -27,6 +27,13 @@
 // opposing trainers: cfg.p2.partner = { name, team }, cfg.foeTrainer2 (their
 // picture) and cfg.defeatText2, chosen by cfg.opponent2(battle) ("p2b").
 //
+// Horde battles (X and Y's): cfg.format = "horde" with cfg.wild, the wild
+// team's five (or fewer) all out at once, smaller, three behind and two in
+// front (HORDE_LAYOUT); their boxes are one panel of rows at the top left of
+// the screen (drawHordePanel), yours the singles box. "Whoa! A horde of Zubat
+// appeared!"; the target cursor goes down the panel's rows; a move's
+// animation is given yours, the foe it's about and one more (hordeAnimSlots).
+//
 // The screen never reads HP or status straight from the engine while events are
 // playing. It replays battle.events one at a time, updating its own copy of each
 // side's active Pokémon, so the HP bars move in step with the text box.
@@ -227,8 +234,34 @@
     el.sides.p1b = { sprite: mk("player") };
     el.field.insertBefore(el.sides.p2b.sprite, el.sides.p2.sprite);
     el.sides.p1.sprite.after(el.sides.p1b.sprite);
+    // (A horde's other three: X and Y's horde battles, slots c to e.)
+    for (const k of ["c", "d", "e"]) {
+      el.sides["p2" + k] = { sprite: Object.assign(mk("foe"), { className: "sprite foe slot-" + k + " hidden" }) };
+      el.field.insertBefore(el.sides["p2" + k].sprite, el.sides.p2.sprite);
+    }
   }
-  const POSITIONS = ["p1", "p2", "p1b", "p2b"];
+  // (In battler order, as the GBA numbers them: yours even, theirs odd; a
+  // horde's last three after FireRed's four, for the screen alone: animOpts
+  // gives ui/battle-anim.js four of them at a time, hordeAnimSlots.)
+  const POSITIONS = ["p1", "p2", "p1b", "p2b", "p2c", "p2d", "p2e"];
+  const SLOT_LETTERS = "abcde";
+  // A horde (X and Y's: your one against five wild Pokémon, all out at
+  // once): where each of the five stands, in the field's 240x112, as
+  // FireRed's sprites are placed (the picture's box; its feet at `feet` once
+  // placeSprite has moved it down by its empty rows), 0.58 of the usual
+  // size: three behind (slots a to c, left to right), two in front (d, e).
+  const HORDE_SCALE = 0.58;
+  const HORDE_LAYOUT = { p2: [142, 52, 2], p2b: [180, 50, 2], p2c: [218, 52, 2], p2d: [160, 65, 3], p2e: [200, 65, 3] };
+  function layoutHorde(on) {
+    el.field.classList.toggle("horde", !!on);
+    for (const [pos, [cx, feet, z]] of Object.entries(HORDE_LAYOUT)) {
+      const st = el.sides[pos].sprite.style;
+      if (!on) { st.left = st.top = st.width = st.right = st.zIndex = ""; continue; }
+      const w = 72 * HORDE_SCALE;
+      Object.assign(st, { left: ((cx - w / 2) / 240 * 100).toFixed(3) + "%", top: ((feet - w) / 112 * 100).toFixed(3) + "%",
+        width: (w / 240 * 100).toFixed(3) + "%", right: "auto", zIndex: String(z) });
+    }
+  }
   // The Substitute doll (pokeemerald-expansion's, assets/battle-anims/): in
   // place of a Pokémon behind a Substitute, standing where its picture stood.
   for (const p of POSITIONS) {
@@ -273,7 +306,8 @@
     p2b: { box: doBox, frame: doFrame, x: 0, y: 28, h: 32, slideFrom: -115 }
   };
   let doublesLayout = false;
-  const hbCfg = (pos) => (doublesLayout ? HB_DOUBLES[pos] : HB[pos]);
+  // (A horde: your box is the singles one; theirs are rows of the horde's panel, drawHordePanel.)
+  const hbCfg = (pos) => (battle && battle.horde ? (pos === "p1" ? HB.p1 : null) : doublesLayout ? HB_DOUBLES[pos] : HB[pos]);
   // How a box is laid out: the singles player's (name at 16, HP numbers, EXP
   // bar) or the opponent's style (name at 8, the status over "HP"), which a
   // double battle's player boxes share with the name at 16.
@@ -421,7 +455,69 @@
     return c;
   }
 
+  // ---------- A horde's panel (this game's own, after X and Y) ----------
+  //
+  // The five wild Pokémon's boxes, as one of FireRed's boxes (its colours:
+  // the border, the cream, the shadow) with a row each: name and gender in
+  // the small font, then the 48-pixel HP bar (healthbar.png's tiles, moving
+  // as the boxes' bars do); a fainted one's row greyed, "Fainted". It stands
+  // at the top left of the screen, over the 32 lines above the battle scene
+  // and the scene's top (the screen's 240x192, not the field's 240x112), clear
+  // of your Pokémon. While you aim a move its target's row is lit, with ▶.
+  const hordePanel = document.createElement("canvas");
+  hordePanel.width = 240; hordePanel.height = 192;
+  hordePanel.className = "horde-panel hidden";
+  {
+    const gbaEl = document.querySelector(".gba");
+    if (gbaEl) gbaEl.parentNode.insertBefore(hordePanel, gbaEl);
+  }
+  const HP_BORDER = "rgb(32,57,0)", HP_CREAM = "rgb(255,255,222)", HP_SHADOW = "rgb(82,106,98)", HP_LIT = "rgb(222,213,180)";
+  const HORDE_PANEL = { x: 4, y: 3, w: 112, row: 13 };
+  let hordeTarget = null;   // (the row lit while you aim: its position)
+  let hordeText = null, hordeTextKey = null;
+  function drawHordePanel() {
+    const on = !!(battle && battle.horde && Object.keys(HORDE_LAYOUT).some((k) => hb[k] && hb[k].shown));
+    hordePanel.classList.toggle("hidden", !on);
+    if (!on) return;
+    const g = hordePanel.getContext("2d");
+    g.clearRect(0, 0, 240, 192);
+    g.imageSmoothingEnabled = false;
+    const rows = Object.keys(HORDE_LAYOUT).filter((k) => view[k] && view[k].species);
+    const P = HORDE_PANEL, h = rows.length * P.row + 4;
+    g.fillStyle = HP_SHADOW; g.fillRect(P.x + 2, P.y + 2, P.w, h);
+    g.fillStyle = HP_BORDER; g.fillRect(P.x, P.y, P.w, h);
+    g.fillStyle = HP_CREAM; g.fillRect(P.x + 1, P.y + 1, P.w - 2, h - 2);
+    // (The words: drawn again only when they change.)
+    const key = rows.map((k) => [k, view[k].name, hb[k].data.gender, view[k].fainted, hordeTarget === k].join(":")).join("|");
+    if (key !== hordeTextKey) {
+      hordeTextKey = key;
+      const surf = window.GbaMenus.Surface();
+      rows.forEach((k, i) => {
+        const v = view[k], ry = P.y + 4 + i * P.row, lit = hordeTarget === k;
+        const ink = v.fainted ? [170, 170, 160] : HB_TEXT;
+        if (lit) surf.text("▶", P.x + 3, ry, HB_TEXT, HB_SHADOW, "small");
+        const w = surf.text(v.name, P.x + 10, ry, ink, HB_SHADOW, "small");
+        const gd = hb[k].data.gender;
+        if (gd === "M" || gd === "F") surf.text(gd === "M" ? "♂" : "♀", P.x + 10 + w, ry, gd === "M" ? HB_MALE : HB_FEMALE, HB_SHADOW, "small");
+        if (v.fainted) surf.text("Fainted", P.x + P.w - 46, ry, ink, HB_SHADOW, "small");
+      });
+      hordeText = surf.canvas();
+    }
+    rows.forEach((k, i) => {
+      const ry = P.y + 4 + i * P.row;
+      if (hordeTarget === k) { g.fillStyle = HP_LIT; g.fillRect(P.x + 2, ry - 1, P.w - 4, P.row - 1); }
+      if (view[k].fainted || !hbBar.complete) return;
+      // (The bar's own tiles, with a line of the border for its left end.)
+      const b = hb[k], bx = P.x + P.w - 54, by = ry + 2;
+      g.fillStyle = HP_BORDER; g.fillRect(bx - 1, by + 1, 1, 6);
+      const px = hpPixels(b.hp, b.maxhp), base = px > 24 ? 3 : px > 9 ? 47 : 56;
+      for (let j = 0; j < 6; j++) hbTile(g, hbBar, base + Math.max(0, Math.min(8, px - 8 * j)), bx + 8 * j, by);
+    });
+    if (hordeText) g.drawImage(hordeText, 0, 0);
+  }
+
   function drawHealthboxes() {
+    drawHordePanel();
     const g = hbLayer.getContext("2d");
     g.clearRect(0, 0, 240, 112);
     g.imageSmoothingEnabled = false;
@@ -508,7 +604,8 @@
   // it slides in.
   function hbShow(side, on) {
     const b = hb[side];
-    if (on && !b.shown) b.x2 = hbCfg(side).slideFrom;
+    const cfg = hbCfg(side);
+    if (on && !b.shown && cfg) b.x2 = cfg.slideFrom;
     b.shown = !!on;
   }
   // Your Safari box, sliding in as the battle starts; then the count of balls.
@@ -610,17 +707,33 @@
   let teraShown = {};   // ("p1:2": the Tera Type that Pokémon has Terastallized into)
 
   const sideOf = (ident) => String(ident).slice(0, 2);
-  const nameOf = (ident) => String(ident).replace(/^p\d[ab]?: /, "");
+  const nameOf = (ident) => String(ident).replace(/^p\d[a-e]?: /, "");
   const otherSide = (side) => (side === "p1" ? "p2" : "p1");
   // The screen position an engine identity stands in: "p1" / "p2" for slot a
   // (all of singles), "p1b" / "p2b" for slot b.
-  const posOf = (ident) => { const m = /^(p\d)(b)?/.exec(String(ident)); return m ? m[1] + (m[2] ? "b" : "") : String(ident); };
-  const slotOf = (pos) => (pos.length > 2 ? 1 : 0);
-  const posAt = (side, slot) => side + (slot ? "b" : "");
+  // (A horde's other three: "p2c" to "p2e".)
+  const posOf = (ident) => { const m = /^(p\d)([a-e])?/.exec(String(ident)); return m ? m[1] + (m[2] && m[2] !== "a" ? m[2] : "") : String(ident); };
+  const slotOf = (pos) => (pos.length > 2 ? Math.max(0, SLOT_LETTERS.indexOf(pos[2])) : 0);
+  const posAt = (side, slot) => side + (slot ? SLOT_LETTERS[slot] || "" : "");
   // The Pokémon standing across from `pos` (the one opposite, else the other foe).
   const foeView = (pos) => {
+    // (A horde: yours, or the first of theirs still standing.)
+    if (battle && battle.horde) {
+      if (sideOf(pos) === "p2") return view.p1;
+      const live = Object.keys(HORDE_LAYOUT).map((k) => view[k]).find((v) => v && v.species && !v.fainted);
+      return live || view.p2;
+    }
     const o = otherSide(sideOf(pos)), a = view[posAt(o, slotOf(pos))], b = view[posAt(o, 1 - slotOf(pos))];
     return a && a.species && !a.fainted ? a : b && b.species && !b.fainted ? b : a;
+  };
+  // The position across from `pos`: the one opposite in a double battle; in a
+  // horde, yours (for theirs) or the first of theirs still standing.
+  const opposite = (pos) => {
+    if (battle && battle.horde) {
+      if (sideOf(pos) === "p2") return "p1";
+      return Object.keys(HORDE_LAYOUT).find((k) => view[k] && view[k].species && !view[k].fainted) || "p2";
+    }
+    return posAt(otherSide(sideOf(pos)), slotOf(pos));
   };
   // A side's trainer for a Pokémon (tag battles: its own trainer).
   const trainerName = (side, teamIndex) => {
@@ -829,7 +942,7 @@
   async function animateMove(side, name, targets) {
     const data = window.MOVES && window.MOVES[name];
     if (!data || !sceneOn()) return;
-    const foeSide = posAt(otherSide(sideOf(side)), slotOf(side));
+    const foeSide = opposite(side);
     const aims = targets && targets.length ? targets : [battle.doubles ? foeSide : (side === "p1" ? "p2" : "p1")];
     if (await expansionAnim(side, name, data, aims)) return;
     const user = el.sides[side].sprite;
@@ -899,21 +1012,34 @@
   // What ui/battle-anim.js is told of the battle: who's where (as the
   // pictures are on the page), their species, HP, ball and whether they're
   // behind a Substitute; the field to draw over; sounds and cries.
+  // A horde's battlers for one animation: the GBA's four places, so yours
+  // as battler 0, the foe the move is about (its user or its target) as 1,
+  // and another of the horde still standing as 3 (a spread move's second
+  // target; the rest stay as they are). Each animates where its picture is.
+  function hordeAnimSlots(side, target) {
+    const live = Object.keys(HORDE_LAYOUT).filter((k) => view[k] && view[k].species && !view[k].fainted);
+    const main = [side, target].find((p) => p && sideOf(p) === "p2") || live[0] || "p2";
+    return ["p1", main, null, live.find((k) => k !== main) || null];
+  }
+  // (Where a position is among the battlers animOpts gives: -1 if it isn't.)
+  let animOrder = POSITIONS;
+  const animBattler = (pos) => animOrder.indexOf(pos);
   function animOpts(side, target) {
-    const mons = POSITIONS.map((p) => {
-      const v = view[p];
+    const order = animOrder = battle && battle.horde ? hordeAnimSlots(side, target) : POSITIONS;
+    const mons = order.map((p) => {
+      const v = p && view[p];
       if (!v || !v.species || v.fainted || (!battle.doubles && slotOf(p))) return null;
       const set = setOf(sideOf(p), v.teamIndex);
       return { name: v.species, form: v.form, hp: v.hp, maxHP: v.maxhp, shiny: v.shiny, ball: set.ball };
     });
     return {
-      attacker: POSITIONS.indexOf(side), target: POSITIONS.indexOf(target == null ? side : target),
-      doubles: !!battle.doubles, mons, metrics: POSITIONS.map(monMetrics),
-      substitute: POSITIONS.map((p) => !!(view[p] && view[p].substitute && !subSwapped[p])),
+      attacker: order.indexOf(side), target: order.indexOf(target == null ? side : target),
+      doubles: !!battle.doubles && !!(order[2] || order[3]), mons, metrics: order.map((p) => (p ? monMetrics(p) : null)),
+      substitute: order.map((p) => !!(p && view[p] && view[p].substitute && !subSwapped[p])),
       environment: config && config.terrain,
       field: el.field, before: hbLayer, terrain: [...el.field.querySelectorAll(".terrain")],
-      sprites: POSITIONS.map((p) => el.sides[p].sprite),
-      tint: (b) => { const f = getComputedStyle(el.sides[POSITIONS[b]].sprite).filter; return f && f !== "none" ? f : ""; },
+      sprites: order.map((p) => (p ? el.sides[p].sprite : null)),
+      tint: (b) => { const sp = order[b] && el.sides[order[b]].sprite; const f = sp && getComputedStyle(sp).filter; return f && f !== "none" ? f : ""; },
       sound: (se) => (window.GameAudio && window.GameAudio.se ? window.GameAudio.se(se) : null),
       cry: (species) => { if (window.GameAudio) window.GameAudio.cry(species); },
       hideBoxes: (on) => { hbLayer.style.visibility = on ? "hidden" : ""; },
@@ -1333,7 +1459,7 @@
   let madeSub = null;
   function moveAims(ev) {
     const list = /^\[spread\] (.*)$/.exec(ev[4] || "");
-    const ids = list ? list[1].split(/,(?=p\d[ab]: )/) : /^p\d[ab]: /.test(ev[3] || "") ? [ev[3]] : [];
+    const ids = list ? list[1].split(/,(?=p\d[a-e]: )/) : /^p\d[a-e]: /.test(ev[3] || "") ? [ev[3]] : [];
     const aims = ids.map(posOf).filter((k) => k !== posOf(ev[1]) && view[k] && view[k].species);
     return aims.length ? aims : null;
   }
@@ -1426,6 +1552,7 @@
           };
         }
         renderSide(pos);
+        if (side === "p2" && hordeShown.has(pos)) { hordeShown.delete(pos); foeAnnounced = false; return null; }   // (a horde: the opening brought it out)
         if (side === "p2" && foeAnnounced) { foeAnnounced = false; return null; }   // the opening said so
         if (battle.wild) return "A wild " + nameOf(a) + " appeared!";
         return battle.sides.p2.name + " sent out " + nameOf(a) + "!";
@@ -1448,7 +1575,7 @@
         // (Fly: FireRed's own animation for each of its two turns.)
         if (b === "Fly") {
           const setUp = battle.events[cursor] && battle.events[cursor][0] === "-prepare" && battle.events[cursor][1] === a;
-          const aim = (aims && aims[0]) || posAt(otherSide(side), slotOf(pos));
+          const aim = (aims && aims[0]) || opposite(pos);
           return async () => { await message(text, 400); if (setUp) await flyUp(pos); else await flyAttack(pos, battle.doubles ? aim : otherSide(side), lands); };
         }
         if (b === "Transform") return async () => { el.sides[pos].sprite.classList.remove("flying"); await message(text, 400); };
@@ -1487,6 +1614,18 @@
       }
       case "-damage": {
         const changed = setHp(a, b);
+        // (A horde: a spread move's hits all go down together, as in X and Y:
+        // each of its other targets' first hit, before the next move or turn,
+        // starts now; each still says its own notes and faints in turn.)
+        if (!c && battle.horde && lastAims && lastAims.length > 1) {
+          const seen = new Set([posOf(a)]);
+          for (let k = cursor; k < battle.events.length; k++) {
+            const e = battle.events[k];
+            if (/^(move|turn|cant|switch|drag)$/.test(e[0])) break;
+            const at = e[0] === "-damage" && !e[3] ? posOf(e[1]) : null;
+            if (at && lastAims.includes(at) && !seen.has(at)) { seen.add(at); setHp(e[1], e[2]); }
+          }
+        }
         if (!c) {
           // A move's hit: its sound by how effective it was, the HP going down,
           // then "A critical hit!" / "It's super effective!".
@@ -1505,7 +1644,8 @@
         const anim = STATUS_ANIM[id] && id !== "confusion" ? () => statusAnim(pos, id)
           : TRAP_MOVES.has(id) && BA ? () => tableAnim("general", "TURN_TRAP", pos, { arg: BA.moveId(effectName(c)) })
           : id === "leechseed" && /^\[of\] /.test(ev[4] || "") && view[posOf(ev[4].slice(5))] && view[posOf(ev[4].slice(5))].species
-            ? () => tableAnim("general", "LEECH_SEED_DRAIN", pos, { arg: POSITIONS.indexOf(posOf(ev[4].slice(5))) | (POSITIONS.indexOf(pos) << 8) })
+            ? () => { const src = posOf(ev[4].slice(5)), at = (p) => (battle.horde ? hordeAnimSlots(pos, src) : POSITIONS).indexOf(p);
+              return tableAnim("general", "LEECH_SEED_DRAIN", pos, { targetPos: src, arg: at(src) | (at(pos) << 8) }); }
           : null;
         return async () => { if (anim) await anim(); if (changed) await hbSettled(); if (msg) await message(msg); };
       }
@@ -1748,7 +1888,7 @@
         if (/^(thief|covet|pickpocket|magician)$/.test(by))
           return async () => {
             // (The item flies from its holder to the thief: ItemSteal.)
-            if (from) await tableAnim("general", "ITEM_STEAL", pos, { targetPos: from, effectBattler: POSITIONS.indexOf(from), itemPicture: itemPicture(b) });
+            if (from) await tableAnim("general", "ITEM_STEAL", pos, { targetPos: from, effectBattler: (battle.horde ? hordeAnimSlots(pos, from) : POSITIONS).indexOf(from), itemPicture: itemPicture(b) });
             await message(fill("{who} stole " + fromName + "'s\n" + itemName + "!", a));
           };
         if (/^(trick|switcheroo)$/.test(by)) return fill("{who} obtained one " + itemName + ".", a);
@@ -1884,7 +2024,7 @@
             (async () => { for (const [f, n] of [[1, 24], [2, 9], [3, 24], [0, 9]]) { t.style.backgroundPositionY = (f * 100 / 3) + "%"; await wait(n * 1000 / 60); } })();
           } else await message("You threw a " + ballName(b) + "!", 700);
           // (At the foe it's thrown at: a snag in a double battle may be the second.)
-          if (!config.oldMan && !config.wally && await ballThrow(/^p2b/.test(c || "") ? "p2b" : "p2", b, +ev[4], ev[5] === "caught")) {
+          if (!config.oldMan && !config.wally && await ballThrow(/^p2[b-e]/.test(c || "") ? posOf(c) : "p2", b, +ev[4], ev[5] === "caught")) {
             if (ev[5] !== "caught") await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);
             return;
           }
@@ -2401,17 +2541,21 @@
     if (targets.length === 1) return targets[0];
     const self = -(slotOf(userPos) + 1);
     let loc = targets.includes(self) && m.target === "adjacentAllyOrSelf" ? self : targets.includes(1) ? 1 : targets.includes(2) ? 2 : targets[0];
+    // (A horde: the cursor goes down the panel's rows, a to e, and round.)
+    const order = battle.horde ? [1, 2, 3, 4, 5] : TARGET_ORDER;
     let blink = null, blinking = null;
     const stop = () => {
       clearInterval(blink);
       if (blinking) blinking.style.visibility = "";
       blinking = null;
       for (const k of POSITIONS) hb[k].bounce = false;
+      hordeTarget = null;
     };
     const show = () => {
       stop();
       const p = locPos(userPos, loc);
       hb[p].bounce = "target"; hb[p].bounceIdx = 128;
+      if (battle.horde) hordeTarget = p;
       blinking = el.sides[p].sprite;
       let on = true;
       blink = setInterval(() => { on = !on; if (blinking) blinking.style.visibility = on ? "" : "hidden"; }, 8 * 1000 / 60);
@@ -2422,12 +2566,12 @@
       if (k === "b") { window.GbaMenus.se(); return null; }
       const step = k === "left" || k === "up" ? -1 : k === "right" || k === "down" ? 1 : 0;
       if (!step) return undefined;
-      let i = TARGET_ORDER.indexOf(loc);
-      for (let n = 0; n < 4; n++) {
-        i = (i + step + 4) % 4;
-        if (targets.includes(TARGET_ORDER[i])) break;
+      let i = order.indexOf(loc);
+      for (let n = 0; n < order.length; n++) {
+        i = (i + step + order.length) % order.length;
+        if (targets.includes(order[i])) break;
       }
-      if (TARGET_ORDER[i] !== loc) { loc = TARGET_ORDER[i]; window.GbaMenus.se(); show(); }
+      if (order[i] !== loc) { loc = order[i]; window.GbaMenus.se(); show(); }
       return undefined;
     });
     stop();
@@ -2471,8 +2615,8 @@
     const own = sideOf(userPos), foe = otherSide(own), ally = posAt(own, 1 - slotOf(userPos));
     let hit = [];
     switch (m.target) {
-      case "allAdjacentFoes": case "foeSide": hit = [foe, foe + "b"]; break;
-      case "allAdjacent": hit = [foe, foe + "b", ally]; break;
+      case "allAdjacentFoes": case "foeSide": hit = battle.horde && own === "p1" ? Object.keys(HORDE_LAYOUT) : [foe, foe + "b"]; break;
+      case "allAdjacent": hit = battle.horde && own === "p1" ? Object.keys(HORDE_LAYOUT) : [foe, foe + "b", ally]; break;
       case "allySide": case "allyTeam": case "allies": hit = [userPos, ally]; break;
       case "adjacentAlly": hit = [ally]; break;
       case "all": hit = POSITIONS.slice(); break;
@@ -2636,6 +2780,7 @@
   let trainerOut = false, foeAnnounced = false, foeTrainerOut = false;
   let playedEarly = new Set();   // events played ahead of their turn (the foe's first send-out)
   let doublesOpening = false;    // a double battle's first send-outs still to come
+  let hordeShown = new Set();    // (a horde's positions the opening has brought out: their send-outs are played)
   // The opposing trainer's picture, where their Pokémon will stand. (A
   // second trainer's, cfg.foeTrainer2, beside them: id "foe-trainer-2".)
   function foeTrainerEl(second) {
@@ -2692,7 +2837,8 @@
     trainerOut = false; foeAnnounced = false; foeTrainerOut = false; foeHpAtSwitchIn = null; lastMove = {};
     foeHpAt = {}; lastAims = null;
     playedEarly = new Set();
-    doublesOpening = !!battle.doubles;
+    doublesOpening = !!battle.doubles && !battle.horde;
+    hordeShown = new Set();
     setTerrain(cfg.terrain);
     const foeTrainer = foeTrainerEl(), foeTrainer2 = foeTrainerEl(true);
     for (const t of [foeTrainer, foeTrainer2]) { t.classList.add("hidden"); t.classList.remove("leaving"); }
@@ -2721,13 +2867,20 @@
     let mon = null;
     if (cfg.wild) {
       mon = battle.sides.p2.pokemon[0];
-      view.p2 = { name: mon.name, species: mon.species, level: mon.level, hp: mon.hp, maxhp: mon.maxhp, status: "",
-        fainted: false, exp: null, teamIndex: 0, form: (cfg.p2.team[0] || {}).form || "", shiny: !!(cfg.p2.team[0] || {}).shiny,
-        tera: teraShown["p2:0"] || null };   // (a Tera Raid's Pokémon: Terastallized from the start)
-      renderSide("p2");
-      el.sides.p2.info.classList.add("hidden");
-      el.sides.p2.sprite.classList.add("silhouette");
-      movers.push([el.sides.p2.sprite, -shift]);
+      // (A horde: all of them, each in its slot, sliding in together.)
+      // (The battle hasn't started yet: the first of the team, one a slot, as it will send them out.)
+      const out = battle.horde ? battle.sides.p2.pokemon.slice(0, battle.sides.p2.actives.length).map((m, slot) => [posAt("p2", slot), m]) : [["p2", mon]];
+      for (const [pos, m] of out) {
+        const set = cfg.p2.team[m.teamIndex] || {};
+        view[pos] = { name: m.name, species: m.species, level: m.level, hp: m.hp, maxhp: m.maxhp, status: "",
+          fainted: false, exp: null, teamIndex: m.teamIndex, form: set.form || "", shiny: !!set.shiny,
+          tera: teraShown["p2:" + m.teamIndex] || null };   // (a Tera Raid's Pokémon: Terastallized from the start)
+        renderSide(pos);
+        el.sides[pos].info.classList.add("hidden");
+        el.sides[pos].sprite.classList.add("silhouette");
+        movers.push([el.sides[pos].sprite, -shift]);
+        if (battle.horde) hordeShown.add(pos);
+      }
     } else if (cfg.foeTrainer) {
       // (Two trainers: the first at x 200, the second at 152, where their
       // Pokémon will stand, as Emerald places them.)
@@ -2766,7 +2919,17 @@
     await (mon ? pause : wait)(1100);
     el.field.classList.remove("entering");
     if (sky) sky.classList.remove("entering");
-    if (mon) {
+    if (mon && battle.horde) {
+      // X and Y's: "Whoa! A horde of Zubat appeared!" (of wild Pokémon, when they're not all one kind).
+      const foes = [...hordeShown];
+      for (const pos of foes) { el.sides[pos].sprite.classList.remove("silhouette"); sparkle(pos); }
+      cry("p2");
+      await pause(350);
+      for (const pos of foes) el.sides[pos].info.classList.remove("hidden");
+      const kinds = new Set(foes.map((p) => view[p].species));
+      await message("Whoa! A horde of " + (kinds.size === 1 ? view[foes[0]].name : "wild Pokémon") + "\nappeared!");
+      foeAnnounced = true;
+    } else if (mon) {
       el.sides.p2.sprite.classList.remove("silhouette");
       cry("p2");
       sparkle("p2");
@@ -2915,7 +3078,7 @@
     foe.inBall = true;
     renderSide(pos);
     const o = Object.assign(animOpts("p1", pos), { anim: "special", id: "BALL_THROW", ball, ballCase: ballCase != null ? ballCase : caught ? 4 : Math.min(3, shakes),
-      shown: POSITIONS.map((p) => p === pos), hold: caught ? {} : null });
+      shown: animOrder.map((p) => p === pos), hold: caught ? {} : null });
     await playAnim(o);
     // (Caught: the ball that stays is drawn, and the screen shows it, before the animation's last frame goes: no gap.)
     const release = async () => { await nextPaint(); if (o.hold && o.hold.release) o.hold.release(); };
@@ -2923,7 +3086,9 @@
       // The ball stays shut where it came to rest (the GBA's: 24 under its target's base line).
       el.ball.style.left = ((box.cx - 8) / 240 * 100).toFixed(2) + "%";
       el.ball.style.right = "auto";
-      el.ball.style.top = ((BA.ballRest(POSITIONS.indexOf(pos), !!battle.doubles) - 8) / 112 * 100).toFixed(2) + "%";
+      // (A horde's: just in front of where it stood.)
+      const rest = battle.horde && HORDE_LAYOUT[pos] ? HORDE_LAYOUT[pos][1] - 2 : BA.ballRest(POSITIONS.indexOf(pos), !!battle.doubles);
+      el.ball.style.top = ((rest - 8) / 112 * 100).toFixed(2) + "%";
       el.ball.classList.remove("hidden", "shake");
       el.ball.classList.add("caught");
       await release();
@@ -2943,7 +3108,7 @@
   let foeHpAtSwitchIn = null;
   // (A double battle: per position of yours, the foes' HP together.)
   let foeHpAt = {};
-  const foesHp = () => ["p2", "p2b"].reduce((t, k) => (view[k] && view[k].species ? [t[0] + Math.max(0, view[k].hp), t[1] + view[k].maxhp] : t), [0, 0]);
+  const foesHp = () => POSITIONS.filter((k) => sideOf(k) === "p2").reduce((t, k) => (view[k] && view[k].species ? [t[0] + Math.max(0, view[k].hp), t[1] + view[k].maxhp] : t), [0, 0]);
   function noteSwitchIn(pos) {
     if (sideOf(pos) === "p2") { for (const k of ["p1", "p1b"]) foeHpAt[k] = foesHp()[0]; return; }
     foeHpAt[pos] = foesHp()[0];
@@ -2978,7 +3143,7 @@
       el.sides[side].info.classList.add("hidden");
       const said = message(text);
       const o = animOpts(side, side);
-      if (o.mons[POSITIONS.indexOf(side)]) o.mons[POSITIONS.indexOf(side)].ball = ball;
+      if (o.mons[animBattler(side)]) o.mons[animBattler(side)].ball = ball;
       await playAnim(Object.assign(o, { anim: "special", id: special }));
       sprite.classList.add("in-ball");
       await said;
@@ -3080,7 +3245,8 @@
     hbStop();
     doublesLayout = false;
     el.field.classList.remove("doubles", "tag");
-    view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
+    layoutHorde(false);
+    view = Object.fromEntries(POSITIONS.map((k) => [k, { species: null }]));
     teraShown = {};
     // (A Tera Raid's Pokémon comes out already Terastallized: no animation, just its look.)
     for (const m of battle.sides.p2.pokemon) {
@@ -3192,7 +3358,7 @@
       levelCap: cfg.levelCap,   // (the level cap, Player.levelCap: no Exp. past it, and a Pokémon over it may not obey)
       seed: cfg.seed,   // (a recorded battle played back: the seed it was fought with)
       arena: !!cfg.arena, palace: !!cfg.palace   // (the Battle Arena's judging; the Battle Palace, where Pokémon choose their own moves: engine/battle.js)
-    }, cfg.format === "doubles" ? { format: "doubles" } : {}));
+    }, cfg.format === "doubles" || cfg.format === "horde" ? { format: cfg.format } : {}));
     recording = cfg.record && !cfg.replay ? { seed: battle.seed, choices: [], cfg: JSON.parse(JSON.stringify(Object.fromEntries(RECORD_KEYS.filter((k) => cfg[k] !== undefined).map((k) => [k, cfg[k]])))) } : null;
     // (The Palace: the opponents' Pokémon choose by their natures too.)
     if (cfg.palace) {
@@ -3202,10 +3368,12 @@
     safariCursor = 0;
     cursor = 0;
     hbStop();
-    doublesLayout = !!battle.doubles;
-    el.field.classList.toggle("doubles", !!battle.doubles);
+    doublesLayout = !!battle.doubles && !battle.horde;
+    el.field.classList.toggle("doubles", doublesLayout);
+    layoutHorde(battle.horde);
+    hordeTarget = null; hordeTextKey = null;
     el.field.classList.toggle("tag", !!battle.sides.p1.tag);
-    view = { p1: { species: null }, p2: { species: null }, p1b: { species: null }, p2b: { species: null } };
+    view = Object.fromEntries(POSITIONS.map((k) => [k, { species: null }]));
     teraShown = {};
     raidAlliesPanel(battle.raidAllies);
     // (A Tera Raid's Pokémon comes out already Terastallized: no animation, just its look.

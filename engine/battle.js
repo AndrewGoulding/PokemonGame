@@ -1,4 +1,4 @@
-// Battle engine (Gen 6 singles and doubles, headless)
+// Battle engine (Gen 6 singles, doubles and hordes, headless)
 // Depends on (load these first): type-chart.js, natures.js, dex.js, moves.js,
 // abilities.js, items.js, stat-calculator.js, damage-calculator.js, conditions.js,
 // battle-moves.js. See index.html for the full load order.
@@ -107,6 +107,22 @@
 // holder and its ally; `onAlly…` hooks via runAllyHooks), Flower Gift,
 // Symbiosis, Unnerve.
 //
+// ---- Horde battles (X and Y's) ----
+//   new Battle({ ..., format: "horde", wild: true, p2: { team: [five wild] } })
+// Your one Pokémon against up to five wild ones, all out at once: p2 has a
+// slot for each (side.actives[0..4], idents "p2a" to "p2e"), p1 one (slot
+// a). It runs on the doubles machinery (battle.doubles is true, battle.horde
+// too; requests say format "horde"): getRequest/choose as in doubles, an
+// array indexed by slot. Every foe is next to your Pokémon: a single-target
+// move aims at any of the five (target locations 1 to 5), a spread move
+// (allAdjacentFoes / allAdjacent) hits all of them still standing, 0.75x
+// each. The wild ones have no allies (allyOf is null for everyone): Helping
+// Hand and the like fail. A fainted wild one isn't replaced (no bench); yours
+// is, as in a wild battle. Run as from any wild battle. No Ball while more
+// than one is left: choose refuses it with Battle.MANY_TO_AIM ("You can't
+// aim when there's more than one Pokémon!"); with one left, as usual. Exp.
+// for each one knocked out, as it faints.
+//
 // Tag battles (doubles only): a side may be two trainers, each with up to 3
 // Pokémon:  p1: { name: "Red", team: [...], partner: { name: "Leaf", team: [...] } }
 // The trainer holds slot a and the partner slot b; the partner's Pokémon come
@@ -133,6 +149,11 @@
   // (The moves a Tera Raid's Pokémon aims at one of you: raidTarget.)
   const RAID_AIMED = new Set(["normal", "any", "adjacentFoe", "randomNormal", "allAdjacentFoes", "allAdjacent"]);   // (the turns a Tera Raid loses each time your Pokémon faints)
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  // (The letters of a side's active slots in the log: "p1a", "p2b", ...; a horde's five are p2a to p2e.)
+  const SLOT_LETTERS = "abcde";
+  const HORDE_SIZE = 5;
+  // (Throwing a Ball at a horde, or at two wild Pokémon, with more than one of them left.)
+  const MANY_TO_AIM = "You can't aim when there's more than one Pokémon!";
   const toID = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const normItem = (s) => String(s || "").toLowerCase().replace(/[\s_']+/g, "-");
   const E = (effectType, id, name) => ({ effectType, id, name: name || id });
@@ -331,7 +352,7 @@
     }
     // "p1a: Name" (slot 0) or "p1b: Name" (slot 1, doubles only). A Pokémon
     // on the bench keeps the letter of the slot it last stood in.
-    get ident() { return this.side.id + (this.slot === 1 ? "b" : "a") + ": " + this.name; }
+    get ident() { return this.side.id + (SLOT_LETTERS[this.slot] || "a") + ": " + this.name; }
     hasType(t) { return this.types.includes(t); }
     getTypes() { return this.types.slice(); }
     setType(t) { if (this.terastallized) return false; this.types = [].concat(t); return true; }
@@ -404,7 +425,7 @@
       // Tag battle (doubles only): a partner trainer with their own party
       // controls slot b. Each party is up to 3; the partner's Pokémon follow
       // the trainer's in `pokemon` (Pokemon.owner 0 = trainer, 1 = partner).
-      this.tag = !!(battle.doubles && opts.partner);
+      this.tag = !!(battle.doubles && !battle.horde && opts.partner);
       this.trainers = this.tag ? [this.name, opts.partner.name || id + " partner"] : [this.name];
       const sets = this.tag ? (opts.team || []).slice(0, 3).map((s) => [s, 0]).concat((opts.partner.team || []).slice(0, 3).map((s) => [s, 1]))
         : (opts.team || []).slice(0, 6).map((s) => [s, 0]);
@@ -419,7 +440,8 @@
       if (!this.pokemon.length) throw new Error(id + " has no Pokemon");
       // The Pokémon in each active slot (one in singles, two in doubles; a slot
       // is null when no one ever stood in it, e.g. a team of one in doubles).
-      this.actives = new Array(battle.activePerSide).fill(null);
+      // (A horde: the wild side has up to five out at once, yours one.)
+      this.actives = new Array(battle.horde ? (id === "p2" ? Math.min(HORDE_SIZE, this.pokemon.length) : 1) : battle.activePerSide).fill(null);
       this.conditions = {};
       this.choice = null;
       this.foe = null;
@@ -525,9 +547,12 @@
       this.runAttempts = 0;
       this.caught = null;
       this.escaped = false;
-      // "singles" (default) or "doubles": two active Pokémon a side.
-      this.format = opts.format === "doubles" && !opts.safari && !opts.ghost ? "doubles" : "singles";
-      this.doubles = this.format === "doubles";
+      // "singles" (default), "doubles" (two active Pokémon a side) or "horde"
+      // (X and Y's horde battles: your one against up to five wild Pokémon,
+      // all out at once; run on the doubles machinery, `doubles` true).
+      this.format = opts.safari || opts.ghost ? "singles" : opts.format === "doubles" ? "doubles" : opts.format === "horde" ? "horde" : "singles";
+      this.horde = this.format === "horde";
+      this.doubles = this.format !== "singles";
       this.activePerSide = this.doubles ? 2 : 1;
       this.sides = { p1: new Side(this, "p1", opts.p1 || {}), p2: new Side(this, "p2", opts.p2 || {}) };
       this.sides.p1.foe = this.sides.p2;
@@ -629,7 +654,7 @@
 
     static formatEvent(ev) {
       const [t, a, b, c, d] = ev;
-      const nm = (s) => String(s || "").replace(/^p\d[ab]?: /, "");
+      const nm = (s) => String(s || "").replace(/^p\d[a-e]?: /, "");
       switch (t) {
         case "turn": return "=== Turn " + a + " ===";
         case "switch": return nm(a) + " was sent out!  (" + b + ")";
@@ -865,7 +890,8 @@
     // Doubles helpers (in singles: the one foe, no ally).
     foesOf(mon) { return mon.side.foe.actives.filter((m) => m && !m.fainted); }
     allyOf(mon) {
-      if (!this.doubles || !mon.side) return null;
+      // (A horde has no allies to aim at: each of the wild five stands alone.)
+      if (!this.doubles || this.horde || !mon.side) return null;
       const a = mon.side.actives[1 - mon.slot];
       return a && a !== mon && !a.fainted && a.isActive ? a : null;
     }
@@ -1310,9 +1336,15 @@
         this.switchIn(s, lead, { deferStart: true, noHazards: true });
         mons.push(s.active);
         // Doubles: the next healthy Pokémon leads in slot b (a team with only
-        // one that can fight leaves slot b empty).
-        const second = this.doubles ? s.pokemon.findIndex((p, i) => i > lead && !p.fainted) : -1;
-        if (second >= 0) mons.push(this.switchIn(s, second, { deferStart: true, noHazards: true, slot: 1 }));
+        // one that can fight leaves slot b empty). A horde: all the wild ones
+        // come out at once, one a slot; your side has the one.
+        let from = lead;
+        for (let slot = 1; slot < s.actives.length; slot++) {
+          const next = this.doubles ? s.pokemon.findIndex((p, i) => i > from && !p.fainted) : -1;
+          if (next < 0) break;
+          mons.push(this.switchIn(s, next, { deferStart: true, noHazards: true, slot }));
+          from = next;
+        }
       }
       this.sortBySpeed(mons).forEach((m) => this.onSwitchInEvents(m));
       this.runUpdates();
@@ -1425,7 +1457,7 @@
       }
       if (mon.ability === "Imposter" && !mon.transformed) {
         // (Doubles: the foe standing opposite.)
-        const foe = this.doubles ? mon.side.foe.actives[1 - mon.slot] : mon.side.foe.active;
+        const foe = this.horde ? this.foesOf(mon)[0] : this.doubles ? mon.side.foe.actives[1 - mon.slot] : mon.side.foe.active;
         if (foe && !foe.fainted) this.transformInto(mon, foe);
       }
       this.runEvent("onStart", mon, { only: "ability" });
@@ -1917,7 +1949,7 @@
     reviveRequest(id) {
       const r = this.pendingRevive;
       const base = { phase: "wait", turn: this.turn, ended: this.ended, winner: this.winner, open: [] };
-      if (this.doubles) base.format = "doubles";
+      if (this.doubles) base.format = this.format;
       if (!r || r.ctl !== id) return base;
       const side = r.side;
       base.phase = "revive";
@@ -2040,7 +2072,7 @@
     getRequestDoubles(id) {
       const ctl = this.controller(id);
       const side = ctl.side;
-      const base = { phase: "wait", format: "doubles", turn: this.turn, ended: this.ended, winner: this.winner, slots: ctl.slots.slice() };
+      const base = { phase: "wait", format: this.format, turn: this.turn, ended: this.ended, winner: this.winner, slots: ctl.slots.slice() };
       if (side.tag) base.trainer = side.trainers[ctl.slots[0]];
       if (this.ended) return Object.assign(base, { phase: "ended" });
       const mine = (p) => !side.tag || p.owner === ctl.slots[0];
@@ -2142,6 +2174,8 @@
           used.add(c.index);
           partial[slot] = { type: "switch", index: c.index };
         } else if (c.type === "ball") {
+          // (A horde, or wild doubles, with more than one left: no aiming at one of them.)
+          if (!a.canCatch && this.wild && this.foesOf(mon).length > 1) return { ok: false, error: MANY_TO_AIM };
           if (!a.canCatch || ball) return err("You can't catch this Pokémon");
           ball = true;
           partial[slot] = { type: "ball", ball: c.ball || "poke-ball" };
@@ -4027,6 +4061,7 @@
   }
 
   Battle.Pokemon = Pokemon;
+  Battle.MANY_TO_AIM = MANY_TO_AIM;
   Battle.MEGA_MAP = () => { buildIndexes(); return MEGA_MAP; };
   window.Battle = Battle;
 })();

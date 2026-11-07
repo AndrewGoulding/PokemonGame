@@ -4146,6 +4146,103 @@ for (let seed = 1; seed <= DOUBLES; seed++) {
   doublesTurns += battle.turn;
 }
 
+// Horde battles (X and Y's: your one against five wild Pokémon, all out at
+// once): random ones finish; spread moves hit all five at 0.75x; no Ball while
+// more than one is left; a fainted foe isn't replaced.
+const HORDES = 60;
+let hordeTurns = 0;
+for (let seed = 1; seed <= HORDES; seed++) {
+  const teamRng = mulberry32(seed * 7919);
+  const team = (n, level) => RandomTeam.team(n, { level, rng: teamRng, maxGen: 6 });
+  const n = 2 + (seed % 4);   // (2 to 5 of them)
+  const battle = new Battle({ seed, format: "horde", wild: true, exp: seed % 2 === 0,
+    p1: { name: "A", team: team(1 + (seed % 6), 40) }, p2: { name: "Wild", team: team(n, 20) } });
+  const rng = mulberry32(seed);
+  battle.start();
+  assert.strictEqual(battle.sides.p2.actives.filter(Boolean).length, n, "a horde's all out at once");
+  assert.strictEqual(battle.sides.p1.actives.length, 1, "you've the one");
+  for (let step = 0; step < 3000 && !battle.ended; step++) {
+    let acted = false;
+    for (const id of ["p1", "p2"]) {
+      const req = battle.getRequest(id);
+      if (req.phase !== "move" && req.phase !== "switch") continue;
+      let c = id === "p2" || (seed + step) % 2 ? OpponentAI.choose(battle, id, rng) : battle.randomChoice(id);
+      // (No running: the battle has to be fought out here.)
+      if (Array.isArray(c)) c = c.map((x) => (x && x.type === "run" ? { type: "move", move: 0 } : x));
+      const r = battle.choose(id, c);
+      assert(r.ok, "horde choice rejected in battle " + seed + ": " + r.error);
+      acted = true;
+    }
+    assert(acted || battle.ended, "horde battle " + seed + " is stuck");
+  }
+  assert(battle.ended, "horde battle " + seed + " did not finish");
+  assert(battle.sides.p2.actives.every((m) => !m || battle.sides.p2.pokemon.includes(m)), "nobody new on their side");
+  hordeTurns += battle.turn;
+}
+{
+  const zubat = { species: "Zubat", level: 10, moves: ["Splash"] };
+  const horde = (p1mon) => {
+    const b = new Battle({ seed: 2, debug: true, format: "horde", wild: true,
+      p1: { name: "A", team: [p1mon] }, p2: { name: "Wild", team: [0, 1, 2, 3, 4].map(() => Object.assign({}, zubat)) } });
+    b.start();
+    return b;
+  };
+  // Idents run p2a to p2e.
+  let b = horde({ species: "Raichu", level: 30, moves: ["Discharge", "Thunderbolt"] });
+  assert.deepStrictEqual(b.sides.p2.actives.map((m) => m.ident.slice(0, 3)), ["p2a", "p2b", "p2c", "p2d", "p2e"]);
+  // A spread move: all five hit, each for 0.75x (the [spread] tag on the move).
+  let req = b.getRequest("p1");
+  assert.strictEqual(req.format, "horde");
+  assert.deepStrictEqual(req.actives[0].moves[1].targets, [1, 2, 3, 4, 5], "Thunderbolt aims at any of the five");
+  b.choose("p1", [{ type: "move", move: 0 }]);
+  b.choose("p2", [0, 1, 2, 3, 4].map(() => ({ type: "move", move: 0 })));
+  const spread = b.events.find((e) => e[0] === "move" && e[2] === "Discharge");
+  assert(spread && /\[spread\]/.test(spread[4] || "") && spread[4].split(",").length === 5, "Discharge hits all five: " + JSON.stringify(spread));
+  // (0.75x: the same move on one Zubat alone does more.)
+  const hurt = b.sides.p2.pokemon.map((m) => m.maxhp - m.hp);
+  const one = new Battle({ seed: 2, debug: true, wild: true, p1: { name: "A", team: [{ species: "Raichu", level: 30, moves: ["Discharge"] }] },
+    p2: { name: "Wild", team: [Object.assign({}, zubat)] } });
+  one.start();
+  one.choose("p1", { type: "move", move: 0 }); one.choose("p2", { type: "move", move: 0 });
+  const single = one.sides.p2.pokemon[0].maxhp - one.sides.p2.pokemon[0].hp;
+  assert(hurt.every((h) => h > 0 && h < single) || single === one.sides.p2.pokemon[0].maxhp, "each hit for less than alone (" + hurt + " vs " + single + ")");
+  // A Ball: refused while more than one is left, X and Y's words.
+  b = horde({ species: "Raichu", level: 30, moves: ["Thunderbolt"] });
+  req = b.getRequest("p1");
+  assert(!req.actives[0].canCatch, "no Ball with five out");
+  let r = b.choose("p1", [{ type: "ball", ball: "poke-ball" }]);
+  assert(!r.ok && r.error === Battle.MANY_TO_AIM, r.error);
+  // Knock out four (aimed one at a time); the last may be caught; none replaced.
+  for (let t = 1; t <= 4; t++) {
+    b.sides.p2.actives[t].hp = 1;
+    b.choose("p1", [{ type: "move", move: 0, target: t + 1 }]);
+    b.choose("p2", b.sides.p2.actives.map((m) => (m && !m.fainted ? { type: "move", move: 0 } : null)));
+    assert(b.sides.p2.actives[t].fainted, "Zubat " + t + " down");
+  }
+  assert.strictEqual(b.phase, "move", "no replacements for a horde");
+  req = b.getRequest("p1");
+  assert(req.actives[0].canCatch, "a Ball with one left");
+  assert(b.choose("p1", [{ type: "ball", ball: "master-ball" }]).ok);
+  b.choose("p2", b.sides.p2.actives.map((m) => (m && !m.fainted ? { type: "move", move: 0 } : null)));
+  assert(b.caught && b.ended, "caught the last one");
+}
+// The hordes' table (data/horde-encounters.js): every map there, every species
+// real, five a horde, from a map that has wild Pokémon of its own.
+{
+  for (const [map, list] of Object.entries(window.HORDE_ENCOUNTERS)) {
+    assert(WORLD_MAPS[map] && WORLD_MAPS[map].wild, "a horde map with wild Pokémon: " + map);
+    for (const h of list) {
+      const mons = Hordes.expand(h.mons);
+      assert.strictEqual(mons.length, 5, map + ": five a horde");
+      for (const sp of mons) assert(DEX[sp], map + ": " + sp);
+      assert(h.lv[0] >= 1 && h.lv[0] <= h.lv[1], map + ": levels");
+    }
+    const picked = Hordes.pick(map, mulberry32(7));
+    assert(picked.length === 5 && picked.every((m) => DEX[m.species] && m.level >= 1));
+  }
+  assert(!Hordes.at("PalletTown") && Hordes.pick("PalletTown") === null, "no hordes in Pallet Town");
+}
+
 // Stance Change: Aegislash's Blade Forme for a damaging move, Shield Forme
 // for King's Shield, Shield Forme again when it leaves the field.
 {
@@ -5090,6 +5187,7 @@ for (let seed = 1; seed <= GEN9; seed++) {
 
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");
 console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles finished (" + doublesTurns + " turns)");
+console.log("ok: hordes, " + HORDES + " random horde battles finished (" + hordeTurns + " turns), spread moves, Balls");
 
 // The Route 5 Day-Care: 1 Exp. Point a step; ¥100 plus ¥100 a level to take it
 // back; it learns its new moves, forgetting its first with four already.
