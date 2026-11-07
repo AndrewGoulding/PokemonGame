@@ -3498,11 +3498,14 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   // rarer treasures be buried.
   // Levels 1-100 from mining XP, on a curve: 20 + floor(L² / 20) from level L to L + 1.
   assert.strictEqual(Mining.MAX_LEVEL, 100);
-  assert.deepStrictEqual([0, 19, 20, 40, 41, 497, 18364, 18365, 99999].map(Mining.level), [1, 1, 2, 3, 3, 20, 99, 100, 100]);
-  assert.deepStrictEqual([Mining.toNext(0), Mining.toNext(25), Mining.toNext(18365)], [20, 15, null]);
-  assert.deepStrictEqual(Mining.progress(25), { level: 2, into: 5, need: 20 });
-  assert.deepStrictEqual([Mining.progress(497).need, Mining.progress(2985).need], [40, 145], "steeper further up");
-  assert.deepStrictEqual(Mining.progress(18365), { level: 100, into: 0, need: 0 });
+  assert.deepStrictEqual([0, 19, 20, 40, 41, 613, 49700, 49701, 999999].map(Mining.level), [1, 1, 2, 2, 3, 20, 99, 100, 100]);
+  assert.deepStrictEqual([Mining.toNext(0), Mining.toNext(25), Mining.toNext(49701)], [20, 16, null]);
+  assert.deepStrictEqual(Mining.progress(25), { level: 2, into: 5, need: 21 });
+  assert.deepStrictEqual([Mining.progress(613).need, Mining.progress(3972).need], [51, 218], "steeper further up");
+  // (Each level takes more than the last, all the way up.)
+  let lastNeed = 0, xp = 0;
+  for (let lv = 1; lv < 100; lv++) { const p = Mining.progress(xp); assert(p.level === lv && p.need > lastNeed, "level " + lv + " takes more than " + (lv - 1)); lastNeed = p.need; xp += p.need; }
+  assert.deepStrictEqual(Mining.progress(49701), { level: 100, into: 0, need: 0 });
   // (Fishing keeps the old steps: 20 a level up to 20, then 40, 60, 80 and 100.)
   assert.deepStrictEqual([0, 19, 20, 380, 400, 420, 5979, 5980].map(Fishing.level), [1, 1, 2, 20, 20, 21, 99, 100]);
   // More energy at higher levels.

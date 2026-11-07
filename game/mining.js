@@ -81,12 +81,12 @@
   ].concat(["hp-up", "protein", "iron", "calcium", "zinc", "carbos"].map((v) => [v, 2, ["xx", "xx", "xx"], 15])).concat(["flame", "splash", "zap", "meadow", "icicle", "fist", "toxic", "earth", "sky", "mind", "insect",
     "stone", "spooky", "draco", "dread", "iron"].map((p) => [p + "-plate", 0.5, ["xxxx", "xxxx", "xxxx"], 100]));
 
-  // Mining level, 1 to 100, from your mining XP, on a curve: going from
-  // level L to L + 1 takes 20 + floor(L² / 20) XP (20 at first, 40 at level
-  // 20, 145 at 50, 510 at 99). LEVELS[L - 1] is the XP for level L.
-  const MAX_LEVEL = 100;
+  // Mining level, 1 to 100, from your mining XP, on an exponential curve: each level takes 5% more XP than the
+  // last, round(20 × 1.05^(L - 1)) from level L to L + 1 (20 at first, 31 at level 10, 51 at 20, 218 at 50, 944 at
+  // 80, 2,386 at 99; 49,701 in all for level 100). LEVELS[L - 1] is the XP for level L.
+  const MAX_LEVEL = 100, STEP = 20, GROWTH = 1.05;
   const LEVELS = [0];
-  for (let L = 1; L < MAX_LEVEL; L++) LEVELS.push(LEVELS[L - 1] + 20 + Math.floor(L * L / 20));
+  for (let L = 1; L < MAX_LEVEL; L++) LEVELS.push(LEVELS[L - 1] + Math.round(STEP * Math.pow(GROWTH, L - 1)));
   const level = (xp) => LEVELS.filter((n) => (xp | 0) >= n).length;
   // XP still needed for the next level (null at the top).
   const toNext = (xp) => (level(xp) >= MAX_LEVEL ? null : LEVELS[level(xp)] - (xp | 0));

@@ -3393,8 +3393,9 @@ node tools/build-sinnoh.js <path to the Essentials project>
   level 100). What a hit dug up is told under the board until the next hit.
   Every hit earns 1 mining XP and every treasure 10 more; the top of the
   screen shows your mining level, a bar to the next one, and your energy.
-  Levels go up on a curve: 20 + L²/20 XP from level L to the next (20 at
-  first, 40 at level 20, 145 at 50, 510 at 99; 18,365 XP in all for level 100). Only common treasures (Heart Scales and shards) turn up
+  Levels go up on an exponential curve, each taking 5% more XP than the one before:
+  round(20 × 1.05^(L−1)) from level L to the next (20 at first, 31 at level 10, 51 at
+  20, 218 at 50, 944 at 80, 2,386 at 99; 49,701 XP in all for level 100). Only common treasures (Heart Scales and shards) turn up
   at first; rarer ones unlock along the way: Hard Stones and Everstones at 5,
   Metal Coats, King's Rocks and Ice Stones at 25 (the Ice Stone at 20),
   Revives, Star Pieces and Oval Stones at 10, the vitamins (HP Up, Protein,
