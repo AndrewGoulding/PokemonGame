@@ -2395,7 +2395,11 @@ town, city, route, cave, tower, Gym, house, shop and room of HGSS's Johto
 Mt. Silver and Goldenrod's Game Corner, which HGSS counts as Kanto's). Not
 built: the unused maps, the Wi-Fi rooms (and the Pokémon Centers' Wi-Fi
 basements) and the Battle Frontier's halls, which need games of their own;
-their doors say so. (The Safari Zone is built, Areas and all: below.) New Bark Town, Route 29 and
+their doors say so. (The Safari Zone is built, Areas and all: below.) Left out on
+purpose, though their maps are built: HGSS's Arceus event at the Ruins of Alph and
+the Sinjoh Ruins (Arceus is for Sinnoh), and the Embedded Tower's Kyogre, Groudon
+and Rayquaza (they're Hoenn's alone), so nothing gives the Red, Blue or Jade Orb and
+the tower stays empty. New Bark Town, Route 29 and
 Cherrygrove City; north and west to Violet, Azalea, Goldenrod, Ecruteak,
 Olivine, Cianwood, Mahogany and Blackthorn, the Lake of Rage, Mt. Silver and
 the routes, gatehouses, caves and towers between them; and the way to Kanto:
