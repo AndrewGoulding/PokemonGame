@@ -21,9 +21,11 @@
     <div class="screen">
       <canvas id="world" class="world hidden" width="240" height="192"></canvas>
       <div id="field-sky" class="field-sky"></div>
+      <!-- (The intro, the title screen and the main menu: the whole 240x192, under
+           the text box. A full-screen window over everything: the Trainer Card.) -->
+      <canvas id="intro" class="intro hidden" width="480" height="384"></canvas>
       <div class="gba">
       <div id="scene" class="scene"></div>
-      <canvas id="intro" class="intro hidden" width="480" height="320"></canvas>
       <div id="world-pic" class="world-pic hidden"><img alt=""></div>
       <div id="field" class="field hidden">
         <div class="terrain foe"></div>
@@ -35,6 +37,7 @@
       <canvas id="overlay" class="overlay hidden" width="480" height="320"></canvas>
       <div id="textbox" class="textbox empty" aria-live="polite"></div>
       </div>
+      <canvas id="overlay-full" class="overlay-full hidden" width="480" height="384"></canvas>
     </div>
     <div class="panel">
       <div id="menu" class="menu"></div>

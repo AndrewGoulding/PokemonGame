@@ -152,7 +152,15 @@
       g.setTransform(1, 0, 0, 1, 0, 0);   // (the intro leaves its own scale set)
       g.clearRect(0, 0, canvas.width, canvas.height);
       g.imageSmoothingEnabled = false;
-      g.drawImage(off, 0, 0, canvas.width, canvas.height);
+      // (A taller canvas, the 240x192 screen's (#intro): the picture in its middle, its top and bottom 4 lines
+      // over and over above and below it.)
+      const k = canvas.width / W, h = Math.round(H * k);
+      if (canvas.height > h + 1) {
+        const top = Math.round((canvas.height - h) / 2), b = 4 * k;
+        g.drawImage(off, 0, top, canvas.width, h);
+        for (let y = top - b; y > -b; y -= b) g.drawImage(off, 0, 0, W, 4, 0, y, canvas.width, b);
+        for (let y = top + h; y < canvas.height; y += b) g.drawImage(off, 0, H - 4, W, 4, 0, y, canvas.width, b);
+      } else g.drawImage(off, 0, 0, canvas.width, canvas.height);
       g.restore();
     }
     // As a 240x160 canvas of its own (to draw onto another canvas).

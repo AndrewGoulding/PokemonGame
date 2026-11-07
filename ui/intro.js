@@ -13,11 +13,27 @@
 (function () {
   "use strict";
 
-  const W = 240, H = 160, SCALE = 2;
+  // FireRed's 240x160 picture, on this game's 240x192 screen: `at` lines down (16, the middle, for the movie and
+  // the title screen; 32, the bottom, for Prof. Oak's speech, whose text box is the screen's), its top and bottom
+  // edges carried on into the lines above and below it (extendEdges).
+  const W = 240, H = 160, SCREEN_H = 192, SCALE = 2;
   const canvas = document.getElementById("intro");
   const g = canvas.getContext("2d");
-  g.scale(SCALE, SCALE);
+  let at = 16, edges = null;   // (edges: a scene's own way of filling the lines round the picture)
+  g.setTransform(SCALE, 0, 0, SCALE, 0, at * SCALE);
   g.imageSmoothingEnabled = false;
+  // The lines above and below the picture: its outermost `band` lines over and over (a solid colour stays
+  // solid, stripes carry on as stripes).
+  function extendEdges(band) {
+    band = band || 4;
+    g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.imageSmoothingEnabled = false;
+    const top = at * SCALE, bottom = (at + H) * SCALE, b = band * SCALE;
+    for (let y = top - b; y > -b; y -= b) g.drawImage(canvas, 0, top, canvas.width, b, 0, y, canvas.width, b);
+    for (let y = bottom; y < canvas.height; y += b) g.drawImage(canvas, 0, bottom - b, canvas.width, b, 0, y, canvas.width, b);
+    g.restore();
+  }
 
   // ---------- Images ----------
 
@@ -107,13 +123,14 @@
     acc += Math.min(100, now - (last || now));
     last = now;
     while (acc >= 1000 / 60) { step(); acc -= 1000 / 60; }
+    g.setTransform(SCALE, 0, 0, SCALE, 0, at * SCALE);
     g.fillStyle = "#000";
-    g.fillRect(0, 0, W, H);
-    if (paint) paint();
+    g.fillRect(0, -at, W, SCREEN_H);
+    if (paint) { paint(); (edges || extendEdges)(); }
     if (fade.level > 0) {
       g.globalAlpha = Math.min(1, fade.level / 16);
       g.fillStyle = fade.color;
-      g.fillRect(0, 0, W, H);
+      g.fillRect(0, -at, W, SCREEN_H);
       g.globalAlpha = 1;
     }
     requestAnimationFrame(frame);
@@ -522,6 +539,8 @@
   }
 
   async function movie() {
+    edges = null;
+    at = 16;   // (where FireRed's picture is on the screen: see `at`)
     await preload(MOVIE_IMAGES);
     start();
     skippable = false; skipped = false;
@@ -567,6 +586,8 @@
   }
 
   async function titleScreen() {
+    at = 16;   // (where FireRed's picture is on the screen: see `at`)
+    edges = null;
     if (window.GameAudio) window.GameAudio.music("mus_title");
     await preload(TITLE_IMAGES);
     start();
@@ -577,6 +598,13 @@
       // Charizard: "dark" (black, with the glow band at line `band`), then gray / color tinted.
       zard: "dark", band: 128, gray: true, zardBlack: 1, zardWhite: 0,
       press: true, flames: [], slash: null
+    };
+    // (Above and below the picture: the overlay's orange band and dark red band carried on, as far as it's slid in;
+    // its picture's edge rows would carry the logo's tip up the screen.)
+    edges = () => {
+      if (!s.overlay) return;
+      g.fillStyle = "rgb(255,90,0)"; g.fillRect(s.overlayX, -at, W - s.overlayX, at);
+      g.fillStyle = "rgb(139,0,0)"; g.fillRect(s.overlayX, H, W - s.overlayX, SCREEN_H - H - at);
     };
     paint = () => {
       if (s.border) clip(0, 0, s.borderEdge, H, () => blit("title-border", 0, 0, W, H, 0, 0));
@@ -925,6 +953,8 @@
   }
 
   async function oakSpeech() {
+    edges = null;
+    at = 32;   // (where FireRed's picture is on the screen: see `at`)
     await preload(SPEECH_IMAGES);
     start();
     skippable = false; skipped = false;

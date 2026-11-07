@@ -358,8 +358,13 @@ party, the Pokédex, minigames, the intro and the text box) is FireRed's
 positions hold for all of it. Over a menu the map still shows in the top 32
 lines, as it was when the menu opened; over a battle, the battle's backdrop
 does (its top 32 rows again, sliding in with the foe's half: `.field-sky`),
-room for battles with more Pokémon on the field. Before there's a map (the
-opening and the title screen) those lines are black.
+room for battles with more Pokémon on the field. The opening, the title
+screen, the main menu, the Option screen and Prof. Oak's speech fill the whole
+240x192 (`#intro`, 480x384): FireRed's picture in the middle (Oak's at the
+bottom, over the text box), its top and bottom edges carried on above and
+below it (the title screen's orange and dark red bands, as far as they've slid
+in). So does the Trainer Card (`#overlay-full`), its border's pattern carried on
+round the card.
 
 ## Overworld maps
 

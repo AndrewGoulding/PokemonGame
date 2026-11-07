@@ -2481,7 +2481,8 @@
       ["FARMING", lv(farmingXp(), BerryPicking)],
       ["FISHING", lv(fishingXp(), Fishing)]
     ];
-    const canvas = overlayCanvas();
+    // (Over the whole 240x192 screen: the card in its middle, the pattern round it carried on above and below.)
+    const canvas = $("#overlay-full");
     let side = "front";
     function draw() {
       const s = GbaMenus.Surface();
@@ -2506,7 +2507,13 @@
       g.setTransform(1, 0, 0, 1, 0, 0);
       g.imageSmoothingEnabled = false;
       g.clearRect(0, 0, canvas.width, canvas.height);
-      g.scale(canvas.width / 240, canvas.height / 160);
+      const k = canvas.width / 240, top = (canvas.height / k - 160) / 2;
+      g.scale(k, k);
+      if (ok(pics[side])) {
+        for (let y = top - 4; y > -4; y -= 4) g.drawImage(pics[side], 0, 0, 240, 4, 0, y, 240, 4);
+        for (let y = top + 160; y < canvas.height / k; y += 4) g.drawImage(pics[side], 0, 156, 240, 4, 0, y, 240, 4);
+      }
+      g.translate(0, top);
       if (ok(pics[side])) g.drawImage(pics[side], 0, 0);
       if (side === "front") {
         if (ok(pics.me)) g.drawImage(pics.me, K ? 165 : 153, K ? 44 : 40);
