@@ -3544,6 +3544,11 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
     assert(sq > 140 && sq < 260, "Squirtle about 5% of Route 24's bites at fishing level " + lv + " (" + sq + " of 4000)");
   }
   assert(!grass.some((s) => s.species === "Squirtle"), "no Squirtle in Route 24's grass");
+  // (Route 11's Youngster Dave walks his loop in his own patch of tall grass.)
+  {
+    const R = window.WORLD_MAPS.Route11, d = R.people.find((p) => p.script === "Route11_EventScript_Dave");
+    for (let x = d.x; x <= d.x + d.rangeX; x++) for (let y = d.y; y <= d.y + d.rangeY; y++) assert.strictEqual(R.behavior[y * R.width + x], 2, "Dave's loop in the grass at " + x + "," + y);
+  }
   // (Route 25's fishing at its grass's levels, Lv. 8-14, and nothing that only comes later.)
   const fish25 = window.WORLD_MAPS.Route25.fishing.slots;
   assert(fish25.length === 10 && fish25.every((s) => s.min >= 8 && s.max <= 14), "Route 25's fishing is Lv. 8-14");

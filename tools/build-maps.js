@@ -257,6 +257,9 @@ if (fs.existsSync(TRAINER_TOWER_C)) {
 }
 // Signs that read differently here: the house FireRed gives the player is Red's.
 const SIGN_TEXT = { PalletTown_EventScript_PlayersHouseSign: ["Red's house"] };
+// Movement ranges changed from FireRed's, by "map/script": [x, y]. Route 11's Youngster Dave walks his loop (down,
+// right, left, up) in his own patch of tall grass, not 8 by 4 tiles out across the path.
+const MOVE_RANGES = { "Route11/Route11_EventScript_Dave": [1, 2] };
 // Wild Pokémon changed from FireRed's: all 12 grass slots (they keep FireRed's
 // weights, 20 20 10 10 10 10 5 5 4 4 1 1 percent), as [species, min, max, alt].
 const WILD_SLOTS = {
@@ -862,7 +865,7 @@ for (const name of MAPS) {
   // (People with no look, graphics_id 0, are FireRed's post-game gossipers: left out.)
   const people = map.object_events.filter((o) => o.type === "object" && o.graphics_id !== "0").map((o, i) => Object.assign({
     id: i, x: o.x, y: o.y, movement: o.movement_type.replace(/^MOVEMENT_TYPE_/, "").toLowerCase(),
-    rangeX: o.movement_range_x, rangeY: o.movement_range_y,
+    rangeX: (MOVE_RANGES[name + "/" + o.script] || [o.movement_range_x])[0], rangeY: (MOVE_RANGES[name + "/" + o.script] || [0, o.movement_range_y])[1],
     script: o.script, flag: o.flag !== "0" ? o.flag : null,
     text: scriptText(name, o.script),
     item: itemBall(name, o.script),
