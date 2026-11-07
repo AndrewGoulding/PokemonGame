@@ -252,6 +252,35 @@
     se("se_bag_cursor");
     paint();
   }
+  // START in the Berries pocket (this game's own): sort them by type (the farming tiers, game/berry-picking.js:
+  // Basic, Restoring, Contest, ... Legendary, each tier in its own order) or by name, in a window at the top right;
+  // the game keeps that sort (opts.sortBerries; without it, the pocket's order, as SELECT's: opts.reorder).
+  async function sortBerries() {
+    const overlay = document.getElementById("overlay");
+    const i = await window.GbaMenus.multichoice(overlay, { left: 19, top: 0, items: ["By type", "By name", "Cancel"], frame: st.frame });
+    overlay.classList.add("hidden");
+    if (i !== 0 && i !== 1) { paint(); return; }
+    const at = pocket().items[mem().cursor] && pocket().items[mem().cursor].id;
+    if (st.opts.sortBerries) {
+      // (The game keeps the sort (and forgets any order SELECT gave them); the pockets again, sorted.)
+      st.opts.sortBerries(i === 0 ? "tier" : "name");
+      st.pockets = st.opts.pockets();
+    } else {
+      const order = [];
+      for (const t of ((window.BerryPicking && window.BerryPicking.TIERS) || [])) for (const id of t.berries) order.push(id);
+      const rank = (id) => { const r = order.indexOf(id); return r < 0 ? order.length : r; };
+      pocket().items.sort(i === 0 ? (a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name) : (a, b) => a.name.localeCompare(b.name));
+      st.opts.reorder(pocket().name, pocket().items.map((e) => e.id));
+    }
+    const list = pocket().items;
+    // (the ▶ stays on the berry it was on)
+    const c = list.findIndex((e) => e.id === at);
+    if (c >= 0) { mem().cursor = c; mem().top = Math.max(0, Math.min(mem().top, c)); }
+    clampMem();
+    se("se_select");
+    paint();
+  }
+
   function switchPocket(dir) {
     const p = st.pocket + dir;
     if (p < 0 || p >= st.pockets.length) return;
@@ -371,6 +400,7 @@
         if (k === "up" || k === "down") moveCursor(k === "up" ? -1 : 1);
         else if (k === "left" || k === "right") { if (!st.moving) switchPocket(k === "left" ? -1 : 1); }
         else if (k === "a" || k === "b" || (k === "select" && opts.reorder)) return k;
+        else if (k === "start" && opts.reorder && !st.moving && pocket().name === "Berries" && pocket().items.length > 1) return k;
         return undefined;
       });
       const it = entries()[mem().cursor];
@@ -391,6 +421,7 @@
         if (it) { st.moving = { name: it.name, from: mem().cursor }; paint(); }
         continue;
       }
+      if (key === "start") { await sortBerries(); continue; }
       if (key === "b" || !it) return null;
       if (opts.sell) {
         // (A Poké Mart's SELL: Task_ItemContext_Sell.)

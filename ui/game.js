@@ -1649,6 +1649,8 @@
       clearMenu();
       const r = await BagScreen.open({
         pockets: bagPockets, pocketName: bagPocket, reorder: bagReorder,
+        // (START in the Berries pocket: by their tiers or by name, as A's "Sort" does: flags.berrySort.)
+        sortBerries: (mode) => { player.flags.berrySort = mode; if (player.flags.bagOrder) delete player.flags.bagOrder.Berries; },
         female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
         frame: GameOptions.get().frame,
         actions: (it) => {

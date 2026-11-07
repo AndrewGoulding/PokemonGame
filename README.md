@@ -163,7 +163,8 @@ the Exp. Share, Oak's Parcel, the Town Map and the Fishing Rod (you start
 with it, and older saves are given it; see **Fishing** below). In the
 Berries pocket, A on a berry also offers **Sort**: the Berries in their
 tiers (the berry tree's: Basic, Restoring, Contest, EV-reducing, ...), or
-back to A to Z ("The berries are now sorted."). The EV-lowering
+back to A to Z ("The berries are now sorted."); or Start there asks which, BY
+TYPE (those tiers) or BY NAME (A to Z), in a window at the top right. The EV-lowering
 Berries (Pomeg, Kelpsy, Qualot, Hondew, Grepa, Tamato) work as from Gen 7:
 used on a Pokémon, its stat's EVs go down 10 and it grows friendlier (10, 5
 or 2), as their descriptions now say; with no EVs in that stat, "It would have
