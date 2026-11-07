@@ -104,7 +104,11 @@
           if (reel && ++tick % 8 === 0) se("se_ball_tray_ball");   // (the reel's click)
           for (const ev of game.events) {
             if (ev.type === "treasure") { se("se_pin"); flash = { t: 50, text: "Treasure!", colour: "#f2d060" }; }
-            else if (ev.type === "treasure-got") { se("se_shiny"); flash = { t: 50, text: "Got it!", colour: "#f2d060" }; }
+            else if (ev.type === "treasure-got") {
+              se("se_shiny");
+              const name = window.Bag && window.Bag.name ? window.Bag.name(ev.item) : ev.item;
+              flash = { t: 70, text: "Got " + (/^[aeiou]/i.test(name) ? "an " : "a ") + name + "!", colour: "#f2d060" };
+            }
             else if (ev.type === "treasure-gone") flash = { t: 40, text: "It sank…", colour: "#e8e8e8" };
             else if (ev.type === "landed") { se("se_m_swagger"); flash = { t: 60, text: game.perfect ? "Perfect catch!" : "Landed!", colour: "#a8f07a" }; }
             else if (ev.type === "escaped") { se("se_failure"); flash = { t: 60, text: "It got away…", colour: "#ff8a7a" }; }

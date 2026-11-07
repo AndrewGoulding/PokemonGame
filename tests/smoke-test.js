@@ -7282,5 +7282,18 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   assert(h.over === "escaped" && !FG.result(h).landed, "out of your zone, it got away");
   assert(h.fight > g.fight && h.zone.size < g.zone.size, "a hard fight's harder");
   assert(FG.TREASURE.every((id) => window.ITEMS[id]), "its treasures are items");
+  // (your zone: a little wider each level, a bigger step at each 5th, and as it was at level 1)
+  for (let lv = 2; lv <= 100; lv++) {
+    const grew = FG.zoneSize(lv, 2) - FG.zoneSize(lv - 1, 2);
+    assert(grew > 0, "wider at fishing level " + lv);
+    if (lv % 5 === 0) assert(grew > FG.zoneSize(lv - 1, 2) - FG.zoneSize(lv - 2, 2) + 0.005, "a bigger step at level " + lv);
+  }
+  assert(Math.abs(FG.zoneSize(1, 1) - (0.24 + 0.0016 - 0.015)) < 0.001, "level 1's zone as it was");
+  // (a treasure kept in your zone comes up in about a second)
+  const t = FG.create(() => 0.1, { level: 10, rod: "old-rod" });
+  if (!t.treasure) t.treasure = { at: 1, y: 0.5, shown: false, progress: 0, got: false, gone: false, life: 600, item: "pearl" };
+  let frames = 0;
+  for (; frames < 600 && !t.treasure.got && !t.over; frames++) { t.meter = 0.5; t.zone.y = t.treasure.y - t.zone.size / 2; t.fish.y = t.fish.target = t.treasure.y; FG.step(t, {}); }
+  assert(t.treasure.got && frames - t.treasure.at <= 70, "the treasure in about a second (" + (frames - t.treasure.at) + " frames)");
 }
 console.log("ok: the reeling game");

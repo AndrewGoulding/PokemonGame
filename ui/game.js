@@ -7077,9 +7077,11 @@
     const reel = await FishingGameScreen.run(scene, FishingGame.create(Math.random, { level: before, rod: mon.rod, slot: mon.slot }),
       { species: mon.species, level: before });
     const r = FishingGame.result(reel);
-    if (r.treasure) { Player.addItem(player, r.treasure); await FishingGameScreen.message(player.name + " fished up " + article(Bag.name(r.treasure)) + "!"); }
+    if (r.treasure) Player.addItem(player, r.treasure);
     FishingGameScreen.clear();
     show("world"); await Overworld.resume();
+    // (A treasure brought up with it: told in the text box, with the item jingle, whether or not the Pokémon was landed.)
+    if (r.treasure) { await sayWithJingle(itemJingle(r.treasure), "{PLAYER} fished up " + article(Bag.name(r.treasure)) + "!"); Screen.say(""); }
     if (!r.landed) { if (reel.over !== "quit") await say("It got away‥"); else await say("You let it go."); Screen.say(""); return; }
     player.flags.fishingCaptures = (player.flags.fishingCaptures | 0) + 1;
     await gainFishingXp(mon.xp + r.xpBonus, r.perfect ? "(a perfect catch!)" : null);

@@ -274,8 +274,11 @@ you have to land it. Down the side is the reel bar: your green catch zone rises 
 let go, and the fish darts up and down it. While the fish is in your zone the catch meter fills; out of it, it
 drains. Fill it and it's landed (and the battle's on); empty, or after 45 seconds, it got away (B lets it go). How
 hard it fights (one to five stars) goes by the rod its bite came from and how rare its slot was; your fishing level
-widens your zone. Now and then a treasure chest drifts into the bar: keep it in your zone a while and you bring it
-up too (a Pearl, Big Pearl, Heart Scale, Star Piece, Stardust, Nugget or a mushroom), even if the fish gets away.
+widens your zone, a little each level and a bigger step every 5 levels (about a quarter of the bar at level 1,
+nearly half at 50 and two thirds at 100, less for a harder fight: `FishingGame.zoneSize`). Now and then a treasure
+chest drifts into the bar: keep it in your zone about a second and you bring it up too (a Pearl, Big Pearl, Heart
+Scale, Star Piece, Stardust, Nugget or a mushroom), even if the fish gets away; the bar names it ("Got a Pearl!")
+and, back on the map, the text box tells you what you fished up, with the item jingle.
 Never letting the fish out of your zone is a perfect catch: 10 more fishing XP, and 2 more for each star past the
 first. The XP and any new level are told once it's landed, and the
 back of your Trainer Card shows your fishing level. In the Safari Zone it's a Safari

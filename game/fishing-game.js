@@ -6,7 +6,8 @@
 // way and it's a perfect catch (more fishing XP).
 //
 // How hard it fights: by the rod its bite came from (game/fishing.js: the Old Rod's easy, the Super Rod's hard) and
-// how rare its slot was; your fishing level widens your zone.
+// how rare its slot was; your fishing level widens your zone: a little each level, and a bigger step every 5
+// levels (zoneSize).
 //
 //   const g = FishingGame.create(rng, { level, rod, slot });
 //   FishingGame.step(g, { reel: aHeld })   // a frame (60 a second); g.events: what happened
@@ -20,8 +21,7 @@
     const rod = ["old-rod", "good-rod", "super-rod"].indexOf(o.rod || "old-rod");
     // (how hard it fights, 1 to 5: its rod, and a rare slot of the Super Rod's)
     const fight = Math.min(5, 1 + Math.max(0, rod) + ((o.slot | 0) >= 3 ? 1 : 0) + ((o.slot | 0) >= 4 ? 1 : 0));
-    const lv = Math.max(1, Math.min(100, o.level | 0 || 1));
-    const size = Math.max(0.16, Math.min(0.42, 0.24 + lv * 0.0016 - fight * 0.015));
+    const size = zoneSize(o.level, fight);
     return {
       rng, fight, frame: 0, over: null, events: [],
       // (your zone starts round the fish)
@@ -32,6 +32,13 @@
       treasure: rng() < 0.4 ? { at: 120 + Math.floor(rng() * 600), y: 0.2 + rng() * 0.6, shown: false, progress: 0, got: false, gone: false, life: 60 * 8,
         item: TREASURE[Math.floor(rng() * TREASURE.length)] } : null
     };
+  }
+
+  // Your zone's size (of the bar, 0 to 1): 0.24 to start, 0.002 more each fishing level and 0.012 more every 5
+  // levels (Lv. 50: 0.46; Lv. 100: 0.68, kept to 0.66), less for a harder fight.
+  function zoneSize(level, fight) {
+    const lv = Math.max(1, Math.min(100, level | 0 || 1));
+    return Math.max(0.16, Math.min(0.66, 0.24 + lv * 0.002 + Math.floor(lv / 5) * 0.012 - (fight || 1) * 0.015));
   }
 
   const inZone = (g, y) => y >= g.zone.y - 0.02 && y <= g.zone.y + g.zone.size + 0.02;
@@ -68,7 +75,7 @@
     if (t && !t.got && !t.gone && g.frame >= t.at) {
       if (!t.shown) { t.shown = true; g.events.push({ type: "treasure" }); }
       t.y = Math.max(0.05, Math.min(0.95, t.y + Math.sin(g.frame / 40) * 0.0015));
-      if (inZone(g, t.y)) t.progress += 0.008;
+      if (inZone(g, t.y)) t.progress += 0.016;   // (about a second in your zone)
       if (t.progress >= 1) { t.got = true; g.events.push({ type: "treasure-got", item: t.item }); }
       else if (--t.life <= 0) { t.gone = true; g.events.push({ type: "treasure-gone" }); }
     }
@@ -83,5 +90,5 @@
       xpBonus: landed ? (g.perfect ? 10 : 0) + (g.fight - 1) * 2 : 0 };
   }
 
-  window.FishingGame = { create, step, result, inZone, TREASURE, TIME };
+  window.FishingGame = { create, step, result, inZone, zoneSize, TREASURE, TIME };
 })();
