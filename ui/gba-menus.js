@@ -152,14 +152,16 @@
       g.setTransform(1, 0, 0, 1, 0, 0);   // (the intro leaves its own scale set)
       g.clearRect(0, 0, canvas.width, canvas.height);
       g.imageSmoothingEnabled = false;
-      // (A taller canvas, the 240x192 screen's (#intro): the picture in its middle, its top and bottom 4 lines
-      // over and over above and below it.)
+      // (A taller canvas, the 240x192 screen's (#intro): the picture in its middle, and above and below it the
+      // colour at its top and bottom edges (the backdrop, or the Option screen's header bar); not its edge rows
+      // repeated, which would stack the windows' frames.)
       const k = canvas.width / W, h = Math.round(H * k);
       if (canvas.height > h + 1) {
-        const top = Math.round((canvas.height - h) / 2), b = 4 * k;
+        const top = Math.round((canvas.height - h) / 2), d = img.data;
+        const at = (y) => "rgb(" + d[y * W * 4] + "," + d[y * W * 4 + 1] + "," + d[y * W * 4 + 2] + ")";
+        g.fillStyle = at(0); g.fillRect(0, 0, canvas.width, top);
+        g.fillStyle = at(H - 1); g.fillRect(0, top + h, canvas.width, canvas.height - top - h);
         g.drawImage(off, 0, top, canvas.width, h);
-        for (let y = top - b; y > -b; y -= b) g.drawImage(off, 0, 0, W, 4, 0, y, canvas.width, b);
-        for (let y = top + h; y < canvas.height; y += b) g.drawImage(off, 0, H - 4, W, 4, 0, y, canvas.width, b);
       } else g.drawImage(off, 0, 0, canvas.width, canvas.height);
       g.restore();
     }
