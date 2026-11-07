@@ -344,6 +344,20 @@ To run the tests (needs Node.js):
 npm test
 ```
 
+### The screen
+
+The screen is 240x192, FireRed's 240x160 with 32 more lines on top. The map
+fills all of it, so you see two more rows of it above you than in FireRed
+(`ui/overworld.js`: `TOP`, `VIEW_H`; the player stands where FireRed has them on
+its screen, 32 lines down). Everything else (battles, menus, the Bag, the
+party, the Pokédex, minigames, the intro and the text box) is FireRed's
+240x160, under those 32 lines (`.gba` in `index.html`), so FireRed's screen
+positions hold for all of it. Over a menu the map still shows in the top 32
+lines, as it was when the menu opened; over a battle, the battle's backdrop
+does (its top 32 rows again, sliding in with the foe's half: `.field-sky`),
+room for battles with more Pokémon on the field. Before there's a map (the
+opening and the title screen) those lines are black.
+
 ## Overworld maps
 
 The maps are FireRed's, converted from the [pret/pokefirered](https://github.com/pret/pokefirered)

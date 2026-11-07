@@ -54,8 +54,10 @@
 (function () {
   "use strict";
 
-  const TILE = 16, VIEW_W = 240, VIEW_H = 160;
-  const PLAYER_X = 112, PLAYER_Y = 64;   // where the player stands on screen (top-left of its tile)
+  // The view: FireRed's 240x160 with two more rows of the map above it (TOP), so
+  // the screen's 240x192; FireRed's screen positions are TOP lines lower on it.
+  const TILE = 16, TOP = 32, VIEW_W = 240, VIEW_H = 160 + TOP;
+  const PLAYER_X = 112, PLAYER_Y = 64 + TOP;   // where the player stands on screen (top-left of its tile)
   const WALK_SPEED = 1, RUN_SPEED = 2;   // pixels per frame (60 frames a second)
   const SURF_SPEED = 2;   // (PLAYER_SPEED_FAST)
   const SPIN_SPEED = 2;   // (an arrow tile spins you along, MOVEMENT_ACTION_SPIN_*)
@@ -1353,6 +1355,13 @@
   }
 
   function drawFly() {
+    // (In FireRed's screen positions: TOP lines down on ours.)
+    g.save();
+    g.translate(0, TOP);
+    drawFlyAt();
+    g.restore();
+  }
+  function drawFlyAt() {
     const f = fly, down = 8;   // (FireRed's screen positions are 8 lines lower)
     if (f.player) {
       const p = f.player, img = spriteImage(p.sheet);
@@ -1409,7 +1418,7 @@
     return new Promise((resolve) => {
       // FireRed's camera has the player 8 lines lower on the screen than ours
       // (PLAYER_Y), so its screen positions are 8 lines higher here.
-      const camX = me.x * TILE - PLAYER_X, camY = me.y * TILE - PLAYER_Y - 8;
+      const camX = me.x * TILE - PLAYER_X, camY = me.y * TILE - (PLAYER_Y - TOP) - 8;
       heal = { state: 0, timer: 0, counter: 0, flashed: 0, left: Math.max(1, Math.min(6, count)), balls: [],
         x: camX + 93, y: camY + 36, monitor: { x: camX + 128 - 16, y: camY + 24 - 8, on: false, step: 0, t: 0, plays: 0 },
         glow: {}, playJingle, jingleDone: false, resolve };

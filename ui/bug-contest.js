@@ -236,7 +236,7 @@
     function drawClock() {
       const show = here(P() && P().location && P().location.map) && !document.getElementById("world").classList.contains("hidden");
       if (!box) {
-        const screen = document.querySelector(".screen");
+        const screen = document.querySelector(".gba");
         if (!screen || !show) return;
         box = document.createElement("div");
         box.className = "bug-contest-clock";

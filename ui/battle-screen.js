@@ -2682,7 +2682,11 @@
   function setTerrain(terrain) {
     const url = "url(assets/battle/" + (terrain || "plain") + ".png)";
     for (const t of el.field.querySelectorAll(".terrain")) t.style.backgroundImage = url;
+    // (The 32 lines over the battle scene: the backdrop's top rows again.)
+    const sky = fieldSky();
+    if (sky) sky.style.backgroundImage = url;
   }
+  const fieldSky = () => document.getElementById("field-sky");
 
   async function intro(cfg) {
     trainerOut = false; foeAnnounced = false; foeTrainerOut = false; foeHpAtSwitchIn = null; lastMove = {};
@@ -2747,6 +2751,9 @@
     el.field.classList.add("no-anim");
     foeTerrain.style.backgroundPositionX = -shift + "px";
     playerTerrain.style.backgroundPositionX = shift + "px";
+    // (The backdrop above slides in with the foe's half.)
+    const sky = fieldSky();
+    if (sky) { sky.classList.remove("entering"); sky.style.backgroundPositionX = -shift + "px"; void sky.offsetWidth; }
     for (const [e, dx] of movers) e.style.transform = "translateX(" + dx + "px)";
     void el.field.offsetWidth;
     el.field.classList.remove("no-anim");
@@ -2754,9 +2761,11 @@
     if (mon) await spriteReady(el.sides.p2.sprite);
     el.field.classList.add("entering");
     for (const t of [foeTerrain, playerTerrain]) t.style.backgroundPositionX = "";
+    if (sky) { sky.classList.add("entering"); sky.style.backgroundPositionX = ""; }
     for (const [e] of movers) e.style.transform = "";
     await (mon ? pause : wait)(1100);
     el.field.classList.remove("entering");
+    if (sky) sky.classList.remove("entering");
     if (mon) {
       el.sides.p2.sprite.classList.remove("silhouette");
       cry("p2");

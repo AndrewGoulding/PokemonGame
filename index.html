@@ -12,13 +12,18 @@
 </head>
 <body>
   <main class="game">
-    <!-- The 240x160 screen: the map, a battle, a menu scene or the intro, with
-         the text box along its bottom (only while there's something to read)
-         and FireRed's windows (the Start menu) drawn over it. -->
+    <!-- The 240x192 screen: the map fills all of it; a battle, a menu scene
+         or the intro fill the 240x160 under its top 32 lines (FireRed's
+         screen, .gba), with the text box along its bottom (only while there's
+         something to read) and FireRed's windows (the Start menu) drawn over
+         it. Over a scene the map still shows in the top 32 lines; over a
+         battle, the battle's backdrop does (.field-sky). -->
     <div class="screen">
+      <canvas id="world" class="world hidden" width="240" height="192"></canvas>
+      <div id="field-sky" class="field-sky"></div>
+      <div class="gba">
       <div id="scene" class="scene"></div>
-      <canvas id="world" class="world hidden" width="240" height="160"></canvas>
-      <canvas id="intro" class="world hidden" width="480" height="320"></canvas>
+      <canvas id="intro" class="intro hidden" width="480" height="320"></canvas>
       <div id="world-pic" class="world-pic hidden"><img alt=""></div>
       <div id="field" class="field hidden">
         <div class="terrain foe"></div>
@@ -29,6 +34,7 @@
       </div>
       <canvas id="overlay" class="overlay hidden" width="480" height="320"></canvas>
       <div id="textbox" class="textbox empty" aria-live="polite"></div>
+      </div>
     </div>
     <div class="panel">
       <div id="menu" class="menu"></div>

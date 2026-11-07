@@ -67,6 +67,8 @@
     field.classList.toggle("hidden", which !== "field");
     scene.classList.toggle("hidden", which !== "scene");
     world.classList.toggle("hidden", which !== "world");
+    // (A scene leaves the map as it was showing in the screen's top 32 lines.)
+    world.classList.toggle("behind", which === "scene");
   }
 
   // Shows `html` in the scene and a menu; resolves with a menu value, or
@@ -1929,7 +1931,7 @@
         }
         return null;
       },
-      map: { canvas: $("#world"), x: 112 + 16 * dx, y: 64 + 16 * dy }
+      map: { canvas: $("#world"), x: 112 + 16 * dx, y: 96 + 16 * dy }
     });
   }
 
@@ -12151,7 +12153,7 @@
         persist();
         return null;
       },
-      map: { canvas: $("#world"), x: 112 + 16 * dx, y: 64 + 16 * dy }
+      map: { canvas: $("#world"), x: 112 + 16 * dx, y: 96 + 16 * dy }
     });
     ShopScreen.close();
     show("world");
@@ -14111,7 +14113,7 @@
     choosePartyFor: async (message, notes, cursor) => { const r = await openParty({ message, notes, cursor }); PartyMenu.close(); return r ? player.party[r.slot] : null; },
     displayName: (r) => Party.displayName(r),
     resume: () => Overworld.resume(), setFlag: (name, on) => johto.setFlag(name, on), frame: () => GameOptions.get().frame,
-    mapView: () => ({ canvas: $("#world"), x: 112, y: 48 }), fieldWindow: (name, spec) => GbaMenus.fieldWindow(name, spec),
+    mapView: () => ({ canvas: $("#world"), x: 112, y: 80 }), fieldWindow: (name, spec) => GbaMenus.fieldWindow(name, spec),
     moneyBox: (on) => (on ? moneyBox(20, 1) : moneyBox()), boxCount: () => Player.boxed(player).length, nationalDex: () => Player.nationalDex(player)
   });
   // Johto's Safari Zone (ui/johto-safari.js): its Areas and their Pokémon, the

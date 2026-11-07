@@ -279,7 +279,7 @@
     const canvas = mk(W * 2, H * 2);
     canvas.className = "voltorb-flip";
     canvas.setAttribute("aria-label", "Voltorb Flip");
-    const screenEl = document.querySelector(".screen") || document.body;
+    const screenEl = document.querySelector(".gba") || document.body;
     const overlayEl = document.getElementById("overlay");
     if (overlayEl && overlayEl.parentNode === screenEl) screenEl.insertBefore(canvas, overlayEl.nextSibling);
     else screenEl.appendChild(canvas);
