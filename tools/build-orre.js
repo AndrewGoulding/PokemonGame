@@ -23,7 +23,9 @@
 //   assets/world/sprites/orre_*.png             Willie, the truck, Wes's parked bike
 //   assets/sprites/trainers/back/wes.png        Wes's battle back picture (5 frames)
 //   assets/sprites/trainers/front/wes.png, rider_willie.png
-//   data/orre-maps.js                           window.WORLD_MAPS entries for them
+//   assets/world/maps/PhenacCity*, PyriteTown*, AgateVillage*.png  Phenac City, Pyrite Town and Agate Village
+//   data/orre-maps.js                           window.WORLD_MAPS entries for them (and their Pokémon Centers, and
+//                                               Pyrite Cave, Emerald's Fiery Path for now)
 "use strict";
 
 const fs = require("fs");
@@ -1462,6 +1464,362 @@ const PCP = pokemonCenterInside("PhenacCity_PokemonCenter_1F", "Phenac City", "P
     ["Phenac's water comes up from deep\nunder the desert.", "That's why there's a city here at all!"])
 ]);
 
+// ---------- Pyrite Town (after Colosseum's) ----------
+//
+// The lawless town in a canyon: dusty brown ground scored with tyre tracks, walled in by red rock, rusty tin shacks
+// with corrugated roofs, oil drums and crates about, and at the top the Pyrite Colosseum, a round arena of riveted
+// iron with "COLOSSEUM" over its gate (shut for now). The Pokémon Center (Emerald's, as Phenac's), and in the east
+// wall the mouth of Pyrite Cave. The way out to the desert at the bottom. Drawn here.
+const YW = 36, YH = 30;
+const YPC = { x: 27, y: 13, w: 4, h: 4 }, YPC_DOOR = { x: 28, y: 16 };
+const YCOL = { x: 12, y: 2, w: 12, h: 7 }, YCOL_DOOR = { x: 17, w: 2 };
+const YSHACKS = [{ x: 3, y: 3, w: 6, h: 4 }, { x: 27, y: 3, w: 6, h: 4 }, { x: 3, y: 13, w: 6, h: 4 }, { x: 4, y: 22, w: 6, h: 4 }, { x: 26, y: 22, w: 6, h: 4 }];
+const YEXIT = { x: 16, w: 4 }, YCAVE = { x: YW - 2, y: 19 };
+const YDRUMS = [[11, 12], [12, 12], [21, 25], [2, 10]], YCRATES = [[22, 19], [23, 19], [22, 20], [12, 26], [33, 10]];
+const YSIGN = { x: 15, y: 27 };
+const yblocks = new Array(YW * YH).fill(SAND);
+{
+  const L = layouts.LAYOUT_MAUVILLE_CITY, mv = fs.readFileSync(path.join(EM, L.blockdata_filepath));
+  for (let y = 0; y < YPC.h; y++) for (let x = 0; x < YPC.w; x++) yblocks[(YPC.y + y) * YW + YPC.x + x] = mv.readUInt16LE(((2 + y) * L.width + 21 + x) * 2);
+}
+const pyrite = E.render(yblocks, YW, YH, general, mauville, false);
+const YDIRT = [[192, 168, 136], [180, 156, 124], [164, 140, 110], [128, 108, 88]];
+const YROCK = [[216, 128, 88], [184, 96, 64], [152, 72, 48], [112, 48, 40], [72, 32, 32]];
+const yRock = (x, y) => x < 2 || x >= YW - 2 || y < 2 || (y === YH - 1 && (x < YEXIT.x || x >= YEXIT.x + YEXIT.w));
+// Rock, the canyon's: each tile a block of red-brown stone, cracked; where floor is below it, its face, and a shadow.
+function rockTiles(c, isRockAt, Wt, Ht, cols) {
+  for (let ty = 0; ty < Ht; ty++) for (let tx = 0; tx < Wt; tx++) {
+    if (!isRockAt(tx, ty)) continue;
+    const x0 = tx * 16, y0 = ty * 16, face = ty + 1 < Ht && !isRockAt(tx, ty + 1);
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const n = Math.sin((x0 + x) * 0.31 + (y0 + y) * 0.17) + Math.sin((x0 + x) * 0.07 - (y0 + y) * 0.23);
+      let col = n > 0.9 ? cols[0] : n > -0.4 ? cols[1] : cols[2];
+      if (face && y >= 8) col = y === 8 ? cols[0] : (x % 5 === 0 || (x + y) % 9 === 0) ? cols[4] : y > 12 ? cols[3] : cols[2];
+      c.set(x0 + x, y0 + y, col);
+    }
+    for (let k = 0; k < 3; k++) { const x = x0 + Math.floor(rand() * 13), y = y0 + Math.floor(rand() * (face ? 8 : 13)); c.hl(x, x + 2, y, cols[3]); c.set(x + 1, y + 1, cols[4]); }
+    if (face) c.rect(x0, y0 + 16, 16, 3, C.shadow);
+  }
+}
+function drawPyriteGround() {
+  const c = canvas(YW * 16, YH * 16);
+  seed = 91;
+  for (let ty = 0; ty < YH; ty++) for (let tx = 0; tx < YW; tx++) {
+    if (tx >= YPC.x && tx < YPC.x + YPC.w && ty >= YPC.y && ty < YPC.y + YPC.h) continue;
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const n = Math.sin((tx * 16 + x) * 0.09 + (ty * 16 + y) * 0.05) + Math.sin((tx * 16 + x) * 0.03 + (ty * 16 + y) * 0.11) * 0.7;
+      c.set(tx * 16 + x, ty * 16 + y, YDIRT[n > 1.2 ? 0 : n > -0.9 ? 1 : 2]);
+    }
+    for (let k = 0; k < 6; k++) c.set(tx * 16 + Math.floor(rand() * 16), ty * 16 + Math.floor(rand() * 16), rand() < 0.5 ? YDIRT[3] : YDIRT[0]);
+  }
+  // Tyre tracks up the middle from the way out to the Colosseum, and across to the Pokémon Center.
+  for (let y = 9 * 16; y < YH * 16; y++) for (const x of [16 * 16 + 6, 16 * 16 + 9, 19 * 16 + 6, 19 * 16 + 9]) if ((y >> 2) % 3) c.set(x + Math.round(Math.sin(y / 30) * 2), y, YDIRT[3]);
+  for (let x = 19 * 16; x < 28 * 16; x++) for (const y of [17 * 16 + 4, 17 * 16 + 7]) if ((x >> 2) % 3) c.set(x, y, YDIRT[3]);
+  rockTiles(c, (x, y) => yRock(x, y) && !(x === YCAVE.x && y === YCAVE.y), YW, YH, YROCK);
+  // Pyrite Cave's mouth in the east wall: a dark arch, timbers round it.
+  {
+    const x0 = YCAVE.x * 16 - 4, y0 = YCAVE.y * 16 - 12;
+    c.rect(x0, y0 + 4, 24, 24, ROCK[3]); c.disc(x0 + 12, y0 + 8, 10, ROCK[3]);
+    c.rect(x0 + 3, y0 + 8, 18, 20, [24, 16, 16]); c.disc(x0 + 12, y0 + 9, 8, [24, 16, 16]);
+    c.rect(x0 + 1, y0 + 2, 3, 26, C.wood[2]); c.rect(x0 + 20, y0 + 2, 3, 26, C.wood[2]); c.rect(x0, y0, 24, 4, C.wood[1]); c.hl(x0, x0 + 23, y0 + 3, C.wood[3]);
+  }
+  return c;
+}
+pasteOn(pyrite, YW, YH, drawPyriteGround(), 0, 0, -1);
+// A tin shack: corrugated roof, rusted, dented walls of grey tin, a dark door, a boarded window.
+function tinShack(b, s) {
+  const w = b.w * 16, up = 16, h = b.h * 16 + up, c = canvas(w, h), roofH = up + 16 * (b.h - 2);
+  seed = 101 + s;
+  c.rect(4, h - 5, w - 4, 5, C.shadow);
+  for (let y = 0; y < roofH; y++) for (let x = 0; x < w; x++) c.set(x, y, x % 6 < 2 ? C.rust[2] : x % 6 < 4 ? C.rust[1] : C.rust[0]);
+  for (let k = 0; k < (w * roofH) / 18; k++) c.set(Math.floor(rand() * w), Math.floor(rand() * roofH), rand() < 0.6 ? C.rust[3] : C.tin[1]);
+  c.hl(0, w - 1, roofH - 1, C.rust[3]); c.hl(0, w - 1, roofH, C.line);
+  const fy = roofH + 1, fh = h - fy - 4;
+  c.box(0, fy, w, fh, { fill: C.tin[1], light: C.tin[0], dark: C.tin[2], line: C.tin[3] });
+  for (let x = 4; x < w; x += 8) c.vl(x, fy + 1, fy + fh - 2, C.tin[2]);
+  for (let k = 0; k < 6; k++) { const x = 2 + Math.floor(rand() * (w - 6)), y = fy + 2 + Math.floor(rand() * (fh - 4)); c.rect(x, y, 3, 2, C.rust[2]); }
+  const dx = Math.floor(b.w / 2) * 16;
+  c.box(dx + 2, fy + 4, 12, fh - 4, { fill: [56, 48, 48], light: [88, 80, 72], line: C.line });
+  c.set(dx + 11, fy + fh / 2 + 2, C.tin[0]);
+  const wx = dx >= 32 ? 8 : w - 24;
+  c.box(wx, fy + 6, 14, 10, { fill: [40, 40, 56], line: C.tin[3] });
+  c.rect(wx - 1, fy + 8, 16, 2, C.wood[2]); c.rect(wx - 1, fy + 12, 16, 2, C.wood[1]);
+  return c;
+}
+YSHACKS.forEach((b, i) => pasteOn(pyrite, YW, YH, tinShack(b, i), b.x * 16, b.y * 16 - 16, 16 + 16 * (b.h - 2)));
+// The Pyrite Colosseum: a round arena of riveted iron plates in tiers, floodlights on top, the gate in the middle
+// under "COLOSSEUM".
+{
+  const b = YCOL, w = b.w * 16, up = 24, h = b.h * 16 + up, c = canvas(w, h);
+  c.rect(6, h - 6, w - 8, 6, C.shadow);
+  for (let k = 0; k < 3; k++) {
+    const inset = 4 + k * 12, y0 = 8 + k * 16;
+    for (let x = inset; x < w - inset; x++) {
+      const t = (x - w / 2) / (w / 2 - inset), bulge = Math.round((1 - t * t) * 10);
+      c.vl(x, y0 + 8 - bulge, h - 6, k % 2 ? C.iron[1] : C.iron[0]);
+      c.set(x, y0 + 8 - bulge, C.iron[3]);
+      if (x % 12 === 0) c.vl(x, y0 + 9 - bulge, h - 6, C.iron[2]);
+    }
+  }
+  for (const fx of [10, w - 14]) { c.rect(fx + 1, 0, 2, 16, C.iron[3]); c.box(fx - 2, 0, 8, 5, { fill: [248, 240, 168], line: C.iron[3] }); }
+  const fy = up + 32, fh = h - fy - 6;
+  c.box(0, fy, w, fh, { fill: C.iron[1], light: C.iron[0], dark: C.iron[2], line: C.iron[3] });
+  for (let x = 3; x < w - 2; x += 6) { c.set(x, fy + 3, C.iron[3]); c.set(x, fy + fh - 4, C.iron[3]); }
+  const ax = (YCOL_DOOR.x - b.x) * 16, aw = YCOL_DOOR.w * 16;
+  c.rect(ax - 3, fy - 6, aw + 6, fh + 6, C.iron[3]); c.rect(ax, fy - 3, aw, fh + 3, [32, 28, 40]);
+  for (let x = ax + 3; x < ax + aw - 2; x += 5) c.vl(x, fy - 2, fy + fh - 1, C.iron[2]);
+  c.box(ax + aw / 2 - 22, fy - 16, 44, 9, { fill: C.rust[1], light: C.rust[0], line: C.rust[3] });
+  text(c, "COLOSSEUM", ax + aw / 2 - 18, fy - 14, [248, 240, 200]);
+  pasteOn(pyrite, YW, YH, c, b.x * 16, b.y * 16 - up, up + 16 * (b.h - 1));
+}
+// Oil drums and crates.
+function drum() {
+  const c = canvas(16, 24);
+  c.rect(2, 20, 13, 3, C.shadow);
+  c.box(2, 4, 12, 17, { fill: [48, 104, 168], light: [96, 152, 208], dark: [32, 72, 128], line: C.line });
+  c.hl(3, 12, 9, [32, 72, 128]); c.hl(3, 12, 15, [32, 72, 128]); c.rect(4, 5, 8, 2, [88, 88, 104]);
+  return c;
+}
+function crate() {
+  const c = canvas(16, 20);
+  c.rect(1, 16, 15, 3, C.shadow);
+  c.box(1, 2, 14, 15, { fill: C.wood[1], light: C.wood[0], dark: C.wood[2], line: C.wood[3] });
+  for (let k = 3; k < 14; k++) { c.set(k + 1, k + 2, C.wood[3]); c.set(15 - k, k + 2, C.wood[2]); }
+  return c;
+}
+for (const [x, y] of YDRUMS) pasteOn(pyrite, YW, YH, drum(), x * 16, y * 16 - 8, 8);
+for (const [x, y] of YCRATES) pasteOn(pyrite, YW, YH, crate(), x * 16, y * 16 - 4, 4);
+function signPost(colors) {
+  const c = canvas(16, 32);
+  c.rect(6, 18, 4, 12, C.wood[2]); c.vl(6, 18, 29, C.wood[3]);
+  c.box(0, 6, 16, 13, { fill: colors[1], light: colors[0], dark: colors[2], line: C.line });
+  c.rect(3, 9, 10, 1, [248, 248, 248]); c.rect(3, 12, 10, 1, [248, 248, 248]); c.rect(3, 15, 7, 1, [248, 248, 248]);
+  return c;
+}
+pasteOn(pyrite, YW, YH, signPost(C.rust), YSIGN.x * 16, YSIGN.y * 16 - 16, 16);
+// (The Pokémon Center's grass corners: dirt here, from the tile beside it.)
+function pcCorners(img, Wt, pc) {
+  for (let y = pc.y * 16; y < (pc.y + pc.h) * 16; y++) for (let x = pc.x * 16; x < (pc.x + pc.w) * 16; x++) {
+    const o = (x + y * Wt * 16) * 4, green = (im) => im[o + 3] && im[o + 1] > im[o] + 24 && im[o + 1] > im[o + 2];
+    if (green(img.above)) img.above[o + 3] = 0;
+    if (!green(img.below)) continue;
+    const so = ((pc.x - 1) * 16 + (x % 16) + y * Wt * 16) * 4;
+    for (let k = 0; k < 4; k++) img.below[o + k] = img.below[so + k];
+  }
+}
+pcCorners(pyrite, YW, YPC);
+const doorBelow = (b) => ({ x: b.x + Math.floor(b.w / 2), y: b.y + b.h - 1 });
+const PYRITE = {
+  name: "PyriteTown", title: "Pyrite Town", width: YW, height: YH, type: "city", music: "em_slateport",
+  region: "orre", battleScene: "sand", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
+  collision: [], elevation: [], behavior: [], encounter: [], connections: [], triggers: [], hidden: [],
+  warps: [{ x: YPC_DOOR.x, y: YPC_DOOR.y, map: "PyriteTown_PokemonCenter_1F", warp: 0 }, { x: YCAVE.x, y: YCAVE.y, map: "PyriteCave", warp: 0 }],
+  signs: [{ x: YSIGN.x, y: YSIGN.y, script: "PyriteTown_EventScript_Sign", text: ["PYRITE TOWN", "Mind your own business."] },
+    ...[0, 1].map((k) => ({ x: YCOL_DOOR.x + k, y: YCOL.y + YCOL.h - 1, script: "PyriteTown_EventScript_Colosseum",
+      text: ["PYRITE COLOSSEUM", "The gate is chained shut. A notice:\n\"Closed till further notice.\""] })),
+    ...YSHACKS.map((b) => ({ x: doorBelow(b).x, y: doorBelow(b).y, script: "PyriteTown_EventScript_LockedDoor", text: ["The door is locked."] }))],
+  people: [
+    person(0, "PYRITE_CAIL", 20, 21, "rocker", "face_left", "PyriteTown_EventScript_Cail", null),
+    person(1, "PYRITE_ZEKE", 9, 10, "biker", "face_down", "PyriteTown_EventScript_Zeke", null),
+    person(2, "PYRITE_RINA", 25, 9, "em_hex_maniac", "face_down", "PyriteTown_EventScript_Rina", null),
+    person(3, "PYRITE_MAN", 13, 18, "balding_man", "wander_around", "PyriteTown_EventScript_Man",
+      ["Pyrite's a rough town. Keep your\nPokémon close, kid."], { rangeX: 2, rangeY: 1 }),
+    person(4, "PYRITE_WOMAN", 7, 19, "woman_3", "face_right", "PyriteTown_EventScript_Woman",
+      ["Folks say there's a cave out east,\nright in the canyon wall.", "Hikers go in there to dig, and\nsome never come back out…"])
+  ],
+  wild: null
+};
+{
+  const solid = new Set(), fill = (b) => { for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) solid.add(x + "," + y); };
+  for (let y = 0; y < YH; y++) for (let x = 0; x < YW; x++) if (yRock(x, y)) solid.add(x + "," + y);
+  for (const b of [YCOL, YPC, ...YSHACKS]) fill(b);
+  solid.delete(YPC_DOOR.x + "," + YPC_DOOR.y); solid.delete(YCAVE.x + "," + YCAVE.y);
+  for (const [x, y] of [...YDRUMS, ...YCRATES, [YSIGN.x, YSIGN.y]]) solid.add(x + "," + y);
+  for (let i = 0; i < YW * YH; i++) {
+    const x = i % YW, y = Math.floor(i / YW);
+    PYRITE.collision.push(solid.has(x + "," + y) ? 1 : 0);
+    PYRITE.elevation.push(3);
+    // (The Pokémon Center's door; the cave's mouth an arrow warp east, as Emerald's caves' are: walk in, press on.)
+    PYRITE.behavior.push(x === YPC_DOOR.x && y === YPC_DOOR.y ? 0x69 : x === YCAVE.x && y === YCAVE.y ? 0x62 : 0);
+    PYRITE.encounter.push(0);
+  }
+  writePng(path.join(outMaps, "PyriteTown.png"), YW * 16, YH * 16, pyrite.below);
+  writePng(path.join(outMaps, "PyriteTown-top.png"), YW * 16, YH * 16, pyrite.above);
+  const b = canvas(32, 32);
+  rockTiles(b, () => true, 2, 2, YROCK);
+  save(b, path.join(outMaps, "PyriteTown-border.png"));
+}
+const PCY = pokemonCenterInside("PyriteTown_PokemonCenter_1F", "Pyrite Town", "PyriteTown", 0, [
+  person(1, "PYRITE_PC_MAN", 11, 5, "em_man_3", "face_left", "PyriteTown_PokemonCenter_1F_EventScript_Man",
+    ["This is about the only place in\nPyrite nobody starts a fight.", "Even the toughs need their Pokémon\nhealed."])
+]);
+
+// ---------- Pyrite Cave (this game's own, for now) ----------
+//
+// The cave in Pyrite Town's east wall: Emerald's Fiery Path (its picture, its layout), entered from its south end;
+// the north end is fallen in. No boulders or items of Fiery Path's; Pyrite's hikers and diggers instead, Hiker Rowe
+// at the far end.
+const PYCAVE = (() => {
+  const m = JSON.parse(JSON.stringify(emeraldMaps.FieryPath));
+  const top = m.warps.find((w) => w.y < 10), bottom = m.warps.find((w) => w.y > 10);
+  m.collision[top.y * m.width + top.x] = 1; m.behavior[top.y * m.width + top.x] = 0;
+  return Object.assign(m, {
+    name: "PyriteCave", title: "Pyrite Cave", image: "FieryPath", region: "orre", music: "em_petalburg_woods", showName: true,
+    allowEscaping: false, wild: null, weatherSteps: undefined, connections: [], signs: [], triggers: [], hidden: [],
+    warps: [{ x: bottom.x, y: bottom.y, map: "PyriteTown", warp: 1 }],
+    people: [
+      person(0, "CAVE_ROWE", 6, 33, "hiker", "face_right", "PyriteCave_EventScript_Rowe", null),
+      person(1, "CAVE_DEX", 23, 25, "em_hiker", "face_left", "PyriteCave_EventScript_Dex", null),
+      person(2, "CAVE_TARO", 8, 27, "black_belt", "face_right", "PyriteCave_EventScript_Taro", null)
+    ]
+  });
+})();
+
+// ---------- Agate Village (after Colosseum's) ----------
+//
+// The quiet village in the hills, all green: grass and flowers, a ring of big trees round it, a stream across the
+// middle with a wooden bridge, log cabins with red roofs, and at the top the shrine of the Relic Stone, the village's
+// holy stone under a little wooden roof. The Pokémon Center (Emerald's) by the path; the way out at the bottom. Drawn here.
+const GW = 36, GH = 30;
+const GPC = { x: 22, y: 20, w: 4, h: 4 }, GPC_DOOR = { x: 23, y: 23 };
+const GSHRINE = { x: 16, y: 2, w: 4, h: 4 };
+const GCABINS = [{ x: 4, y: 4, w: 6, h: 4 }, { x: 26, y: 4, w: 6, h: 4 }, { x: 4, y: 19, w: 6, h: 4 }, { x: 27, y: 19, w: 6, h: 4 }];
+const GSTREAM = [13, 14], GBRIDGE = { x: 16, w: 4 }, GEXIT = { x: 16, w: 4 };
+const GSIGN = { x: 15, y: 26 };
+const GTREES = [[11, 6], [23, 7], [12, 21], [19, 9], [3, 11], [30, 11], [9, 25]];
+const gEdge = (x, y) => x < 2 || x >= GW - 2 || y < 2 || (y >= GH - 2 && (x < GEXIT.x || x >= GEXIT.x + GEXIT.w));
+const gblocks = new Array(GW * GH).fill(SAND);
+{
+  const L = layouts.LAYOUT_MAUVILLE_CITY, mv = fs.readFileSync(path.join(EM, L.blockdata_filepath));
+  for (let y = 0; y < GPC.h; y++) for (let x = 0; x < GPC.w; x++) gblocks[(GPC.y + y) * GW + GPC.x + x] = mv.readUInt16LE(((2 + y) * L.width + 21 + x) * 2);
+}
+const agate = E.render(gblocks, GW, GH, general, mauville, false);
+const GRASS = [[152, 208, 120], [128, 192, 104], [104, 168, 88], [72, 136, 72]];
+const PATH = [[224, 200, 144], [212, 184, 128], [192, 160, 108]];
+const onGPath = (tx, ty) => (tx >= 17 && tx <= 18 && ty >= 6) || (ty >= 17 && ty <= 18 && tx >= 6 && tx <= 29) || (tx >= 23 && tx <= 24 && ty >= 17 && ty <= 24);
+function bigTree() {
+  const c = canvas(32, 48);
+  c.rect(6, 41, 22, 5, C.shadow);
+  c.rect(13, 30, 6, 14, C.wood[2]); c.vl(13, 30, 43, C.wood[3]); c.vl(18, 30, 43, C.wood[3]);
+  const G = [[136, 200, 96], [88, 160, 72], [56, 120, 56], [32, 80, 40]];
+  for (const [cx, cy, r] of [[16, 20, 13], [8, 24, 8], [24, 24, 8], [16, 11, 10]]) { c.disc(cx, cy, r, G[3]); c.disc(cx, cy, r - 1, G[2]); }
+  for (const [cx, cy, r] of [[14, 17, 9], [9, 22, 5], [22, 21, 6], [15, 9, 7]]) c.disc(cx, cy, r, G[1]);
+  for (const [cx, cy, r] of [[12, 14, 4], [19, 18, 3], [13, 7, 3], [7, 20, 2]]) c.disc(cx, cy, r, G[0]);
+  return c;
+}
+function drawAgateGround() {
+  const c = canvas(GW * 16, GH * 16);
+  seed = 131;
+  for (let ty = 0; ty < GH; ty++) for (let tx = 0; tx < GW; tx++) {
+    if (tx >= GPC.x && tx < GPC.x + GPC.w && ty >= GPC.y && ty < GPC.y + GPC.h) continue;
+    const pathTile = onGPath(tx, ty);
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const n = Math.sin((tx * 16 + x) * 0.19 + (ty * 16 + y) * 0.11) + Math.sin((tx * 16 + x) * 0.07 - (ty * 16 + y) * 0.21) * 0.6;
+      c.set(tx * 16 + x, ty * 16 + y, pathTile ? PATH[n > 1.2 ? 0 : n > -1.1 ? 1 : 2] : GRASS[n > 1 ? 0 : n > -0.2 ? 1 : 2]);
+    }
+    if (!pathTile) for (let k = 0; k < 3; k++) { const x = tx * 16 + 2 + Math.floor(rand() * 12), y = ty * 16 + 3 + Math.floor(rand() * 11); c.set(x, y, GRASS[3]); c.set(x + 2, y, GRASS[3]); c.set(x + 1, y - 1, GRASS[3]); }
+    if (!pathTile && rand() < 0.12) { const x = tx * 16 + 4 + Math.floor(rand() * 8), y = ty * 16 + 4 + Math.floor(rand() * 8), col = [[248, 120, 120], [248, 232, 104], [248, 248, 248]][Math.floor(rand() * 3)];
+      c.set(x, y - 1, col); c.set(x - 1, y, col); c.set(x + 1, y, col); c.set(x, y + 1, col); c.set(x, y, [248, 200, 64]); }
+  }
+  // The stream: blue water between grassy banks, the plank bridge over it.
+  for (let y = GSTREAM[0] * 16; y < (GSTREAM[1] + 1) * 16; y++) for (let x = 0; x < GW * 16; x++) {
+    const edge = y - GSTREAM[0] * 16 < 3 || (GSTREAM[1] + 1) * 16 - y <= 3, wave = Math.sin(x * 0.2 + y * 0.6) + Math.sin(x * 0.07 - y * 0.3);
+    c.set(x, y, edge ? GRASS[3] : wave > 1.2 ? [184, 224, 248] : wave < -1.1 ? [72, 128, 208] : [104, 168, 232]);
+  }
+  for (let x = GBRIDGE.x * 16 - 2; x < (GBRIDGE.x + GBRIDGE.w) * 16 + 2; x++) for (let y = GSTREAM[0] * 16 - 2; y < (GSTREAM[1] + 1) * 16 + 2; y++)
+    c.set(x, y, (y - GSTREAM[0] * 16 + 2) % 6 === 0 ? C.wood[3] : x < GBRIDGE.x * 16 + 1 || x > (GBRIDGE.x + GBRIDGE.w) * 16 - 2 ? C.wood[2] : C.wood[1]);
+  return c;
+}
+pasteOn(agate, GW, GH, drawAgateGround(), 0, 0, -1);
+// The ring of trees round the village (the border's trees overlap, two deep).
+for (let ty = 0; ty < GH; ty += 2) for (let tx = 0; tx < GW; tx += 2) if (gEdge(tx, ty) && gEdge(tx + 1, ty + 1)) pasteOn(agate, GW, GH, bigTree(), tx * 16, ty * 16 - 16, 30);
+for (const [x, y] of GTREES) pasteOn(agate, GW, GH, bigTree(), x * 16 - 8, y * 16 - 32, 40);
+// A log cabin: walls of round logs, a red gabled roof, a wooden door and a window with a flower box.
+function logCabin(b, s) {
+  const w = b.w * 16, up = 20, h = b.h * 16 + up, c = canvas(w, h), roofH = up + 16 * (b.h - 2);
+  seed = 141 + s;
+  c.rect(4, h - 5, w - 4, 5, C.shadow);
+  const RED = [[232, 104, 88], [200, 64, 56], [152, 40, 40], [96, 24, 32]];
+  for (let y = 0; y < roofH; y++) {
+    const inset = Math.max(0, Math.round((roofH - y) * 0.15) - 2);
+    for (let x = inset; x < w - inset; x++) c.set(x, y, y % 6 === 5 ? RED[2] : (x + (y >> 1)) % 9 === 0 ? RED[0] : RED[1]);
+    c.set(inset, y, RED[3]); c.set(w - inset - 1, y, RED[3]);
+  }
+  c.hl(0, w - 1, roofH - 1, RED[3]);
+  c.rect(w / 2 - 3, 0, 6, roofH, RED[2]); c.vl(w / 2, 0, roofH - 1, RED[0]);
+  const fy = roofH, fh = h - fy - 4;
+  for (let y = fy; y < fy + fh; y++) for (let x = 0; x < w; x++) c.set(x, y, (y - fy) % 6 === 5 ? C.wood[3] : (y - fy) % 6 === 0 ? C.wood[0] : C.wood[1]);
+  c.vl(0, fy, fy + fh - 1, C.wood[3]); c.vl(w - 1, fy, fy + fh - 1, C.wood[3]);
+  const dx = Math.floor(b.w / 2) * 16;
+  c.box(dx + 2, fy + 3, 12, fh - 3, { fill: C.wood[2], light: C.wood[1], line: C.wood[3] }); c.set(dx + 11, fy + fh / 2 + 1, [248, 216, 96]);
+  const wx = dx >= 32 ? 8 : w - 24;
+  c.box(wx, fy + 4, 14, 10, { fill: C.glass[1], light: C.glass[0], line: C.wood[3] }); c.vl(wx + 7, fy + 5, fy + 12, C.wood[3]);
+  c.rect(wx - 1, fy + 14, 16, 3, C.wood[2]); for (let k = 0; k < 4; k++) c.set(wx + 1 + k * 4, fy + 13, [[248, 120, 120], [248, 232, 104]][k % 2]);
+  return c;
+}
+GCABINS.forEach((b, i) => pasteOn(agate, GW, GH, logCabin(b, i), b.x * 16, b.y * 16 - 20, 20 + 16 * (b.h - 2)));
+// The shrine of the Relic Stone: a grey standing stone, smooth and glowing a little, under a wooden roof on posts.
+{
+  const b = GSHRINE, w = b.w * 16, up = 16, h = b.h * 16 + up, c = canvas(w, h);
+  c.rect(4, h - 5, w - 6, 5, C.shadow);
+  c.box(4, h - 14, w - 8, 10, { fill: STONE[2], light: STONE[1], dark: STONE[3], line: STONE[4] });
+  for (const px of [8, w - 12]) c.box(px, 18, 5, h - 30, { fill: C.wood[2], light: C.wood[1], line: C.wood[3] });
+  c.disc(w / 2, h - 30, 13, [168, 176, 200]); c.rect(w / 2 - 13, h - 30, 27, 16, [168, 176, 200]);
+  c.disc(w / 2 - 4, h - 36, 5, [216, 224, 248]); c.ring(w / 2, h - 30, 13, [88, 96, 128]);
+  for (let y = 0; y < 22; y++) { const inset = Math.round(y * 0.0) + Math.max(0, 10 - y); c.hl(inset, w - 1 - inset, y, y % 4 === 3 ? C.wood[3] : C.wood[1]); }
+  c.hl(0, w - 1, 21, C.wood[3]);
+  pasteOn(agate, GW, GH, c, b.x * 16, b.y * 16 - up, up + 16 * (b.h - 2));
+}
+pasteOn(agate, GW, GH, signPost(C.wood), GSIGN.x * 16, GSIGN.y * 16 - 16, 16);
+pcCorners(agate, GW, GPC);
+const AGATE = {
+  name: "AgateVillage", title: "Agate Village", width: GW, height: GH, type: "town", music: "em_fallarbor",
+  region: "orre", battleScene: "grass", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
+  collision: [], elevation: [], behavior: [], encounter: [], connections: [], triggers: [], hidden: [],
+  warps: [{ x: GPC_DOOR.x, y: GPC_DOOR.y, map: "AgateVillage_PokemonCenter_1F", warp: 0 }],
+  signs: [{ x: GSIGN.x, y: GSIGN.y, script: "AgateVillage_EventScript_Sign", text: ["AGATE VILLAGE", "Where the Relic Stone keeps watch."] },
+    ...[17, 18].map((x) => ({ x, y: GSHRINE.y + GSHRINE.h - 1, script: "AgateVillage_EventScript_RelicStone",
+      text: ["It's the Relic Stone, the village's\nholy stone.", "It feels warm, somehow, as if it\nwere glad you came."] })),
+    ...GCABINS.map((b) => ({ x: doorBelow(b).x, y: doorBelow(b).y, script: "AgateVillage_EventScript_LockedDoor", text: ["The door is locked."] }))],
+  people: [
+    person(0, "AGATE_FAY", 26, 10, "cooltrainer_f", "face_left", "AgateVillage_EventScript_Fay", null),
+    person(1, "AGATE_TED", 9, 16, "camper", "face_right", "AgateVillage_EventScript_Ted", null),
+    person(2, "AGATE_SUE", 21, 25, "picnicker", "face_up", "AgateVillage_EventScript_Sue", null),
+    person(3, "AGATE_ELDER", 15, 8, "old_man_1", "face_down", "AgateVillage_EventScript_Elder",
+      ["The Relic Stone has watched over\nAgate since long before my time.", "They say it can heal a Pokémon's\nheart, if the heart is shut tight…"]),
+    person(4, "AGATE_GRANNY", 31, 16, "old_woman", "wander_around", "AgateVillage_EventScript_Granny",
+      ["Folk here are kind, dear. We don't\nget many visitors.", "Mind you don't trample the flowers."], { rangeX: 1, rangeY: 1 })
+  ],
+  wild: null
+};
+{
+  const solid = new Set(), fill = (b) => { for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) solid.add(x + "," + y); };
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+    if (gEdge(x, y)) solid.add(x + "," + y);
+    if (GSTREAM.includes(y) && !(x >= GBRIDGE.x && x < GBRIDGE.x + GBRIDGE.w)) solid.add(x + "," + y);
+  }
+  for (const b of [GPC, GSHRINE, ...GCABINS]) fill(b);
+  solid.delete(GPC_DOOR.x + "," + GPC_DOOR.y);
+  for (const [x, y] of [...GTREES, [GSIGN.x, GSIGN.y]]) solid.add(x + "," + y);
+  for (let i = 0; i < GW * GH; i++) {
+    const x = i % GW, y = Math.floor(i / GW);
+    AGATE.collision.push(solid.has(x + "," + y) ? 1 : 0);
+    AGATE.elevation.push(3);
+    AGATE.behavior.push(x === GPC_DOOR.x && y === GPC_DOOR.y ? 0x69 : 0);
+    AGATE.encounter.push(0);
+  }
+  writePng(path.join(outMaps, "AgateVillage.png"), GW * 16, GH * 16, agate.below);
+  writePng(path.join(outMaps, "AgateVillage-top.png"), GW * 16, GH * 16, agate.above);
+  const b = canvas(32, 32);
+  b.blit(bigTree(), 0, -12);
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) if (!b.get(x, y)[3]) b.set(x, y, [56, 120, 56]);
+  save(b, path.join(outMaps, "AgateVillage-border.png"));
+}
+const PCG = pokemonCenterInside("AgateVillage_PokemonCenter_1F", "Agate Village", "AgateVillage", 0, [
+  person(1, "AGATE_PC_GIRL", 11, 5, "em_girl_2", "face_left", "AgateVillage_PokemonCenter_1F_EventScript_Girl",
+    ["My grandpa trains Pokémon up on\nMt. Battle, past the village.", "I want to be as strong as him\nsomeday!"])
+]);
+
 // ---------- Leaving a place: Orre's map ----------
 //
 // As in Colosseum, you don't walk from one place in Orre to the next: step out of a place's way out (its open edge
@@ -1470,7 +1828,7 @@ function edgeExits(m, rows) {
   for (const y of rows) for (let x = 0; x < m.width; x++) if (!m.collision[y * m.width + x]) m.triggers.push({ x, y, script: "Orre_WorldMap" });
 }
 OUT.connections = []; AIR.connections = [];
-edgeExits(OUT, [0, H - 1]); edgeExits(AIR, [0]); edgeExits(HIDE, [HH - 1]); edgeExits(PHENAC, [PHH - 1]);
+edgeExits(OUT, [0, H - 1]); edgeExits(AIR, [0]); edgeExits(HIDE, [HH - 1]); edgeExits(PHENAC, [PHH - 1]); edgeExits(PYRITE, [YH - 1]); edgeExits(AGATE, [GH - 1]);
 AIR.signs[0].text = ["ORRE AIR STRIP", "Through the gate: the desert roads\nof Orre."];
 
 // The map of Orre (240 by 160, the town map's size): a desert of dunes, red mesas and canyons, the mountains to the
@@ -1531,5 +1889,7 @@ const sinnohPart = fs.existsSync(orreFile) && fs.readFileSync(orreFile, "utf8").
 fs.writeFileSync(orreFile,
   "// Auto-generated by tools/build-orre.js (Emerald's desert tiles, and pictures drawn there). Do not edit by hand.\n" +
   "// Orre's Outskirt Stand and Snagem Hideout, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
-  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE, PhenacCity: PHENAC, PhenacCity_PokemonCenter_1F: PCP }) + ");\n" + sinnohPart);
+  "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE, PhenacCity: PHENAC, PhenacCity_PokemonCenter_1F: PCP,
+    PyriteTown: PYRITE, PyriteTown_PokemonCenter_1F: PCY, PyriteCave: PYCAVE, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG }) + ");\n" + sinnohPart);
+console.log("wrote Pyrite Town (" + YW + "x" + YH + "), Pyrite Cave and Agate Village (" + GW + "x" + GH + ")");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");

@@ -3133,12 +3133,27 @@ Trainer's Pokémon) and the first test.
 - **Test two: the Outskirt Stand.** The Stand opens on Orre's map. In its diner, **Breeder Lena** (one of the
   travellers) battles you two on two with two Eevee (Lv. 10) and a Skitty (Lv. 9): snag both her Eevee and win, and
   they're yours. Snag only one and the test isn't passed, but that one's yours, and next time she has only the
-  other. Back at the hideout the guards pass you and report you to Master Gonzap.
+  other. Back at the hideout the guards pass you and send you on to the next.
+- **Test three: Pyrite Town.** Pyrite opens on Orre's map. **Burglar Cail** battles you with a Murkrow (Lv. 15) and a
+  Houndour (Lv. 14): snag his Murkrow.
+- **Test four: Agate Village.** Agate opens on Orre's map. **Pokémon Ranger Fay**, come to look into the strange
+  Pokémon people have been seeing, battles you with an Aipom (Lv. 19) and a Shroomish (Lv. 18): snag her Aipom.
+- **Test five: Pyrite Cave**, in Pyrite Town's east wall. At its far end **Hiker Rowe** battles you with a Gligar
+  (Lv. 23) and a Graveler (Lv. 22): snag his Gligar. Back at the hideout the guards say Master Gonzap wants to meet you
+  himself, when he's ready: Colosseum's story proper, still to come.
+- The tests' Pokémon are kinds that are Shadow Pokémon in Colosseum (Makuhita, Murkrow, Aipom, Gligar), here a
+  Trainer's own. Each of tests three to five raises Orre's level cap as it's given (below).
 - Fail a test (lose, or knock its Pokémon out without snagging it) and you're taken back to the guards to try again.
-- The tests after that are still to be written. `player.flags.orreStory`: 1 after Oak's call, 2 once you've flown to
-  Orre, 3 with test one set, 4 with the Makuhita snagged, 5 with test one passed, 6 with test two set, 7 with both
-  Eevee snagged, 8 once the guards have seen them. (`orreGrunts`: the guards beaten; `orreLenaSnagged`: her Eevee
-  snagged so far.)
+- `player.flags.orreStory`: 1 after Oak's call, 2 once you've flown to Orre, 3 with test one set, 4 with the Makuhita
+  snagged, 5 with test one passed, 6 with test two set, 7 with both Eevee snagged, 8 with test two passed, then for
+  tests three to five 9/10/11, 12/13/14 and 15/16/17 (set, snagged, passed); 17 once all five are passed. Tests three
+  to five are `SNAGEM_TESTS` in `ui/game.js`. (`orreGrunts`: the guards beaten; `orreLenaSnagged`: her Eevee snagged
+  so far; `orreBeaten`: Orre's other Trainers beaten.)
+
+**Orre's other Trainers** (this game's own, `ORRE_TRAINERS` in `ui/game.js`): in Pyrite Town, Biker Zeke (Koffing and
+Grimer, Lv. 13) and Psychic Rina (Spoink and Natu, Lv. 14); in Agate Village, Camper Ted (Lombre and Nuzleaf, Lv. 17)
+and Picnicker Sue (Skiploom, Lv. 17, and Marill, Lv. 18); in Pyrite Cave, Ruin Maniac Dex (Baltoy and Trapinch,
+Lv. 21) and Black Belt Taro (Machoke and Meditite, Lv. 22). Each battles you once, two on two.
 
 **Snagging** (`engine/battle.js`, `opts.snag`): a trainer battle can be given the species that may be snagged in it.
 While one is out, you can throw a Ball (the Bag's Poké Balls pocket, as in a wild battle) and it's aimed at that
@@ -3146,8 +3161,20 @@ Pokémon, whichever slot it's in; caught, it's snagged: "Gotcha! … was snagged
 fainting, no Exp. lost) and the battle goes on, their next Pokémon coming out. It's yours afterwards, unless you
 lose the battle.
 
-**Orre's level cap** is **15** for now (`Player.levelCap`, this game's own caps): your Pokémon gain no Exp. past it,
-and one over it may not obey. `player.flags.orreLevelCap` will raise it later in the story.
+**Orre's level cap** (`Player.levelCap`, this game's own caps): your Pokémon gain no Exp. past it, and one over it
+may not obey. It starts at **15**, and Snagem's tests raise it as they're given (`player.flags.orreLevelCap`): **20**
+with test three, **23** with test four and **26** with test five, ready for Colosseum's story proper.
+
+**Pyrite Town** (after Colosseum's, drawn in code): the lawless town in a canyon, its dusty ground scored with tyre
+tracks and walled in by red rock: rusty tin shacks with corrugated roofs, oil drums and crates, the Pokémon Center
+(Emerald's), and at the top the **Pyrite Colosseum**, a round arena of riveted iron, its gate chained shut for now. In
+the east wall, the timbered mouth of **Pyrite Cave** (for now Emerald's Fiery Path, its picture and its layout, its
+north end fallen in and none of its boulders or items).
+
+**Agate Village** (after Colosseum's, drawn in code): the quiet village in the hills, all green, in a ring of big
+trees: a stream across the middle with a plank bridge, log cabins with red roofs, flowers, the Pokémon Center
+(Emerald's), and at the top the shrine of the **Relic Stone**, the village's holy stone. Its elder says the stone
+can heal a Pokémon whose heart is shut tight.
 
 **Phenac City** (after Colosseum's, drawn in code): the city of water in the desert, all paved in sandstone, its
 white-walled buildings with flat roofs and blue trim, palms, and two channels of water running the length of it and
@@ -3212,7 +3239,7 @@ node tools/build-orre.js <path to pret/pokeemerald>
 - **Folly, Trudly, the bartender and the travellers** use FireRed's
   sprites.
 
-Everything goes into `data/orre-maps.js`, `assets/world/maps/OutskirtStand*`, `OrreAirStrip*` and `SnagemHideout*`, `assets/town-map/orre.png`,
+Everything goes into `data/orre-maps.js`, `assets/world/maps/OutskirtStand*`, `OrreAirStrip*`, `SnagemHideout*`, `PhenacCity*`, `PyriteTown*` and `AgateVillage*`, `assets/town-map/orre.png`,
 `assets/world/sprites/player_wes*` and `orre_*`, and the `wes` and
 `rider_willie` trainer pictures. The Stand's words are this game's own, written before
 Colosseum's text was extracted (below). The music is FireRed's for now:

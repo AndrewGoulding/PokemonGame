@@ -1,6 +1,6 @@
 // Orre, from Pokémon Colosseum: so far the Orre Air Strip, where Prof. Oak's
-// plane sets you down, Team Snagem's hideout and the Outskirt Stand
-// (data/orre-maps.js). As in Colosseum, you go from place to place on the map
+// plane sets you down, Team Snagem's hideout, the Outskirt Stand, Phenac City,
+// Pyrite Town (and Pyrite Cave) and Agate Village (data/orre-maps.js). As in Colosseum, you go from place to place on the map
 // of Orre that comes up as you leave one.
 // You're yourself there, with your own Pokémon (an older save made while you
 // were Wes, as Orre had you be at first, still swaps back as you leave:
@@ -105,6 +105,8 @@
     { map: "SnagemHideout", name: "Snagem Hideout", x: 196, y: 60, arrive: { x: 12, y: 18, facing: "up" } },
     { map: "OutskirtStand", name: "Outskirt Stand", x: 72, y: 110, arrive: { x: 18, y: 22, facing: "up" } },
     { map: "PhenacCity", name: "Phenac City", x: 108, y: 86, arrive: { x: 19, y: 34, facing: "up" } },
+    { map: "PyriteTown", name: "Pyrite Town", x: 204, y: 104, arrive: { x: 17, y: 28, facing: "up" } },
+    { map: "AgateVillage", name: "Agate Village", x: 180, y: 44, arrive: { x: 17, y: 28, facing: "up" } },
     { map: "OrreAirStrip", name: "Orre Air Strip", x: 96, y: 132, arrive: { x: 21, y: 2, facing: "down" } }
   ];
   const OPEN_AT_FIRST = ["OrreAirStrip", "SnagemHideout"];

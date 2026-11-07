@@ -2963,7 +2963,10 @@
       "OutskirtStand_Diner_EventScript_TV", "OutskirtStand_Diner_EventScript_Jukebox",
       "OrreAirStrip_EventScript_Pilot", "OrreAirStrip_PokemonCenter_1F_EventScript_Nurse",
       "SnagemHideout_EventScript_Guard1", "SnagemHideout_EventScript_Guard2", "PhenacCity_EventScript_Kodo",
-      "OutskirtStand_Diner_EventScript_Traveller3",
+      "OutskirtStand_Diner_EventScript_Traveller3", "PyriteTown_EventScript_Cail", "AgateVillage_EventScript_Fay", "PyriteCave_EventScript_Rowe",
+      "PyriteTown_EventScript_Zeke", "PyriteTown_EventScript_Rina", "AgateVillage_EventScript_Ted", "AgateVillage_EventScript_Sue",
+      "PyriteCave_EventScript_Dex", "PyriteCave_EventScript_Taro",
+      "PyriteTown_PokemonCenter_1F_EventScript_Nurse", "AgateVillage_PokemonCenter_1F_EventScript_Nurse",
       "PhenacCity_PokemonCenter_1F_EventScript_Nurse"
     ]).concat(Object.keys(BRAILLE_SIGNS)).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
@@ -4479,6 +4482,9 @@
       case "SnagemHideout_EventScript_Guard1": case "SnagemHideout_EventScript_Guard2": await snagemGuard(ev.person); return;
       case "PhenacCity_EventScript_Kodo": await phenacKodo(); return;
       case "OutskirtStand_Diner_EventScript_Traveller3": await outskirtLena(ev.person); return;
+      case "PyriteTown_EventScript_Cail": case "AgateVillage_EventScript_Fay": case "PyriteCave_EventScript_Rowe": await snagemTarget(script, ev.person); return;
+      case "PyriteTown_EventScript_Zeke": case "PyriteTown_EventScript_Rina": case "AgateVillage_EventScript_Ted": case "AgateVillage_EventScript_Sue":
+      case "PyriteCave_EventScript_Dex": case "PyriteCave_EventScript_Taro": await orreTrainer(script); return;
       case "OutskirtStand_Diner_EventScript_Willie":
         await say(["Willie: You walked all the way out\nhere? In this heat?",
           "And those Pokémon of yours… Tell you\nwhat, when you head out, I'll follow you."]);
@@ -9849,6 +9855,115 @@
     player.flags.orreStory = 6;
     if (Orre.unlock(player.flags, "OutskirtStand")) await say("The Outskirt Stand was marked on\nthe Orre Map!");
   }
+  // Snagem's tests three to five (this game's own, before Colosseum's story proper): each in a new place, a Trainer's
+  // Pokémon to snag (Colosseum's Shadow Pokémon's kinds), Orre's level cap up as each is set (player.flags.orreLevelCap),
+  // so your Pokémon are around Lv. 26 by the end. orreStory: `set` with the test given, `snagged` with its Pokémon,
+  // `passed` once the guards have seen it (and the next test given at once). After the last, Master Gonzap wants to
+  // see you (SNAGEM_DONE): Colosseum's story proper, for later.
+  const SNAGEM_TESTS = [
+    { set: 9, snagged: 10, passed: 11, cap: 20, place: "PyriteTown", species: "Murkrow", target: "PyriteTown_EventScript_Cail",
+      give: ["Grunt: Test three. Pyrite Town, out\neast. Roughest town in Orre.", "There's a burglar there, calls himself\nCail. Has a Murkrow he's real proud of.",
+        "Snag it, and bring it back here!"],
+      remind: ["Your test's in Pyrite Town! Burglar\nCail has a Murkrow.", "Snag it, and bring it back here!"],
+      report: ["Grunt: Hah! Stealing from a burglar!\nNow that's Snagem style!", "Other grunt: Cail's gonna be sore\nabout that one. Heh heh."] },
+    { set: 12, snagged: 13, passed: 14, cap: 23, place: "AgateVillage", species: "Aipom", target: "AgateVillage_EventScript_Fay",
+      give: ["Grunt: Test four. Agate Village, up in\nthe hills north of here.", "A Pokémon Ranger's staying there.\nFay, she's called. She has an Aipom.",
+        "Rangers are tough. Snag it anyway!"],
+      remind: ["Your test's in Agate Village! Ranger\nFay has an Aipom.", "Snag it, and bring it back here!"],
+      report: ["Grunt: You snagged a Ranger's Pokémon?!\nRight out from under her nose!", "Other grunt: Kid's getting good.\nAlmost too good…"] },
+    { set: 15, snagged: 16, passed: 17, cap: 26, place: "PyriteTown", species: "Gligar", target: "PyriteCave_EventScript_Rowe",
+      give: ["Grunt: Last test. There's a cave in\nthe canyon wall by Pyrite Town.", "A hiker named Rowe digs in there,\nwith a Gligar that's a real handful.",
+        "Snag that Gligar, and you're one of us.\nFor real."],
+      remind: ["Your test's in Pyrite Cave, in\nPyrite Town's east wall!", "Hiker Rowe has a Gligar. Snag it!"],
+      report: ["Grunt: …You did it. Every test, passed.", "Other grunt: I'll be honest, rookie.\nNever thought you'd make it.",
+        "Grunt: Master Gonzap's gonna want to\nmeet you himself.", "Hang around. When the boss is ready,\nyou'll know."] }
+  ];
+  const SNAGEM_DONE = 17;
+  // The next of Snagem's tests (after test two, or one of these), or nothing after the last.
+  async function snagemNextTest() {
+    const f = player.flags, step = f.orreStory | 0;
+    const t = SNAGEM_TESTS.find((x) => x.set > step);
+    if (!t || step >= SNAGEM_DONE) return;
+    await say(t.give);
+    f.orreStory = t.set;
+    f.orreLevelCap = Math.max(f.orreLevelCap | 0, t.cap);
+    await say("Your Pokémon can now grow up to\nLv. " + t.cap + " in Orre!");
+    if (Orre.unlock(f, t.place)) await say(Orre.PLACES.find((p) => p.map === t.place).name + " was marked on\nthe Orre Map!");
+  }
+  // A test's Trainer (tests three to five): before the test, a word; with it, the battle, its Pokémon to snag; after,
+  // sore about it.
+  async function snagemTarget(script, person) {
+    const t = SNAGEM_TESTS.find((x) => x.target === script), d = ORRE_TRAINERS[script], step = player.flags.orreStory | 0;
+    if (step >= t.snagged) { await say(d.snagged); return; }
+    if (step < t.set) { await say(d.before); return; }
+    await say(d.intro);
+    const opts = { foe: { name: d.name, team: d.team(), pic: d.pic }, double: true, prizeClass: d.cls, noBlackout: true, snag: [t.species],
+      music: "mus_vs_trainer", defeatText: d.defeat };
+    const outcome = await battle("trainer", opts);
+    show("world");
+    await Overworld.resume();
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    if (outcome !== "lost" && (opts.snagged || []).includes(t.species)) {
+      await say(d.robbed);
+      player.flags.orreStory = t.snagged;
+      await persist();
+      return;
+    }
+    await say(outcome === "lost" ? d.won : d.lost);
+    await snagemTestFailed(t.species);
+  }
+  // Orre's Trainers in the new places (this game's own): each battles you once, two on two; after, a word. And the
+  // tests' Trainers (snagemTarget): `before` the test, `intro`, `robbed` once snagged, `snagged` after; `won` and
+  // `lost` when the test fails.
+  const ORRE_TRAINERS = {
+    PyriteTown_EventScript_Zeke: { name: "Biker Zeke", cls: "Biker", pic: "biker", team: () => [Party.create("Koffing", 13), Party.create("Grimer", 13)],
+      intro: ["You lost, kid? Pyrite eats tourists\nlike you for breakfast!"], defeat: ["Tch! Lucky break."],
+      after: ["Don't let it go to your head. There's\nworse than me in Pyrite."] },
+    PyriteTown_EventScript_Rina: { name: "Psychic Rina", cls: "Psychic", pic: "psychic_f", team: () => [Party.create("Spoink", 14), Party.create("Natu", 14)],
+      intro: ["I foresaw you coming… and I foresaw\nyou losing to me!"], defeat: ["My vision was… cloudy."],
+      after: ["Something dark is gathering in Orre.\nI can feel it…"] },
+    AgateVillage_EventScript_Ted: { name: "Camper Ted", cls: "Camper", pic: "camper", team: () => [Party.create("Lombre", 17), Party.create("Nuzleaf", 17)],
+      intro: ["I come up to Agate every summer to\ntrain by the stream. Battle me!"], defeat: ["Aw, man! Back to training…"],
+      after: ["Grandpa Eagun up on Mt. Battle is\nthe strongest Trainer around here."] },
+    AgateVillage_EventScript_Sue: { name: "Picnicker Sue", cls: "Picnicker", pic: "picnicker", team: () => [Party.create("Skiploom", 17), Party.create("Marill", 18)],
+      intro: ["It's such a nice day for a battle!\nDon't you think?"], defeat: ["Oh! You're good!"],
+      after: ["The flowers in Agate grow so well.\nThe Relic Stone looks after them."] },
+    PyriteCave_EventScript_Dex: { name: "Ruin Maniac Dex", cls: "Ruin Maniac", pic: "ruin_maniac", team: () => [Party.create("Baltoy", 21), Party.create("Trapinch", 21)],
+      intro: ["These tunnels are older than Pyrite\nitself! Don't you touch anything!"], defeat: ["My precious ruins…"],
+      after: ["Someone's been digging new tunnels\ndown here. Big machines, too…"] },
+    PyriteCave_EventScript_Taro: { name: "Black Belt Taro", cls: "Black Belt", pic: "black_belt", team: () => [Party.create("Machoke", 22), Party.create("Meditite", 22)],
+      intro: ["Hwaah! I train in the dark to sharpen\nmy senses! Face me!"], defeat: ["Hngh! My senses… dulled!"],
+      after: ["Kodo in Phenac is my little brother.\nHe says a thief took his Makuhita…"] },
+    PyriteTown_EventScript_Cail: { name: "Burglar Cail", cls: "Burglar", pic: "burglar", team: () => [Party.create("Murkrow", 15), Party.create("Houndour", 14)],
+      before: ["What're you looking at? Beat it,\nbefore I pick your pockets."],
+      intro: ["Snagem sent you, huh? Ha! Nobody steals\nfrom Cail. Nobody!"], defeat: ["What?! Robbed by a kid!"],
+      robbed: ["My Murkrow! You little thief!", "…Heh. Takes one to know one, I guess."],
+      snagged: ["Get lost, Snagem! You've taken enough\nfrom me already."],
+      won: ["Hah! Back to the hideout with you,\nrookie!"], lost: ["Ha! My Murkrow's too slick for you!"] },
+    AgateVillage_EventScript_Fay: { name: "Pokémon Ranger Fay", cls: "Pokémon Ranger", pic: "pokemon_ranger_f", team: () => [Party.create("Aipom", 19), Party.create("Shroomish", 18)],
+      before: ["I'm a Pokémon Ranger. I came to Agate\nto look into the strange Pokémon\npeople have been seeing."],
+      intro: ["That machine on your arm… You're with\nTeam Snagem!", "I won't let you take my partners!"], defeat: ["No… I failed them…"],
+      robbed: ["My Aipom!", "I'll find you, Snagem. I'll get it\nback. I swear it!"],
+      snagged: ["Give my Aipom back, thief!"],
+      won: ["Leave Agate, Snagem! And don't come\nback!"], lost: ["My partners and I won't be beaten\nby a Snagem!"] },
+    PyriteCave_EventScript_Rowe: { name: "Hiker Rowe", cls: "Hiker", pic: "hiker", team: () => [Party.create("Gligar", 23), Party.create("Graveler", 22)],
+      before: ["I've been digging in this cave for\nthirty years. Found all kinds of\nthings!"],
+      intro: ["Eh? Snagem, down here? My Gligar's\nthe best digging partner there is!", "You'll not have it!"], defeat: ["Rock-solid, you are…"],
+      robbed: ["My Gligar! Thirty years we've dug\ntogether…", "Snagem… You're a heartless lot."],
+      snagged: ["Leave me be. You've taken my partner."],
+      won: ["Ha! Back to your hideout, rookie!"], lost: ["Tough as stone, my Gligar!"] }
+  };
+  async function orreTrainer(script) {
+    const d = ORRE_TRAINERS[script], f = player.flags, beaten = (f.orreBeaten = f.orreBeaten || []);
+    if (beaten.includes(script)) { await say(d.after); return; }
+    await say(d.intro);
+    const outcome = await battle("trainer", { foe: { name: d.name, team: d.team(), pic: d.pic }, double: true, prizeClass: d.cls,
+      music: "mus_vs_trainer", defeatText: d.defeat });
+    show("world");
+    await Overworld.resume();
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    if (outcome === "won") { beaten.push(script); await say(d.after); await persist(); }
+  }
   // A failed test: taken back to the hideout's guards to try again.
   async function snagemTestFailed(what, plural) {
     Screen.say("");
@@ -9867,16 +9982,35 @@
     if ((f.orreStory === 3 || f.orreStory === 4) && !Player.itemCount(player, "snag-machine")) f.orreStory = 2;
     const step = f.orreStory | 0;
     const me = (person && person.localId) || SNAGEM_GUARDS[0], other = SNAGEM_GUARDS.find((g) => g !== me);
-    if (step >= 8) {
-      await say(["Grunt: Master Gonzap's heard about\nyou, recruit.", "Hang around. There'll be another test\nfor you soon enough."]);
+    if (step >= SNAGEM_DONE) {
+      await say(["Grunt: Master Gonzap's heard all about\nyou, recruit. He wants to see you\nhimself.",
+        "Not today. When the boss is ready,\nyou'll know."]);
+      return;
+    }
+    // (Tests three to five: SNAGEM_TESTS.)
+    const t = SNAGEM_TESTS.find((x) => step === x.snagged);
+    if (t) {
+      await say(fill("Grunt: Well? Let's see it, then.\nYou got that " + t.species + "?"));
+      await say(t.report);
+      f.orreStory = t.passed;
+      await snagemNextTest();
+      await persist();
+      return;
+    }
+    const now = SNAGEM_TESTS.find((x) => step === x.set);
+    if (now) { await say(["Grunt: What're you doing back here?"].concat(now.remind)); return; }
+    if (step === 8 || SNAGEM_TESTS.some((x) => step === x.passed)) {
+      await say(["Grunt: There you are, rookie.\nReady for your next test?"]);
+      await snagemNextTest();
+      await persist();
       return;
     }
     if (step === 7) {
       await say(fill("Grunt: Well? Let's see them, then.\nYou got those Eevee?"));
       await say(["Grunt: Hah! Both of them!", "Other grunt: This rookie's the real\ndeal!"]);
-      await say(["Grunt: That's test two passed.\nI'll tell Master Gonzap about you.",
-        "But don't get cocky. A Snagem's got a\nlot more to prove than that.", "Hang around. We'll have your next\ntest ready soon."]);
+      await say(["Grunt: That's test two passed.", "But don't get cocky. A Snagem's got a\nlot more to prove than that."]);
       f.orreStory = 8;
+      await snagemNextTest();
       await persist();
       return;
     }

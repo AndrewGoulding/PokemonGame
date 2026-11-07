@@ -3100,6 +3100,34 @@ if (window.JOHTO_TOWN_MAP) {
     assert(m && !m.collision[a.y * m.width + a.x] && !m.triggers.some((t) => t.x === a.x && t.y === a.y), pl.map + ": room to come in");
     assert(pl.x > 0 && pl.x < 240 && pl.y > 0 && pl.y < 160, pl.map + " on the map");
   }
+  // Snagem's tests three to five: Pyrite Town (and Pyrite Cave, in its east wall) and Agate Village.
+  {
+    const Y = WORLD_MAPS.PyriteTown, G = WORLD_MAPS.AgateVillage, CV = WORLD_MAPS.PyriteCave;
+    for (const m of [Y, G, CV, WORLD_MAPS.PyriteTown_PokemonCenter_1F, WORLD_MAPS.AgateVillage_PokemonCenter_1F]) {
+      assert(m && m.region === "orre", "Orre has " + (m && m.name));
+      for (const p of m.people) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + p.sprite + ".png")), "missing sprite " + p.sprite);
+      assert(fs.existsSync(path.join(root, "assets/world/maps/" + (m.image || m.name) + ".png")), m.name + "'s picture");
+    }
+    for (const m of [Y, G]) assert(m.triggers.some((t) => t.script === "Orre_WorldMap"), m.name + "'s way out");
+    const toCave = Y.warps.find((w) => w.map === "PyriteCave");
+    assert(toCave && World.warpTarget(toCave).map === "PyriteCave" && World.warpTarget(CV.warps[0]).map === "PyriteTown", "Pyrite Cave, in and out");
+    assert(!Orre.isOpen({}, "PyriteTown") && !Orre.isOpen({}, "AgateVillage"), "Pyrite and Agate open with their tests");
+    for (const [m, sc] of [[Y, "PyriteTown_EventScript_Cail"], [G, "AgateVillage_EventScript_Fay"], [CV, "PyriteCave_EventScript_Rowe"]]) assert(m.people.some((p) => p.script === sc), sc);
+    // (Everyone can be walked up to from where you come in: Pyrite Cave's from its mouth.)
+    for (const [m, sx, sy] of [[Y, 17, 28], [G, 17, 28], [CV, CV.warps[0].x, CV.warps[0].y - 1]]) {
+      const seen = new Set([sx + "," + sy]), q = [[sx, sy]], at = new Set(m.people.map((p) => p.x + "," + p.y));
+      while (q.length) {
+        const [x, y] = q.shift();
+        for (const dir of ["up", "down", "left", "right"]) {
+          const r = World.step({ map: m.name, x, y }, dir), k = r.x + "," + r.y;
+          if (r.ok && r.map === m.name && !seen.has(k) && !at.has(k)) { seen.add(k); q.push([r.x, r.y]); }
+        }
+      }
+      for (const p of m.people) assert([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen.has((p.x + dx) + "," + (p.y + dy))), m.name + ": " + p.localId + " can be reached");
+    }
+    for (const pic of ["burglar", "pokemon_ranger_f", "hiker", "biker", "psychic_f", "camper", "picnicker", "ruin_maniac", "black_belt"])
+      assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + pic + ".png")), "trainer picture " + pic);
+  }
   assert(fs.existsSync(path.join(root, "assets/town-map/orre.png")), "Orre's map");
   // At first only the Air Strip and the hideout; the rest as they open (and the Stand, for a save that's been).
   assert.deepStrictEqual(Orre.openPlaces({}).map((p) => p.map), ["SnagemHideout", "OrreAirStrip"]);
