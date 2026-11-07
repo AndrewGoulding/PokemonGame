@@ -779,7 +779,9 @@
 
   // Where a Pokémon is: from its picture (the instance's `boxes`, measured
   // from the page), as sBattlerCoords would have it.
-  const BASE_Y = [[80, 40, 80, 40], [80, 40, 88, 32]];
+  // (The foe's 16 lines higher than FireRed's on this game's 240x192 screen: FOE_UP, ui/battle-screen.js.)
+  const FOE_UP = 16;
+  const BASE_Y = [[80, 40 - FOE_UP, 80, 40 - FOE_UP], [80, 40 - FOE_UP, 88, 32 - FOE_UP]];
   function coord(b, type) {
     const box = inst && inst.boxes[b];
     if (!box) return [0, 1].includes(type) ? 0 : 0;
@@ -1161,7 +1163,10 @@
   // position, rotation and scale, palette (as a colour matrix), blending and
   // window. The battle background is the page's: shifted and recoloured as
   // BG3 would be, unless a move's background covers it.
-  const W = 240, H = 112;
+  // (TOPX: the lines over the scene the canvas also covers, on this game's 240x192 screen, where the foe, FOE_UP
+  // higher than FireRed's, and what's drawn round it can reach. Everything is drawn TOPX lines down (setTransform
+  // is shifted); the animation's sprites up there go on a buffer of their own, bandPx, blended as line 0.)
+  const W = 240, H = 112, TOPX = 32;
   const OBJ_SIZES = [[[8, 8], [16, 16], [32, 32], [64, 64]], [[16, 8], [32, 8], [32, 16], [64, 32]], [[8, 16], [8, 32], [16, 32], [32, 64]], [[8, 8], [8, 8], [8, 8], [8, 8]]];
   const LINE_REGS = 0x58 >> 1;
   function rgb(c) {
@@ -1189,11 +1194,15 @@
     const canvas = document.createElement("canvas");
     const fr = o.field.getBoundingClientRect();
     const K = Math.max(1, Math.min(6, Math.round(fr.width * (window.devicePixelRatio || 1) / W)));
-    canvas.width = W * K; canvas.height = H * K;
+    canvas.width = W * K; canvas.height = (H + TOPX) * K;
     canvas.className = "battle-anim-screen";
-    Object.assign(canvas.style, { position: "absolute", left: "0", top: "0", width: "100%", height: "100%", pointerEvents: "none", imageRendering: "pixelated" });
+    Object.assign(canvas.style, { position: "absolute", left: "0", top: (-TOPX / H * 100) + "%", width: "100%", height: ((H + TOPX) / H * 100) + "%",
+      pointerEvents: "none", imageRendering: "pixelated" });
+    const OY = TOPX * K;
+    // (Every transform TOPX lines down: the scene's line 0 is the canvas's line TOPX.)
+    const shifted = (c) => { const set = c.setTransform.bind(c); c.setTransform = (a, b, cc, d, e, f) => set(a, b, cc, d, e, f + OY); c.setTransform(1, 0, 0, 1, 0, 0); return c; };
     if (o.before && o.before.parentNode === o.field) o.field.insertBefore(canvas, o.before); else o.field.appendChild(canvas);
-    const mainCtx = canvas.getContext("2d");
+    const mainCtx = shifted(canvas.getContext("2d"));
     mainCtx.imageSmoothingEnabled = false;
     let ctx = mainCtx;
     // (A horde's spread move, o.echo: the sprites drawn round the target, but not the Pokémon's pictures, drawn again
@@ -1202,13 +1211,18 @@
     if (o.echo && o.echo.length) {
       const c = document.createElement("canvas");
       c.width = canvas.width; c.height = canvas.height;
-      echo = { canvas: c, ctx: c.getContext("2d") };
+      echo = { canvas: c, ctx: shifted(c.getContext("2d")) };
       echo.ctx.imageSmoothingEnabled = false;
     }
     const layer = document.createElement("canvas");
     layer.width = W; layer.height = H;
     const lctx = layer.getContext("2d");
     const img = lctx.createImageData(W, H), px = new Uint32Array(img.data.buffer);
+    const band = document.createElement("canvas");
+    band.width = W; band.height = TOPX;
+    const bctx = band.getContext("2d");
+    const bandImg = bctx.createImageData(W, TOPX), bandPx = new Uint32Array(bandImg.data.buffer);
+    let bandUsed = false;
     // The colour matrices, as SVG filters.
     const svgNS = "http://www.w3.org/2000/svg";
     let svg = document.getElementById("battle-anim-filters");
@@ -1322,7 +1336,7 @@
       const hf = !M && e.matrixNum & 8, vf = !M && e.matrixNum & 16;
       for (let sy = 0; sy < bh; sy++) {
         const Y = y + sy;
-        if (Y < 0 || Y >= H) continue;
+        if (Y < (winMask ? 0 : -TOPX) || Y >= H) continue;
         for (let sx = 0; sx < bw; sx++) {
           const X = x + sx;
           if (X < 0 || X >= W) continue;
@@ -1333,14 +1347,15 @@
             if (tx < 0 || ty < 0 || tx >= w || ty >= h) continue;
           } else { tx = hf ? w - 1 - sx : sx; ty = vf ? h - 1 - sy : sy; }
           const k = Y * W + X;
-          if (mask && !(mask[k] & 16)) continue;
+          if (Y >= 0 && mask && !(mask[k] & 16)) continue;
           let i;
           if (c256) i = vram8[tileBase + (ty >> 3) * rowTiles * 32 + (tx >> 3) * 64 + (ty & 7) * 8 + (tx & 7)];
           else { const v = vram8[tileBase + (ty >> 3) * rowTiles * 32 + (tx >> 3) * 32 + (ty & 7) * 4 + ((tx & 7) >> 1)]; i = tx & 1 ? v >> 4 : v & 15; }
           if (!i) continue;
           if (winMask) { winMask[k] = 1; continue; }
-          const bright = brightLines ? brightLines[Y] : 0;
-          px[k] = bright ? brighten(pal[palBase + i], bright) : pal[palBase + i];
+          const bright = brightLines ? brightLines[Math.max(0, Y)] : 0;
+          const colour = bright ? brighten(pal[palBase + i], bright) : pal[palBase + i];
+          if (Y < 0) { bandPx[(Y + TOPX) * W + X] = colour; bandUsed = true; } else px[k] = colour;
         }
       }
     }
@@ -1477,7 +1492,7 @@
       const R = from.size * 1.5;
       for (const to of o.echo) {
         if (!to) continue;
-        mainCtx.drawImage(echo.canvas, (from.cx - R / 2) * K, (from.cy - R / 2) * K, R * K, R * K, (to.cx - R / 2) * K, (to.cy - R / 2) * K, R * K, R * K);
+        mainCtx.drawImage(echo.canvas, (from.cx - R / 2) * K, (from.cy - R / 2) * K + OY, R * K, R * K, (to.cx - R / 2) * K, (to.cy - R / 2) * K, R * K, R * K);
       }
     }
     function drawExtras() {
@@ -1524,8 +1539,8 @@
         return bl;
       };
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (moveBg && disp & 0x800 && !skipBattlers) { ctx.fillStyle = "#" + (pal[0] & 0xFFFFFF).toString(16).padStart(6, "0").replace(/(..)(..)(..)/, "$3$2$1"); ctx.fillRect(0, 0, canvas.width, canvas.height); }
+      ctx.clearRect(0, -OY, canvas.width, canvas.height);
+      if (moveBg && disp & 0x800 && !skipBattlers) { ctx.fillStyle = "#" + (pal[0] & 0xFFFFFF).toString(16).padStart(6, "0").replace(/(..)(..)(..)/, "$3$2$1"); ctx.fillRect(0, -OY, canvas.width, canvas.height); }
       // The layers, back to front.
       const items = [];
       for (let prio = 3; prio >= 0; prio--) {
@@ -1541,6 +1556,12 @@
         if (!pending) return;
         lctx.putImageData(img, 0, 0);
         ctx.save();
+        // (Its sprites over the scene's top: blended as its line 0.)
+        if (bandUsed && pending.alpha[0] > 0) {
+          bctx.putImageData(bandImg, 0, 0);
+          ctx.globalAlpha = pending.alpha[0]; ctx.globalCompositeOperation = pending.comp[0];
+          ctx.drawImage(band, 0, 0, W, TOPX, 0, -OY, canvas.width, OY);
+        }
         // (in bands of lines blended alike)
         for (let y0 = 0; y0 < H;) {
           let y1 = y0 + 1;
@@ -1558,6 +1579,7 @@
         if (pending && pending.key === bl.key) return;
         flush();
         px.fill(0);
+        if (bandUsed) { bandPx.fill(0); bandUsed = false; }
         pending = bl;
       };
       for (const it of items) {

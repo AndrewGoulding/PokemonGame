@@ -363,7 +363,17 @@ gives its own background colour, or its minigame frame's), a few times a
 second. With nothing covering the top (the map with the Start menu or a
 window over it) the map shows there as it is; over a battle, the battle's backdrop
 does (its top 32 rows again, sliding in with the foe's half: `.field-sky`),
-room for battles with more Pokémon on the field. The opening, the title
+room for battles with more Pokémon on the field. In a battle the foe's side
+(its half of the backdrop with its platform, its Pokémon, trainers, boxes and
+party bar, where Balls land, and where move animations find it) stands 16
+lines higher than FireRed's (`FOE_UP`), in the middle of the 144 lines over the
+text box; the scene draws up into the top lines, the backdrop's platform-free
+ground fills in under the foe's half (`.terrain.base`), and the move
+animations' canvas covers those lines too. The backdrops have no band of
+stripes along their top: those rows are white, or for the cave, the long grass
+and under the water their own band's colour (space is left as it is;
+`tools/flatten-battle-bgs.js`, which `tools/build-battle-bgs.js` runs after
+building them). The opening, the title
 screen, the main menu, the Option screen and Prof. Oak's speech fill the whole
 240x192 (`#intro`, 480x384): FireRed's picture in the middle (Oak's at the
 bottom, over the text box), its top and bottom edges carried on above and

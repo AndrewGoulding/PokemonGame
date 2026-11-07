@@ -251,8 +251,12 @@
   // placeSprite has moved it down by its empty rows), 0.58 of the usual
   // size: three behind (slots a to c, left to right), two in front (d, e).
   const HORDE_SCALE = 0.58;
+  // On this game's 240x192 screen the foe's side stands FOE_UP lines higher than FireRed's, in the middle of the 144
+  // lines over the text box (its half of the background, its Pokémon, trainers, boxes, and where balls land: the
+  // CSS's percentages too); the scene can draw into the TOP lines over it.
+  const FOE_UP = 16, TOP = 32;
   const HORDE_BALL_BASE = 22;   // (a thrown ball's base line over a horde foe's feet: ballThrow)
-  const HORDE_LAYOUT = { p2: [142, 52, 2], p2b: [180, 50, 2], p2c: [218, 52, 2], p2d: [160, 65, 3], p2e: [200, 65, 3] };
+  const HORDE_LAYOUT = { p2: [142, 52 - FOE_UP, 2], p2b: [180, 50 - FOE_UP, 2], p2c: [218, 52 - FOE_UP, 2], p2d: [160, 65 - FOE_UP, 3], p2e: [200, 65 - FOE_UP, 3] };
   function layoutHorde(on) {
     el.field.classList.toggle("horde", !!on);
     for (const [pos, [cx, feet, z]] of Object.entries(HORDE_LAYOUT)) {
@@ -283,14 +287,16 @@
   // box slides in 115 pixels, 5 a frame, as its Pokémon comes out; yours bobs
   // a pixel while you choose what to do, and a box shakes when its Pokémon is
   // hit. At a level up your box's frame flashes light blue.
+  // (These canvases are the scene and the TOP lines over it, drawn TOP lines down, so the foe's boxes, FOE_UP
+  // higher, can go above the scene.)
   const hbLayer = document.createElement("canvas");
   hbLayer.className = "party-bars healthboxes";
-  hbLayer.width = 240; hbLayer.height = 112;
+  hbLayer.width = 240; hbLayer.height = 112 + TOP;
   el.field.appendChild(hbLayer);
   const hbImg = (n) => Object.assign(new Image(), { src: "assets/battle-interface/" + n + ".png" });
   const HB = {
     p1: { box: hbImg("healthbox-player"), frame: hbImg("healthbox-player-frame"), x: 126, y: 72, h: 64, slideFrom: 115 },
-    p2: { box: hbImg("healthbox-opponent"), frame: hbImg("healthbox-opponent-frame"), x: 12, y: 14, h: 32, slideFrom: -115 }
+    p2: { box: hbImg("healthbox-opponent"), frame: hbImg("healthbox-opponent-frame"), x: 12, y: 14 - FOE_UP, h: 32, slideFrom: -115 }
   };
   // A double battle's smaller boxes (healthbox_doubles_*.png), at FireRed's
   // InitBattlerHealthboxCoords for each position (the sprite's centre less
@@ -303,8 +309,8 @@
   const HB_DOUBLES = {
     p1: { box: dpBox, frame: dpFrame, x: 127, y: 59, h: 32, slideFrom: 115, mine: true },
     p1b: { box: dpBox, frame: dpFrame, x: 139, y: 84, h: 32, slideFrom: 115, mine: true },
-    p2: { box: doBox, frame: doFrame, x: 12, y: 3, h: 32, slideFrom: -115 },
-    p2b: { box: doBox, frame: doFrame, x: 0, y: 28, h: 32, slideFrom: -115 }
+    p2: { box: doBox, frame: doFrame, x: 12, y: 3 - FOE_UP, h: 32, slideFrom: -115 },
+    p2b: { box: doBox, frame: doFrame, x: 0, y: 28 - FOE_UP, h: 32, slideFrom: -115 }
   };
   let doublesLayout = false;
   // (A horde: your box is the singles one; theirs are rows of the horde's panel, drawHordePanel.)
@@ -520,7 +526,9 @@
   function drawHealthboxes() {
     drawHordePanel();
     const g = hbLayer.getContext("2d");
-    g.clearRect(0, 0, 240, 112);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, hbLayer.width, hbLayer.height);
+    g.setTransform(1, 0, 0, 1, 0, TOP);
     g.imageSmoothingEnabled = false;
     // The Mega trigger, behind its box (32x32, centred 30 left of the box's
     // centre and 10 below it, 4 in a double battle; frame 1 when on).
@@ -635,7 +643,7 @@
   // is the rightmost ball). They fade out as the Pokémon are sent out.
   const barLayer = document.createElement("canvas");
   barLayer.className = "party-bars";
-  barLayer.width = 240; barLayer.height = 112;
+  barLayer.width = 240; barLayer.height = 112 + TOP;
   el.field.appendChild(barLayer);
   const barImg = Object.assign(new Image(), { src: "assets/battle-interface/party-bar.png" });
   const ballsImg = Object.assign(new Image(), { src: "assets/battle-interface/party-balls.png" });
@@ -651,7 +659,9 @@
   }
   function drawBars() {
     const g = barLayer.getContext("2d");
-    g.clearRect(0, 0, 240, 112);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, barLayer.width, barLayer.height);
+    g.setTransform(1, 0, 0, 1, 0, TOP);
     g.imageSmoothingEnabled = false;
     for (const side of Object.keys(bars)) {
       const b = bars[side], foe = side === "p2";
@@ -659,14 +669,14 @@
       // The bar slides 100 pixels in, 5 a frame; each ball 120, 7 frames apart.
       const barOff = Math.max(0, 100 - b.t * 5);
       g.save();
-      if (foe) { g.translate(-8 + 128 - barOff, 36 + b.dy); g.scale(-1, 1); g.drawImage(barImg, 0, 0); }
+      if (foe) { g.translate(-8 + 128 - barOff, 36 - FOE_UP + b.dy); g.scale(-1, 1); g.drawImage(barImg, 0, 0); }
       else g.drawImage(barImg, 120 + barOff, 92);
       g.restore();
       b.balls.forEach((f, i) => {
         const wait = foe ? (6 - i) * 7 + 10 : i * 7 + 10;
         const off = Math.max(0, 120 - Math.max(0, b.t - wait) * 12);
         const x = foe ? 26 + 10 * i - off : 156 + 10 * i + off;
-        g.drawImage(ballsImg, f * 8, 0, 8, 8, x, foe ? 32 + b.dy : 88, 8, 8);
+        g.drawImage(ballsImg, f * 8, 0, 8, 8, x, foe ? 32 - FOE_UP + b.dy : 88, 8, 8);
       });
       g.globalAlpha = 1;
     }
@@ -1050,7 +1060,8 @@
         .map((p) => el.sides[p].sprite) : null,
       substitute: order.map((p) => !!(p && view[p] && view[p].substitute && !subSwapped[p])),
       environment: config && config.terrain,
-      field: el.field, before: hbLayer, terrain: [...el.field.querySelectorAll(".terrain")],
+      // (The backdrop's lines over the scene too, dimmed and moved with it.)
+      field: el.field, before: hbLayer, terrain: [...el.field.querySelectorAll(".terrain")].concat(fieldSky() ? [fieldSky()] : []),
       sprites: order.map((p) => (p ? el.sides[p].sprite : null)),
       tint: (b) => { const sp = order[b] && el.sides[order[b]].sprite; const f = sp && getComputedStyle(sp).filter; return f && f !== "none" ? f : ""; },
       sound: (se) => (window.GameAudio && window.GameAudio.se ? window.GameAudio.se(se) : null),
@@ -1151,8 +1162,8 @@
     Object.assign(crystal.style, at(cx, cy));
     all.push(crystal.animate([{ transform: "translate(-50%, -50%) scale(0.25)", opacity: 0.5 }, { transform: "translate(-50%, -50%) scale(1.25)", opacity: 1 }],
       { duration: 20 * FRAME_MS, fill: "forwards" }).finished);
-    const white = piece(null, 240, 112, "white");
-    Object.assign(white.style, { left: "0", top: "0", transform: "none", opacity: 0 });
+    const white = piece(null, 240, 112 + TOP, "white");   // (the scene and the TOP lines over it)
+    Object.assign(white.style, { left: "0", top: (-TOP / 1.12) + "%", transform: "none", opacity: 0 });
     await frames(20);
     all.push(white.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 32 * FRAME_MS, fill: "forwards" }).finished);
     await Promise.all(all.splice(0));
@@ -1226,8 +1237,8 @@
 
     // The stone, and everything turning white.
     sfx("se_m_solar_beam");
-    const white = piece(null, 240, 112, "white");
-    Object.assign(white.style, { left: "0", top: "0", transform: "none", opacity: 0 });
+    const white = piece(null, 240, 112 + TOP, "white");   // (the scene and the TOP lines over it)
+    Object.assign(white.style, { left: "0", top: (-TOP / 1.12) + "%", transform: "none", opacity: 0 });
     const stone = piece("mega-stone.png", 64, 64), stoneWhite = piece("mega-stone-white.png", 64, 64);
     for (const st of [stone, stoneWhite]) {
       Object.assign(st.style, at(cx, cy));
@@ -3017,16 +3028,17 @@
   //
   // A ball arcs from `from` (field %, x and y) to where the Pokémon stands,
   // spinning; it pops open and the Pokémon grows out of it in a white flash.
-  const BALL_LANDS = { p1: [21, 80], p2: [73.5, 50] };
+  // (The foe's, FOE_UP higher than FireRed's.)
+  const BALL_LANDS = { p1: [21, 80], p2: [73.5, 50 - FOE_UP / 1.12] };
   // A double battle's (sBattlerCoords: yours at x 32 and 90, y 80 and 88;
   // theirs at x 200 and 152, y 40 and 32), placed as the singles ones are.
   const BALL_LANDS_DOUBLES = { p1: [(50.4 - 40) / 2.4, 80], p1b: [(50.4 + 18) / 2.4, 80 + 8 / 1.12],
-    p2: [200 / 2.4, 50], p2b: [152 / 2.4, 50 - 8 / 1.12] };
+    p2: [200 / 2.4, 50 - FOE_UP / 1.12], p2b: [152 / 2.4, 50 - (8 + FOE_UP) / 1.12] };
   const ballLand = (pos) => (battle && battle.doubles ? BALL_LANDS_DOUBLES : BALL_LANDS)[pos];
   // Your trainer's throw starts where FireRed's does (pokeball.c: the ball at
   // (32, 80) of the 240x112 scene), behind and left of where your Pokémon
   // comes out, so it flies forward.
-  const THROW_FROM_HAND = [32 / 240 * 100, 80 / 112 * 100], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8];
+  const THROW_FROM_HAND = [32 / 240 * 100, 80 / 112 * 100], THROW_FROM_LEFT = [-6, 40], FOE_THROW_FROM = [106, 8 - FOE_UP / 1.12];
   // (A tag battle: from your hand and your partner's, 48 pixels left of the
   // usual and 10 right of it.)
   const THROW_FROM_TAG = [(32 - 48) / 240 * 100, 80 / 112 * 100], THROW_FROM_PARTNER = [(32 + 10) / 240 * 100, 80 / 112 * 100];

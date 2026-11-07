@@ -45,12 +45,16 @@ body {
 
 .field.hidden { display: none; }
 /* FireRed's battle scene: 240x112, above the text box. Positions below are
-   FireRed's, as percentages of that. */
+   FireRed's, as percentages of that. On this game's 240x192 screen the foe's
+   side stands 16 lines higher than FireRed's (FOE_UP in ui/battle-screen.js:
+   14.2857% of the scene), in the middle of the 144 lines over the text box,
+   so the scene draws past its top edge into the screen's top 32 lines (over
+   .field-sky). */
 .field {
   position: relative;
   aspect-ratio: 240 / 112;
   background: #fff;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* The battle background (assets/battle/<terrain>.png, 512x112: the scene,
@@ -65,7 +69,10 @@ body {
   background-position-x: 0;
   image-rendering: pixelated;
 }
-.terrain.foe { top: 0; height: 71.4286%; background-size: 213.3333% 140%; background-position-y: 0; }
+.terrain.foe { top: -14.2857%; height: 71.4286%; background-size: 213.3333% 140%; background-position-y: 0; }
+/* Under both halves, the whole scene: the background's right half (the same ground with no platforms), where it
+   is in FireRed's, so the 16 lines the foe's half has left (and anything either half's slide leaves) are ground. */
+.terrain.base { top: 0; left: -106.6667%; width: 213.3333%; height: 100%; background-size: 100% 100%; }
 .terrain.player { bottom: 0; height: 28.5714%; background-size: 213.3333% 350%; background-position-y: 100%; }
 
 .sprite {
@@ -75,8 +82,8 @@ body {
 }
 /* Each sprite's box is placed so that, moved down by its own empty rows
    (ui/battle-screen.js placeSprite), the Pokémon's feet land on the platform:
-   the foe's at y 66 of 112, yours at y 110, centred over your platform (x 70). */
-.sprite.foe { width: 30%; right: 11.5%; top: -5.3571%; transform-origin: 50% 90%; }
+   the foe's at y 66 of 112 (50 here, FOE_UP), yours at y 110, centred over your platform (x 70). */
+.sprite.foe { width: 30%; right: 11.5%; top: -19.6429%; transform-origin: 50% 90%; }
 .sprite.player { width: 40%; left: 9.1667%; bottom: 1.7857%; transform-origin: 50% 90%; }
 .sprite.in-ball { opacity: 0 !important; transition: none; }
 /* A double battle (FireRed's sBattlerCoords for doubles): yours at x 32 and
@@ -87,7 +94,7 @@ body {
 .field.doubles .sprite.player { left: -7.5%; }
 .field.doubles .sprite.player.slot-b { left: 16.6667%; bottom: -5.3571%; }
 .field.doubles .sprite.foe { right: 1.6667%; }
-.field.doubles .sprite.foe.slot-b { right: 21.6667%; top: -12.5%; }
+.field.doubles .sprite.foe.slot-b { right: 21.6667%; top: -26.7857%; }
 /* A horde (X and Y's horde battles): five foes, slots a to e, smaller, at
    the places ui/battle-screen.js's HORDE_LAYOUT gives them (inline). */
 .sprite.slot-c, .sprite.slot-d, .sprite.slot-e { display: none; }
@@ -117,7 +124,8 @@ body {
 .mega-fx.speck { background-size: 100% 300%; background-position: 0 100%; opacity: 0.75; }
 .mega-fx.puff { background-size: 100% 400%; }
 /* The party summary bars (ui/battle-screen.js): the field's 240x112. */
-.party-bars { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; image-rendering: pixelated; pointer-events: none; }
+/* (240x144: the scene and the 32 lines over it, the foe's boxes being FOE_UP higher; drawn 32 lines down.) */
+.party-bars { position: absolute; left: 0; top: -28.5714%; width: 100%; height: 128.5714%; z-index: 4; image-rendering: pixelated; pointer-events: none; }
 .move-fx.orb { width: 9%; aspect-ratio: 1; border-radius: 50%;
   background: radial-gradient(circle, #fff 0 25%, var(--fx) 55%, transparent 72%); }
 .move-fx.ring { width: 22%; aspect-ratio: 1; border-radius: 50%; border: 0.8cqw solid var(--fx); box-shadow: 0 0 1cqw var(--fx); }
@@ -325,7 +333,7 @@ body {
 
 /* The opposing trainer, 64x64, where their Pokémon will stand. */
 .foe-trainer {
-  position: absolute; right: 13.3333%; top: 7%; width: 26.6667%;
+  position: absolute; right: 13.3333%; top: -7.2857%; width: 26.6667%;   /* (FireRed's 7%, less FOE_UP) */
   image-rendering: pixelated;
   transition: transform 0.4s ease-in, opacity 0.4s;
 }
