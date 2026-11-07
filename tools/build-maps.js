@@ -273,11 +273,10 @@ const WILD_SLOTS = {
 // starters out in the wild, 5% each (slots 9 and 11, 4% and 1%, as the
 // Bulbasaur in Viridian Forest; Squirtle in Kakuna / Metapod's 8 and 10).
 // Charmander takes two of Jigglypuff's slots on Route 3, and Jigglypuff one of
-// Spearow's (slot 6, 5%: Spearow 30%, Jigglypuff still 10%); Squirtle takes
-// the Kakuna and Metapod on Route 24, at those slots' levels.
+// Spearow's (slot 6, 5%: Spearow 30%, Jigglypuff still 10%). (Squirtle, on
+// Route 24, is fished: FISHING_SLOTS.)
 const WILD_SLOT_CHANGES = {
   Route3: { 6: ["Jigglypuff", 5, 5], 9: ["Charmander", 5, 5], 11: ["Charmander", 7, 7] },
-  Route24: { 8: ["Squirtle", 8, 8], 10: ["Squirtle", 8, 8] },
   // Magnemite on Route 10, as in Red and Blue (two of Voltorb's slots: 10% and 5%).
   Route10: { 5: ["Magnemite", 14, 14], 7: ["Magnemite", 17, 17] }
 };
@@ -950,7 +949,16 @@ const FISHING_CHANGES = {
   ViridianCity: { Gyarados: ["Goldeen"], Poliwhirl: ["Poliwag"] },
   Route22: { Gyarados: ["Goldeen"], Poliwhirl: ["Poliwag"] }
 };
+// Whole fishing tables changed from FireRed's (10 slots: the Old Rod's 70 30, the Good Rod's 60 20 20, the Super
+// Rod's 40 40 15 4 1 percent), as [species, min, max, alt]. Route 24's: at its grass's levels (7-14), Squirtle on
+// the Good and Super Rods (20% and 15%), and no Gyarados.
+const FISHING_SLOTS = {
+  Route24: [["Magikarp", 7, 10], ["Magikarp", 7, 10], ["Horsea", 8, 12, "Krabby"], ["Magikarp", 8, 12], ["Squirtle", 8, 10],
+    ["Horsea", 10, 14, "Krabby"], ["Krabby", 10, 14, "Horsea"], ["Squirtle", 10, 12], ["Horsea", 12, 14, "Krabby"],
+    ["Psyduck", 12, 14, "Slowpoke"]]
+};
 function fishingChanges(name, t) {
+  if (t && FISHING_SLOTS[name]) return Object.assign({}, t, { slots: FISHING_SLOTS[name].map(([species, min, max, alt]) => Object.assign({ species, min, max }, alt ? { alt } : {})) });
   const ch = FISHING_CHANGES[name];
   if (!t || !ch) return t;
   return Object.assign({}, t, { slots: t.slots.map((s) => {

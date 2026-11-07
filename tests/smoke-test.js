@@ -3461,6 +3461,11 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
 {
   const m = window.WORLD_MAPS.Route24;
   assert(m.water && m.water.slots.length === 5, "Route 24 has water Pokémon");
+  // (Its fishing at its grass's levels, Squirtle there and not in the grass, no Gyarados.)
+  const fish = m.fishing.slots, grass = m.wild.slots;
+  assert(fish.length === 10 && fish.every((s) => s.min >= 7 && s.max <= 14), "Route 24's fishing is Lv. 7-14");
+  assert(fish.some((s) => s.species === "Squirtle") && !fish.some((s) => s.species === "Gyarados" || s.alt === "Gyarados"));
+  assert(!grass.some((s) => s.species === "Squirtle"), "no Squirtle in Route 24's grass");
   assert(m.cycling && !window.WORLD_MAPS.PewterCity_PokemonCenter_1F.cycling, "cycling outdoors only");
   assert(World.facingWater({ map: "Route24", x: 5, y: 16 }, "right"));
   assert(!World.step({ map: "Route24", x: 5, y: 16 }, "right").ok, "can't walk onto water");
