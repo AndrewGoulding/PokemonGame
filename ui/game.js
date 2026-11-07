@@ -2967,6 +2967,7 @@
       "PyriteTown_EventScript_Zeke", "PyriteTown_EventScript_Rina", "AgateVillage_EventScript_Ted", "AgateVillage_EventScript_Sue",
       "PyriteCave_EventScript_Dex", "PyriteCave_EventScript_Taro",
       "PyriteTown_PokemonCenter_1F_EventScript_Nurse", "AgateVillage_PokemonCenter_1F_EventScript_Nurse",
+      ...Object.keys(Orre.FILLERS),
       "PhenacCity_PokemonCenter_1F_EventScript_Nurse"
     ]).concat(Object.keys(BRAILLE_SIGNS)).concat(League.ROOMS.map((r) => "enter:" + r.map), ["enter:" + League.HALL_OF_FAME]).concat(ROUTE23_BADGES.slice(1).flatMap((b) => ["", "Trigger"].map((t) => "Route23_EventScript_" + b + "BadgeGuard" + t))).concat([1, 2, 3, 4, 5, 6].flatMap((n) => ["Left", "Right"].map((s) => "CinnabarIsland_Gym_EventScript_Quiz" + n + s))).concat(CYCLING_ROAD_GATES.flatMap((g) => ["Top", "MidTop", "Mid", "MidBottom", "Bottom"].map((k) => g + "_EventScript_NeedBikeTrigger" + k))));
 
@@ -3434,6 +3435,7 @@
     const slots = /^CeladonCity_GameCorner_EventScript_SlotMachine(\d+)$/.exec(script);
     if (slots) { await slotMachine(+slots[1]); return; }
 
+    if (Orre.FILLERS[script]) { await orreTrainer(script); return; }
     switch (script) {
       case "PalletTown_EventScript_SignLady":
         await signLady(ev.person);
@@ -9856,22 +9858,22 @@
     if (Orre.unlock(player.flags, "OutskirtStand")) await say("The Outskirt Stand was marked on\nthe Orre Map!");
   }
   // Snagem's tests three to five (this game's own, before Colosseum's story proper): each in a new place, a Trainer's
-  // Pokémon to snag (Colosseum's Shadow Pokémon's kinds), Orre's level cap up as each is set (player.flags.orreLevelCap),
-  // so your Pokémon are around Lv. 26 by the end. orreStory: `set` with the test given, `snagged` with its Pokémon,
+  // Pokémon to snag (Colosseum's Shadow Pokémon's kinds), the prologue's Trainers (and Orre.FILLERS) bringing your
+  // Pokémon up toward its level cap of 26 by the end. orreStory: `set` with the test given, `snagged` with its Pokémon,
   // `passed` once the guards have seen it (and the next test given at once). After the last, Master Gonzap wants to
   // see you (SNAGEM_DONE): Colosseum's story proper, for later.
   const SNAGEM_TESTS = [
-    { set: 9, snagged: 10, passed: 11, cap: 20, place: "PyriteTown", species: "Murkrow", target: "PyriteTown_EventScript_Cail",
+    { set: 9, snagged: 10, passed: 11, place: "PyriteTown", species: "Murkrow", target: "PyriteTown_EventScript_Cail",
       give: ["Grunt: Test three. Pyrite Town, out\neast. Roughest town in Orre.", "There's a burglar there, calls himself\nCail. Has a Murkrow he's real proud of.",
         "Snag it, and bring it back here!"],
       remind: ["Your test's in Pyrite Town! Burglar\nCail has a Murkrow.", "Snag it, and bring it back here!"],
       report: ["Grunt: Hah! Stealing from a burglar!\nNow that's Snagem style!", "Other grunt: Cail's gonna be sore\nabout that one. Heh heh."] },
-    { set: 12, snagged: 13, passed: 14, cap: 23, place: "AgateVillage", species: "Aipom", target: "AgateVillage_EventScript_Fay",
+    { set: 12, snagged: 13, passed: 14, place: "AgateVillage", species: "Aipom", target: "AgateVillage_EventScript_Fay",
       give: ["Grunt: Test four. Agate Village, up in\nthe hills north of here.", "A Pokémon Ranger's staying there.\nFay, she's called. She has an Aipom.",
         "Rangers are tough. Snag it anyway!"],
       remind: ["Your test's in Agate Village! Ranger\nFay has an Aipom.", "Snag it, and bring it back here!"],
       report: ["Grunt: You snagged a Ranger's Pokémon?!\nRight out from under her nose!", "Other grunt: Kid's getting good.\nAlmost too good…"] },
-    { set: 15, snagged: 16, passed: 17, cap: 26, place: "PyriteTown", species: "Gligar", target: "PyriteCave_EventScript_Rowe",
+    { set: 15, snagged: 16, passed: 17, place: "PyriteTown", species: "Gligar", target: "PyriteCave_EventScript_Rowe",
       give: ["Grunt: Last test. There's a cave in\nthe canyon wall by Pyrite Town.", "A hiker named Rowe digs in there,\nwith a Gligar that's a real handful.",
         "Snag that Gligar, and you're one of us.\nFor real."],
       remind: ["Your test's in Pyrite Cave, in\nPyrite Town's east wall!", "Hiker Rowe has a Gligar. Snag it!"],
@@ -9886,8 +9888,6 @@
     if (!t || step >= SNAGEM_DONE) return;
     await say(t.give);
     f.orreStory = t.set;
-    f.orreLevelCap = Math.max(f.orreLevelCap | 0, t.cap);
-    await say("Your Pokémon can now grow up to\nLv. " + t.cap + " in Orre!");
     if (Orre.unlock(f, t.place)) await say(Orre.PLACES.find((p) => p.map === t.place).name + " was marked on\nthe Orre Map!");
   }
   // A test's Trainer (tests three to five): before the test, a word; with it, the battle, its Pokémon to snag; after,
@@ -9953,11 +9953,13 @@
       snagged: ["Leave me be. You've taken my partner."],
       won: ["Ha! Back to your hideout, rookie!"], lost: ["Tough as stone, my Gligar!"] }
   };
+  // (Orre's filler Trainers too: Orre.FILLERS, their teams as [species, level].)
   async function orreTrainer(script) {
-    const d = ORRE_TRAINERS[script], f = player.flags, beaten = (f.orreBeaten = f.orreBeaten || []);
+    const d = ORRE_TRAINERS[script] || Orre.FILLERS[script], f = player.flags, beaten = (f.orreBeaten = f.orreBeaten || []);
     if (beaten.includes(script)) { await say(d.after); return; }
     await say(d.intro);
-    const outcome = await battle("trainer", { foe: { name: d.name, team: d.team(), pic: d.pic }, double: true, prizeClass: d.cls,
+    const team = typeof d.team === "function" ? d.team() : d.team.map(([sp, lv]) => Party.create(sp, lv));
+    const outcome = await battle("trainer", { foe: { name: d.name, team, pic: d.pic }, double: true, prizeClass: d.cls,
       music: "mus_vs_trainer", defeatText: d.defeat });
     show("world");
     await Overworld.resume();

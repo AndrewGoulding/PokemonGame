@@ -3142,7 +3142,7 @@ Trainer's Pokémon) and the first test.
   (Lv. 23) and a Graveler (Lv. 22): snag his Gligar. Back at the hideout the guards say Master Gonzap wants to meet you
   himself, when he's ready: Colosseum's story proper, still to come.
 - The tests' Pokémon are kinds that are Shadow Pokémon in Colosseum (Makuhita, Murkrow, Aipom, Gligar), here a
-  Trainer's own. Each of tests three to five raises Orre's level cap as it's given (below).
+  Trainer's own.
 - Fail a test (lose, or knock its Pokémon out without snagging it) and you're taken back to the guards to try again.
 - `player.flags.orreStory`: 1 after Oak's call, 2 once you've flown to Orre, 3 with test one set, 4 with the Makuhita
   snagged, 5 with test one passed, 6 with test two set, 7 with both Eevee snagged, 8 with test two passed, then for
@@ -3162,8 +3162,17 @@ fainting, no Exp. lost) and the battle goes on, their next Pokémon coming out. 
 lose the battle.
 
 **Orre's level cap** (`Player.levelCap`, this game's own caps): your Pokémon gain no Exp. past it, and one over it
-may not obey. It starts at **15**, and Snagem's tests raise it as they're given (`player.flags.orreLevelCap`): **20**
-with test three, **23** with test four and **26** with test five, ready for Colosseum's story proper.
+may not obey. It's **26** for the whole prologue (Snagem's tests), the level Colosseum's story proper is pitched for;
+`player.flags.orreLevelCap` can raise it then.
+
+**Orre's filler Trainers** (this game's own, `Orre.FILLERS` in `game/orre.js`, placed by `tools/build-orre.js`): two to
+five more Trainers in each place of the prologue, each battling you once, two on two (some with three Pokémon), their
+levels rising with the tests so your Pokémon can grow toward the cap: in the Snagem Hideout's yard two grunts (Lv. 6-7);
+in Phenac City a Youngster, a Lass and a Gentleman (Lv. 8-10); outside the Outskirt Stand a Hiker, a Biker and a
+Rocker (Lv. 11-13); in Pyrite Town a Burglar, a Black Belt, a Scientist and a Rocker (Lv. 15-18); in Agate Village a
+Pokémon Ranger, a Camper, a Picnicker and a Cooltrainer (Lv. 19-22); and in Pyrite Cave two Hikers, a Ruin Maniac, an
+Engineer and a Cooltrainer (Lv. 22-26). With all of them and the tests, two Pokémon sharing the Exp. reach about
+Lv. 25.
 
 **Pyrite Town** (after Colosseum's, drawn in code): the lawless town in a canyon, its dusty ground scored with tyre
 tracks and walled in by red rock: rusty tin shacks with corrugated roofs, oil drums and crates, the Pokémon Center

@@ -50,7 +50,7 @@ module.exports = function hoennTownMap(EM) {
     const strip = (s) => String(s).replace(/^MAPSEC_/, "");
     const names = {};
     for (const x of JSON.parse(fs.readFileSync(path.join(EM, "src/data/region_map/region_map_sections.json"), "utf8")).map_sections) {
-      names[strip(x.id)] = String(x.name || "").toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(/\bPokémon\b/i, "Pokémon").replace(/\bPoké/g, "Poké");
+      names[strip(x.id)] = String(x.name || "").toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(/\bPokémon\b/i, "Pokémon").replace(/\bPoké/g, "Poké").replace(/'S\b/g, "'s");   // (Diglett's Cave, not Diglett'S)
     }
     const layout = fs.readFileSync(path.join(EM, "src/data/region_map/region_map_layout.h"), "utf8");
     const grid = [...layout.matchAll(/\{([^{}]*)\}/g)].map((m) => m[1].split(",").map((s) => strip(s.trim())).filter(Boolean).map((s) => (s === "NONE" ? "" : s)));

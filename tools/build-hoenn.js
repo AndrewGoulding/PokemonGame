@@ -115,7 +115,7 @@ if (process.argv.includes("--list")) { console.log(MAPS.join("\n")); process.exi
 // ---------- Names, text ----------
 const sectionNames = {};
 for (const x of JSON.parse(fs.readFileSync(P("src/data/region_map/region_map_sections.json"), "utf8")).map_sections) sectionNames[x.id] = x.name;
-const titleCase = (s) => String(s || "").toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(/\bPokémon\b/i, "Pokémon").replace(/\bPoké/g, "Poké");
+const titleCase = (s) => String(s || "").toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(/\bPokémon\b/i, "Pokémon").replace(/\bPoké/g, "Poké").replace(/'S\b/g, "'s");   // (Diglett's Cave, not Diglett'S)
 // Everything's .inc text: label (one or two colons) followed by .string lines.
 const textFiles = {};
 function textsOf(mapName) {
@@ -639,7 +639,7 @@ const berryTrees = {};
 const trades = {};
 {
   const src = fs.readFileSync(P("src/data/trade.h"), "utf8"), at = src.indexOf("sIngameTrades[]");
-  const title = (t) => t.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
+  const title = (t) => t.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()).replace(/'S\b/g, "'s");
   const spec = (c) => dexByID[toID(String(c).replace(/^SPECIES_/, ""))];
   for (const m of src.slice(at).matchAll(/\[(INGAME_TRADE_\w+)\] =\s*\{([\s\S]*?)\n    \},/g)) {
     const b = m[2], g = (re) => (re.exec(b) || [])[1];

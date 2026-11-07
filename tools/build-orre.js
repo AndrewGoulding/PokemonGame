@@ -1820,6 +1820,22 @@ const PCG = pokemonCenterInside("AgateVillage_PokemonCenter_1F", "Agate Village"
     ["My grandpa trains Pokémon up on\nMt. Battle, past the village.", "I want to be as strong as him\nsomeday!"])
 ]);
 
+// ---------- Orre's filler Trainers ----------
+//
+// More Trainers in each place, each battling you once (game/orre.js's FILLERS: their teams and words), so your Pokémon
+// can grow toward Orre's prologue cap of Lv. 26 before Colosseum's story proper.
+for (const [m, list] of [
+  [HIDE, [["ROCCO", 6, 13, "orre_snagem_m", "face_down"], ["VIC", 20, 13, "orre_snagem_m", "face_left"]]],
+  [PHENAC, [["BEN", 5, 10, "youngster", "face_right"], ["MIA", 34, 20, "lass", "face_left"], ["ELLIS", 33, 31, "gentleman", "face_left"]]],
+  [OUT, [["PAT", 12, 16, "hiker", "face_right"], ["LOU", 27, 14, "biker", "face_left"], ["JAY", 20, 19, "rocker", "face_up"]]],
+  [PYRITE, [["HANK", 31, 11, "balding_man", "face_left"], ["RYU", 4, 11, "black_belt", "face_right"], ["DORN", 24, 27, "scientist", "face_left"], ["VINCE", 30, 20, "rocker", "face_left"]]],
+  [AGATE, [["KYLE", 5, 11, "cooltrainer_m", "face_right"], ["BO", 30, 3, "camper", "face_down"], ["IVY", 5, 25, "picnicker", "face_right"], ["DANA", 13, 5, "cooltrainer_f", "face_down"]]],
+  [PYCAVE, [["GUS", 25, 30, "hiker", "face_right"], ["PIP", 18, 10, "em_hiker", "face_right"], ["MOE", 23, 3, "worker_m", "face_down"], ["REX", 2, 22, "cooltrainer_m", "face_right"], ["BOULDER", 9, 31, "hiker", "face_left"]]]
+]) for (const [key, x, y, sprite, facing] of list) {
+  const id = Math.max(-1, ...m.people.map((p) => p.id)) + 1;
+  m.people.push(person(id, key, x, y, sprite, facing, m.name + "_EventScript_Filler_" + key.split("_").pop(), null));
+}
+
 // ---------- Leaving a place: Orre's map ----------
 //
 // As in Colosseum, you don't walk from one place in Orre to the next: step out of a place's way out (its open edge

@@ -3087,7 +3087,7 @@ if (window.JOHTO_TOWN_MAP) {
   assert(P.people.some((p) => p.script === "PhenacCity_EventScript_Kodo"), "the Trainer with the Makuhita");
   assert(PP.pokemonCenter && World.warpTarget(P.warps[0]).map === PP.name && PP.warps.every((w) => World.warpTarget(w).map === "PhenacCity"));
   assert(!Orre.isOpen({}, "PhenacCity") && Orre.isOpen({ orreMap: ["PhenacCity"] }, "PhenacCity"), "Phenac City opens with Snagem's first test");
-  assert.strictEqual(Player.levelCap({ badges: ["boulder", "cascade"], flags: {}, location: { map: "PhenacCity" } }), 15, "Orre's level cap");
+  assert.strictEqual(Player.levelCap({ badges: ["boulder", "cascade"], flags: {}, location: { map: "PhenacCity" } }), 26, "Orre's prologue level cap");
   assert.strictEqual(Player.levelCap({ badges: [], flags: { orreLevelCap: 30 }, location: { map: "PhenacCity" } }), 30);
   for (const m of [O, A, H, P]) {
     assert.deepStrictEqual(m.connections, [], m.name);
@@ -3127,6 +3127,30 @@ if (window.JOHTO_TOWN_MAP) {
     }
     for (const pic of ["burglar", "pokemon_ranger_f", "hiker", "biker", "psychic_f", "camper", "picnicker", "ruin_maniac", "black_belt"])
       assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + pic + ".png")), "trainer picture " + pic);
+  }
+  // Orre's filler Trainers: each on a map, battling by its script, its picture there, and each can be walked up to.
+  {
+    const placed = Object.values(WORLD_MAPS).filter((m) => m.region === "orre").flatMap((m) => m.people.filter((p) => Orre.FILLERS[p.script]).map((p) => [m, p]));
+    assert.strictEqual(placed.length, Object.keys(Orre.FILLERS).length, "every filler Trainer placed once");
+    for (const [m, p] of placed) {
+      const d = Orre.FILLERS[p.script];
+      assert(d.team.length >= 2 && d.team.every(([sp, lv]) => DEX[sp] && lv >= 5 && lv <= 26), p.script + "'s team");
+      assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + d.pic + ".png")), "trainer picture " + d.pic);
+      assert(fs.existsSync(path.join(root, "assets/world/sprites/" + p.sprite + ".png")), "missing sprite " + p.sprite);
+      assert.strictEqual(m.collision[p.y * m.width + p.x], 0, p.script + " stands on the floor");
+    }
+    const arrive = { SnagemHideout: [12, 18], PhenacCity: [19, 34], OutskirtStand: [18, 22], PyriteTown: [17, 28], AgateVillage: [17, 28], PyriteCave: [26, 35] };
+    for (const [name, [sx, sy]] of Object.entries(arrive)) {
+      const m = WORLD_MAPS[name], seen = new Set([sx + "," + sy]), q = [[sx, sy]], at = new Set(m.people.map((p) => p.x + "," + p.y));
+      while (q.length) {
+        const [x, y] = q.shift();
+        for (const dir of ["up", "down", "left", "right"]) {
+          const r = World.step({ map: name, x, y }, dir), k = r.x + "," + r.y;
+          if (r.ok && r.map === name && !seen.has(k) && !at.has(k)) { seen.add(k); q.push([r.x, r.y]); }
+        }
+      }
+      for (const p of m.people.filter((p) => Orre.FILLERS[p.script])) assert([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen.has((p.x + dx) + "," + (p.y + dy))), name + ": " + p.script + " can be reached");
+    }
   }
   assert(fs.existsSync(path.join(root, "assets/town-map/orre.png")), "Orre's map");
   // At first only the Air Strip and the hideout; the rest as they open (and the Stand, for a save that's been).

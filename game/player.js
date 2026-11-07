@@ -475,9 +475,9 @@
     hoenn: [15, 19, 24, 29, 31, 33, 42, 46]    // Roxanne, Brawly, Wattson, Flannery, Norman, Winona, Tate & Liza, Juan
   };
   const regionOf = (map) => ((window.WORLD_MAPS && window.WORLD_MAPS[map]) || {}).region || "kanto";
-  // (Orre's, this game's own: one cap for the whole of it so far, 15, while you're with Team Snagem;
-  // player.flags.orreLevelCap raises it, for later in the story.)
-  const ORRE_LEVEL_CAP = 15;
+  // (Orre's, this game's own: one cap for the whole prologue, while you're with Team Snagem, 26;
+  // player.flags.orreLevelCap raises it, for Colosseum's story proper.)
+  const ORRE_LEVEL_CAP = 26;
   function levelCap(player, map) {
     if (regionOf(map || (player.location && player.location.map)) === "orre") return (player.flags && player.flags.orreLevelCap) || ORRE_LEVEL_CAP;
     const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
