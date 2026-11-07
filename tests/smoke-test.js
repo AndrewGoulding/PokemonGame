@@ -1757,7 +1757,11 @@ for (const share of [false, true]) {
     const files = fs.readdirSync(path.join(root, "assets/sprites/pokemon", sub)).filter((f) => f.endsWith(".png"));
     const table = SPRITE_METRICS[sub ? "back" : "front"];
     for (const f of files) assert(Number.isInteger(table[f.slice(0, -4)]), "no metrics for " + sub + "/" + f);
+    // (and the rows above, for a Tera Raid's big Pokémon and a tall one of yours)
+    const tops = SPRITE_METRICS[sub ? "backTop" : "frontTop"];
+    for (const f of files) assert(Number.isInteger(tops[f.slice(0, -4)]), "no top metrics for " + sub + "/" + f);
   }
+  assert(SPRITE_METRICS.frontTop[DEX.Gyarados.id] < SPRITE_METRICS.frontTop[DEX.Pikachu.id], "Gyarados reaches higher than Pikachu");
   assert(SPRITE_METRICS.front[DEX.Caterpie.id] > SPRITE_METRICS.front[DEX.Onix.id], "Caterpie leaves more room under it than Onix");
   assert.strictEqual(SPRITE_METRICS.elevation.Gastly, 4);
   assert.strictEqual(SPRITE_METRICS.elevation.Pidgey, undefined);

@@ -816,7 +816,7 @@
   // Blastoise with its cannon, would reach up behind the foe's healthbox, so
   // it stands lower instead, its feet behind the text box as in Diamond and
   // Pearl: the top of the picture comes no higher than just under the box.)
-  const PLAYER_SPRITE_TOP = 14, FOE_BOX_BOTTOM = 46;   // (GBA px; yours is 96 tall, its feet at y 110)
+  const PLAYER_SPRITE_TOP = 14, FOE_BOX_BOTTOM = 46, RAID_BAR_BOTTOM = -2;   // (GBA px; yours is 96 tall, its feet at y 110)
   function placeSprite(sprite, v, back) {
     const M = window.SPRITE_METRICS, dex = window.DEX[v.species];
     if (!M || !dex) return;
@@ -832,6 +832,22 @@
       const lift = M.elevation[v.species] != null ? M.elevation[v.species]
         : dex.id > 386 && (dex.abilities || []).includes("Levitate") ? 8 : 0;
       pct -= lift / 72 * 100;
+      // (A Tera Raid's Pokémon, half as big again (1.8 times Dynamaxed), from its feet: a tall one only as big as
+      // keeps its head under the bar along the screen's top (drawRaidPanel's, to line -3 of the field), but never
+      // smaller than in any other battle; one still too tall stands lower. Its box is 72 tall from line -22,
+      // scaled about 90% of the way down it, then moved down by `pct` (of its 72).)
+      if (config && config.raid) {
+        const originY = -22 + 0.9 * 72, feetY = originY + pct / 100 * 72;
+        const above = originY - (-22 + of(M.frontTop || {}) * 0.75);
+        const fit = above > 0 ? (feetY - RAID_BAR_BOTTOM) / above : 2;
+        const scale = Math.max(1, Math.min(1.5, fit)), dmax = Math.max(1, Math.min(1.8, fit));
+        sprite.style.setProperty("--raid-scale", scale.toFixed(3));
+        sprite.style.setProperty("--raid-dmax-scale", dmax.toFixed(3));
+        pct += Math.max(0, RAID_BAR_BOTTOM - (feetY - scale * above)) / 72 * 100;
+      } else {
+        sprite.style.removeProperty("--raid-scale");
+        sprite.style.removeProperty("--raid-dmax-scale");
+      }
     }
     sprite.style.translate = "0 " + pct.toFixed(2) + "%";
   }
@@ -3339,6 +3355,9 @@
     if (gbaEl) gbaEl.parentNode.insertBefore(raidPanel, gbaEl);
   }
   let raidAllies = null, allySprites = [], alliesTimer = 0, raidText = null, raidTextKey = null;
+  // (Each ally's HP bar's line on the field: 37 over its feet, or higher for a tall Pokémon, just over its
+  // head, its name over that; never into the Tera Raid Pokémon's bar, which ends at line -3.)
+  let allyBarY = [];
   // FireRed's HP bar colours (green, yellow under half, red under a fifth): [fill, shade].
   const HP_COLOURS = [["rgb(112,248,168)", "rgb(88,208,128)"], ["rgb(248,224,56)", "rgb(200,168,8)"], ["rgb(248,88,56)", "rgb(168,64,72)"]];
   function raidBar(g, x, y, w, f) {
@@ -3377,7 +3396,7 @@
       }
       (raidAllies || []).forEach((m, i) => {
         const name = m.raidAlly.trainer, cx = RAID_ALLY_X[i], tw = surf.textWidth ? surf.textWidth(name, "small") : name.length * 5;
-        surf.text(name, Math.round(cx - tw / 2), TOP + RAID_ALLY_FEET - 47, m.fainted ? [170, 170, 160] : [255, 255, 255], [64, 64, 64], "small");
+        surf.text(name, Math.round(cx - tw / 2), TOP + allyBarY[i] - 10, m.fainted ? [170, 170, 160] : [255, 255, 255], [64, 64, 64], "small");
       });
       raidText = surf.canvas();
     }
@@ -3387,7 +3406,7 @@
     }
     (raidAllies || []).forEach((m, i) => {
       if (m.fainted || m.hp <= 0) return;
-      raidBar(g, RAID_ALLY_X[i] - 14, TOP + RAID_ALLY_FEET - 37, 28, Math.max(0, m.hp / m.maxhp));
+      raidBar(g, RAID_ALLY_X[i] - 14, TOP + allyBarY[i], 28, Math.max(0, m.hp / m.maxhp));
     });
     if (raidText) g.drawImage(raidText, 0, 0);
   }
@@ -3408,6 +3427,9 @@
       // (Its feet on the line: moved down by the picture's empty rows, as placeSprite does.)
       const dex = window.DEX[m.species], empty = dex && M.back ? M.back[dex.id] || 0 : 0;
       im.style.translate = "0 " + (empty / 96 * 100).toFixed(2) + "%";
+      const above = dex && M.backTop ? M.backTop[dex.id] || 0 : 0;
+      const head = RAID_ALLY_FEET - (96 - empty - above) * RAID_ALLY_W / 96;
+      allyBarY[i] = Math.max(8, Math.min(RAID_ALLY_FEET - 37, Math.floor(head) - 4));
       const ref = el.sides.p1.sprite;
       ref.parentNode.insertBefore(im, ref);   // (behind your Pokémon)
       return im;

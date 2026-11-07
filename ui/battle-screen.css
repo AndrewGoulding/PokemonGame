@@ -355,11 +355,10 @@ body {
 .sprite.flying, .sprite.mosaic-hidden { opacity: 0 !important; transition: none !important; }
 .mosaic-fx { position: absolute; image-rendering: pixelated; pointer-events: none; z-index: 3; }
 
-/* A Tera Raid's three allies (raidAlliesPanel): top right, small, over the scene. */
-/* A Tera Raid (ui/battle-screen.js raidAlliesPanel, drawRaidPanel): the Tera Raid Pokémon half as big again, standing
-   where it stands; your allies, small, on your side behind your Pokémon. */
-.field.raid .sprite.foe { scale: 1.5; }
-.field.raid .sprite.foe.dynamax { scale: 1.8; }
+/* A Tera Raid (ui/battle-screen.js raidAlliesPanel, drawRaidPanel): the Tera Raid Pokémon half as big again (less for a
+   tall one, placeSprite's --raid-scale, to keep under the top bar), standing where it stands; your allies, small, on your side behind your Pokémon. */
+.field.raid .sprite.foe { scale: var(--raid-scale, 1.5); }
+.field.raid .sprite.foe.dynamax { scale: var(--raid-dmax-scale, 1.8); }
 .sprite.raid-ally { transform-origin: 50% 90%; }
 .sprite.raid-ally.fainted { opacity: 0; transform: translateY(30%); }
 

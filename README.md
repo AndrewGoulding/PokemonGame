@@ -1254,7 +1254,7 @@ with Levitate float 8 pixels). In a single battle a tall Pokémon of yours
 (Mega Blastoise's cannon, Charizard's wings) would reach up behind the foe's
 healthbox, so it stands lower instead, its feet behind the text box as in
 Diamond and Pearl (the metrics also measure the empty rows above each back
-sprite for this). `ui/game.js` picks
+sprite for this, and above each front one for a Tera Raid). `ui/game.js` picks
 the terrain like FireRed: tall grass for grass encounters, the building scene
 indoors, a cave underground, and the plain scene elsewhere.
 
@@ -1812,10 +1812,13 @@ effective moves first, then its own types'. They battle alongside yours (`game/r
 strongest move against the Tera Raid Pokémon (a super effective one before a stronger neutral one), which aims at any of the four
 of you; what they do is told in words ("Misty's Lapras used Ice Beam!"). On
 the screen (`ui/battle-screen.js`: `raidAlliesPanel`, `drawRaidPanel`) the Tera
-Raid Pokémon stands half as big again on its platform, and its box is a bar
+Raid Pokémon stands half as big again on its platform (a tall one, such as
+Gyarados or Rayquaza, only as big as keeps its head under the bar, never
+smaller than usual, and lower if it must be: `placeSprite`, from the empty rows
+above each front sprite, `frontTop` in `data/sprite-metrics.js`), and its box is a bar
 along the screen's top: its name, level and Tera Type, its stars, and its HP
 across the screen. Your allies stand on your side, small, behind your
-Pokémon, each with their trainer's name and an HP bar over them (one that
+Pokémon, each with their trainer's name and an HP bar just over their head (one that
 faints fades away). `Game.raidBattle("Gyarados", 30, 5, ["Geodude", "Starmie",
 "Venusaur"])` starts one, for trying it out. You have 10, 12, 15, 20 or 25 turns to win (as Scarlet and
 Violet's raids have a time limit): told at the start, then "3 turns left!",
