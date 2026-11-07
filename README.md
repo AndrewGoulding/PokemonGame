@@ -3093,8 +3093,9 @@ Trainers' Pokémon with a machine that snags them) and the mysterious **Cipher**
 Snagem as an undercover agent, find out what the two teams are planning and stop them. Say yes and his plane flies
 you to the **Orre Air Strip** (say no and he asks again whenever you talk to him). The pilot there flies you back to
 Kanto, and Oak sends you to Orre again whenever you like. In Orre you're yourself, with your own Pokémon and Bag
-(`game/orre.js`; an older save made while Orre had you play as Wes swaps back as it leaves). Every battle there is a
-double battle. The debug menu's **Visit Orre** takes the plane without the briefing; **Leave Orre** comes back.
+(`game/orre.js`; an older save made while Orre had you play as Wes swaps back as it leaves). As for any new region,
+your Pokémon are taken to be Lv. 5 when you get there (the Rejuvenator makes them so), and Orre's story is pitched
+for that: the battles start at Lv. 5, under Orre's level cap of 15 (below). Every battle there is a double battle. The debug menu's **Visit Orre** takes the plane without the briefing; **Leave Orre** comes back.
 
 **The Orre Air Strip** (this game's own): south of the Outskirt Stand, in the same desert, fenced in, with the gate
 on the road north. Inside the fence: the runway with its markings, the concrete apron where Oak's little
@@ -3119,15 +3120,21 @@ above, yellow-and-black hazard chains and a great round dish. Two **Snagem grunt
 vests as in Colosseum, guard the gate; a third keeps a lookout in the canyon.
 
 **Joining Team Snagem** (this game's own, as Oak asked: you're to go undercover). Talk to either guard and you can
-ask to join Team Snagem. The guards laugh, but Master Gonzap always wants more hands: you're in if you pass Snagem's
-tests. They give you the **Snag Machine** (a key item: worn on the arm, it turns your Poké Balls into Snag Balls that
-can catch another Trainer's Pokémon) and the first test:
+ask to join Team Snagem. The guards laugh, but Master Gonzap always wants more hands, and first they want to see
+you battle: **the two grunts battle you together**, two on two, with a Poochyena and a Zubat (Lv. 5 each). Lose and
+they tell you to come back when your Pokémon can fight. Win and you're in if you pass Snagem's tests: they give you
+the **Snag Machine** (a key item: worn on the arm, it turns your Poké Balls into Snag Balls that can catch another
+Trainer's Pokémon) and the first test.
 - **Test one: Phenac City.** Phenac opens on Orre's map. By its fountain, Black Belt Kodo battles you two on two with
   a Makuhita and a Machop (Lv. 7 each): snag his Makuhita (a Ball thrown at it, with the Snag Machine) and win, and
-  it's yours; then go back to the guards, who pass you and report to Master Gonzap. Lose, or knock the Makuhita out
-  without snagging it, and you're taken back to the guards to try again.
-- The tests after that are still to be written (`player.flags.orreStory`: 3 with the first test, 4 with the Makuhita
-  snagged, 5 once the guards have seen it).
+  it's yours. Back at the hideout the guards pass you and send you straight on to the next test.
+- **Test two: the Outskirt Stand.** The Stand opens on Orre's map. In its diner, **Breeder Lena** (one of the
+  travellers) battles you two on two with an Eevee (Lv. 10) and a Skitty (Lv. 9): snag her Eevee and win, and it's
+  yours. Back at the hideout the guards pass you and report you to Master Gonzap.
+- Fail a test (lose, or knock its Pokémon out without snagging it) and you're taken back to the guards to try again.
+- The tests after that are still to be written. `player.flags.orreStory`: 1 after Oak's call, 2 once you've flown to
+  Orre, 3 with test one set, 4 with the Makuhita snagged, 5 with test one passed, 6 with test two set, 7 with the
+  Eevee snagged, 8 once the guards have seen it.
 
 **Snagging** (`engine/battle.js`, `opts.snag`): a trainer battle can be given the species that may be snagged in it.
 While one is out, you can throw a Ball (the Bag's Poké Balls pocket, as in a wild battle) and it's aimed at that
@@ -3146,12 +3153,13 @@ the fountain square with its round fountain in rings of paving, the Pokémon Cen
 Mauville's inside) and a house; down again, the entrance plaza, its palms and two more houses, and the way out to
 the desert. Its townspeople say Colosseum's own words (`assets/text/colosseum.json`).
 
-**The Outskirt Stand**, not on the map yet: a diner made from an old locomotive out in Orre's desert. The first time you
-get there, two men come out of the diner, **Folly** and **Trudly**. They talk about their meal and the sack in
-their truck, see you, tell you to mind your own business, and drive off with it. Inside, **Rider Willie** sits at the
-back. When you come out again, Willie follows and challenges you to a **double battle** (every battle in Colosseum is
-one) with two Zigzagoon (Lv. 23 and 24). Afterwards he points you north to Phenac City. Losing to Willie doesn't
-make you black out: he goes back in and challenges you again next time.
+**The Outskirt Stand**, out in Orre's desert, opens on the map with Snagem's second test: a diner made from an old
+locomotive. The first time you get there, two men come out of the diner, **Folly** and **Trudly**. They talk about
+their meal and the sack in their truck, see you, tell you to mind your own business, and drive off with it. Inside,
+**Rider Willie** sits at the back, and **Breeder Lena**, one of the travellers, has the Eevee Snagem want. When you
+come out again, Willie follows and challenges you to a **double battle** (every battle in Colosseum is one) with two
+Zigzagoon (Lv. 10 and 11). Afterwards he points you north to Phenac City. Losing to Willie doesn't make you black
+out: he goes back in and challenges you again next time.
 
 In the diner:
 - The bartender serves a free meal that heals your Pokémon, and runs the
@@ -3159,8 +3167,6 @@ In the diner:
 - The TV shows the news.
 - The jukebox plays another song.
 - The travellers in the booths talk about the road.
-
-Phenac City, where Willie points you, isn't built yet.
 
 Colosseum is 3D, so nothing of it converts. `tools/build-orre.js` builds the
 place in the GBA games' style instead, from a
@@ -3201,8 +3207,8 @@ node tools/build-orre.js <path to pret/pokeemerald>
 
 Everything goes into `data/orre-maps.js`, `assets/world/maps/OutskirtStand*`, `OrreAirStrip*` and `SnagemHideout*`, `assets/town-map/orre.png`,
 `assets/world/sprites/player_wes*` and `orre_*`, and the `wes` and
-`rider_willie` trainer pictures. The words are this game's own, since
-Colosseum's script wasn't to hand. The music is FireRed's for now:
+`rider_willie` trainer pictures. The Stand's words are this game's own, written before
+Colosseum's text was extracted (below). The music is FireRed's for now:
 - outside: the Sevii Islands' route theme;
 - inside: the Game Corner's;
 - Willie's battle: Ruby and Sapphire's trainer battle.

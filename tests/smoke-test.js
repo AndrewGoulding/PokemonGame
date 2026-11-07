@@ -3105,6 +3105,8 @@ if (window.JOHTO_TOWN_MAP) {
   assert.deepStrictEqual(Orre.openPlaces({}).map((p) => p.map), ["SnagemHideout", "OrreAirStrip"]);
   assert.deepStrictEqual(Orre.openPlaces({ orre: 3 }).map((p) => p.map), ["SnagemHideout", "OutskirtStand", "OrreAirStrip"]);
   { const fl = {}; assert(Orre.unlock(fl, "OutskirtStand") && !Orre.unlock(fl, "OutskirtStand") && Orre.isOpen(fl, "OutskirtStand")); }
+  // (Willie's met on Snagem's second test, under Orre's level cap.)
+  assert(Orre.willieTeam().every((r) => r.level <= Player.levelCap({ flags: {}, location: { map: "OutskirtStand" } })), "Willie's under Orre's cap");
   const st = Orre.START;
   assert.strictEqual(st.map, "OrreAirStrip");
   assert.strictEqual(A.collision[st.y * A.width + st.x], 0, "room by the plane's door");

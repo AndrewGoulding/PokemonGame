@@ -14,7 +14,7 @@
 //   Orre.unlock(flags, map)          // a place opens on the map
 //   Orre.visible(person, flags)      // ui/game.js's visible() for Orre's people (or undefined)
 //   Orre.patches(map, flags)         // the Stand's patches on now (the truck parked)
-//   Orre.willieTeam()                // Rider Willie's two Zigzagoon
+//   Orre.willieTeam()                // Rider Willie's two Zigzagoon (Lv. 10 and 11)
 //   Orre.SHOP                        // what the Stand's bar sells, once Willie's been beaten
 //
 // The opening's progress is player.flags.orre:
@@ -129,8 +129,8 @@
   }
   const patches = (map, flags) => (map === "OutskirtStand" && (flags.orre | 0) < 2 ? ["truck"] : []);
 
-  // Rider Willie's two Zigzagoon (Lv. 23 and 24).
-  const willieTeam = () => [window.Party.create("Zigzagoon", 23), window.Party.create("Zigzagoon", 24)];
+  // Rider Willie's two Zigzagoon (Lv. 10 and 11: met on Snagem's second test, under Orre's cap of 15).
+  const willieTeam = () => [window.Party.create("Zigzagoon", 10), window.Party.create("Zigzagoon", 11)];
 
   window.Orre = { PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
 })();
