@@ -9,7 +9,9 @@
 //     // title: "YOUR NAME?" (gText_YourName); maxChars: 7 (PLAYER_NAME_LENGTH);
 //     // icon: the overworld sheet of who's being named (16x32 frames, FireRed's
 //     // order: frame 0 facing down, 3 and 4 walking down); fallback: the name
-//     // OK gives with nothing typed (FireRed keeps the one already there)
+//     // OK gives with nothing typed (FireRed keeps the one already there);
+//     // value: the name there to start with (a PC box's, as FireRed's box naming shows it);
+//     // pc: the PC instead of a walking icon (naming a box: NamingScreen_CreatePCIcon)
 //   ns.step()       // one frame (60 a second): the screen's tasks and sprites
 //   ns.draw(g)      // onto a 2D context in GBA pixels (240x160)
 //   ns.start()      // once it's faded in: takes the keys (MainState_WaitFadeIn)
@@ -92,7 +94,7 @@
   // ---------- Pictures ----------
 
   const PICTURES = ["background", "keyboard-upper", "keyboard-lower", "keyboard-symbols", "page-swap-frame", "page-swap-button",
-    "page-swap-text", "back-button", "ok-button", "button-flash", "cursor", "cursor-flash", "input-arrow", "underscore"];
+    "page-swap-text", "back-button", "ok-button", "button-flash", "cursor", "cursor-flash", "input-arrow", "underscore", "pc-icon"];
   const images = {};
   function img(src) {
     if (!images[src]) {
@@ -140,7 +142,7 @@
       state: "handleInput", inputEnabled: false,
       currentPage: KBPAGE_LETTERS_UPPER,
       inputCharBaseXPos: (W - maxChars * 8) / 2 + 6,
-      text: [],          // textBuffer, up to the first EOS
+      text: [...String(opts.value || "")].slice(0, maxChars),   // textBuffer, up to the first EOS
       bgToReveal: 0, bgToHide: 1
     };
     // BG1 and BG2, the keyboard pages: BG1 in front (priority 1) with the
@@ -477,6 +479,8 @@
       // ANIM_STD_GO_SOUTH: frames 3, 0, 4, 0, 8 frames each) at (56, 37), the
       // arrow and the underscores.
       if (ready(icon)) blit(icon, [3, 0, 4, 0][Math.floor(walkTime / 8) % 4] * 16, 0, 16, 32, 56 - 8, 37 - 16);
+      // (Naming a box: the PC at (56, 41), its screen flickering, off and on every 2 frames: sAnim_PCIcon.)
+      else if (opts.pc && ready(pic("pc-icon"))) blit("pc-icon", 0, (Math.floor(walkTime / 2) % 2) * 24, 16, 24, 56 - 8, 41 - 12);
       blit("input-arrow", 0, 0, 8, 8, ns.inputCharBaseXPos - 5 - 4 + arrow.x2, 56 - 4);
       underscores.forEach((u, i) => blit("underscore", 0, 0, 8, 8, ns.inputCharBaseXPos + i * 8 + 3 - 4, 60 - 4 + u.y2));
       // BG2 and BG1, the keyboard pages, the one behind first.

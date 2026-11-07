@@ -314,7 +314,9 @@
   };
   let doublesLayout = false;
   // (A horde: your box is the singles one; theirs are rows of the horde's panel, drawHordePanel.)
-  const hbCfg = (pos) => (battle && battle.horde ? (pos === "p1" ? HB.p1 : null) : doublesLayout ? HB_DOUBLES[pos] : HB[pos]);
+  // (A Tera Raid: the Pokémon's box is the bar along the screen's top instead, drawRaidPanel.)
+  const hbCfg = (pos) => (battle && battle.horde ? (pos === "p1" ? HB.p1 : null) : config && config.raid && pos === "p2" ? null
+    : doublesLayout ? HB_DOUBLES[pos] : HB[pos]);
   // How a box is laid out: the singles player's (name at 16, HP numbers, EXP
   // bar) or the opponent's style (name at 8, the status over "HP"), which a
   // double battle's player boxes share with the name at 16.
@@ -479,7 +481,7 @@
     if (gbaEl) gbaEl.parentNode.insertBefore(hordePanel, gbaEl);
   }
   const HP_BORDER = "rgb(32,57,0)", HP_CREAM = "rgb(255,255,222)", HP_SHADOW = "rgb(82,106,98)", HP_LIT = "rgb(222,213,180)";
-  const HORDE_PANEL = { x: 4, y: 3, w: 112, row: 13 };
+  const HORDE_PANEL = { x: 4, y: 3, w: 128, row: 13 };
   let hordeTarget = null;   // (the row lit while you aim: its position)
   let hordeText = null, hordeTextKey = null;
   function drawHordePanel() {
@@ -516,6 +518,8 @@
       if (view[k].fainted || !hbBar.complete) return;
       // (The bar's own tiles, with a line of the border for its left end.)
       const b = hb[k], bx = P.x + P.w - 54, by = ry + 2;
+      // (Its kind caught before: the healthbox's Poké Ball, left of the bar, as a wild Pokémon's box shows it.)
+      if (b.data && b.data.caught) hbTile(g, hbBar, 70, bx - 11, by);
       g.fillStyle = HP_BORDER; g.fillRect(bx - 1, by + 1, 1, 6);
       const px = hpPixels(b.hp, b.maxhp), base = px > 24 ? 3 : px > 9 ? 47 : 56;
       for (let j = 0; j < 6; j++) hbTile(g, hbBar, base + Math.max(0, Math.min(8, px - 8 * j)), bx + 8 * j, by);
@@ -525,6 +529,7 @@
 
   function drawHealthboxes() {
     drawHordePanel();
+    drawRaidPanel();
     const g = hbLayer.getContext("2d");
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, hbLayer.width, hbLayer.height);
@@ -2853,9 +2858,9 @@
   function setTerrain(terrain) {
     const url = "url(assets/battle/" + (terrain || "plain") + ".png)";
     for (const t of el.field.querySelectorAll(".terrain")) t.style.backgroundImage = url;
-    // (The 32 lines over the battle scene: the backdrop's top rows again.)
+    // (The 32 lines over the battle scene: the backdrop's band of stripes, FireRed's top rows; tools/battle-bg-sky.js.)
     const sky = fieldSky();
-    if (sky) sky.style.backgroundImage = url;
+    if (sky) sky.style.backgroundImage = "url(assets/battle/sky/" + (terrain || "plain") + ".png)";
   }
   const fieldSky = () => document.getElementById("field-sky");
 
@@ -2893,9 +2898,9 @@
     let mon = null;
     if (cfg.wild) {
       mon = battle.sides.p2.pokemon[0];
-      // (A horde: all of them, each in its slot, sliding in together.)
+      // (A horde, or two wild Pokémon: all of them, each in its slot, sliding in together.)
       // (The battle hasn't started yet: the first of the team, one a slot, as it will send them out.)
-      const out = battle.horde ? battle.sides.p2.pokemon.slice(0, battle.sides.p2.actives.length).map((m, slot) => [posAt("p2", slot), m]) : [["p2", mon]];
+      const out = battle.horde || battle.doubles ? battle.sides.p2.pokemon.slice(0, battle.sides.p2.actives.length).map((m, slot) => [posAt("p2", slot), m]) : [["p2", mon]];
       for (const [pos, m] of out) {
         const set = cfg.p2.team[m.teamIndex] || {};
         view[pos] = { name: m.name, species: m.species, level: m.level, hp: m.hp, maxhp: m.maxhp, status: "",
@@ -2905,7 +2910,7 @@
         el.sides[pos].info.classList.add("hidden");
         el.sides[pos].sprite.classList.add("silhouette");
         movers.push([el.sides[pos].sprite, -shift]);
-        if (battle.horde) hordeShown.add(pos);
+        if (battle.horde || battle.doubles) hordeShown.add(pos);
       }
     } else if (cfg.foeTrainer) {
       // (Two trainers: the first at x 200, the second at 152, where their
@@ -2945,15 +2950,17 @@
     await (mon ? pause : wait)(1100);
     el.field.classList.remove("entering");
     if (sky) sky.classList.remove("entering");
-    if (mon && battle.horde) {
+    if (mon && (battle.horde || battle.doubles)) {
       // X and Y's: "Whoa! A horde of Zubat appeared!" (of wild Pokémon, when they're not all one kind).
+      // Two wild Pokémon (Black and White's): "Wild Patrat and Lillipup appeared!"
       const foes = [...hordeShown];
       for (const pos of foes) { el.sides[pos].sprite.classList.remove("silhouette"); sparkle(pos); }
       cry("p2");
       await pause(350);
       for (const pos of foes) el.sides[pos].info.classList.remove("hidden");
       const kinds = new Set(foes.map((p) => view[p].species));
-      await message("Whoa! A horde of " + (kinds.size === 1 ? view[foes[0]].name : "wild Pokémon") + "\nappeared!");
+      if (battle.horde) await message("Whoa! A horde of " + (kinds.size === 1 ? view[foes[0]].name : "wild Pokémon") + "\nappeared!");
+      else await message("Wild " + foes.map((p) => view[p].name).join(" and ") + "\nappeared!");
       foeAnnounced = true;
     } else if (mon) {
       el.sides.p2.sprite.classList.remove("silhouette");
@@ -2996,8 +3003,9 @@
       out[side].push({ pos, name: nameOf(ev[1]), ball: set.ball, sender: ev[6] || trainerName(side, +ev[5]) });
     }
     for (const k of ["p1", "p1b"]) if (view[k].species) noteSwitchIn(k);
-    // Theirs.
-    const foes = out.p2;
+    // Theirs. (Two wild Pokémon: already out, from the opening.)
+    const foes = out.p2.filter((f) => !hordeShown.delete(f.pos));
+    if (out.p2.length && !foes.length) foeAnnounced = false;
     if (foes.length) {
       if (foeTrainerOut) { foeTrainerOut = false; await foeTrainerSlide(true); }
       const two = battle.sides.p2.tag && foes.length > 1 && foes[0].sender !== foes[1].sender;
@@ -3316,27 +3324,97 @@
     config = null;
   }
 
-  // A Tera Raid's three allies (the engine's raidAllies), in the corner as
-  // Scarlet and Violet show them: each one's trainer and Pokémon and an HP
-  // bar, kept up to date as the battle goes; null takes it away.
-  let alliesPanel = null, alliesTimer = 0;
+  // A Tera Raid (this game's own, after Scarlet and Violet's) on this game's taller screen: the Tera Raid Pokémon
+  // half as big again (.field.raid), its box a bar along the screen's top (its name, level, Tera Type and stars, and
+  // its HP across the screen: drawRaidPanel), and your three allies (the engine's raidAllies) standing on your side
+  // of the field, behind your Pokémon, each with their trainer's name and an HP bar over them; one that faints
+  // fades away. null takes them away.
+  const RAID_ALLY_X = [24, 60, 96], RAID_ALLY_FEET = 62, RAID_ALLY_W = 48;
+  const raidPanel = document.createElement("canvas");
+  raidPanel.width = 240; raidPanel.height = 192;
+  raidPanel.className = "horde-panel raid-panel hidden";
+  {
+    const gbaEl = document.querySelector(".gba");
+    if (gbaEl) gbaEl.parentNode.insertBefore(raidPanel, gbaEl);
+  }
+  let raidAllies = null, allySprites = [], alliesTimer = 0, raidText = null, raidTextKey = null;
+  // FireRed's HP bar colours (green, yellow under half, red under a fifth): [fill, shade].
+  const HP_COLOURS = [["rgb(112,248,168)", "rgb(88,208,128)"], ["rgb(248,224,56)", "rgb(200,168,8)"], ["rgb(248,88,56)", "rgb(168,64,72)"]];
+  function raidBar(g, x, y, w, f) {
+    g.fillStyle = HP_BORDER; g.fillRect(x - 1, y - 1, w + 2, 6);
+    g.fillStyle = "rgb(80,104,88)"; g.fillRect(x, y, w, 4);
+    const [fill, shade] = HP_COLOURS[f > 0.5 ? 0 : f > 0.2 ? 1 : 2], n = f > 0 ? Math.max(1, Math.round(w * f)) : 0;
+    g.fillStyle = shade; g.fillRect(x, y, n, 4);
+    g.fillStyle = fill; g.fillRect(x, y + 1, n, 2);
+  }
+  function drawRaidPanel() {
+    const b = hb.p2, d = b && b.data;
+    const boss = !!(battle && config && config.raid && b.shown && d && d.name);
+    const on = boss || !!raidAllies;
+    raidPanel.classList.toggle("hidden", !on);
+    if (!on) return;
+    const g = raidPanel.getContext("2d");
+    g.clearRect(0, 0, 240, 192);
+    g.imageSmoothingEnabled = false;
+    const P = { x: 4, y: 2, w: 232, h: 25 };
+    if (boss) {
+      g.fillStyle = HP_SHADOW; g.fillRect(P.x + 2, P.y + 2, P.w, P.h);
+      g.fillStyle = HP_BORDER; g.fillRect(P.x, P.y, P.w, P.h);
+      g.fillStyle = HP_CREAM; g.fillRect(P.x + 1, P.y + 1, P.w - 2, P.h - 2);
+    }
+    // (The words: drawn again only when they change.)
+    const key = [boss && d.name, boss && d.gender, boss && d.level, boss && d.tera, ...(raidAllies || []).map((m) => m.raidAlly.trainer + (m.fainted ? "-" : ""))].join("|");
+    if (key !== raidTextKey) {
+      raidTextKey = key;
+      const surf = window.GbaMenus.Surface();
+      if (boss) {
+        const w = surf.text(d.name, P.x + 6, P.y + 2, HB_TEXT, HB_SHADOW);
+        let x = P.x + 6 + w;
+        if (d.gender === "M" || d.gender === "F") x += surf.text(d.gender === "M" ? "♂" : "♀", x, P.y + 2, d.gender === "M" ? HB_MALE : HB_FEMALE, HB_SHADOW);
+        x += surf.text(" Lv" + d.level, x + 2, P.y + 2, HB_TEXT, HB_SHADOW, "small") + 6;
+        if (d.tera) surf.text("Tera " + d.tera, x, P.y + 2, HB_TEXT, HB_SHADOW, "small");
+      }
+      (raidAllies || []).forEach((m, i) => {
+        const name = m.raidAlly.trainer, cx = RAID_ALLY_X[i], tw = surf.textWidth ? surf.textWidth(name, "small") : name.length * 5;
+        surf.text(name, Math.round(cx - tw / 2), TOP + RAID_ALLY_FEET - 47, m.fainted ? [170, 170, 160] : [255, 255, 255], [64, 64, 64], "small");
+      });
+      raidText = surf.canvas();
+    }
+    if (boss) {
+      for (let i = 0; i < config.raid; i++) drawStar(g, P.x + P.w - 10 - 9 * i, P.y + 3);
+      raidBar(g, P.x + 6, P.y + 17, P.w - 12, Math.max(0, b.hp / (b.maxhp || 1)));
+    }
+    (raidAllies || []).forEach((m, i) => {
+      if (m.fainted || m.hp <= 0) return;
+      raidBar(g, RAID_ALLY_X[i] - 14, TOP + RAID_ALLY_FEET - 37, 28, Math.max(0, m.hp / m.maxhp));
+    });
+    if (raidText) g.drawImage(raidText, 0, 0);
+  }
   function raidAlliesPanel(allies) {
     clearInterval(alliesTimer);
-    if (alliesPanel) { alliesPanel.remove(); alliesPanel = null; }
-    if (!allies || !allies.length) return;
-    alliesPanel = document.createElement("div");
-    alliesPanel.className = "raid-allies";
-    alliesPanel.innerHTML = allies.map((m) => '<div class="ally"><span class="who">' + window.Screen.escapeHtml(m.raidAlly.trainer) + "</span> " +
-      window.Screen.escapeHtml(m.name) + '<span class="bar"><span></span></span></div>').join("");
-    el.field.appendChild(alliesPanel);
-    const bars = [...alliesPanel.querySelectorAll(".bar span")];
-    const update = () => allies.forEach((m, i) => {
-      // (Put back if the scene's been redrawn round it, as the battle's start does.)
-      if (i === 0 && alliesPanel && !alliesPanel.isConnected) el.field.appendChild(alliesPanel);
-      const f = Math.max(0, m.hp / m.maxhp);
-      bars[i].style.width = (f * 100).toFixed(1) + "%";
-      bars[i].className = f > 0.5 ? "" : f > 0.2 ? "mid" : "low";
+    allySprites.forEach((im) => im.remove());
+    allySprites = [];
+    raidAllies = allies && allies.length ? allies : null;
+    raidTextKey = null;
+    if (!raidAllies) { drawRaidPanel(); return; }
+    const M = window.SPRITE_METRICS || {};
+    allySprites = raidAllies.map((m, i) => {
+      const im = Object.assign(document.createElement("img"), { className: "sprite raid-ally", alt: m.name });
+      im.src = window.Screen.spriteUrl(m.species, m.form || "", true, !!m.shiny);
+      im.style.width = (RAID_ALLY_W / 240 * 100) + "%";
+      im.style.left = ((RAID_ALLY_X[i] - RAID_ALLY_W / 2) / 240 * 100) + "%";
+      im.style.bottom = ((112 - RAID_ALLY_FEET) / 112 * 100) + "%";
+      // (Its feet on the line: moved down by the picture's empty rows, as placeSprite does.)
+      const dex = window.DEX[m.species], empty = dex && M.back ? M.back[dex.id] || 0 : 0;
+      im.style.translate = "0 " + (empty / 96 * 100).toFixed(2) + "%";
+      const ref = el.sides.p1.sprite;
+      ref.parentNode.insertBefore(im, ref);   // (behind your Pokémon)
+      return im;
     });
+    const update = () => {
+      raidAllies.forEach((m, i) => allySprites[i] && allySprites[i].classList.toggle("fainted", !!m.fainted || m.hp <= 0));
+      drawRaidPanel();
+    };
     update();
     alliesTimer = setInterval(update, 150);
   }
@@ -3403,6 +3481,7 @@
     layoutHorde(battle.horde);
     hordeTarget = null; hordeTextKey = null;
     el.field.classList.toggle("tag", !!battle.sides.p1.tag);
+    el.field.classList.toggle("raid", !!cfg.raid);
     view = Object.fromEntries(POSITIONS.map((k) => [k, { species: null }]));
     teraShown = {};
     raidAlliesPanel(battle.raidAllies);

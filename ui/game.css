@@ -532,3 +532,6 @@
 .orre-map .tm-player { transition: left 0.9s ease-in-out, top 0.9s ease-in-out; }
 
 .shiny-star { color: #e0a800; text-shadow: 0 0 3px #fff3a0; }
+
+/* FireRed's naming screen over a menu (a PC box's name: ui/naming-screen.js's NamingScreen.run). */
+.naming-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 7; image-rendering: pixelated; }

@@ -135,17 +135,23 @@
     g.restore();
   }
 
+  // BG3: the backdrop drifts half a pixel right and up every frame. (`top`: where the 240x160's top is on `ctx`; the
+  // screen's top 32 lines (ui/screen-band.js, canvas.bandPaint) carry it on up, drifting with it.)
+  function drawBackdrop(ctx, top) {
+    const bd = PC(itemsMode() ? "scrolling-bg-items" : "scrolling-bg");
+    if (!st || !ready(bd)) return;
+    const ox = Math.floor(st.tick / 2) % 256, oy = (256 - (Math.floor(st.tick / 2) % 256)) % 256;
+    for (let y = top - oy - 256; y < top + H; y += 256) for (let x = -ox; x < W; x += 256) ctx.drawImage(bd, x, y);
+  }
+  canvas.bandPaint = (ctx) => drawBackdrop(ctx, 32);
+
   function paint() {
     if (!st) return;
     st.tick++;
     g.imageSmoothingEnabled = false;
     g.clearRect(0, 0, W, H);
     // BG3: the backdrop drifts half a pixel right and up every frame.
-    const bd = PC(itemsMode() ? "scrolling-bg-items" : "scrolling-bg");
-    if (ready(bd)) {
-      const ox = Math.floor(st.tick / 2) % 256, oy = (256 - (Math.floor(st.tick / 2) % 256)) % 256;
-      for (let y = -oy; y < H; y += 256) for (let x = -ox; x < W; x += 256) g.drawImage(bd, x, y);
-    }
+    drawBackdrop(g, 0);
     // BG2 and the box's sprites (under the interface).
     if (st.scroll) { drawBox(st.scroll.from, st.scroll.dx); drawBox(st.box, st.scroll.dx + st.scroll.dir * 192); }
     else drawBox(st.box, 0);

@@ -302,6 +302,18 @@
       overlay.parentNode.insertBefore(canvas, overlay);
       out = canvas.getContext("2d");
       out.imageSmoothingEnabled = false;
+      // (The PokéNav's: its dots carried on up the screen's top 32 lines, drifting with it (ui/screen-band.js), not
+      // its header stretched into stripes. The Pokégear's own colours carry on up as they are.)
+      canvas.bandPaint = (ctx) => {
+        if (!nav) return false;
+        const dots = navImg("dots");
+        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, 32);
+        if (dots.complete && dots.naturalWidth) {
+          const sx = Math.floor(nav.frame / 2) % 256;
+          for (const x of [-sx, 256 - sx]) ctx.drawImage(dots, 0, H - 32, 256, 32, x, 0, 256, 32);
+        }
+        return true;
+      };
       mapImage = new Image();
     }
     let mapImage = null;   // (the Map card's picture of the region)

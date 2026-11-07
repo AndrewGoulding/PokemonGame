@@ -30,6 +30,8 @@
 //   cursor.png             the key cursor's three looks, 16x16 side by side:
 //                          cursor, cursor_squished, cursor_filled (cursor.pal)
 //   cursor-flash.png       their colour 1 (what SpriteCB_Cursor brightens), white
+//   pc-icon.png            the PC naming a box (NamingScreen_CreatePCIcon): off and on, 16x24 each,
+//                          stacked (menu.pal; sAnim_PCIcon flips them every 2 frames)
 //   input-arrow.png        the arrow and the underscores under the name
 //   underscore.png         (8x8, page_swap_others.pal)
 "use strict";
@@ -114,7 +116,7 @@ function stack(imgs, across) {
   return { width, height, rgba };
 }
 
-const [, pageUpperPal, pageLowerPal, pageOthersPal, buttonsPal, cursorPal] = menuPals;
+const [menuPal, pageUpperPal, pageLowerPal, pageOthersPal, buttonsPal, cursorPal] = menuPals;
 
 save("page-swap-frame", cut("page_swap_frame.png", buttonsPal, 0, 0, 40, 32));
 save("page-swap-button", stack([pageUpperPal, pageLowerPal, pageOthersPal].map((p) => cut("page_swap_button.png", p, 0, 0, 32, 16))));
@@ -127,6 +129,7 @@ save("button-flash", stack([cut("page_swap_frame.png", null, 0, 0, 40, 32, 14), 
 const cursors = ["cursor", "cursor_squished", "cursor_filled"];
 save("cursor", stack(cursors.map((n) => cut(n + ".png", cursorPal, 0, 0, 16, 16)), true));
 save("cursor-flash", stack(cursors.map((n) => cut(n + ".png", null, 0, 0, 16, 16, 1)), true));
+save("pc-icon", stack(["pc_icon_off", "pc_icon_on"].map((n) => cut(n + ".png", menuPal, 0, 0, 16, 24))));
 save("input-arrow", cut("input_arrow.png", pageOthersPal, 0, 0, 8, 8));
 save("underscore", cut("underscore.png", pageOthersPal, 0, 0, 8, 8));
 

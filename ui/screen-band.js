@@ -5,7 +5,9 @@
 // its top 8 lines, so a window frame's line is never stacked; a background's colours carry on up as they are), the
 // topmost thing that covers it winning, as the screen shows them. Where nothing covers the top (the map with only
 // the Start menu over it, a battle), the band is clear and the map or the battle's backdrop shows. An HTML scene
-// (a list, the Town Map's page) carries on its own background colour.
+// (a list, the Town Map's page) carries on its own background colour. A canvas that has a picture of its own for
+// the band (canvas.bandPaint(g): it draws the band's 240x32, as the PC's drifting backdrop carries on up; false if
+// it has none just now) has it drawn instead, when it's the frontmost there.
 //
 // It runs by itself (a few times a second, and only while something's there to carry on).
 (function () {
@@ -20,6 +22,16 @@
   band.setAttribute("aria-hidden", "true");
   screen.appendChild(band);
   const bg = band.getContext("2d");
+  // (A canvas's own picture for the band: canvas.bandPaint.)
+  const painted = document.createElement("canvas");
+  painted.id = "screen-band-paint";
+  painted.className = "screen-band";
+  painted.width = W; painted.height = 32;
+  painted.setAttribute("aria-hidden", "true");
+  screen.appendChild(painted);
+  const pgc = painted.getContext("2d");
+  let paintOn = false;
+  const paintShow = (v) => { if (v !== paintOn) { painted.classList.toggle("on", v); paintOn = v; } };
   const out = bg.createImageData(W, 1);
   let probe = document.createElement("canvas");
   probe.width = W; probe.height = LINES;
@@ -79,6 +91,19 @@
     // itself, as the berry tree's and mining's do, with their header up there)
     const reachesTop = scene && scene.getBoundingClientRect().top < top.top - 2;
     if (scene && shown(scene) && !reachesTop && !layers.some((l) => l.el === scene)) layers.push({ el: scene, z: 0 });
+    // (The frontmost one has its own picture for the band: that.)
+    const front = layers.map((l, i) => ({ ...l, i })).sort((a, b) => b.z - a.z || b.i - a.i)[0];
+    // (It may say it has none just now, returning false: then as any other.)
+    if (front && typeof front.el.bandPaint === "function") {
+      pgc.imageSmoothingEnabled = false;
+      pgc.clearRect(0, 0, W, 32);
+      if (front.el.bandPaint(pgc) !== false) {
+        paintShow(true);
+        if (on) { band.classList.remove("on"); on = false; }
+        return;
+      }
+    }
+    paintShow(false);
     const d = out.data;
     d.fill(0);
     let any = false;

@@ -29,7 +29,10 @@
   const out = canvas.getContext("2d");
   const off = Object.assign(document.createElement("canvas"), { width: W, height: H });
   const g = off.getContext("2d");
-  const mapCopy = Object.assign(document.createElement("canvas"), { width: W, height: H });
+  // (The map round you, as FireRed's BuyMenuDrawMapBg draws it behind the whole screen; 32 lines more on top, for
+  // the screen's top lines over it: canvas.bandPaint, ui/screen-band.js.)
+  const TOP = 32;
+  const mapCopy = Object.assign(document.createElement("canvas"), { width: W, height: H + TOP });
 
   const images = {};
   function image(url) {
@@ -105,8 +108,8 @@
     g.imageSmoothingEnabled = false;
     g.clearRect(0, 0, W, H);
     g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
-    // The map around you, as it was (x 0-79: the facing tile at 32, 64).
-    g.drawImage(mapCopy, 0, 0, 80, 112, 0, 0, 80, 112);
+    // The map around you, as it was (the facing tile at 32, 64), behind it all.
+    g.drawImage(mapCopy, 0, TOP, W, H, 0, 0, W, H);
     if (ready(image("assets/shop/shop.png"))) g.drawImage(image("assets/shop/shop.png"), 0, 0);
     if (st.message && ready(image("assets/shop/shop-dim.png"))) g.drawImage(image("assets/shop/shop-dim.png"), 0, 112);
     // The item's icon, centred on (24, 140).
@@ -150,6 +153,11 @@
     out.drawImage(off, 0, 0, canvas.width, canvas.height);
     out.restore();
   }
+  // (The screen's top 32 lines: the map carried on up, faded as the screen is.)
+  canvas.bandPaint = (ctx) => {
+    ctx.drawImage(mapCopy, 0, 0, W, TOP, 0, 0, W, TOP);
+    if (st && st.fade) { ctx.fillStyle = "rgba(0,0,0," + st.fade + ")"; ctx.fillRect(0, 0, W, TOP); }
+  };
   function loop() {
     if (!st) return;
     st.tick++;
@@ -225,8 +233,8 @@
     st = { opts, items: opts.items, frame: opts.frame, cursor: 0, top: 0, tick: 0, message: null, qty: null, fade: 1, layer: null };
     // The map: the tile you face at (32, 64), as the screen showed it.
     const mg = mapCopy.getContext("2d");
-    mg.fillStyle = "#000"; mg.fillRect(0, 0, W, H);
-    if (opts.map && opts.map.canvas) mg.drawImage(opts.map.canvas, 32 - opts.map.x, 64 - opts.map.y);
+    mg.fillStyle = "#000"; mg.fillRect(0, 0, W, H + TOP);
+    if (opts.map && opts.map.canvas) mg.drawImage(opts.map.canvas, 32 - opts.map.x, TOP + 64 - opts.map.y);
     canvas.classList.remove("hidden");
     paint();
     cancelAnimationFrame(raf);

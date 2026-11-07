@@ -365,7 +365,9 @@
     const wild = kind === "wild";
     const foe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
     const foe2 = !wild && opts.foe2 || null;
-    const double = !wild && !opts.safari && !!(opts.double || opts.partner || foe2);
+    // (Two wild Pokémon, opts.wildDouble: Black and White's wild double battle, this game's own way: game/hordes.js.)
+    const wildDouble = wild && !!opts.wildDouble && foe.team.length > 1;
+    const double = wildDouble || (!wild && !opts.safari && !!(opts.double || opts.partner || foe2));
     if (!wild) for (const r of foe.team.concat(foe2 ? foe2.team : [])) delete r.shiny;   // trainers' Pokémon are never shiny
     // (This game's own: one wild Pokémon in ten is a Tera Pokémon, of a random
     // Tera Type, already Terastallized when it appears; beat it for Tera Shards,
@@ -373,7 +375,7 @@
     // or Pokémon Tower's unidentified Ghost.)
     // (A horde, opts.horde: X and Y's horde battle, the wild team all out at once.)
     const horde = wild && !!opts.horde && foe.team.length > 1;
-    const wildTera = wild && !horde && !opts.safari && !opts.raid && !opts.ghost && Math.random() < WILD_TERA_CHANCE
+    const wildTera = wild && !horde && !wildDouble && !opts.safari && !opts.raid && !opts.ghost && Math.random() < WILD_TERA_CHANCE
       ? TYPES18[Math.floor(Math.random() * TYPES18.length)] : null;
     if (wildTera) Object.assign(foe.team[0], { teraType: wildTera, teraAce: true });
     // (Only some of your party: a tag battle's three you choose; a Tera Raid's one, opts.chosen.)
@@ -438,7 +440,7 @@
       bagPockets: opts.bag ? () => bagPockets(opts.bag).filter((p) => p.items.length || p.name === "Poké Balls") : bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s), fishing: !!opts.fishing },
       // (A Tera Raid's Pokémon, or a wild Tera Pokémon, battles as a trainer's does, and Terastallizes.)
-      opponent: horde ? (b) => b.randomChoice("p2") : wild && !opts.raid && !wildTera ? randomMove : (b) => OpponentAI.choose(b, "p2"),
+      opponent: horde || wildDouble ? (b) => b.randomChoice("p2") : wild && !opts.raid && !wildTera ? randomMove : (b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
       // (the record caught up with the battle first: level, moves, PP).
       forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(own[i], mon), move),
@@ -491,7 +493,7 @@
     // and it goes in your Bag.)
     const dropped = wild && result.outcome === "won" && b.sides.p2.pokemon[0];
     // (A horde: each one knocked out drops its own.)
-    for (const d of wild && (result.outcome === "won" || result.outcome === "caught") ? (horde ? b.sides.p2.pokemon : [dropped]) : []) {
+    for (const d of wild && (result.outcome === "won" || result.outcome === "caught") ? (horde || wildDouble ? b.sides.p2.pokemon : [dropped]) : []) {
       if (!d || !d.fainted || !d.item || !window.ITEMS[d.item]) continue;
       const item = d.item, name = Bag.name(item);
       Player.addItem(player, item);
@@ -525,7 +527,7 @@
       if (player.flags.johtoRoamers) delete player.flags.johtoRoamers[foe.team[0].species];   // (a roaming beast caught: it roams no more)
       if (player.flags.hoennRoamer === foe.team[0].species) delete player.flags.hoennRoamer;   // (and Hoenn's Latias or Latios)
       // (A horde's: the last one left, whichever of them it is.)
-      const record = Party.caught(foe.team[horde && b.caught ? b.caught.teamIndex : 0] || foe.team[0], b.caught, ballUsed(b));
+      const record = Party.caught(foe.team[(horde || wildDouble) && b.caught ? b.caught.teamIndex : 0] || foe.team[0], b.caught, ballUsed(b));
       delete record.teraAce;   // (a Tera Pokémon keeps its Tera Type)
       await addCaught(record, opts.keepCaught);
     }
@@ -2067,7 +2069,12 @@
         Player.addItem(player, id);
         return true;
       },
-      rename: (name) => enterText("Box name?", name, 8),
+      // (FireRed's naming screen, "BOX NAME?", with the box's name to start with: ui/naming-screen.js.)
+      rename: async (name) => {
+        const c = Object.assign(document.createElement("canvas"), { width: 480, height: 320, className: "naming-canvas" });
+        $(".gba").appendChild(c);
+        try { return await NamingScreen.run(c, { title: "BOX NAME?", maxChars: 8, value: name, fallback: name, pc: true }); } finally { c.remove(); }
+      },
       changed: () => persist()
     });
   }
@@ -14410,7 +14417,12 @@
   // kind, and sold beside it) does the opposite: wild Pokémon turn up twice
   // as often. One or the other at a time.
 
+  // (This game's own: a Lure always brings two wild Pokémon at once, when two of yours can battle; a Max Lure, a
+  // horde. A Super Lure only makes them come more often.)
   const REPEL_STEPS = { "repel": 100, "super-repel": 200, "max-repel": 250 };
+  const lureOn = () => (player.lureSteps > 0 ? player.flags.lastLure || null : null);
+  // (The map's table of wild Pokémon where you are: on the water, its water's.)
+  const wildTable = (m) => (!m ? null : Overworld.avatar() === "surf" ? m.water || null : m.wild || null);
   const LURE_STEPS = { "lure": 100, "super-lure": 200, "max-lure": 250 };
   function repelStep() {
     if (player.lureSteps > 0) {
@@ -14423,12 +14435,25 @@
   }
   // A horde from the map's own (game/hordes.js), five wild Pokémon at once;
   // false if there's none, or a Repel keeps it away (it's weaker than your lead).
-  async function hordeBattle(mapName, terrain) {
-    const mons = Hordes.pick(mapName);
+  // (A Max Lure's, `table`: where the map has no hordes, five from that table of its wild Pokémon.)
+  async function hordeBattle(mapName, terrain, table) {
+    const mons = (table && Overworld.avatar() === "surf" ? null : Hordes.pick(mapName)) || (table ? Hordes.fromTable((rng) => World.pickWild(window.WORLD_MAPS[mapName], rng, table), 5) : null);
     if (!mons || !mons.every(repelAllows)) return false;
     await battle("wild", { horde: true, terrain, foe: { name: "Wild", team: mons.map((m) => wildMon(Party.create(m.species, m.level))) } });
     return true;
   }
+  // Two wild Pokémon at once (game/hordes.js): `first` (the encounter's) and another from the same table; false if
+  // the table has no other, or a Repel keeps one away.
+  async function wildDoubleBattle(first, mapName, terrain, table) {
+    const second = World.pickWild(window.WORLD_MAPS[mapName], Math.random, table);
+    if (!second) return false;
+    const mons = [first, second];
+    if (!mons.every(repelAllows)) return false;
+    await battle("wild", { wildDouble: true, terrain, foe: { name: "Wild", team: mons.map((m) => wildMon(Party.create(m.species, m.level,
+      { unown: Sevii.unownLetter(mapName, m.slot) || JohtoAlph.unownLetter(mapName, alphSolved()) }))) } });
+    return true;
+  }
+  const ableToBattle = () => player.party.filter(Party.canFight).length;
   function repelAllows(wild) {
     if (!(player.repelSteps > 0)) return true;
     const lead = player.party.find(Party.canFight);
@@ -14713,8 +14738,13 @@
         // Ruins of Alph's, a letter its solved puzzles have woken.)
         // (The Battle Pike's hall of wild Pokémon: your challenge's three fight it, and the room's own scripts see how it went.)
         else if (at.map === "BattleFrontier_BattlePikeRoomWildMons" || at.map === PYRAMID_FLOOR) await pikeWildBattle(ev);
+        // (A Max Lure on: always a horde, from the map's hordes or its own wild Pokémon (on the water, its water's).)
+        else if (lureOn() === "max-lure" && !towerGhost() && wildTable(here) && await hordeBattle(at.map, terrain, wildTable(here))) { /* (fought) */ }
         // (X and Y's hordes: one grass or cave encounter in twenty, where the map has them; never on the water.)
         else if (Overworld.avatar() !== "surf" && !towerGhost() && Hordes.roll(at.map) && await hordeBattle(at.map, terrain)) { /* (fought) */ }
+        // (Two wild Pokémon, with two of yours able to battle: one land encounter in Hordes.DOUBLE_CHANCE; a Lure on, always.)
+        else if (!towerGhost() && ableToBattle() >= 2 && wildTable(here) && (lureOn() === "lure" || (Overworld.avatar() !== "surf" && Hordes.rollDouble()))
+          && await wildDoubleBattle(ev, at.map, terrain, wildTable(here))) { /* (fought) */ }
         else await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level,
           { unown: Sevii.unownLetter(at.map, ev.slot) || JohtoAlph.unownLetter(at.map, alphSolved()) }))] },
           terrain, ghost: towerGhost() });
@@ -14747,12 +14777,29 @@
 
   window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, runHoenn: (label) => runHoenn(label),
     // (for the browser tests: a wild battle with this species, then back to the map)
-    wildBattle: async (species, level) => { await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level))] } }); show("world"); await Overworld.resume(); },
+    // (opts.terrain: a backdrop, assets/battle/<terrain>.png.)
+    wildBattle: async (species, level, opts) => { await battle("wild", { terrain: opts && opts.terrain, foe: { name: "Wild", team: [wildMon(Party.create(species, level))] } }); show("world"); await Overworld.resume(); },
     // (A horde of `n` of a kind, or of the species listed: for trying them out.)
-    hordeBattle: async (species, level, n) => {
+    hordeBattle: async (species, level, n, opts) => {
       const kinds = Array.isArray(species) ? species : new Array(n || 5).fill(species);
-      await battle("wild", { horde: true, foe: { name: "Wild", team: kinds.map((sp) => wildMon(Party.create(sp, level))) } });
+      await battle("wild", { horde: true, terrain: opts && opts.terrain, foe: { name: "Wild", team: kinds.map((sp) => wildMon(Party.create(sp, level))) } });
       show("world"); await Overworld.resume();
-    }, townMap: (o) => townMap(o), sailToHoenn: () => sailToHoenn(), slateportSailor: () => slateportSailor() };
+    },
+    // (Two wild Pokémon at once: the two species given.)
+    wildDoubleBattle: async (species, level, opts) => {
+      await battle("wild", { wildDouble: true, terrain: opts && opts.terrain, foe: { name: "Wild", team: species.map((sp) => wildMon(Party.create(sp, level))) } });
+      show("world"); await Overworld.resume();
+    }, townMap: (o) => townMap(o),
+    // (the Game Corner's tables, for the browser tests)
+    pokerTable: () => pokerTable(), mahjongTable: () => mahjongTable(),
+    // (and Bill's PC's boxes: "withdraw", "deposit", "move" or "items")
+    storage: (mode) => storage(mode), mart: (stock) => mart(stock),
+    // (A Tera Raid against `species`, `stars` stars, your first Pokémon and allies of the species given, for trying it out.)
+    raidBattle: async (species, level, stars, allies) => {
+      const boss = Object.assign(wildMon(Party.create(species, level)), { teraType: "Fire", teraAce: true });
+      await battle("wild", { foe: { name: "Wild", team: [boss], tera: true }, raid: stars || 3, noCatch: true, noBlackout: true, chosen: [0],
+        raidAllies: (allies || []).map((sp, i) => ({ set: Party.toBattleSet(Party.create(sp, level)), trainer: ["Brock", "Misty", "Erika"][i] || "Ace" })) });
+      show("world"); await Overworld.resume();
+    }, sailToHoenn: () => sailToHoenn(), slateportSailor: () => slateportSailor() };
   main();
 })();

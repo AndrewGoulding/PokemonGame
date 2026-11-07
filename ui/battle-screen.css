@@ -176,11 +176,11 @@ body {
    lines (.gba), which keeps their places as FireRed's. */
 .screen { position: relative; aspect-ratio: 240 / 192; overflow: hidden; background: #000; }
 .gba { position: absolute; left: 0; right: 0; bottom: 0; height: 83.3333%; }
-/* Over a battle, the top 32 lines are the battle's backdrop: its top 32
-   rows again (ui/battle-screen.js keeps it with the foe's half as it slides). */
+/* Over a battle, the top 32 lines are the top of the battle's backdrop, FireRed's band of stripes
+   (assets/battle/sky/<terrain>.png, 512x32; ui/battle-screen.js keeps it with the foe's half as it slides). */
 .field-sky {
   display: none; position: absolute; left: 0; top: 0; width: 100%; height: 16.6667%;
-  background-repeat: repeat-x; background-size: 213.3333% 350%; background-position-y: 0; image-rendering: pixelated;
+  background-repeat: repeat-x; background-size: 213.3333% 100%; background-position-y: 0; image-rendering: pixelated;
 }
 .screen:has(> .gba > .field:not(.hidden)) > .field-sky { display: block; }
 .field-sky.entering { transition: background-position-x 1s linear; }
@@ -356,17 +356,12 @@ body {
 .mosaic-fx { position: absolute; image-rendering: pixelated; pointer-events: none; z-index: 3; }
 
 /* A Tera Raid's three allies (raidAlliesPanel): top right, small, over the scene. */
-.raid-allies {
-  position: absolute; right: 1%; top: 2%; z-index: 5; width: 34%;
-  font-family: "FireRed", system-ui, sans-serif; font-size: clamp(8px, 2.2vw, 14px); line-height: 1.15; color: #fff;
-  background: rgba(40, 48, 64, 0.72); border-radius: 4px; padding: 0.6% 1.2%;
-}
-.raid-allies .ally { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.raid-allies .who { color: #f8d870; }
-.raid-allies .bar { display: block; height: 3px; background: #384050; margin: 1px 0 2px; }
-.raid-allies .bar span { display: block; height: 100%; width: 100%; background: #58d080; transition: width 0.3s; }
-.raid-allies .bar span.mid { background: #f8c030; }
-.raid-allies .bar span.low { background: #f05030; }
+/* A Tera Raid (ui/battle-screen.js raidAlliesPanel, drawRaidPanel): the Tera Raid Pokémon half as big again, standing
+   where it stands; your allies, small, on your side behind your Pokémon. */
+.field.raid .sprite.foe { scale: 1.5; }
+.field.raid .sprite.foe.dynamax { scale: 1.8; }
+.sprite.raid-ally { transform-origin: 50% 90%; }
+.sprite.raid-ally.fainted { opacity: 0; transform: translateY(30%); }
 
 /* The Substitute doll (pokeemerald-expansion's, assets/battle-anims/): in place
    of a Pokémon behind a Substitute, 64 GBA pixels square where its picture stood. */

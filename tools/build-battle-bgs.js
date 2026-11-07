@@ -61,6 +61,6 @@ for (const [id, [folder, palFile]] of Object.entries(TERRAINS)) {
   writePng(path.join(out, id + ".png"), img.width, img.height, img.rgba);
 }
 console.log("Wrote " + Object.keys(TERRAINS).length + " battle backgrounds to assets/battle/");
-// (This game's own: their tops without FireRed's band of stripes: tools/flatten-battle-bgs.js.)
-const flattened = require("./flatten-battle-bgs").run(out);
-if (flattened.length) console.log("Flattened the tops of " + flattened.length + " of them.");
+// (This game's own: their band of stripes on the screen's top lines, assets/battle/sky/: tools/battle-bg-sky.js.)
+const skies = require("./battle-bg-sky").run(out);
+if (skies.length) console.log("Split the skies off " + skies.length + " of them.");

@@ -1879,8 +1879,16 @@ for (const share of [false, true]) {
     assert.deepStrictEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [512, 112], "battle background size " + t);
   }
   // (And this game's own: the meteoroid's, tools/build-delta-episode.js.)
-  assert.strictEqual(fs.readdirSync(path.join(root, "assets/battle")).filter((f) => f !== "space.png").length, 20, "all 20 FireRed battle terrains");
+  assert.strictEqual(fs.readdirSync(path.join(root, "assets/battle")).filter((f) => f.endsWith(".png") && f !== "space.png").length, 20, "all 20 FireRed battle terrains");
   assert(fs.existsSync(path.join(root, "assets/battle/space.png")), "the meteoroid's background");
+  // (Each one's band of stripes for the screen's top 32 lines, 512x32: tools/battle-bg-sky.js.)
+  for (const f of fs.readdirSync(path.join(root, "assets/battle")).filter((f) => f.endsWith(".png"))) {
+    const sky = path.join(root, "assets/battle/sky", f);
+    assert(fs.existsSync(sky), "the sky of " + f);
+    const png = fs.readFileSync(sky);
+    assert.deepStrictEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [512, 32], "sky size " + f);
+  }
+  assert.strictEqual(require(path.join(root, "tools/battle-bg-sky.js")).run().length, 0, "the skies split off already");
 }
 
 // The debug menu can add any species but battle-only forms: each must make a
@@ -4242,6 +4250,28 @@ for (let seed = 1; seed <= HORDES; seed++) {
   }
   assert(!Hordes.at("PalletTown") && Hordes.pick("PalletTown") === null, "no hordes in Pallet Town");
 }
+// Two wild Pokémon at once (game/hordes.js; ui/game.js's wildDoubleBattle, a Lure's every time): one land
+// encounter in ten; a Max Lure's horde from a map's own table where it has no hordes; and the battle itself,
+// engine/battle.js's wild doubles: no Ball while both stand, then the one left is caught.
+{
+  assert(Hordes.rollDouble(() => 0.05) && !Hordes.rollDouble(() => 0.5), "one in ten");
+  const route1 = WORLD_MAPS.Route1, five = Hordes.fromTable((rng) => World.pickWild(route1, rng, route1.wild), 5, mulberry32(3));
+  assert(five.length === 5 && five.every((m) => DEX[m.species]), "five from the map's own table");
+  assert.strictEqual(Hordes.fromTable(() => null, 5), null, "none from an empty table");
+  const b = new Battle({ seed: 4, debug: true, format: "doubles", wild: true,
+    p1: { name: "A", team: [{ species: "Raichu", level: 40, moves: ["Thunderbolt"] }, { species: "Snorlax", level: 40, moves: ["Splash"] }] },
+    p2: { name: "Wild", team: [{ species: "Pidgey", level: 3, moves: ["Tackle"] }, { species: "Rattata", level: 3, moves: ["Tackle"] }] } });
+  b.start();
+  assert.strictEqual(b.sides.p2.actives.filter(Boolean).length, 2, "both out at once");
+  const r = b.choose("p1", [{ type: "ball", ball: "poke-ball" }, { type: "move", move: 0 }]);
+  assert(!r.ok && /aim/.test(r.error), "no Ball while two stand");
+  assert(b.choose("p1", [{ type: "move", move: 0, target: 1 }, { type: "move", move: 0 }]).ok);
+  b.choose("p2", b.sides.p2.actives.map((m) => (m && !m.fainted ? { type: "move", move: 0, target: 1 } : null)));
+  assert(b.sides.p2.pokemon[0].fainted && !b.sides.p2.pokemon[1].fainted, "Thunderbolt knocked out the Pidgey");
+  assert(b.choose("p1", [{ type: "ball", ball: "master-ball" }, { type: "move", move: 0 }]).ok, "a Ball with one left");
+  if (!b.ended) b.choose("p2", b.sides.p2.actives.map((m) => (m && !m.fainted ? { type: "move", move: 0, target: 1 } : null)));
+  assert(b.caught && b.caught.species === "Rattata", "caught the Rattata");
+}
 
 // Stance Change: Aegislash's Blade Forme for a damaging move, Shield Forme
 // for King's Shield, Shield Forme again when it leaves the field.
@@ -5187,7 +5217,7 @@ for (let seed = 1; seed <= GEN9; seed++) {
 
 console.log("ok: loaded " + headless.length + " scripts, " + BATTLES + " random battles finished (" + turns + " turns), AI beat random moves in " + aiWinRate + "% of games");
 console.log("ok: doubles regressions, " + DOUBLES + " random doubles battles finished (" + doublesTurns + " turns)");
-console.log("ok: hordes, " + HORDES + " random horde battles finished (" + hordeTurns + " turns), spread moves, Balls");
+console.log("ok: hordes, " + HORDES + " random horde battles finished (" + hordeTurns + " turns), spread moves, Balls; two wild Pokémon at once");
 
 // The Route 5 Day-Care: 1 Exp. Point a step; ¥100 plus ¥100 a level to take it
 // back; it learns its new moves, forgetting its first with four already.

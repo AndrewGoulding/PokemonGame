@@ -58,7 +58,8 @@ wallpapers), Withdraw, Deposit, Move Pokémon (pick a Pokémon up with the hand
 and put it down anywhere, in a box or your party) and Move items (take, give and
 swap held items), with FireRed's hand, party panel (its slots blue with a
 Pokémon in them, and under one the hand is holding), "which BOX?" popup, box
-scrolling and release. A Pokémon put in a box (or sent there when your party
+scrolling and release; a box is renamed on FireRed's naming screen ("BOX NAME?", the PC
+beside it, its name there to start with). A Pokémon put in a box (or sent there when your party
 is full) is fully healed, as from Gen 4 on. Your own PC is item storage: Withdraw item on FireRed's
 item list, Deposit item from the Bag. There's
 also a move tutor who teaches Dream Eater (₽10,000 a time, as often as you like: every move tutor in the game does), a school and the Nickname house.
@@ -220,7 +221,8 @@ Pokémon's Ball. Repels (from the bag) keep wild Pokémon below your lead's leve
 away for 100, 200 or 250 steps; **Lures** (Lure, Super Lure and Max Lure, as
 in Let's Go, Pikachu! and Eevee!: ₽400, ₽700 and ₽900) do the opposite for as
 long, wild Pokémon turning up twice as often (and with no quiet steps after
-a battle). Every Poké Mart that sells a Repel sells the Lure of the same kind
+a battle); a Lure also brings them two at a time (a wild double battle, when two
+of your Pokémon can battle) and a Max Lure in hordes (see Horde battles). Every Poké Mart that sells a Repel sells the Lure of the same kind
 beside it. One or the other at a time; when one wears off you're asked whether to use
 another of the same kind (as in Black and White). In battle you can fight, use items from the Bag (FireRed's Bag screen, Use on what
 can be used right now; an Ether or a Leppa Berry asks "Restore which move?"
@@ -361,20 +363,26 @@ top 32 lines too (`ui/screen-band.js`): each column of them is that column's
 colour at the top of whatever covers the 240x160 there (its first coloured
 pixel in the top 8 lines, so a window's frame is never stacked; an HTML scene
 gives its own background colour, or its minigame frame's), a few times a
-second. With nothing covering the top (the map with the Start menu or a
+second. A screen with a picture of its own for them draws them itself
+(`canvas.bandPaint`): the PC's boxes their drifting backdrop, the Poké Mart's
+buy screen the map round you (FireRed draws the map behind the whole buy
+screen, and so does this one), the PokéNav its moving dots. With nothing covering the top (the map with the Start menu or a
 window over it) the map shows there as it is; over a battle, the battle's backdrop
-does (its top 32 rows again, sliding in with the foe's half: `.field-sky`),
+does (FireRed's band of stripes along its top, sliding in with the foe's half: `.field-sky`),
 room for battles with more Pokémon on the field. In a battle the foe's side
 (its half of the backdrop with its platform, its Pokémon, trainers, boxes and
 party bar, where Balls land, and where move animations find it) stands 16
 lines higher than FireRed's (`FOE_UP`), in the middle of the 144 lines over the
 text box; the scene draws up into the top lines, the backdrop's platform-free
 ground fills in under the foe's half (`.terrain.base`), and the move
-animations' canvas covers those lines too. The backdrops have no band of
-stripes along their top: those rows are white, or for the cave, the long grass
-and under the water their own band's colour (space is left as it is;
-`tools/flatten-battle-bgs.js`, which `tools/build-battle-bgs.js` runs after
-building them). The opening, the title
+animations' canvas covers those lines too. So the battle screen looks as
+FireRed's does, only taller: each backdrop's band of stripes stays at the
+screen's top, where FireRed has it, and the ground's stripes carry on under it
+down to the platforms (`tools/battle-bg-sky.js`, which `tools/build-battle-bgs.js`
+runs after building them: the band's 32 rows go to `assets/battle/sky/<terrain>.png`
+for the top lines, and the backdrop's rows from 16 down move up 16, the ground's
+pattern filling in above the ground; space, a starfield all the way down, is left
+as it is). The opening, the title
 screen, the main menu, the Option screen and Prof. Oak's speech fill the whole
 240x192 (`#intro`, 480x384): FireRed's picture in the middle (Oak's at the
 bottom, over the text box), its top and bottom edges carried on above and
@@ -1426,7 +1434,9 @@ comes out at once, as in FireRed; anywhere else, "Looks like there's nothing
 here…"). A horde is often five of a kind, sometimes four and one (four Oddish
 and a Gloom, two Nidoran♂ and three Nidoran♀), a few levels below the map's
 own wild Pokémon, as X and Y's are; a Repel keeps them away as it would the
-weakest of them (`game/hordes.js`: `Hordes.pick`, `Hordes.roll`).
+weakest of them (`game/hordes.js`: `Hordes.pick`, `Hordes.roll`). With a **Max
+Lure** on, every encounter is a horde: the map's, or where it has none (or on the
+water), five of its own wild Pokémon (`Hordes.fromTable`).
 
 The battle (`engine/battle.js`'s `"horde"` format, `ui/battle-screen.js`): the
 five slide in, three behind and two in front, smaller than a lone wild
@@ -1435,8 +1445,9 @@ horde of Zubat appeared!" (X and Y's words; "A horde of wild Pokémon" when
 they're not all one kind). Their boxes are one panel at the top left of the
 screen, up in the 32 lines above the battle scene: one of FireRed's boxes
 (its border, cream and shadow) with a row each, the name and gender in the
-small font and FireRed's HP bar, a fainted one's row greyed "Fainted"; yours is
-the usual box. A move that aims at one Pokémon brings up the target cursor:
+small font and FireRed's HP bar (with the healthbox's Poké Ball just left of the
+bar when you've caught that kind before, as a wild Pokémon's box shows it), a
+fainted one's row greyed "Fainted"; yours is the usual box. A move that aims at one Pokémon brings up the target cursor:
 Up and Down go down the panel's rows (and round), the row lit with ▶ and its
 Pokémon blinking; A picks, B goes back. Every one of the five is next to your
 Pokémon, so a spread move (Discharge, Surf, Earthquake) hits all of them still
@@ -1450,6 +1461,18 @@ wherever it stands (ui/battle-anim.js is given yours, that one and another of
 the five as its four battlers: `hordeAnimSlots`). Each one knocked out drops
 what it was holding. For trying them out, `Game.hordeBattle("Zubat", 12, 5)`
 (or a list of species) starts one from the map.
+
+**Two wild Pokémon at once** (Black and White's wild double battles, this game's
+own way): with two of your Pokémon able to battle, one land encounter in ten
+that isn't a horde is two wild Pokémon, the encounter's and another from the
+same table (`Hordes.DOUBLE_CHANCE`, `Hordes.rollDouble`; not on the water, nor
+in the Safari Zone, the Bug-Catching Contest or the Battle Pike), and with a
+**Lure** on every encounter is, on the water too. It's a double battle
+(`engine/battle.js`'s wild doubles): the two slide in together and light up,
+"Wild Pidgey and Rattata appeared!", then you send out your first two at once;
+no Ball while both are standing ("You can't aim when there's more than one
+Pokémon!"), and you catch the one left. Each knocked out drops what it held.
+`Game.wildDoubleBattle(["Pidgey", "Rattata"], 4)` starts one.
 
 ### Prof. Oak's Mega Evolution test
 
@@ -1785,8 +1808,14 @@ rematches' too) that hits it hardest, as it is (not evolved past it), with a mov
 effective moves first, then its own types'. They battle alongside yours (`game/raid-dens.js`
 `RaidDens.allies`, and the engine's `raidAllies`): each turn each uses its
 strongest move against the Tera Raid Pokémon (a super effective one before a stronger neutral one), which aims at any of the four
-of you; what they do is told in words ("Misty's Lapras used Ice Beam!"), and
-their HP shows in the corner of the screen. You have 10, 12, 15, 20 or 25 turns to win (as Scarlet and
+of you; what they do is told in words ("Misty's Lapras used Ice Beam!"). On
+the screen (`ui/battle-screen.js`: `raidAlliesPanel`, `drawRaidPanel`) the Tera
+Raid Pokémon stands half as big again on its platform, and its box is a bar
+along the screen's top: its name, level and Tera Type, its stars, and its HP
+across the screen. Your allies stand on your side, small, behind your
+Pokémon, each with their trainer's name and an HP bar over them (one that
+faints fades away). `Game.raidBattle("Gyarados", 30, 5, ["Geodude", "Starmie",
+"Venusaur"])` starts one, for trying it out. You have 10, 12, 15, 20 or 25 turns to win (as Scarlet and
 Violet's raids have a time limit): told at the start, then "3 turns left!",
 "2 turns left!" and "This is the last turn!"; out of turns, "The Tera Raid
 Pokémon's power grew too strong!" and you're blown out. Your Pokémon doesn't
