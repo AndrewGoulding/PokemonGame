@@ -15340,6 +15340,8 @@
     storage: (mode) => storage(mode), mart: (stock) => mart(stock),
     // (your first Pokémon evolving into `into`, the scene and all)
     evolveFirst: async (into) => { await evolve(player.party[0], { into }, false); show("world"); await Overworld.resume(); },
+    // (The trade scene, your first Pokémon for `theirs`, for trying it out: nothing's actually traded.)
+    tradeScene: async (theirs) => { await tradeScene(player.party[0], Party.create(theirs || "Rattata", 10), "Tradeback Guy"); show("world"); await Overworld.resume(); },
     // (A Tera Raid against `species`, `stars` stars, your first Pokémon and allies of the species given, for trying it out.)
     raidBattle: async (species, level, stars, allies) => {
       const boss = Object.assign(wildMon(Party.create(species, level)), { teraType: "Fire", teraAce: true });

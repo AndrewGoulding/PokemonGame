@@ -51,8 +51,17 @@
     canvas.className = "world evo-scene";
     canvas.width = W * 2; canvas.height = H * 2;
     root.appendChild(canvas);
-    const g = canvas.getContext("2d");
+    const out = canvas.getContext("2d");
+    out.imageSmoothingEnabled = false;
+    // (This game's 240x192 screen, as the evolution scene: FireRed's 240x160 scene drawn UP lines higher in a picture
+    // TOP lines taller, so the Pokémon and its platform stand clear over the text box; its bottom 160 lines go on the
+    // canvas and its top 32 up the screen's band (canvas.bandPaint, ui/screen-band.js), the scene's top line carried
+    // on up over the lines above it, so the cable runs to the top of the screen.)
+    const TOP = 32, UP = 24, OFF = TOP - UP;
+    const buf = Object.assign(document.createElement("canvas"), { width: W, height: H + TOP });
+    const g = buf.getContext("2d");
     g.imageSmoothingEnabled = false;
+    canvas.bandPaint = (ctx) => { ctx.drawImage(buf, 0, 0, W, TOP, 0, 0, W, TOP); return true; };
 
     const st = {
       bg: "mon", hofs: 180, vofs: 348, mag: 8, backdrop: "#000", fade: 1, fadeColour: "#000",
@@ -76,9 +85,10 @@
       drawTinted(tint, 0, 0, w, h, dx, dy, dw, dh, 0, flip);
     }
     function draw() {
-      g.setTransform(2, 0, 0, 2, 0, 0);
+      g.setTransform(1, 0, 0, 1, 0, 0);
       g.fillStyle = st.backdrop;
-      g.fillRect(0, 0, W, H);
+      g.fillRect(0, 0, W, H + TOP);
+      g.setTransform(1, 0, 0, 1, 0, OFF);
       // The backgrounds.
       if (st.bg === "mon" && monBg) g.drawImage(monBg, st.hofs, 0, W, H, 0, 0, W, H);
       else if (st.bg === "cable" && cable) g.drawImage(cable, 0, st.vofs, 256, H, 0, 0, 256, H);
@@ -108,6 +118,9 @@
         g.globalAlpha = 1;
       }
       if (st.fade) { g.globalAlpha = st.fade; g.fillStyle = st.fadeColour; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.drawImage(buf, 0, OFF, W, 1, 0, 0, W, OFF);
+      out.drawImage(buf, 0, TOP, W, H, 0, 0, canvas.width, canvas.height);
     }
 
     // ---------- Running it ----------
