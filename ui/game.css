@@ -192,6 +192,10 @@
 .dex-entry.unseen { color: #99a; font-size: 18px; cursor: default; background: #eef1f4; }
 .dex-entry.unseen span { font-size: 10px; }
 
+/* The panel under the screen (#menu: the few menus and messages still drawn as buttons and text there) takes no
+   room while it's empty, which is nearly always: the controls sit right under the screen. */
+.panel:has(> .menu:empty) { height: 0; padding: 0; }
+
 /* ---------- Overworld ---------- */
 
 .world {
