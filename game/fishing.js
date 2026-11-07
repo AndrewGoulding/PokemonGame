@@ -8,7 +8,8 @@
 // those rods, picked by your level (TIERS): only the Old Rod's at first, the
 // Good Rod's from level 10, the Super Rod's from 25, and the better rods more
 // often as you go up. From level 50 the Super Rod's rarer slots come up more
-// often too (SUPER_WEIGHTS). Its XP goes by the rod it came from (XP).
+// often too (SUPER_WEIGHTS). Its XP goes by the rod it came from (XP). A map
+// can also have `extra` Pokémon that bite as often at every level.
 //
 //   const mon = Fishing.encounter("Route12", Fishing.level(xp));   // -> { species, level, slot, rod, xp } or null
 //   Fishing.level(xp), Fishing.toNext(xp), Fishing.progress(xp)
@@ -29,9 +30,21 @@
     return RODS[k];
   }
   // A bite in `mapName` at level `lv` (a rod with nothing there falls back to
-  // the one below), or null if nothing can be fished there.
+  // the one below), or null if nothing can be fished there. A map's `extra`
+  // Pokémon (this game's own: [{ species, min, max, percent }], as Route 24's
+  // Squirtle) bite that often at any fishing level, ahead of the rods' slots;
+  // it reels in as the rod picked for your level does.
   function encounter(mapName, lv, rng) {
     rng = rng || Math.random;
+    const t = window.WORLD_MAPS && window.WORLD_MAPS[mapName] && window.WORLD_MAPS[mapName].fishing;
+    let roll = rng() * 100;
+    for (const e of (t && t.extra) || []) {
+      if (roll < e.percent) {
+        const rod = pickRod(lv, rng);
+        return { species: e.species, level: e.min + Math.floor(rng() * (e.max - e.min + 1)), slot: 0, rod, xp: XP[rod] };
+      }
+      roll -= e.percent;
+    }
     for (let i = RODS.indexOf(pickRod(lv, rng)); i >= 0; i--) {
       const rod = RODS[i];
       const mon = window.World.fishingEncounter(mapName, rod, rng, rod === "super-rod" ? at(SUPER_WEIGHTS, lv) : null);

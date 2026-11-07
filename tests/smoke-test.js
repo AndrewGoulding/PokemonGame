@@ -3464,7 +3464,14 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   // (Its fishing at its grass's levels, Squirtle there and not in the grass, no Gyarados.)
   const fish = m.fishing.slots, grass = m.wild.slots;
   assert(fish.length === 10 && fish.every((s) => s.min >= 7 && s.max <= 14), "Route 24's fishing is Lv. 7-14");
-  assert(fish.some((s) => s.species === "Squirtle") && !fish.some((s) => s.species === "Gyarados" || s.alt === "Gyarados"));
+  assert(!fish.some((s) => s.species === "Gyarados" || s.alt === "Gyarados"), "no Gyarados fished on Route 24");
+  // (Squirtle: 5% of bites at every fishing level, the map's `extra`.)
+  for (const lv of [1, 30, 100]) {
+    let seed = 7, sq = 0;
+    const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 4000; i++) if (Fishing.encounter("Route24", lv, rng).species === "Squirtle") sq++;
+    assert(sq > 140 && sq < 260, "Squirtle about 5% of Route 24's bites at fishing level " + lv + " (" + sq + " of 4000)");
+  }
   assert(!grass.some((s) => s.species === "Squirtle"), "no Squirtle in Route 24's grass");
   assert(m.cycling && !window.WORLD_MAPS.PewterCity_PokemonCenter_1F.cycling, "cycling outdoors only");
   assert(World.facingWater({ map: "Route24", x: 5, y: 16 }, "right"));
