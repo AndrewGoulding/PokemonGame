@@ -3245,7 +3245,9 @@
   // {PLAYER}, {RIVAL}, and {STR_VAR_1..3} from `vars` (["Abra", "Mr. Mime"]).
   // (Once Mr. Stone has made your Pokégear a PokéNav, it's that in everyone's words: "registered in your PokéNav".)
   // ({OLDGEAR}: the Pokégear as it was, by that name still: what Mr. Stone made it from.)
-  const fill = (s, vars) => navName(s.replace(/\{PLAYER\}/g, player.name).replace(/\{RIVAL\}/g, player.rival)
+  // ("a {STR_VAR_2}" before a name starting with a vowel: "an Old Amber".)
+  const anBefore = (s, val) => s.replace(/\b([Aa]) (?=\{STR_VAR_(\d)\})/g, (m, a, n) => (/^[AEIOU]/i.test(val(n) || "") ? a + "n " : m));
+  const fill = (s, vars) => navName(anBefore(s, (n) => vars && vars[n - 1]).replace(/\{PLAYER\}/g, player.name).replace(/\{RIVAL\}/g, player.rival)
     .replace(/\{STR_VAR_(\d)\}/g, (_, n) => (vars && vars[n - 1] != null ? vars[n - 1] : ""))).replace(/\{OLDGEAR\}/g, "Pokégear");
   const navName = (s) => (hasPokenav() ? s.replace(/Pok[ée]gear|POK[ÉéE]GEAR|Pok[ée]Gear/g, "PokéNav") : s);
   // (The PokéNav: Mr. Stone's, in Devon's office, Emerald's FLAG_SYS_POKENAV_GET. It's your Pokégear made over, and
@@ -3384,7 +3386,7 @@
       f[ev.person.flag] = true;
       Overworld.removePerson(ev.person);   // (just the ball: everyone else stays where they are)
       await sayWithJingle(itemJingle(item), /^Game_EventScript_MegaStone_/.test(ev.person.script || "") ? "{PLAYER} found " + article(Bag.name(item)) + "!"
-        : "{PLAYER} found a " + Bag.name(item) + "!");
+        : "{PLAYER} found " + article(Bag.name(item)) + "!");
       return;
     }
 
@@ -4181,7 +4183,7 @@
         Overworld.removePerson(ev.person);
         Player.addItem(player, item);
         f[item === "lift-key" ? "gotLiftKey" : "gotSilphScope"] = true;
-        await sayWithJingle("mus_obtain_key_item", "{PLAYER} found a " + Bag.name(item) + "!");
+        await sayWithJingle("mus_obtain_key_item", "{PLAYER} found " + article(Bag.name(item)) + "!");
         return;
       }
 
@@ -7515,7 +7517,7 @@
     Player.removeItem(player, drink);
     Player.addItem(player, tm);
     f[flag] = true;
-    await sayWithJingle("mus_level_up", "{PLAYER} received a " + Bag.name(tm) + "\nfrom the little girl.");
+    await sayWithJingle("mus_level_up", "{PLAYER} received " + article(Bag.name(tm)) + "\nfrom the little girl.");
     await say(R(explain));
   }
   // Fresh Water ₽200, Soda Pop ₽300, Lemonade ₽350, as many as you like:
@@ -14794,6 +14796,8 @@
     pokerTable: () => pokerTable(), mahjongTable: () => mahjongTable(),
     // (and Bill's PC's boxes: "withdraw", "deposit", "move" or "items")
     storage: (mode) => storage(mode), mart: (stock) => mart(stock),
+    // (your first Pokémon evolving into `into`, the scene and all)
+    evolveFirst: async (into) => { await evolve(player.party[0], { into }, false); show("world"); await Overworld.resume(); },
     // (A Tera Raid against `species`, `stars` stars, your first Pokémon and allies of the species given, for trying it out.)
     raidBattle: async (species, level, stars, allies) => {
       const boss = Object.assign(wildMon(Party.create(species, level)), { teraType: "Fire", teraAce: true });

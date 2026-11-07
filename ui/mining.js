@@ -21,8 +21,9 @@
     xpBefore = xpBefore | 0;
     let tool = "pick", cx = Math.floor(W() / 2), cy = Math.floor(H() / 2);
     const name = (id) => window.Bag.name(id);
-    // "a Fire Stone, a Revive and a Heart Scale"
-    const list = (ids) => { const a = ids.map((id) => "a " + name(id)); return a.length > 1 ? a.slice(0, -1).join(", ") + " and " + a[a.length - 1] : a[0]; };
+    // "a Fire Stone, a Revive and an Old Amber"
+    const an = (id) => (/^[AEIOU]/i.test(name(id)) ? "an " : "a ") + name(id);
+    const list = (ids) => { const a = ids.map(an); return a.length > 1 ? a.slice(0, -1).join(", ") + " and " + a[a.length - 1] : a[0]; };
 
     // The ground under the rock: bare earth, and each treasure's picture in
     // one piece over the tiles it's buried under (its whole shape's box),
@@ -94,7 +95,7 @@
         void board.offsetWidth;   // restart the animation
         board.classList.add(tool === "pick" ? "shake" : "shake-hard");
         const boom = tool === "bomb" ? "Boom! " : "";
-        if (r.found.length) say(boom + "You dug up " + r.found.map((id) => "a " + name(id)).join(" and ") + "!");
+        if (r.found.length) say(boom + "You dug up " + r.found.map(an).join(" and ") + "!");
         else if (boom) say("Boom!");
         if (dig.over) end();
       }

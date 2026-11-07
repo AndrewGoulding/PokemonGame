@@ -2620,26 +2620,42 @@
     awardExp(foe) {
       const E = window.Experience;
       const receivers = [...(foe.expParticipants || [])].filter((m) => !m.fainted);
+      const cap = Math.min(E.MAX_LEVEL, this.levelCap);
+      // (This game's own: with the Exp. Share on, what a Pokémon at the level cap or level 100 can't take, or
+      // could take only part of, goes to the rest of the party that still can, shared out evenly.)
+      let unused = 0;
       // Gen 6: without the Exp. Share, Pokémon that battled split it; with it,
       // each gets the full amount and the rest of the party half.
       const give = (mon, divisor, share) => {
         E.addEvs(mon.evs, foe.baseSpecies);
-        if (mon.level >= E.MAX_LEVEL) return;
+        const amount = E.gain({ species: foe.baseSpecies, level: foe.level, trainer: !this.wild,
+          participants: divisor, luckyEgg: mon.item === "lucky-egg" });
+        if (mon.level >= E.MAX_LEVEL) { unused += amount; return; }
         // (At the level cap: no Exp. Points, and it's said once a battle.)
         if (mon.level >= this.levelCap) {
           if (!this.capNoted.has(mon)) { this.capNoted.add(mon); this.add("-expcap", mon, this.levelCap, mon.teamIndex); }
+          unused += amount;
           return;
         }
-        const amount = E.gain({ species: foe.baseSpecies, level: foe.level, trainer: !this.wild,
-          participants: divisor, luckyEgg: mon.item === "lucky-egg" });
-        this.gainExp(mon, amount, share);
+        unused += amount - this.gainExp(mon, amount, share);
       };
       for (const mon of receivers) give(mon, this.expShare ? 1 : receivers.length, false);
       if (!this.expShare) return;
       const rest = this.sides.p1.pokemon.filter((m) => !m.fainted && !receivers.includes(m) && m.owner === 0);
-      if (!rest.length) return;
-      this.add("-expshare");
-      for (const mon of rest) give(mon, 2, true);
+      if (rest.length) {
+        this.add("-expshare");
+        for (const mon of rest) give(mon, 2, true);
+      }
+      // (The rest shared out: again while any is left and someone can still take some.)
+      for (let pass = 0; pass < 6 && unused > 0; pass++) {
+        const able = this.sides.p1.pokemon.filter((m) => !m.fainted && m.owner === 0 && m.level < cap);
+        if (!able.length) break;
+        const each = Math.floor(unused / able.length);
+        if (!each) break;
+        unused -= each * able.length;
+        if (!this.passedOn) { this.passedOn = true; this.add("-text", "p1", "The Exp. Share passed on the Exp. Points\nthat couldn't be gained!"); }
+        for (const mon of able) unused += each - this.gainExp(mon, each, true);
+      }
     }
 
     gainExp(mon, amount, share) {
@@ -2648,7 +2664,7 @@
       // (No further than the level cap: the Exp. Points to reach it, and no more.)
       const cap = Math.min(E.MAX_LEVEL, this.levelCap);
       amount = Math.max(0, Math.min(amount, E.expForLevel(group, cap) - mon.exp));
-      if (!amount) return;
+      if (!amount) return 0;
       mon.exp += amount;
       const levelsUp = () => mon.level < cap && mon.exp >= E.expForLevel(group, mon.level + 1);
       this.add("-exp", mon, amount, mon.teamIndex, levelsUp() ? 1 : E.progress(group, mon.level, mon.exp), share ? "share" : "");
@@ -2661,6 +2677,7 @@
         this.learnLevelUpMoves(mon);
       }
       if (mon.level >= E.MAX_LEVEL) mon.exp = Math.min(mon.exp, E.expForLevel(group, E.MAX_LEVEL));
+      return amount;   // (how much it took)
     }
 
     // New stats after a level-up; HP goes up by however much max HP did.

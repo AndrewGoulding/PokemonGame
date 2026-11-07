@@ -5205,6 +5205,25 @@ for (let seed = 1; seed <= GEN9; seed++) {
   const before = b.sides.p1.active.exp;
   for (let i = 0; i < 10 && !b.ended; i++) { b.choose("p1", { type: "move", move: b.sides.p1.active.moves[0].id }); b.choose("p2", { type: "move", move: "Tackle" }); }
   assert(b.ended && b.sides.p1.active.level === 15 && b.sides.p1.active.exp === before && b.events.some((e) => e[0] === "-expcap"), "no Exp. Points at the cap");
+  // (With the Exp. Share on, what the one at the cap couldn't take goes to the rest that can: the Pidgey gets its
+  // half share and the Charmander's full amount too; at level 100 the same.)
+  for (const [lead, cap] of [[15, 15], [100, 100]]) {
+    const mk = (expShare) => {
+      const t = new Battle({ seed: 3, exp: true, expShare, wild: true, levelCap: cap,
+        p1: { name: "A", team: [Party.toBattleSet(Party.create("Charmander", lead), "PalletTown"), Party.toBattleSet(Party.create("Pidgey", 5), "PalletTown")] },
+        p2: { name: "B", team: [{ species: "Caterpie", level: 2, moves: ["Tackle"] }] } });
+      t.start();
+      const pidgey = t.sides.p1.pokemon[1], was = pidgey.exp;
+      const hit = t.sides.p1.active.moves.find((m) => window.MOVES[m.name] && window.MOVES[m.name].power > 0);
+      for (let i = 0; i < 10 && !t.ended; i++) { t.choose("p1", { type: "move", move: hit.id }); t.choose("p2", { type: "move", move: "Tackle" }); }
+      return { gained: pidgey.exp - was, said: t.events.some((e) => e[0] === "-text" && /passed on/.test(e[2])) };
+    };
+    const full = Experience.gain({ species: "Caterpie", level: 2, trainer: false, participants: 1 });
+    const half = Experience.gain({ species: "Caterpie", level: 2, trainer: false, participants: 2 });
+    const on = mk(true), off = mk(false);
+    assert.strictEqual(on.gained, half + full, "the capped one's Exp. Points passed on (lead " + lead + ")");
+    assert(on.said && !off.said && off.gained === 0, "only with the Exp. Share on");
+  }
   const r = Party.create("Charmander", 14);
   Bag.expCandy(r, "exp-candy-l", { cap: 15 });
   assert.strictEqual(r.level, 15, "an Exp. Candy stops at the cap");

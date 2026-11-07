@@ -19,6 +19,10 @@
   "use strict";
 
   const W = 240, H = 160, FIELD_H = 112;   // (the text box is below row 112)
+  // (This game's 240x192 screen: the scene is drawn 32 lines taller, the screen's top 32 lines over it too
+  // (canvas.bandPaint, ui/screen-band.js), and the Pokémon in the middle of the 144 lines over the text box,
+  // UP lines higher than FireRed's; the sparkles go with it.)
+  const TOP = 32, UP = 24;
   const FRAME_MS = 1000 / 60;
 
   // graphics/evolution_scene/transition.pal (black up to light blue).
@@ -94,8 +98,8 @@
   async function open(root, opts) {
     // (The last evolution's final frame mustn't show while the pictures load.)
     root.innerHTML = "";
-    const [terrain, sparkleImg, from, into] = await Promise.all([
-      load("assets/battle/plain.png"), load("assets/evolution/sparkle.png"),
+    const [terrain, terrainSky, sparkleImg, from, into] = await Promise.all([
+      load("assets/battle/plain.png"), load("assets/battle/sky/plain.png"), load("assets/evolution/sparkle.png"),
       load(opts.from), load(opts.into)]);
     root.classList.add("evo");
     root.innerHTML = "";
@@ -103,8 +107,13 @@
     canvas.className = "world evo-scene";
     canvas.width = W * 2; canvas.height = H * 2;
     root.appendChild(canvas);
-    const g = canvas.getContext("2d");
+    const out = canvas.getContext("2d");
+    out.imageSmoothingEnabled = false;
+    // (Drawn here first, 240x192, then the bottom 160 lines onto the canvas and the top 32 for the band.)
+    const buf = Object.assign(document.createElement("canvas"), { width: W, height: H + TOP });
+    const g = buf.getContext("2d");
     g.imageSmoothingEnabled = false;
+    canvas.bandPaint = (ctx) => ctx.drawImage(buf, 0, 0, W, TOP, 0, 0, W, TOP);
 
     // The swirl's two layers as colour numbers (data/evolution-scene.js).
     let layers = null;
@@ -123,9 +132,9 @@
       });
     }
     const swirl = document.createElement("canvas");
-    swirl.width = W; swirl.height = FIELD_H;
+    swirl.width = W; swirl.height = TOP + FIELD_H;
     const swirlG = swirl.getContext("2d");
-    const swirlPx = swirlG.createImageData(W, FIELD_H);
+    const swirlPx = swirlG.createImageData(W, TOP + FIELD_H);
 
     const tint = { from: tinter(from), into: tinter(into), sparkle: tinter(sparkleImg) };
     const st = {
@@ -137,19 +146,22 @@
     };
 
     function draw() {
-      g.setTransform(2, 0, 0, 2, 0, 0);
+      g.setTransform(1, 0, 0, 1, 0, 0);
       g.fillStyle = "#000";
-      g.fillRect(0, 0, W, H);
+      g.fillRect(0, 0, W, H + TOP);
       if (st.terrain && terrain) {
-        g.drawImage(terrain, 256, 0, W, FIELD_H, 0, 0, W, FIELD_H);
-        if (st.terrainFade) { g.globalAlpha = st.terrainFade; g.fillStyle = st.terrainColour; g.fillRect(0, 0, W, FIELD_H); g.globalAlpha = 1; }
+        // (Its band of stripes on top, as a battle's: tools/battle-bg-sky.js.)
+        if (terrainSky) g.drawImage(terrainSky, 256, 0, W, TOP, 0, 0, W, TOP);
+        g.drawImage(terrain, 256, 0, W, FIELD_H, 0, TOP, W, FIELD_H);
+        if (st.terrainFade) { g.globalAlpha = st.terrainFade; g.fillStyle = st.terrainColour; g.fillRect(0, 0, W, TOP + FIELD_H); g.globalAlpha = 1; }
       }
       if (st.bg && layers) {
         // BG1 over BG2, blended half and half (BLDALPHA 8, 8); clear shows black.
         const pal = st.bgPal.map((c) => c.map((v) => v + (255 - v) * st.bgFade));
         const px = swirlPx.data, [l1, l2] = layers;
-        for (let y = 0; y < FIELD_H; y++) {
-          const r1 = ((y + st.bg1[1]) & 255) * 256, r2 = ((y + st.bg2[1]) & 255) * 256;
+        for (let y = 0; y < TOP + FIELD_H; y++) {
+          // (Its rows carry on up over the scene: the layers wrap at 256, as the GBA's do.)
+          const r1 = ((y - TOP + UP + st.bg1[1]) & 255) * 256, r2 = ((y - TOP + UP + st.bg2[1]) & 255) * 256;
           for (let x = 0; x < W; x++) {
             const a = l1[r1 + ((x + st.bg1[0]) & 255)], b = l2[r2 + ((x + st.bg2[0]) & 255)];
             const o = (y * W + x) * 4;
@@ -162,7 +174,8 @@
         swirlG.putImageData(swirlPx, 0, 0);
         g.drawImage(swirl, 0, 0);
       }
-      // The Pokémon, centred on (120, 64) as FireRed's are; scaled about the centre.
+      // The Pokémon, centred on (120, 64) as FireRed's are (UP higher here); scaled about the centre.
+      g.setTransform(1, 0, 0, 1, 0, TOP - UP);
       for (const k of ["from", "into"]) {
         const m = st.mons[k], pic = tint[k](m.white, "#fff");
         if (!m.shown || !pic) continue;
@@ -175,7 +188,11 @@
         const size = 8 * 256 / SPARKLE_SCALES[s.matrix - 20];
         g.drawImage(sp, Math.round(s.x + s.x2 - size / 2), Math.round(s.y + s.y2 - size / 2), size, size);
       }
-      if (st.fade) { g.globalAlpha = st.fade; g.fillStyle = st.fadeColour; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      if (st.fade) { g.globalAlpha = st.fade; g.fillStyle = st.fadeColour; g.fillRect(0, 0, W, H + TOP); g.globalAlpha = 1; }
+      out.setTransform(1, 0, 0, 1, 0, 0);
+      out.clearRect(0, 0, canvas.width, canvas.height);
+      out.drawImage(buf, 0, TOP, W, H, 0, 0, canvas.width, canvas.height);
     }
 
     // ---------- Tasks: generators stepped once a frame ----------

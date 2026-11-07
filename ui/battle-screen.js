@@ -44,6 +44,7 @@
   const SHAKE_MS = 750;      // one wobble of a thrown ball
 
   const ballName = (id) => window.Bag.name(id);
+  const an = (w) => (/^[AEIOU]/i.test(w) ? "an " : "a ") + w;   // ("an Ultra Ball")
   const BREAK_FREE = [
     "Oh no! The Pokémon broke free!", "Aww! It appeared to be caught!",
     "Aargh! Almost had it!", "Gah! It was so close, too!"
@@ -2039,7 +2040,7 @@
       case "-ghostgetout": return "Ghost: Get out…… Get out……";
       case "-ghostdodge":   // [side, ball]
         return async () => {
-          await message("You threw a " + ballName(b) + "!", 700);
+          await message("You threw " + an(ballName(b)) + "!", 700);
           if (!await ballThrow("p2", b, 0, false, 6)) sfx("se_ball_throw");
           await message("It dodged the thrown Ball!\nThis Pokémon can't be caught!");
         };
@@ -2053,7 +2054,7 @@
             await message((config.wally ? "Wally" : "The old man") + " used\n" + ballName(b) + "!", 700);
             const t = trainerEl();
             (async () => { for (const [f, n] of [[1, 24], [2, 9], [3, 24], [0, 9]]) { t.style.backgroundPositionY = (f * 100 / 3) + "%"; await wait(n * 1000 / 60); } })();
-          } else await message("You threw a " + ballName(b) + "!", 700);
+          } else await message("You threw " + an(ballName(b)) + "!", 700);
           // (At the foe it's thrown at: a snag in a double battle may be the second.)
           if (!config.oldMan && !config.wally && await ballThrow(/^p2[b-e]/.test(c || "") ? posOf(c) : "p2", b, +ev[4], ev[5] === "caught")) {
             if (ev[5] !== "caught") await message(BREAK_FREE[+ev[4]] || BREAK_FREE[0]);

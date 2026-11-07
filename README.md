@@ -236,7 +236,9 @@ Summary screen's move list to pick one to forget) and evolve afterwards (see
 **Double and tag battles** below for two-on-two), in FireRed's
 evolution scene: the battle background fades to black for its swirling blue one,
 sparkles spiral up and rain down, the old and new Pokémon trade places as white
-shapes faster and faster, and a flash shows the new one. Hold B while they trade
+shapes faster and faster, and a flash shows the new one (on this game's taller
+screen the Pokémon stands in the middle of the 144 lines over the text box, the
+backdrop with its band of stripes and the swirl carried up to the top). Hold B while they trade
 places to stop it (not when a stone does it). Press A to skip ahead.
 Lose (no Pokémon left that can fight) and it goes as in FireRed: in the
 battle's text box, "… is out of usable Pokémon!", the money you lose (to a
@@ -3309,7 +3311,10 @@ node tools/build-sinnoh.js <path to the Essentials project>
   With the **Exp. Share** on (a key item you start with; use it from the bag to
   switch it off and on), each Pokémon that battled gets the full amount
   instead of a split, and the rest of the party (not fainted) gets half, plus
-  EVs, as in X and Y.
+  EVs, as in X and Y. What a Pokémon at the level cap or level 100 can't take
+  (all of its share, or what's over the cap) goes, shared out evenly, to the
+  party's Pokémon that can still gain Exp. Points ("The Exp. Share passed on the
+  Exp. Points that couldn't be gained!"); with the Exp. Share off it's lost.
 - **Level caps** (this game's own: the adventure goes region by region,
   Kanto, then Johto, then the rest): in a region, your Pokémon grow no further
   than its cap for the Badges you have of that region's eight: the level of the

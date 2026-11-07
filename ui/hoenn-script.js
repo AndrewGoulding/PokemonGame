@@ -133,7 +133,8 @@
     // ---------- Text ----------
     const buffers = {};
     const rivalName = () => (env.isGirl() ? "Brendan" : "May");
-    const fill = (s) => s.replace(/\{STR_VAR_(\d)\}/g, (m, n) => (buffers[n] != null ? buffers[n] : "")).replace(/\{RIVAL\}/g, rivalName());
+    // ("a {STR_VAR_1}" before a name starting with a vowel: "an Old Amber".)
+    const fill = (s) => s.replace(/\b([Aa]) (?=\{STR_VAR_(\d)\})/g, (m, a, n) => (/^[AEIOU]/i.test(buffers[n] || "") ? a + "n " : m)).replace(/\{STR_VAR_(\d)\}/g, (m, n) => (buffers[n] != null ? buffers[n] : "")).replace(/\{RIVAL\}/g, rivalName());
     const pagesOf = (label) => {
       const t = DATA().t[label];
       return t && t.length ? t.map(fill) : null;

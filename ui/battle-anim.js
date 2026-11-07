@@ -782,7 +782,11 @@
   // (The foe's 16 lines higher than FireRed's on this game's 240x192 screen: FOE_UP, ui/battle-screen.js.)
   const FOE_UP = 16;
   const BASE_Y = [[80, 40 - FOE_UP, 80, 40 - FOE_UP], [80, 40 - FOE_UP, 88, 32 - FOE_UP]];
+  // (A horde runs as a double battle, but your side has no second Pokémon: where an animation asks for one, as
+  // GetProperCentredCoord's middle of a Pokémon and its partner does, it's where yours is, not the screen's corner.)
+  const standIn = (b) => (inst && inst.measuredBase && !inst.boxes[b] && inst.boxes[b ^ 2] ? b ^ 2 : b);
   function coord(b, type) {
+    b = standIn(b);
     const box = inst && inst.boxes[b];
     if (!box) return [0, 1].includes(type) ? 0 : 0;
     switch (type) {
@@ -803,6 +807,7 @@
   // BATTLER_COORD_ATTR_HEIGHT, WIDTH, TOP, BOTTOM, LEFT, RIGHT, RAW_BOTTOM:
   // the picture's opaque part.
   function coordAttr(b, attr) {
+    b = standIn(b);
     const box = inst && inst.boxes[b];
     if (!box) return 0;
     const top = box.cy - box.size / 2 + box.top, bottom = box.cy + box.size / 2 - box.bottom;
