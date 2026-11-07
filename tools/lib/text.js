@@ -26,7 +26,9 @@ function cleanText(s) {
     .replace(/\{(?!PLAYER\}|RIVAL\}|STR_VAR_\d\})[A-Za-z_0-9 ]+\}/g, "");   // control codes ({PAUSE 0x56}, colours)
   return s.split("\\p").map((page) => page.replace(/\\[nl]/g, "\n").replace(/ +\n/g, "\n").trim()
     // FireRed writes names in capitals (PROF. OAK, VIRIDIAN CITY, GYM); use normal case.
-    .replace(/(?<!\{)\b[A-Z][A-Z'.]*[A-Z]\b(?!\})/g, (w) => KEEP_CAPS.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase())).filter(Boolean);
+    .replace(/(?<!\{)\b[A-Z][A-Z'.]*[A-Z]\b(?!\})/g, (w) => KEEP_CAPS.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase())
+    // (and a number's: Emerald's MECHADOLL 1'S QUIZ, Mechadoll 1's Quiz)
+    .replace(/(\d)'S\b/g, "$1's")).filter(Boolean);
 }
 
 module.exports = { parseTextFile, cleanText };
