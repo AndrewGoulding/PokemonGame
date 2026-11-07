@@ -21,9 +21,13 @@
   screen.appendChild(band);
   const bg = band.getContext("2d");
   const out = bg.createImageData(W, 1);
-  const probe = document.createElement("canvas");
+  let probe = document.createElement("canvas");
   probe.width = W; probe.height = LINES;
-  const pg = probe.getContext("2d", { willReadFrequently: true });
+  let pg = probe.getContext("2d", { willReadFrequently: true });
+  // (Opened from the disk (file://), a canvas that has drawn the game's pictures can't be read back: then the band
+  // can't look for colours, and instead draws each full-screen canvas's top line straight up over black (so the
+  // map never shows through a menu), leaving out #overlay's windows over the map.)
+  let canRead = true;
 
   const shown = (el) => {
     if (!el.isConnected || el.classList.contains("hidden")) return false;
@@ -88,9 +92,18 @@
         continue;
       }
       if (!el.width || !el.height) continue;
+      if (!canRead) continue;
       pg.clearRect(0, 0, W, LINES);
       try { pg.drawImage(el, 0, 0, el.width, el.height * LINES / 160, 0, 0, W, LINES); } catch (e) { continue; }
-      const px = pg.getImageData(0, 0, W, LINES).data;
+      let px;
+      try { px = pg.getImageData(0, 0, W, LINES).data; }
+      catch (e) {
+        // (Tainted: no reading from here on; a fresh probe, as this one stays tainted.)
+        canRead = false;
+        probe = document.createElement("canvas"); probe.width = W; probe.height = LINES;
+        pg = probe.getContext("2d", { willReadFrequently: true });
+        break;
+      }
       // (Only something that covers the top: a window or two over the map, the Start menu's, doesn't.)
       let covered = 0;
       for (let x = 0; x < W; x++) for (let y = 0; y < LINES; y++) if (px[(y * W + x) * 4 + 3] >= 200) { covered++; break; }
@@ -104,6 +117,21 @@
           break;
         }
       }
+    }
+    if (!canRead) {
+      // (Drawn, not read: black, then back to front each full-screen canvas's top line (#overlay's windows left
+      // out) and each HTML scene's colour.)
+      const draw = order.slice().reverse().filter(({ el }) => el.tagName !== "CANVAS" || (el.id !== "overlay" && el.width && el.height));
+      if (draw.length) {
+        bg.globalCompositeOperation = "source-over";
+        bg.fillStyle = "#000"; bg.fillRect(0, 0, W, 1);
+        for (const { el } of draw) {
+          if (el.tagName !== "CANVAS") { const c = sceneColour(el, top); if (c) { bg.fillStyle = "rgb(" + c.join(",") + ")"; bg.fillRect(0, 0, W, 1); } continue; }
+          try { bg.drawImage(el, 0, 0, el.width, Math.max(1, el.height / 160), 0, 0, W, 1); } catch (e) { /* (not drawable yet) */ }
+        }
+        if (!on) { band.classList.add("on"); on = true; }
+      } else if (on) { band.classList.remove("on"); on = false; }
+      return;
     }
     if (any) { bg.putImageData(out, 0, 0); if (!on) { band.classList.add("on"); on = true; } }
     else if (on) { band.classList.remove("on"); on = false; }
