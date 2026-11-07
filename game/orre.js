@@ -16,6 +16,7 @@
 //   Orre.patches(map, flags)         // the Stand's patches on now (the truck parked)
 //   Orre.willieTeam()                // Rider Willie's two Zigzagoon (Lv. 25 and 26)
 //   Orre.SHOP                        // what the Stand's bar sells, once Willie's been beaten
+//   Orre.SHADOW, Orre.shadowOf(trainer), Orre.shadowMon(entry)  // Colosseum's Shadow Pokémon, by Trainer; one to battle
 //   Orre.FILLERS                     // Orre's filler Trainers, by script: { name, cls, pic, team, intro, defeat, after }
 //
 // The opening's progress is player.flags.orre:
@@ -160,7 +161,7 @@
     "OutskirtStand_EventScript_Filler_PAT": {"name": "Hiker Pat", "cls": "Hiker", "pic": "hiker", "team": [["Sandshrew", 11], ["Trapinch", 11]], "intro": ["Walked all the way out from Pyrite!\nMy legs need a rest, but my Pokémon\ndon't!"], "defeat": ["Oof! Rested enough, I guess."], "after": ["The sand out here hides all sorts.\nI found a whole bottle cap once!"]},
     "OutskirtStand_EventScript_Filler_LOU": {"name": "Biker Lou", "cls": "Biker", "pic": "biker", "team": [["Zigzagoon", 12], ["Taillow", 12], ["Wingull", 12]], "intro": ["Vroom vroom! Let's race… I mean,\nbattle!"], "defeat": ["Out of gas!"], "after": ["Folks say some Pokémon in Orre have\nbeen acting real strange. Mean, like."]},
     "OutskirtStand_EventScript_Filler_JAY": {"name": "Rocker Jay", "cls": "Rocker", "pic": "rocker", "team": [["Numel", 12], ["Baltoy", 13]], "intro": ["The jukebox in there's been stuck on\nthe same song all week! I need to\nblow off steam!"], "defeat": ["Man, that's even worse!"], "after": ["The bartender won't fix the jukebox.\nSays it's \"part of the charm.\""]},
-    "PyriteTown_EventScript_Filler_HANK": {"name": "Burglar Hank", "cls": "Burglar", "pic": "burglar", "team": [["Poochyena", 15], ["Houndour", 15], ["Carvanha", 15]], "intro": ["Nice Bag you got there. Mind if I…\nlook inside? After a battle, say?"], "defeat": ["Keep your Bag, then!"], "after": ["Cail thinks he runs this part of town.\nHe doesn't."]},
+    "PyriteTown_EventScript_Filler_HANK": {"name": "Burglar Hank", "cls": "Burglar", "pic": "burglar", "team": [["Poochyena", 15], ["Houndour", 15], ["Carvanha", 15]], "intro": ["Nice Bag you got there. Mind if I…\nlook inside? After a battle, say?"], "defeat": ["Keep your Bag, then!"], "after": ["Rook thinks he runs this part of town.\nHe doesn't."]},
     "PyriteTown_EventScript_Filler_RYU": {"name": "Black Belt Ryu", "cls": "Black Belt", "pic": "black_belt", "team": [["Machop", 16], ["Makuhita", 16]], "intro": ["In Pyrite, the strong survive! Hyah!"], "defeat": ["My training… isn't over!"], "after": ["Every Trainer in Pyrite wants to fight\nin the Colosseum. When it opens…"]},
     "PyriteTown_EventScript_Filler_DORN": {"name": "Scientist Dorn", "cls": "Scientist", "pic": "scientist", "team": [["Koffing", 16], ["Sableye", 17], ["Grimer", 16]], "intro": ["My research is very important. Too\nimportant for interruptions! Battle!"], "defeat": ["My data… corrupted!"], "after": ["I study Pokémon behaviour. Something\nis making some of them… cold."]},
     "PyriteTown_EventScript_Filler_VINCE": {"name": "Rocker Vince", "cls": "Rocker", "pic": "rocker", "team": [["Mightyena", 18], ["Weezing", 18]], "intro": ["Pyrite's my stage, kid! Let's rock!"], "defeat": ["Feedback! Feedback!"], "after": ["That cave out east? Hikers go in to\ndig. I go in for the echo."]},
@@ -174,8 +175,70 @@
     "PyriteCave_EventScript_Filler_REX": {"name": "Cooltrainer Rex", "cls": "Cooltrainer", "pic": "cooltrainer_m", "team": [["Machoke", 25], ["Vibrava", 25]], "intro": ["Training in the dark sharpens the mind.\nLet's see how sharp yours is!"], "defeat": ["Sharp indeed!"], "after": ["Push your Pokémon hard, but never\nfurther than they can go."]},
     "PyriteCave_EventScript_Filler_BOULDER": {"name": "Hiker Boulder", "cls": "Hiker", "pic": "hiker", "team": [["Steelix", 26], ["Golem", 26]], "intro": ["Name's Boulder. Hardest Hiker in Orre!\nNobody passes without a battle!"], "defeat": ["Crumbled! Me!"], "after": ["Rowe's just round there. Tough old\nfellow. Tougher Gligar."]}};
 
+  // Colosseum's Shadow Pokémon, in its order: [species, level, Trainer class, Trainer, where you meet them]. Colosseum's
+  // story proper gives each Trainer theirs (Orre.shadowOf(trainer): [{ species, level, cls, trainer, place }]), so they
+  // match the game; this game's own Orre before it (the prologue) keeps clear of these Trainers' names.
+  const SHADOW = [
+    ["Makuhita", 30, "Miror B. Peon", "Trudly", "Phenac City (the Mayor's house)"],
+    ["Bayleef", 30, "Cipher Peon", "Verde", "Phenac City"],
+    ["Quilava", 30, "Cipher Peon", "Rosso", "Phenac City"],
+    ["Croconaw", 30, "Cipher Peon", "Bluno", "Phenac City"],
+    ["Furret", 33, "Rogue", "Cail", "Pyrite Town"],
+    ["Misdreavus", 30, "Rider", "Vant", "Pyrite Town"],
+    ["Noctowl", 30, "Rider", "Nover", "Pyrite Town"],
+    ["Flaaffy", 30, "St. Performer", "Diogo", "Pyrite Town"],
+    ["Skiploom", 30, "Rider", "Leba", "Pyrite Town"],
+    ["Quagsire", 30, "Bandana Guy", "Divel", "Pyrite Town"],
+    ["Slugma", 30, "Roller Boy", "Lon", "Pyrite Town"],
+    ["Yanma", 33, "Cipher Peon", "Nore", "Pyrite Building"],
+    ["Remoraid", 20, "Miror B. Peon", "Reath", "Pyrite Building"],
+    ["Mantine", 33, "Miror B. Peon", "Ferma", "Pyrite Building"],
+    ["Qwilfish", 33, "Hunter", "Doken", "Pyrite Town"],
+    ["Meditite", 33, "Rider", "Twan", "Pyrite Cave"],
+    ["Dunsparce", 33, "Rider", "Sosh", "Pyrite Cave"],
+    ["Swablu", 33, "Hunter", "Zalo", "Pyrite Cave"],
+    ["Sudowoodo", 35, "Cipher Admin", "Miror B.", "Miror B.'s Hideout"],
+    ["Hitmontop", 38, "Cipher Peon", "Skrub", "Agate Village"],
+    ["Entei", 40, "Cipher Admin", "Dakim", "Mt. Battle"],
+    ["Ledian", 40, "Cipher Peon", "Kloak", "The Under"],
+    ["Suicune", 40, "Cipher Admin", "Venus", "The Under"],
+    ["Gligar", 43, "Hunter", "Frena", "The Under Subway"],
+    ["Stantler", 43, "Chaser", "Liaks", "The Under Subway"],
+    ["Piloswine", 43, "Bodybuilder", "Lonia", "The Under Subway"],
+    ["Sneasel", 43, "Rider", "Nelis", "The Under Subway"],
+    ["Aipom", 43, "Cipher Peon", "Cole", "the Shadow Pokémon Lab"],
+    ["Murkrow", 43, "Cipher Peon", "Lare", "the Shadow Pokémon Lab"],
+    ["Forretress", 43, "Cipher Peon", "Vana", "the Shadow Pokémon Lab"],
+    ["Ariados", 43, "Cipher Peon", "Lesar", "the Shadow Pokémon Lab"],
+    ["Vibrava", 43, "Cipher Peon", "Remil", "the Shadow Pokémon Lab"],
+    ["Raikou", 40, "Cipher Peon", "Rosso", "the Shadow Pokémon Lab"],
+    ["Delibird", 45, "Cipher Peon", "Arton", "Realgam Tower"],
+    ["Sunflora", 45, "Cipher Peon", "Baila", "Realgam Tower"],
+    ["Heracross", 45, "Cipher Peon", "Dioge", "Realgam Tower"],
+    ["Skarmory", 47, "Snagem Head", "Gonzap", "Realgam Tower"],
+    ["Miltank", 48, "Bodybuilder", "Jomas", "Realgam Tower's Colosseum"],
+    ["Absol", 48, "Rider", "Delan", "Realgam Tower's Colosseum"],
+    ["Houndoom", 48, "Cipher Peon", "Nella", "Realgam Tower's Colosseum"],
+    ["Tropius", 49, "Cipher Peon", "Ston", "Realgam Tower's Colosseum"],
+    ["Metagross", 50, "Cipher Admin", "Nascour", "Realgam Tower's Colosseum"],
+    ["Tyranitar", 55, "Cipher Head", "Evice", "Realgam Tower's Colosseum"],
+    ["Smeargle", 45, "Team Snagem", "Biden", "the Snagem Hideout (after the game)"],
+    ["Ursaring", 45, "Team Snagem", "Agrev", "the Snagem Hideout (after the game)"],
+    ["Shuckle", 45, "Deep King", "Agnol", "the Deep Colosseum (after the game)"],
+    ["Togetic", 20, "Fake Hero", "Fein", "the Outskirt Stand (after the game)"]
+  ].map(([species, level, cls, trainer, place]) => ({ species, level, cls, trainer, place }));
+  // A Trainer's Shadow Pokémon (Rosso has two), and one as a record ready to battle: a Shadow Pokémon (record.shadow)
+  // knowing Shadow Rush.
+  const shadowOf = (trainer) => SHADOW.filter((s) => s.trainer === trainer);
+  function shadowMon(s) {
+    const r = window.Party.create(s.species, s.level);
+    r.shadow = true;
+    r.moves = [{ name: "Shadow Rush", pp: 5 }].concat(r.moves.filter((m) => m.name !== "Shadow Rush").slice(0, 3));
+    return r;
+  }
+
   // Rider Willie's two Zigzagoon (Lv. 25 and 26: met at the start of Colosseum's story proper).
   const willieTeam = () => [window.Party.create("Zigzagoon", 25), window.Party.create("Zigzagoon", 26)];
 
-  window.Orre = { FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
+  window.Orre = { SHADOW, shadowOf, shadowMon, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
 })();

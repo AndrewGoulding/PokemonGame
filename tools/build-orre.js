@@ -1655,7 +1655,7 @@ const PYRITE = {
       text: ["PYRITE COLOSSEUM", "The gate is chained shut. A notice:\n\"Closed till further notice.\""] })),
     ...YSHACKS.map((b) => ({ x: doorBelow(b).x, y: doorBelow(b).y, script: "PyriteTown_EventScript_LockedDoor", text: ["The door is locked."] }))],
   people: [
-    person(0, "PYRITE_CAIL", 20, 21, "rocker", "face_left", "PyriteTown_EventScript_Cail", null),
+    person(0, "PYRITE_ROOK", 20, 21, "rocker", "face_left", "PyriteTown_EventScript_Rook", null),
     person(1, "PYRITE_ZEKE", 9, 10, "biker", "face_down", "PyriteTown_EventScript_Zeke", null),
     person(2, "PYRITE_RINA", 25, 9, "em_hex_maniac", "face_down", "PyriteTown_EventScript_Rina", null),
     person(3, "PYRITE_MAN", 13, 18, "balding_man", "wander_around", "PyriteTown_EventScript_Man",

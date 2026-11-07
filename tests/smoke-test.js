@@ -3112,7 +3112,7 @@ if (window.JOHTO_TOWN_MAP) {
     const toCave = Y.warps.find((w) => w.map === "PyriteCave");
     assert(toCave && World.warpTarget(toCave).map === "PyriteCave" && World.warpTarget(CV.warps[0]).map === "PyriteTown", "Pyrite Cave, in and out");
     assert(!Orre.isOpen({}, "PyriteTown") && !Orre.isOpen({}, "AgateVillage"), "Pyrite and Agate open with their tests");
-    for (const [m, sc] of [[Y, "PyriteTown_EventScript_Cail"], [G, "AgateVillage_EventScript_Fay"], [CV, "PyriteCave_EventScript_Rowe"]]) assert(m.people.some((p) => p.script === sc), sc);
+    for (const [m, sc] of [[Y, "PyriteTown_EventScript_Rook"], [G, "AgateVillage_EventScript_Fay"], [CV, "PyriteCave_EventScript_Rowe"]]) assert(m.people.some((p) => p.script === sc), sc);
     // (Everyone can be walked up to from where you come in: Pyrite Cave's from its mouth.)
     for (const [m, sx, sy] of [[Y, 17, 28], [G, 17, 28], [CV, CV.warps[0].x, CV.warps[0].y - 1]]) {
       const seen = new Set([sx + "," + sy]), q = [[sx, sy]], at = new Set(m.people.map((p) => p.x + "," + p.y));
@@ -3193,6 +3193,16 @@ if (window.JOHTO_TOWN_MAP) {
     assert(!vis("OutskirtStand_Diner", "DINER_WILLIE", { orre: 3, orreStory: 17 }) && vis("OutskirtStand_Diner", "DINER_WILLIE", { orre: 3, orreStory: 18, orreStandFT: true }));
     assert(vis("PhenacCity", "PHENAC_TRUCK", { orreStory: 19 }) && !vis("PhenacCity", "PHENAC_TRUCK", { orreStory: 20 }) && !vis("PhenacCity", "PHENAC_FOLLY", { orreStory: 19, orreFT: true }));
     assert.deepStrictEqual(Orre.patches("PhenacCity", { orreStory: 19 }), ["truck"]);
+    // Colosseum's Shadow Pokémon: all there, Trudly's his Makuhita (Lv. 30), each one battle-ready as a Shadow
+    // Pokémon; and the prologue's own Trainers are none of Colosseum's Shadow Pokémon Trainers.
+    assert.strictEqual(Orre.SHADOW.length, 47);
+    assert(Orre.SHADOW.every((x) => DEX[x.species] && x.level >= 20 && x.level <= 55 && x.trainer));
+    assert.deepStrictEqual(Orre.shadowOf("Trudly").map((x) => [x.species, x.level]), [["Makuhita", 30]]);
+    const sm = Orre.shadowMon(Orre.shadowOf("Trudly")[0]);
+    assert(sm.shadow && sm.level === 30 && sm.moves[0].name === "Shadow Rush" && Party.toBattleSet(sm).shadow);
+    const shadowTrainers = new Set(Orre.SHADOW.map((x) => x.trainer));
+    const prologue = Object.values(Orre.FILLERS).map((d) => d.name.split(" ").pop());
+    assert(!prologue.some((n) => shadowTrainers.has(n)), "the prologue's Trainers keep clear of Colosseum's Shadow Pokémon Trainers' names");
     assert(!vis("PhenacCity_MayorsHouse", "MAYOR_RUI", { orreStory: 20 }) && vis("PhenacCity_MayorsHouse", "MAYOR_ES_CADE", { orreStory: 21 }));
     const P = WORLD_MAPS.PhenacCity, M = WORLD_MAPS.PhenacCity_MayorsHouse;
     assert(World.warpTarget(P.warps[1]).map === M.name && M.warps.every((w) => World.warpTarget(w).map === P.name), "the Mayor's house, in and out");

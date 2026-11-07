@@ -2963,7 +2963,7 @@
       "OutskirtStand_Diner_EventScript_TV", "OutskirtStand_Diner_EventScript_Jukebox",
       "OrreAirStrip_EventScript_Pilot", "OrreAirStrip_PokemonCenter_1F_EventScript_Nurse",
       "SnagemHideout_EventScript_Guard1", "SnagemHideout_EventScript_Guard2", "PhenacCity_EventScript_Kodo",
-      "OutskirtStand_Diner_EventScript_Traveller3", "PyriteTown_EventScript_Cail", "AgateVillage_EventScript_Fay", "PyriteCave_EventScript_Rowe",
+      "OutskirtStand_Diner_EventScript_Traveller3", "PyriteTown_EventScript_Rook", "AgateVillage_EventScript_Fay", "PyriteCave_EventScript_Rowe",
       "PyriteTown_EventScript_Zeke", "PyriteTown_EventScript_Rina", "AgateVillage_EventScript_Ted", "AgateVillage_EventScript_Sue",
       "PyriteCave_EventScript_Dex", "PyriteCave_EventScript_Taro",
       "arrive:PhenacCity", "enter:PhenacCity", "enter:PhenacCity_MayorsHouse", "PhenacCity_EventScript_Truck", "PhenacCity_EventScript_Folly",
@@ -4493,7 +4493,7 @@
       case "SnagemHideout_EventScript_Guard1": case "SnagemHideout_EventScript_Guard2": await snagemGuard(ev.person); return;
       case "PhenacCity_EventScript_Kodo": await phenacKodo(); return;
       case "OutskirtStand_Diner_EventScript_Traveller3": await outskirtLena(ev.person); return;
-      case "PyriteTown_EventScript_Cail": case "AgateVillage_EventScript_Fay": case "PyriteCave_EventScript_Rowe": await snagemTarget(script, ev.person); return;
+      case "PyriteTown_EventScript_Rook": case "AgateVillage_EventScript_Fay": case "PyriteCave_EventScript_Rowe": await snagemTarget(script, ev.person); return;
       case "PyriteTown_EventScript_Zeke": case "PyriteTown_EventScript_Rina": case "AgateVillage_EventScript_Ted": case "AgateVillage_EventScript_Sue":
       case "PyriteCave_EventScript_Dex": case "PyriteCave_EventScript_Taro": await orreTrainer(script); return;
       case "OutskirtStand_Diner_EventScript_Willie": await dinerWillie(); return;
@@ -9871,11 +9871,11 @@
   // `passed` once the guards have seen it (and the next test given at once). After the last, Master Gonzap wants to
   // see you (SNAGEM_DONE): Colosseum's story proper, for later.
   const SNAGEM_TESTS = [
-    { set: 9, snagged: 10, passed: 11, place: "PyriteTown", species: "Murkrow", target: "PyriteTown_EventScript_Cail",
-      give: ["Grunt: Test three. Pyrite Town, out\neast. Roughest town in Orre.", "There's a burglar there, calls himself\nCail. Has a Murkrow he's real proud of.",
+    { set: 9, snagged: 10, passed: 11, place: "PyriteTown", species: "Murkrow", target: "PyriteTown_EventScript_Rook",
+      give: ["Grunt: Test three. Pyrite Town, out\neast. Roughest town in Orre.", "There's a burglar there, calls himself\nRook. Has a Murkrow he's real proud of.",
         "Snag it, and bring it back here!"],
-      remind: ["Your test's in Pyrite Town! Burglar\nCail has a Murkrow.", "Snag it, and bring it back here!"],
-      report: ["Grunt: Hah! Stealing from a burglar!\nNow that's Snagem style!", "Other grunt: Cail's gonna be sore\nabout that one. Heh heh."] },
+      remind: ["Your test's in Pyrite Town! Burglar\nRook has a Murkrow.", "Snag it, and bring it back here!"],
+      report: ["Grunt: Hah! Stealing from a burglar!\nNow that's Snagem style!", "Other grunt: Rook's gonna be sore\nabout that one. Heh heh."] },
     { set: 12, snagged: 13, passed: 14, place: "AgateVillage", species: "Aipom", target: "AgateVillage_EventScript_Fay",
       give: ["Grunt: Test four. Agate Village, up in\nthe hills north of here.", "A Pokémon Ranger's staying there.\nFay, she's called. She has an Aipom.",
         "Rangers are tough. Snag it anyway!"],
@@ -9942,9 +9942,9 @@
     PyriteCave_EventScript_Taro: { name: "Black Belt Taro", cls: "Black Belt", pic: "black_belt", team: () => [Party.create("Machoke", 22), Party.create("Meditite", 22)],
       intro: ["Hwaah! I train in the dark to sharpen\nmy senses! Face me!"], defeat: ["Hngh! My senses… dulled!"],
       after: ["Kodo in Phenac is my little brother.\nHe says a thief took his Makuhita…"] },
-    PyriteTown_EventScript_Cail: { name: "Burglar Cail", cls: "Burglar", pic: "burglar", team: () => [Party.create("Murkrow", 15), Party.create("Houndour", 14)],
+    PyriteTown_EventScript_Rook: { name: "Burglar Rook", cls: "Burglar", pic: "burglar", team: () => [Party.create("Murkrow", 15), Party.create("Houndour", 14)],
       before: ["What're you looking at? Beat it,\nbefore I pick your pockets."],
-      intro: ["Snagem sent you, huh? Ha! Nobody steals\nfrom Cail. Nobody!"], defeat: ["What?! Robbed by a kid!"],
+      intro: ["Snagem sent you, huh? Ha! Nobody steals\nfrom Rook. Nobody!"], defeat: ["What?! Robbed by a kid!"],
       robbed: ["My Murkrow! You little thief!", "…Heh. Takes one to know one, I guess."],
       snagged: ["Get lost, Snagem! You've taken enough\nfrom me already."],
       won: ["Hah! Back to the hideout with you,\nrookie!"], lost: ["Ha! My Murkrow's too slick for you!"] },
@@ -10204,7 +10204,7 @@
   // Rider Willie battles you (19). At Phenac City you battle Folly and Trudly by their truck, and out of the sack comes
   // Rui, who asks you to take her to the Mayor (20). At the Mayor's house: Es Cade hears her out and goes to look
   // into it; Snagem grunts come for their traitor and the Snag Machine; then Folly and Trudly, Trudly with a Shadow
-  // Pokémon (a Furret) that Rui can see the black aura of, to be snagged; Miror B. calls them back to Pyrite, and Rui
+  // Pokémon (Colosseum's: a Makuhita, Lv. 30, Orre.SHADOW) that Rui can see the black aura of, to be snagged; Miror B. calls them back to Pyrite, and Rui
   // says you should follow (21). (orreStandFT: Folly and Trudly gone from the Stand; orreFT: beaten at Phenac;
   // orreMayor: how far the Mayor's house's scene has got, 1 Es Cade gone, 2 the grunts beaten, 3 Folly beaten.)
   const ORRE_STORY_CAP = 30;
@@ -10477,17 +10477,16 @@
     await say(["Rui: {PLAYER}, be careful! Just as I\nthought, that Pokémon will attack people!",
       "{PLAYER}, I know! It's not something I\nlike, but this is a desperate situation.",
       "Please, snag that poor Pokémon back from\nthose horrible thugs!", "You can… No. Only you can do it!"]);
-    const furret = Party.create("Furret", 28);
-    furret.shadow = true;
-    furret.moves = [{ name: "Shadow Rush", pp: 5 }].concat(furret.moves.filter((m) => m.name !== "Shadow Rush").slice(0, 3));
-    const opts = { foe: { name: "Trudly", team: [furret, Party.create("Zigzagoon", 27)], pic: TRUDLY_PIC }, double: true, prizeClass: "Team Rocket",
-      noBlackout: true, snag: ["Furret"], music: "mus_vs_trainer", defeatText: ["Darn it, but you're good!"] };
+    // (His Shadow Pokémon, Colosseum's: Orre.SHADOW.)
+    const shadow = Orre.shadowOf("Trudly")[0];
+    const opts = { foe: { name: "Trudly", team: [Orre.shadowMon(shadow), Party.create("Zigzagoon", 28)], pic: TRUDLY_PIC }, double: true, prizeClass: "Team Rocket",
+      noBlackout: true, snag: [shadow.species], music: "mus_vs_trainer", defeatText: ["Darn it, but you're good!"] };
     const outcome = await battle("trainer", opts);
     show("world");
     await Overworld.resume();
     music(window.WORLD_MAPS.PhenacCity_MayorsHouse.music);
     if (outcome === "lost") { await say(["Trudly: Hah! How'd you like that?"]); await lost(F, T); return; }
-    const snagged = (opts.snagged || []).includes("Furret");
+    const snagged = (opts.snagged || []).includes(shadow.species);
     await say(snagged ? ["Trudly: Darn it, but you're good!\nYou snagged my Pokémon!"] : ["Trudly: Darn it, but you're good!\nYou knocked out my Pokémon!"]);
     await say(snagged ? ["Rui: You did it, {PLAYER}! You snagged\nthat Pokémon from that goon!", "But I'm sure there are others like it.",
       "Let's get all of them back from the\nbad guys!"]
@@ -10505,7 +10504,7 @@
       "That town must be hiding a big secret!"]);
     Overworld.removeObject(R);
     f.orreStory = 21;
-    f.orreFurret = snagged;
+    if (snagged) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(shadow.species);
     Overworld.refreshPeople();
     await persist();
   }

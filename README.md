@@ -3134,7 +3134,7 @@ Trainer's Pokémon) and the first test.
   travellers) battles you two on two with two Eevee (Lv. 10) and a Skitty (Lv. 9): snag both her Eevee and win, and
   they're yours. Snag only one and the test isn't passed, but that one's yours, and next time she has only the
   other. Back at the hideout the guards pass you and send you on to the next.
-- **Test three: Pyrite Town.** Pyrite opens on Orre's map. **Burglar Cail** battles you with a Murkrow (Lv. 15) and a
+- **Test three: Pyrite Town.** Pyrite opens on Orre's map. **Burglar Rook** battles you with a Murkrow (Lv. 15) and a
   Houndour (Lv. 14): snag his Murkrow.
 - **Test four: Agate Village.** Agate opens on Orre's map. **Pokémon Ranger Fay**, come to look into the strange
   Pokémon people have been seeing, battles you with an Aipom (Lv. 19) and a Shroomish (Lv. 18): snag her Aipom.
@@ -3185,12 +3185,17 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
 - **The Mayor's house** (the big house with the blue dome; for now Emerald's Dewford Hall inside). Mayor **Es Cade**
   hears Rui out (a Pokémon with a black aura, like a fighting machine, that attacks people) and goes to look into it
   himself. Two Snagem grunts burst in for their traitor and the Snag Machine (a tag battle, Lv. 26-27), and Rui learns
-  you were with Team Snagem; it doesn't matter to her. Then Folly (Loudred and Baltoy, Lv. 27), and Trudly, whose Furret
-  (Lv. 28) is a **Shadow Pokémon**: Rui can see its black aura, and asks you to snag it back. Miror B. calls them back
+  you were with Team Snagem; it doesn't matter to her. Then Folly (Loudred and Baltoy, Lv. 27), and Trudly, whose
+  Makuhita (Lv. 30) is a **Shadow Pokémon**: Rui can see its black aura, and asks you to snag it back. Miror B. calls them back
   to Pyrite, and Rui says that's where you should go next. A battle lost there ends the scene; go back in to carry on
   from it (`player.flags.orreMayor`).
 - `player.flags.orreStory` 18 once you've broken with Team Snagem, 19 with Willie battled, 20 with Rui out of the sack,
-  21 with the Mayor's house's scene done (`orreFurret`: the Furret snagged). Pyrite Town is next.
+  21 with the Mayor's house's scene done (`orreShadowSnagged`: the Shadow Pokémon you've snagged). Pyrite Town is next.
+- **Colosseum's Shadow Pokémon** (`Orre.SHADOW` in `game/orre.js`): all 47 of them, in Colosseum's order, each with its
+  level, its Trainer and where you meet them (Trudly's Makuhita, Lv. 30, at the Mayor's house; Rogue Cail's Furret,
+  Lv. 33, in Pyrite Town; on to Evice's Tyranitar). From Colosseum's story proper on, a Trainer who has a Shadow Pokémon
+  in Colosseum battles you with that one, at that level (`Orre.shadowOf(trainer)`, `Orre.shadowMon`); the prologue's own
+  Trainers keep clear of those Trainers' names.
 - **Shadow Pokémon** show a dark purple aura in battle all the time, not only when they use a Shadow move. A snagged
   one stays a Shadow Pokémon; purifying them (Colosseum's heart gauge and the Relic Stone) is still to come.
 
