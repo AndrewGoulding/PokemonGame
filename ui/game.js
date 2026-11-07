@@ -503,8 +503,8 @@
     if (!opts.safari && result.outcome !== "lost") {
       for (const [r, item] of Encounters.pickup(player.party)) await message(Party.displayName(r) + " picked up\n" + article(Bag.name(item)) + "!");
     }
-    // (A wild Tera Pokémon knocked out: its Tera Type's Tera Shards.)
-    if (wildTera && dropped && dropped.fainted) {
+    // (A wild Tera Pokémon knocked out, or caught: its Tera Type's Tera Shards.)
+    if (wildTera && ((dropped && dropped.fainted) || result.outcome === "caught")) {
       const shard = wildTera.toLowerCase() + "-tera-shard", n = WILD_TERA_SHARDS;
       Player.addItem(player, shard, n);
       await message(player.name + " got " + n + " " + Bag.name(shard) + "s!");

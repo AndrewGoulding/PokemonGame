@@ -695,6 +695,9 @@
   const gfxBytes = new Map();
   for (const [name, [kind, width, data]] of Object.entries(D.gfx)) {
     const u = b64(data);
+    // (A ball's third frame, the open ball (sBallAnimSeq1's frame 8), is blank in the games' sheets: the ball
+    // vanishes while the Pokémon goes in, then comes back. This game keeps it on screen, half open, instead.)
+    if (/^gBallGfx_/.test(name) && u.length >= 384 && u.subarray(256, 384).every((x) => !x)) u.copyWithin(256, 128, 256);
     const arr = width === 4 ? new Uint32Array(u.buffer) : width === 2 ? new Uint16Array(u.buffer) : u;
     E[name] = arr;
     gfxBytes.set(u.buffer, Buffer_len(data));
@@ -782,7 +785,12 @@
     if (!box) return [0, 1].includes(type) ? 0 : 0;
     switch (type) {
       case 0: case 2: return u8(Math.round(box.cx));
-      case 1: return BASE_Y[inst.doubles ? 1 : 0][b];
+      // (Or, for a battler that isn't where the GBA's places are, as a horde's: given, or from its picture,
+      // the foe's 40 being 10 under the centre of its 72-wide picture.)
+      case 1: {
+        const mb = inst.measuredBase && inst.measuredBase[b];
+        return typeof mb === "number" ? u8(mb) : mb ? u8(Math.round(box.cy + box.size * 10 / 72)) : BASE_Y[inst.doubles ? 1 : 0][b];
+      }
       case 3: {   // BATTLER_COORD_Y_PIC_OFFSET
         let y = Math.round(box.cy) + ((b & 1) ? 0 : 8);
         return u8(Math.min(y, 104));
@@ -948,7 +956,7 @@
       return { name: m.name, form: m.form, species: speciesId(m.name, m.form), personality: m.personality >>> 0 || 0x12345678,
         hp: m.hp == null ? 1 : m.hp, maxHP: m.maxHP || 1, shiny: !!m.shiny, ball: ballIdOf(m.ball) };
     });
-    inst = { doubles: !!opts.doubles, mons, boxes: opts.boxes || [], frame: 0, seUntil: 0, cryUntil: 0,
+    inst = { doubles: !!opts.doubles, mons, boxes: opts.boxes || [], measuredBase: opts.measuredBase || null, frame: 0, seUntil: 0, cryUntil: 0,
       sound: opts.sound, cry: opts.cry, hideBoxes: opts.hideBoxes || (() => {}),
       moveType: D.types["TYPE_" + String(opts.type || "").toUpperCase()] || 0, physical: opts.category === "Physical",
       moveTarget: 0, battlerTiles: [], pictures: [], picture: opts.picture, itemPicture: opts.itemPicture,
@@ -1185,8 +1193,18 @@
     canvas.className = "battle-anim-screen";
     Object.assign(canvas.style, { position: "absolute", left: "0", top: "0", width: "100%", height: "100%", pointerEvents: "none", imageRendering: "pixelated" });
     if (o.before && o.before.parentNode === o.field) o.field.insertBefore(canvas, o.before); else o.field.appendChild(canvas);
-    const ctx = canvas.getContext("2d");
-    ctx.imageSmoothingEnabled = false;
+    const mainCtx = canvas.getContext("2d");
+    mainCtx.imageSmoothingEnabled = false;
+    let ctx = mainCtx;
+    // (A horde's spread move, o.echo: the sprites drawn round the target, but not the Pokémon's pictures, drawn again
+    // round each other foe it hits; the GBA's scripts only ever aim at a target and its partner. echo.ctx: that pass.)
+    let echo = null, skipBattlers = false;
+    if (o.echo && o.echo.length) {
+      const c = document.createElement("canvas");
+      c.width = canvas.width; c.height = canvas.height;
+      echo = { canvas: c, ctx: c.getContext("2d") };
+      echo.ctx.imageSmoothingEnabled = false;
+    }
     const layer = document.createElement("canvas");
     layer.width = W; layer.height = H;
     const lctx = layer.getContext("2d");
@@ -1411,6 +1429,7 @@
     function drawBattler(pic, cx, cy, M, hf, vf, palOffset, alpha, comp, bright, clip, strips, mosaic) {
       let im = pic && pic.img;
       if (!im || !im.complete || !im.naturalWidth) return;
+      if (skipBattlers && o.sprites.includes(im)) return;
       const S = pic.size;
       if (mosaic > 1) {
         const n = Math.max(1, Math.ceil(S / mosaic));
@@ -1449,6 +1468,34 @@
     }
 
     function render() {
+      renderInto();
+      if (!echo || !inst) return;
+      ctx = echo.ctx; skipBattlers = true;
+      try { renderInto(); } finally { ctx = mainCtx; skipBattlers = false; }
+      const from = inst.boxes[o.echoFrom == null ? 1 : o.echoFrom];
+      if (!from) return;
+      const R = from.size * 1.5;
+      for (const to of o.echo) {
+        if (!to) continue;
+        mainCtx.drawImage(echo.canvas, (from.cx - R / 2) * K, (from.cy - R / 2) * K, R * K, R * K, (to.cx - R / 2) * K, (to.cy - R / 2) * K, R * K, R * K);
+      }
+    }
+    function drawExtras() {
+      for (const e of o.extras || []) {
+        if (!e.img.complete || !e.img.naturalWidth) continue;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+        ctx.filter = e.filter && e.filter !== "none" ? e.filter : "none";
+        ctx.drawImage(e.img, (e.cx - e.size / 2) * K, (e.cy - e.size / 2) * K, e.size * K, e.size * K);
+        ctx.restore();
+      }
+    }
+    function renderInto() {
+      // (The rest of a horde: drawn as deep as the animation's foe, its target or partner, is drawn: over the
+      // backgrounds under it, under what's drawn over it.)
+      let extrasDone = skipBattlers || !(o.extras && o.extras.length);
+      const extrasWith = (b) => { if (!extrasDone && (b === 1 || b === 3)) { flush(); drawExtras(); extrasDone = true; } };
       const L = lineRegs(), disp = L[0];
       for (let i = 0; i < 512; i++) pal[i] = rgb(pltt[i]);
       const oam = E.gMain.oamBuffer;
@@ -1478,7 +1525,7 @@
       };
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (moveBg && disp & 0x800) { ctx.fillStyle = "#" + (pal[0] & 0xFFFFFF).toString(16).padStart(6, "0").replace(/(..)(..)(..)/, "$3$2$1"); ctx.fillRect(0, 0, canvas.width, canvas.height); }
+      if (moveBg && disp & 0x800 && !skipBattlers) { ctx.fillStyle = "#" + (pal[0] & 0xFFFFFF).toString(16).padStart(6, "0").replace(/(..)(..)(..)/, "$3$2$1"); ctx.fillRect(0, 0, canvas.width, canvas.height); }
       // The layers, back to front.
       const items = [];
       for (let prio = 3; prio >= 0; prio--) {
@@ -1514,6 +1561,8 @@
         pending = bl;
       };
       for (const it of items) {
+        // (The echo pass: sprites only; a background's already across the whole field.)
+        if (it.bg != null && skipBattlers) continue;
         if (it.bg != null) {
           const bg = it.bg, bl = blendOf(1 << bg, false);
           begin(bl);
@@ -1530,6 +1579,7 @@
             const ly = bl.at(strips[0][2]);
             const mosaic = L[4 + bg] & 0x40 ? Math.max(L[0x26] & 15, (L[0x26] >> 4) & 15) + 1 : 0;
             drawBattler(battlerPic(bb.battler), strips[0][1], strips[0][2], null, false, false, bb.pal * 16, bl.alpha[ly], bl.comp[ly], bl.bright ? bl.bright[ly] : 0, clipFor(mask, 1 << bg), same ? null : strips, mosaic);
+            extrasWith(bb.battler);
           }
         } else {
           const e = it.obj, who = battlerOf(e), bl = blendOf(16, (e.objMode & 3) === 1);
@@ -1539,6 +1589,7 @@
             const ly = bl.at(y + bh / 2);
             const mosaic = e.mosaic ? Math.max((L[0x26] >> 8) & 15, (L[0x26] >> 12) & 15) + 1 : 0;
             drawBattler(who, x + bw / 2, y + bh / 2, matrixOf(e, oam), e.matrixNum & 8, e.matrixNum & 16, 256 + (e.paletteNum & 15) * 16, bl.alpha[ly], bl.comp[ly], bl.bright ? bl.bright[ly] : 0, clipFor(mask, 16), null, mosaic);
+            extrasWith(o.sprites.indexOf(who.img));
           } else {
             begin(bl);
             drawObj(e, oam, mask, bl.bright, null);
@@ -1547,7 +1598,7 @@
       }
       flush();
       // The battle background (the page's): BG3's scroll and palette.
-      if (o.terrain) {
+      if (o.terrain && !skipBattlers) {
         const m = fitMatrix(pltt, BG_REF_SLOT * 16);
         const bl = blendOf(8, false);
         const f = moveBg ? "" : filterFor(m, bl.bright ? bl.bright[H >> 1] : 0);
@@ -1585,6 +1636,15 @@
       const size = r.width * k, m = (o.metrics && o.metrics[b]) || { top: 0, bottom: 0 };
       return { cx: (r.left + r.width / 2 - fr.left) * k, cy: (r.top + r.width / 2 - fr.top) * k, size, top: m.top * size / 96, bottom: m.bottom * size / 96 };
     });
+    const measure = (im) => {
+      const r = im && im.getBoundingClientRect();
+      return r && r.width ? { img: im, cx: (r.left + r.width / 2 - fr.left) * k, cy: (r.top + r.width / 2 - fr.top) * k, size: r.width * k,
+        filter: getComputedStyle(im).filter } : null;
+    };
+    o.echo = (o.echoSprites || []).map(measure).filter(Boolean);
+    // (Others on the field the animation's four battlers leave out, as a horde's: drawn over what it draws, so a
+    // flash across the field doesn't hide them.)
+    o.extras = (o.extraSprites || []).map(measure).filter((e) => e && getComputedStyle(e.img).visibility !== "hidden" && getComputedStyle(e.img).opacity !== "0");
     o.hidden = o.sprites.map((im, b) => (o.substitute && o.substitute[b] || o.shown && o.shown[b] ? false
       : !im || getComputedStyle(im).opacity === "0" || getComputedStyle(im).visibility === "hidden" || getComputedStyle(im).display === "none"));
     try { setup(o); } catch (e) { console.error(e); return Promise.resolve(false); }

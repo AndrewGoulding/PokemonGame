@@ -251,6 +251,7 @@
   // placeSprite has moved it down by its empty rows), 0.58 of the usual
   // size: three behind (slots a to c, left to right), two in front (d, e).
   const HORDE_SCALE = 0.58;
+  const HORDE_BALL_BASE = 22;   // (a thrown ball's base line over a horde foe's feet: ballThrow)
   const HORDE_LAYOUT = { p2: [142, 52, 2], p2b: [180, 50, 2], p2c: [218, 52, 2], p2d: [160, 65, 3], p2e: [200, 65, 3] };
   function layoutHorde(on) {
     el.field.classList.toggle("horde", !!on);
@@ -1003,11 +1004,18 @@
     // (A Shadow move: first the user's dark aura flares, as in Pokémon XD.)
     if (data.type === "Shadow") return shadowAura(side).then(() => playAnim(Object.assign(animOpts(side, target), {
       move: name, type: data.type, category: data.cat, turn: 0, power: data.power || 0, damage: 40, itemPicture: null })));
-    return playAnim(Object.assign(animOpts(side, target), {
+    const o = Object.assign(animOpts(side, target), {
       move: name, type: data.type, category: data.cat,
       turn: data.flags && data.flags.charge ? 1 : 0, power: data.power || 0, damage: 40,
       itemPicture: heldItemPicture(name === "Poltergeist" ? target : side)
-    }));
+    });
+    // (A horde's spread move: the GBA's script has the target and one more; what it draws round the target
+    // is drawn round each of the others it hits too.)
+    if (battle.horde) {
+      const rest = aims.filter((a) => HORDE_LAYOUT[a] && !animOrder.includes(a) && view[a] && view[a].species && !view[a].fainted);
+      if (rest.length) { o.echoSprites = rest.map((a) => el.sides[a].sprite); o.echoFrom = animOrder.indexOf(target); }
+    }
+    return playAnim(o);
   }
   // What ui/battle-anim.js is told of the battle: who's where (as the
   // pictures are on the page), their species, HP, ball and whether they're
@@ -1035,6 +1043,11 @@
     return {
       attacker: order.indexOf(side), target: order.indexOf(target == null ? side : target),
       doubles: !!battle.doubles && !!(order[2] || order[3]), mons, metrics: order.map((p) => (p ? monMetrics(p) : null)),
+      // (A horde's foes stand where the GBA's places aren't: their base lines from their pictures.)
+      measuredBase: battle && battle.horde ? order.map((p) => !!(p && HORDE_LAYOUT[p])) : null,
+      // (and the rest of the horde, which the animation draws over its backgrounds where they stand)
+      extraSprites: battle && battle.horde ? Object.keys(HORDE_LAYOUT).filter((p) => !order.includes(p) && view[p] && view[p].species && !view[p].fainted)
+        .map((p) => el.sides[p].sprite) : null,
       substitute: order.map((p) => !!(p && view[p] && view[p].substitute && !subSwapped[p])),
       environment: config && config.terrain,
       field: el.field, before: hbLayer, terrain: [...el.field.querySelectorAll(".terrain")],
@@ -3079,6 +3092,9 @@
     renderSide(pos);
     const o = Object.assign(animOpts("p1", pos), { anim: "special", id: "BALL_THROW", ball, ballCase: ballCase != null ? ballCase : caught ? 4 : Math.min(3, shakes),
       shown: animOrder.map((p) => p === pos), hold: caught ? {} : null });
+    // (A horde's foe: the ball opens 16 over its base line and drops 40 to rest 24 under it, so a base line
+    // 22 over the foe's feet has it come to rest just in front of them, as the GBA's does.)
+    if (battle.horde && HORDE_LAYOUT[pos]) o.measuredBase = animOrder.map((p) => (p === pos ? HORDE_LAYOUT[pos][1] - HORDE_BALL_BASE : !!(p && HORDE_LAYOUT[p])));
     await playAnim(o);
     // (Caught: the ball that stays is drawn, and the screen shows it, before the animation's last frame goes: no gap.)
     const release = async () => { await nextPaint(); if (o.hold && o.hold.release) o.hold.release(); };
@@ -3087,7 +3103,7 @@
       el.ball.style.left = ((box.cx - 8) / 240 * 100).toFixed(2) + "%";
       el.ball.style.right = "auto";
       // (A horde's: just in front of where it stood.)
-      const rest = battle.horde && HORDE_LAYOUT[pos] ? HORDE_LAYOUT[pos][1] - 2 : BA.ballRest(POSITIONS.indexOf(pos), !!battle.doubles);
+      const rest = battle.horde && HORDE_LAYOUT[pos] ? HORDE_LAYOUT[pos][1] - HORDE_BALL_BASE + 24 : BA.ballRest(POSITIONS.indexOf(pos), !!battle.doubles);
       el.ball.style.top = ((rest - 8) / 112 * 100).toFixed(2) + "%";
       el.ball.classList.remove("hidden", "shake");
       el.ball.classList.add("caught");
