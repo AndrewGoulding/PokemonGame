@@ -5226,8 +5226,8 @@
     }
   }
   // A Trainer you've beaten (this game's own, in place of FireRed's VS Seeker): when you talk to them they say
-  // their line, then "Rematch?" or "Never mind". A rematch is the same battle again, their intro and team; win or
-  // lose, nothing else changes (they've been beaten already). Not in Orre, a Battle Pyramid's or the Fighting
+  // their line, then "Rematch?" or "Never mind". A rematch is the same battle again, their intro, and their team
+  // grown with the story (rematchTeam); win or lose, nothing else changes (they've been beaten already). Not in Orre, a Battle Pyramid's or the Fighting
   // Dojo's (which has its own: dojoRematch).
   async function trainerRematch(person) {
     const t = person.trainer, data = t && window.WORLD_TRAINERS[t.id];
@@ -5240,11 +5240,47 @@
     if (intro && [].concat(intro).length) await say(intro);
     if (!canBattle()) return;
     const double = !!(data.double || t.double) && canDouble();
-    await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(t.id), pic: data.pic },
+    await battle("trainer", { foe: { name: data.className + " " + data.name, team: rematchTeam(t.id), pic: data.pic },
       defeatText: (text && text.defeat) || t.defeat, trainerId: t.id, prizeClass: data.className, double });
     show("world");
     await Overworld.resume();
     music((window.WORLD_MAPS[player.location.map] || {}).music);
+  }
+  // A rematch's team. Kanto's Trainers (the Sevii Islands' too) grow stronger as the story goes on, at FireRed's
+  // VS Seeker's points (src/vs_seeker.c): once you've been to Vermilion (where FireRed gives the VS Seeker), to
+  // Celadon, to Fuchsia, become Champion, and finished the Sevii Islands' story. FireRed has other teams for some
+  // Trainers at those points; here each keeps their own, raised: the team's best up to about FireRed's rematch
+  // levels there (REMATCH_TARGET) or a few levels more than it was (REMATCH_BUMP), whichever's higher, the rest by
+  // as much. A Pokémon that would have evolved by then has: by level, as its evolution says; by a stone from
+  // Lv. 32, by trading from 38, by friendship from 35 (one of several ways chosen by the Trainer, the same each
+  // time). Johto's and Hoenn's rematches are their own games' (the Pokégear's, Emerald's Match Call), and a
+  // Trainer of theirs you talk to keeps their team.
+  const REMATCH_TARGET = [0, 20, 25, 30, 50, 55], REMATCH_BUMP = [0, 2, 4, 6, 10, 14];
+  function kantoRematchTier() {
+    const f = player.flags, seen = f.visitedSections || [];
+    return f.canLinkWithRS ? 5 : f.gameClear ? 4 : seen.includes("FUCHSIA_CITY") ? 3 : seen.includes("CELADON_CITY") ? 2 : seen.includes("VERMILION_CITY") ? 1 : 0;
+  }
+  // What `species` would be by `level`, as a Trainer's Pokémon (`seed`: which of several evolutions).
+  function grownSpecies(species, level, seed) {
+    const ok = (e) => DEX[e.into] && !e.note && (e.method === "level" ? level >= e.level
+      : e.method === "item" ? level >= 32 && !e.time : e.method === "trade" ? level >= 38 : e.method === "friendship" ? level >= 35 && !e.time && !e.moveType : false);
+    for (let n = 0; n < 3; n++) {
+      const ways = ((window.EVOLUTIONS || {})[species] || []).filter(ok);
+      if (!ways.length) break;
+      species = ways[seed % ways.length].into;
+    }
+    return species;
+  }
+  function rematchTeam(id) {
+    const team = trainerTeam(id), here = window.WORLD_MAPS[player.location.map] || {};
+    const tier = /^TRAINER_/.test(id) && !here.region ? kantoRematchTier() : 0;
+    if (!tier || !team.length) return team;
+    const top = Math.max(...team.map((r) => r.level)), up = Math.max(top + REMATCH_BUMP[tier], REMATCH_TARGET[tier]) - top;
+    const seed = [...id].reduce((a, c) => a + c.charCodeAt(0), 0);
+    return team.map((r, i) => {
+      const level = Math.min(100, r.level + up);
+      return Object.assign(Party.create(grownSpecies(r.species, level, seed + i), level, { ivs: r.ivs.hp }), r.item ? { item: r.item } : {});
+    });
   }
   // Two trainers who see you at once (Overworld's `second`): both walk up, one then the other, as Emerald's do, and
   // it's a double battle against the two of them, in every region but Orre (where every battle is a double). Not

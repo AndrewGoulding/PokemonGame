@@ -1344,7 +1344,12 @@ Itemfinder for thirty kinds of Pokémon caught (use it from the Bag: within 7
 steps across and 5 up or down of a hidden item it responds and you turn toward
 the nearest; standing on one, you dig it up), rematches without a VS
 Seeker (this game's own: there's none; talk to a Trainer you've already beaten, in any region but Orre, and after
-their line comes "Rematch?" or "Never mind": the same battle again, their intro and team; Hoenn's own Match Call
+their line comes "Rematch?" or "Never mind": the same battle again, their intro and team. Kanto's (and the Sevii
+Islands') grow stronger at FireRed's VS Seeker points: once you've been to Vermilion, to Celadon, to Fuchsia, become
+Champion, and finished the Sevii Islands' story, the team's best goes up to about FireRed's rematch levels there
+(20, 25, 30, 50, 55) or 2, 4, 6, 10 or 14 levels more than it was, whichever's higher, the rest with it; and each
+Pokémon that would have evolved by then has: by level as its evolution says, by a stone from Lv. 32, trading from 38,
+friendship from 35 (`rematchTeam`). Johto's and Hoenn's go by their own games' rematches; Hoenn's own Match Call
 rematches still come first; the woman in Vermilion's Pokémon Center who gave FireRed's VS Seeker says so, and an
 old save's VS Seeker is taken out of the Bag), the woman on
 the S.S. Anne who lets you rest (the screen goes black while the healing jingle

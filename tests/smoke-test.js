@@ -3526,6 +3526,7 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
 {
   const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
   assert(!/fieldAction = vsSeeker/.test(gameJs) && /async function trainerRematch\(person\)/.test(gameJs) && /\["Rematch\?", "Never mind"\]/.test(gameJs));
+  assert(/const REMATCH_TARGET = \[0, 20, 25, 30, 50, 55\], REMATCH_BUMP = \[0, 2, 4, 6, 10, 14\];/.test(gameJs) && /team: rematchTeam\(t\.id\)/.test(gameJs), "Kanto's rematches grow with the story");
   const old = Player.create("RED", 0);
   old.bag["vs-seeker"] = 1;
   old.flags.registered = "vs-seeker";
