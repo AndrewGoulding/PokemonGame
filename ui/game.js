@@ -1567,6 +1567,8 @@
       evs: Object.assign({}, r.evs), ivs: Object.assign({}, Party.trainedIvs(r)), nature: r.nature, happiness: r.happiness,
       stats: { atk: stats.atk, def: stats.def, spa: stats.spa, spd: stats.spd, spe: stats.spe },
       exp: r.exp, toNext: Math.max(0, next - r.exp), expFrac: next > here ? (r.exp - here) / (next - here) : 0,
+      // (A Shadow Pokémon's heart gauge, Colosseum's, in place of its EXP: how shut its heart still is, of 100.)
+      shadow: !!r.shadow, heart: r.shadow ? Math.max(0, r.heart | 0) : 0,
       ability, abilityText: (window.SUMMARY_SCREEN.abilityText || {})[ability] || "",
       moves: r.moves.map((m) => ({ name: m.name, pp: m.pp, maxpp: Party.maxPp(m) })),
       status: r.status, shiny: !!r.shiny, teraType: Party.teraType(r),

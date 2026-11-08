@@ -216,10 +216,16 @@
       const hp = v.hp + "/" + v.maxhp;
       right(hp, 174, 63, 20);
       ["atk", "def", "spa", "spd", "spe"].forEach((k, i) => right(String(v.stats[k]), 210, 27, 38 + i * 13, natCol(k)));
-      right(String(v.exp), 175, 63, 103);
-      right(String(v.toNext), 175, 63, 116);
-      dark("EXP. POINTS", 74, 103);
-      dark("NEXT LV.", 74, 116);
+      if (v.shadow) {
+        // (Colosseum's heart gauge, where the EXP is: full while the heart is shut tight, emptying as it opens.)
+        dark("HEART GAUGE", 74, 103);
+        right(v.heart <= 0 ? "OPEN" : v.heart <= 25 ? "NEARLY OPEN" : v.heart <= 60 ? "OPENING" : "SHUT TIGHT", 151, 87, 116);
+      } else {
+        right(String(v.exp), 175, 63, 103);
+        right(String(v.toNext), 175, 63, 116);
+        dark("EXP. POINTS", 74, 103);
+        dark("NEXT LV.", 74, 116);
+      }
       dark(v.ability, 74, 129);
       dark(wrap(top, v.abilityText, 220)[0] || "", 10, 143);
     } else if (page === 4) {
@@ -285,6 +291,7 @@
   // The HP bar (9 8x8 pieces from x 168, y 32) and EXP bar (11 from x 152,
   // y 128): ends 9, 10 and 11, the middle filled in eighths (UpdateHpBarObjs,
   // UpdateExpBarObjs); the HP bar yellow at half or less, red at a fifth.
+  let HEART_PAL = null;   // (the EXP bar's blue made the heart gauge's purple)
   function bars(s, v) {
     const d = D();
     const piece = (sheet, frame, x, y, pal) => blit(s, sheet, frame * 8, 0, 8, 8, x, y, pal);
@@ -306,8 +313,8 @@
     hp[0] = 9; hp[1] = 10; hp[8] = 11;
     hp.forEach((f, i) => piece("hpBar", f, 168 + 8 * i, 32, hpPal));
     const ex = new Array(11).fill(0);
-    if (v.level < 100) {
-      const total = 1000, cur = Math.round(v.expFrac * total);
+    if (v.shadow || v.level < 100) {
+      const total = 1000, cur = Math.round((v.shadow ? Math.min(100, v.heart) / 100 : v.expFrac) * total);
       const per = Math.floor((total * 4) / 8);
       let pts = cur * 4, whole = 0;
       while (pts > per) { pts -= per; whole++; }
@@ -317,7 +324,8 @@
       else if (cur < total) ex[9] = 7;
     }
     ex[0] = 9; ex[1] = 10; ex[10] = 11;
-    ex.forEach((f, i) => piece("expBar", f, 152 + 8 * i, 128, d.sheets.expBar.palette));
+    const exPal = v.shadow ? HEART_PAL || (HEART_PAL = d.sheets.expBar.palette.map((c, i) => (i === 7 ? [200, 120, 240] : i === 8 ? [144, 64, 200] : c))) : d.sheets.expBar.palette;
+    ex.forEach((f, i) => piece("expBar", f, 152 + 8 * i, 128, exPal));
   }
 
   let layers = null;
