@@ -1287,9 +1287,11 @@ for (const share of [false, true]) {
   assert(TUTOR_LEARNERS["Mega Punch"].includes("Charmander") && TUTOR_LEARNERS["Seismic Toss"].includes("Charmander"));
   // Escape Ropes work where FireRed allows escaping.
   // (And in Johto: its caves, Ilex Forest and its towers and dungeons, as HGSS's.)
+  // (Orre's caves too: an Escape Rope or Dig takes you out to where you went in, Pyrite Town.)
+  for (const m of ["PyriteCave", "PyriteCave_MirorBHideout"]) assert(WORLD_MAPS[m].allowEscaping, m);
   for (const m of ["UnionCave_B2F", "IlexForest", "SproutTower_3F", "BellTower_5F", "TeamRocketHideout_B3F", "IcePath_B1F"]) assert(WORLD_MAPS[m].allowEscaping, m);
   for (const m of ["VioletCity", "Route36", "GoldenrodCity_DepartmentStore_1F", "EcruteakCity_Gym"]) assert(!WORLD_MAPS[m].allowEscaping, m);
-  assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping && !["johto", "hoenn"].includes(WORLD_MAPS[m].region)), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
+  assert.deepStrictEqual(Object.keys(WORLD_MAPS).filter((m) => WORLD_MAPS[m].allowEscaping && !["johto", "hoenn", "orre"].includes(WORLD_MAPS[m].region)), ["ViridianForest", "MtMoon_1F", "MtMoon_B1F", "MtMoon_B2F",
     "DiglettsCave_NorthEntrance", "DiglettsCave_B1F", "DiglettsCave_SouthEntrance", "RockTunnel_1F", "RockTunnel_B1F",
     "PokemonTower_1F", "PokemonTower_2F", "PokemonTower_3F", "PokemonTower_4F", "PokemonTower_5F", "PokemonTower_6F", "PokemonTower_7F",
     "RocketHideout_B1F", "RocketHideout_B2F", "RocketHideout_B3F", "RocketHideout_B4F",

@@ -1701,7 +1701,7 @@ const PYCAVE = (() => {
   m.collision[top.y * m.width + top.x] = 1; m.behavior[top.y * m.width + top.x] = 0;
   return Object.assign(m, {
     name: "PyriteCave", title: "Pyrite Cave", image: "FieryPath", region: "orre", music: "em_petalburg_woods", showName: true,
-    allowEscaping: false, wild: null, weatherSteps: undefined, connections: [], signs: [], triggers: [], hidden: [],
+    allowEscaping: true, wild: null, weatherSteps: undefined, connections: [], signs: [], triggers: [], hidden: [],
     warps: [{ x: bottom.x, y: bottom.y, map: "PyriteTown", warp: 1 }],
     people: [
       person(0, "CAVE_ROWE", 6, 33, "hiker", "face_right", "PyriteCave_EventScript_Rowe", null),
@@ -2008,7 +2008,7 @@ const MIROR_HIDEOUT = emeraldRoom("GraniteCave_StevensRoom", "PyriteCave_MirorBH
     person(1, "HIDEOUT_PLUSLE", 10, 9, "follow/311", "face_left", "PyriteCave_MirorBHideout_EventScript_Plusle", null,
       { width: 32, height: 32, frames: 9, offsetX: -8 }),
     person(2, "HIDEOUT_DUKING", 7, 4, "black_belt", "face_down", "PyriteCave_MirorBHideout_EventScript_Duking", null)
-  ], { music: "em_aqua_magma_hideout", showName: true });
+  ], { music: "em_aqua_magma_hideout", showName: true, allowEscaping: true });
 // Pyrite Town: Duking's house and the Pyrite Building open; its Trainers with Shadow Pokémon (Colosseum's, Orre.SHADOW).
 PYRITE.warps.push({ x: PYRITE_DUKING_DOOR.x, y: PYRITE_DUKING_DOOR.y, map: "PyriteTown_DukingsHouse", warp: 0 },
   { x: PYRITE_BUILDING_DOOR.x, y: PYRITE_BUILDING_DOOR.y, map: "PyriteTown_PyriteBuilding_1F", warp: 0 });
