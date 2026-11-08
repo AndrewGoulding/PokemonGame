@@ -9736,18 +9736,18 @@
 
   // ---------- Orre: how you come to be there (this game's own) ----------
   //
-  // Once you've beaten Hoenn's Pokémon League (Emerald's FLAG_SYS_GAME_CLEAR), the next step you take Prof. Oak calls
-  // on your PokéNav: something's wrong in Orre, far away, and he'd like to see you at his lab in Pallet Town
+  // Once you've beaten Johto's Pokémon League (Lance; player.flags.johtoLeagueClear), the next step you take outdoors
+  // Prof. Oak calls on your Pokégear (or PokéNav): something's wrong in Orre, far away, and he'd like to see you at his lab in Pallet Town
   // (player.flags.orreStory 1). There he tells you of Orre's two evil teams, Cipher and Team Snagem, and the Shadow
   // Pokémon, and asks you to go undercover in Team Snagem to find out what they're planning and stop it. Say yes and
   // his plane takes you to the Orre Air Strip (orreStory 2); say no and he asks again next time. In Orre you're
   // yourself, with your own Pokémon (game/orre.js); the pilot at the Air Strip flies you back to Kanto, and Oak sends
   // you to Orre again whenever you ask him. He gives you the Orre Map, Team Snagem's hideout marked on it: you go
   // from place to place in Orre on its map (orreWorldMap()), at first only the Air Strip and the hideout. (The other
-  // way on after Hoenn is the S.S. Tidal's to Sinnoh.)
+  // way on after Johto is the S.S. Aqua's Hoenn Ticket.)
   function orreCallStep() {
     const f = player.flags;
-    if (f.orreStory || !hasPokenav() || !hoenn.flag("FLAG_SYS_GAME_CLEAR")) return null;
+    if (f.orreStory || !f.johtoLeagueClear) return null;
     // (Out and about, not inside: the League's rooms or the Hall of Fame.)
     const here = window.WORLD_MAPS[player.location.map] || {};
     return OUTDOORS.includes(here.type) ? { type: "orre-call" } : null;
@@ -9755,10 +9755,10 @@
   async function orreOakCall() {
     player.flags.orreStory = 1;
     await gear.storyCall(["Prof. Oak: Hello, {PLAYER}! It's me,\nProf. Oak!",
-      "Congratulations on becoming the\nChampion of Hoenn! Splendid work!",
+      "Congratulations on becoming the\nChampion of Johto! Splendid work!",
       "But I'm afraid I'm not only calling\nto celebrate…",
       "Something troubling is going on in a\nregion far away from here: Orre.",
-      "I'd rather not say more over the\nPokéNav. Could you come and see me\nat my lab in Pallet Town, in Kanto?",
+      "I'd rather not say more over the\nphone. Could you come and see me\nat my lab in Pallet Town, in Kanto?",
       "I'll be waiting for you!"].map((p) => fill(p)));
     await persist();
   }

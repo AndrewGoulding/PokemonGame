@@ -3086,10 +3086,10 @@ does. (Script warps now name their maps, so every script's warp works.)
 ## Orre (in progress)
 
 Orre's story is Pokémon Colosseum's, with you as yourself rather than Wes, and this game's own content to fill in
-the gaps. After Hoenn there are two ways on: Orre, or Sinnoh on the S.S. Tidal.
+the gaps. After Johto there are two ways on: Orre, or Hoenn with the Hoenn Ticket.
 
-**Getting there.** Once you've beaten Hoenn's Pokémon League (Emerald's FLAG_SYS_GAME_CLEAR), the next step you take
-outdoors **Prof. Oak calls on your PokéNav**: something troubling is happening in Orre, a region far away, and he'd
+**Getting there.** Once you've beaten Johto's Pokémon League (Lance), the next step you take outdoors **Prof. Oak
+calls on your Pokégear** (or PokéNav, if you have one): something troubling is happening in Orre, a region far away, and he'd
 like to see you at his lab in Pallet Town. There he explains it: two evil teams, **Team Snagem** (thieves who steal
 Trainers' Pokémon with a machine that snags them) and the mysterious **Cipher**, are wreaking havoc in Orre with
 **Shadow Pokémon**, Pokémon whose hearts have been shut tight so they fight like machines. He asks you to join Team

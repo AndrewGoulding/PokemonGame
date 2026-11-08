@@ -225,6 +225,7 @@
     // Everyone else, as HGSS's own call handlers have them (the parts this
     // game has: no Pokédex ratings, PC Box names or Kurt's Balls by phone).
     function whatTheySay(i, incoming, script) {
+      if (Array.isArray(script)) return script;   // (a story call's own words: navStoryCall)
       const c = P().contacts[i], tod = timeOfDay(), local = !incoming && isHere(c);
       switch (c.type) {
         case T.GENERIC: return script != null ? scripted(i, script, incoming, 0) : generic(i, incoming);
@@ -1171,7 +1172,13 @@
     // A story's call on the PokéNav (this game's own: Prof. Oak's about Orre), in its window over the map: it rings,
     // "… … … Beep!", then `pages`, then "Click!".
     async function navStoryCall(pages) {
-      if (!(env.pokenav && env.pokenav())) { await env.say(pages); return; }   // (no PokéNav: just what they say)
+      if (!(env.pokenav && env.pokenav())) {
+        // (No PokéNav: Prof. Oak rings your Pokégear, as his calls do in Johto; anyone else, just what they say.)
+        const oak = P() && J().flag("FLAG_GOT_POKEGEAR") && /^Prof\. Oak:/.test(pages[0] || "") ? P().contacts.findIndex((c) => c.type === T.OAK) : -1;
+        if (oak >= 0) await phone(oak, true, pages.map((p) => p.replace(/^Prof\. Oak: /, "")));
+        else await env.say(pages);
+        return;
+      }
       ensureCanvas();
       const wasOpen = !!ui;
       if (!wasOpen) ui = { card: 0, cursor: 0, top: 0 };
