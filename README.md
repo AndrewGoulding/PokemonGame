@@ -3216,7 +3216,13 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   snagged Shadow Pokémon's heart starts shut (`record.heart`, 100); it opens a point every 8 steps you walk with it and
   6 for each battle won with it in your party, and you're told when it's open. Then Agate's Relic Stone purifies it
   (from `orreStory` 30): no longer a Shadow Pokémon, its Shadow moves give way to the moves it would know at its level.
-  The stone tells you how open a heart is till then. (`orrePurified` lists them.)
+  The stone tells you how open a heart is till then. (`orrePurified` lists them.) The Summary screen's POKéMON SKILLS
+  page shows a Shadow Pokémon's **heart gauge** where its EXP would be: a purple bar, full while its heart is shut
+  tight and emptying as it opens, and how open it is.
+- **The Relic Forest and Celebi** (`relicForestShrine`; new, drawn in `tools/build-orre.js`). Through a gap in the trees
+  on Agate's west side: a quiet wood with a pond and, in a clearing, Celebi's mossy shrine. Play Vander's Time Flute
+  there with Shadow Pokémon in your party and Celebi comes from across time and purifies all of them at once, however
+  shut their hearts. The flute is spent then (`orreCelebi`).
 - **Mt. Battle** (`orreStory` 31 to 33; new, drawn in `tools/build-orre.js`: three rocky terraces each with a stone
   battle court, stairs up the faces, the Pokémon Center by the way in; on Orre's map in the north-east). Orre's cap goes
   up to 40. Two of the mountain's Trainers, Cipher Peons Turo and Berin on the slopes, and at the summit Cipher Admin
@@ -3248,7 +3254,7 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   in Colosseum battles you with that one, at that level (`Orre.shadowOf(trainer)`, `Orre.shadowMon`); the prologue's own
   Trainers keep clear of those Trainers' names.
 - **Shadow Pokémon** show a dark purple aura in battle all the time, not only when they use a Shadow move. A snagged
-  one stays a Shadow Pokémon; purifying them (Colosseum's heart gauge and the Relic Stone) is still to come.
+  one stays a Shadow Pokémon till it's purified (the heart gauge, the Relic Stone and Celebi, above).
 
 **Orre's filler Trainers** (this game's own, `Orre.FILLERS` in `game/orre.js`, placed by `tools/build-orre.js`): two to
 five more Trainers in each place of the prologue, each battling you once, two on two (some with three Pokémon), their
@@ -3268,7 +3274,7 @@ north end fallen in and none of its boulders or items).
 **Agate Village** (after Colosseum's, drawn in code): the quiet village in the hills, all green, in a ring of big
 trees: a stream across the middle with a plank bridge, log cabins with red roofs, flowers, the Pokémon Center
 (Emerald's), and at the top the shrine of the **Relic Stone**, the village's holy stone. Its elder says the stone
-can heal a Pokémon whose heart is shut tight.
+can heal a Pokémon whose heart is shut tight. Through a gap in the trees on the west side, the **Relic Forest**.
 
 **Phenac City** (after Colosseum's, drawn in code): the city of water in the desert, all paved in sandstone, its
 white-walled buildings with flat roofs and blue trim, palms, and two channels of water running the length of it and

@@ -3111,6 +3111,20 @@ if (window.JOHTO_TOWN_MAP) {
       assert(fs.existsSync(path.join(root, "assets/world/maps/" + (m.image || m.name) + ".png")), m.name + "'s picture");
     }
     for (const m of [Y, G]) assert(m.triggers.some((t) => t.script === "Orre_WorldMap"), m.name + "'s way out");
+    // (The Relic Forest, west of Agate: in and out by its arrow warps, the shrine at the end of the path.)
+    const RF = WORLD_MAPS.RelicForest;
+    assert(RF && RF.region === "orre" && fs.existsSync(path.join(root, "assets/world/maps/RelicForest.png")), "the Relic Forest");
+    for (const w of G.warps.filter((w) => w.map === "RelicForest")) {
+      const t = World.warpTarget(w), back = RF.warps.find((b) => b.x === t.x && b.y === t.y);
+      assert(t.map === "RelicForest" && back && World.warpTarget(back).map === "AgateVillage", "Agate <-> the Relic Forest");
+      assert(G.behavior[w.y * G.width + w.x] === 0x63 && RF.behavior[back.y * RF.width + back.x] === 0x62, "arrow warps");
+    }
+    {
+      const sx = RF.warps[0].x, sy = RF.warps[0].y, seen = new Set([sx + "," + sy]), q = [[sx, sy]];
+      while (q.length) { const [x, y] = q.shift(); for (const dir of ["up", "down", "left", "right"]) { const r = World.step({ map: RF.name, x, y }, dir), k = r.x + "," + r.y;
+        if (r.ok && r.map === RF.name && !seen.has(k)) { seen.add(k); q.push([r.x, r.y]); } } }
+      assert(RF.signs.filter((g) => g.script === "RelicForest_EventScript_Shrine").some((g) => seen.has(g.x + "," + (g.y + 1))), "the shrine, walked up to");
+    }
     const toCave = Y.warps.find((w) => w.map === "PyriteCave");
     assert(toCave && World.warpTarget(toCave).map === "PyriteCave" && World.warpTarget(CV.warps[0]).map === "PyriteTown", "Pyrite Cave, in and out");
     assert(!Orre.isOpen({}, "PyriteTown") && !Orre.isOpen({}, "AgateVillage"), "Pyrite and Agate open with their tests");

@@ -1722,8 +1722,11 @@ const GSHRINE = { x: 16, y: 2, w: 4, h: 4 };
 const GCABINS = [{ x: 4, y: 4, w: 6, h: 4 }, { x: 26, y: 4, w: 6, h: 4 }, { x: 4, y: 19, w: 6, h: 4 }, { x: 27, y: 19, w: 6, h: 4 }];
 const GSTREAM = [13, 14], GBRIDGE = { x: 16, w: 4 }, GEXIT = { x: 16, w: 4 };
 const GSIGN = { x: 15, y: 26 };
-const GTREES = [[11, 6], [23, 7], [12, 21], [19, 9], [3, 11], [30, 11], [9, 25]];
-const gEdge = (x, y) => x < 2 || x >= GW - 2 || y < 2 || (y >= GH - 2 && (x < GEXIT.x || x >= GEXIT.x + GEXIT.w));
+const GTREES = [[11, 6], [23, 7], [12, 21], [19, 9], [4, 16], [30, 11], [9, 25]];
+// (GFOREST: the way into the Relic Forest, a gap in the west trees: arrow warps on x 1.)
+const GFOREST = [9, 10];
+const gEdge = (x, y) => (x < 2 && !(GFOREST.includes(y) && x === 1)) || x >= GW - 2 || y < 2 || (y >= GH - 2 && (x < GEXIT.x || x >= GEXIT.x + GEXIT.w));
+const gTreeAt = (tx, ty) => gEdge(tx, ty) && gEdge(tx + 1, ty + 1) && !(tx === 0 && (ty === 8 || ty === 10));
 const gblocks = new Array(GW * GH).fill(SAND);
 {
   const L = layouts.LAYOUT_MAUVILLE_CITY, mv = fs.readFileSync(path.join(EM, L.blockdata_filepath));
@@ -1732,7 +1735,7 @@ const gblocks = new Array(GW * GH).fill(SAND);
 const agate = E.render(gblocks, GW, GH, general, mauville, false);
 const GRASS = [[152, 208, 120], [128, 192, 104], [104, 168, 88], [72, 136, 72]];
 const PATH = [[224, 200, 144], [212, 184, 128], [192, 160, 108]];
-const onGPath = (tx, ty) => (tx >= 17 && tx <= 18 && ty >= 6) || (ty >= 17 && ty <= 18 && tx >= 6 && tx <= 29) || (tx >= 23 && tx <= 24 && ty >= 17 && ty <= 24);
+const onGPath = (tx, ty) => (GFOREST.includes(ty) && tx <= 17) || (tx >= 17 && tx <= 18 && ty >= 6) || (ty >= 17 && ty <= 18 && tx >= 6 && tx <= 29) || (tx >= 23 && tx <= 24 && ty >= 17 && ty <= 24);
 function bigTree() {
   const c = canvas(32, 48);
   c.rect(6, 41, 22, 5, C.shadow);
@@ -1768,7 +1771,7 @@ function drawAgateGround() {
 }
 pasteOn(agate, GW, GH, drawAgateGround(), 0, 0, -1);
 // The ring of trees round the village (the border's trees overlap, two deep).
-for (let ty = 0; ty < GH; ty += 2) for (let tx = 0; tx < GW; tx += 2) if (gEdge(tx, ty) && gEdge(tx + 1, ty + 1)) pasteOn(agate, GW, GH, bigTree(), tx * 16, ty * 16 - 16, 30);
+for (let ty = 0; ty < GH; ty += 2) for (let tx = 0; tx < GW; tx += 2) if (gTreeAt(tx, ty)) pasteOn(agate, GW, GH, bigTree(), tx * 16, ty * 16 - 16, 30);
 for (const [x, y] of GTREES) pasteOn(agate, GW, GH, bigTree(), x * 16 - 8, y * 16 - 32, 40);
 // A log cabin: walls of round logs, a red gabled roof, a wooden door and a window with a flower box.
 function logCabin(b, s) {
@@ -1812,7 +1815,8 @@ const AGATE = {
   name: "AgateVillage", title: "Agate Village", width: GW, height: GH, type: "town", music: "em_fallarbor",
   region: "orre", battleScene: "grass", cycling: true, showName: true, top: true, borderWidth: 2, borderHeight: 2,
   collision: [], elevation: [], behavior: [], encounter: [], connections: [], triggers: [], hidden: [],
-  warps: [{ x: GPC_DOOR.x, y: GPC_DOOR.y, map: "AgateVillage_PokemonCenter_1F", warp: 0 }],
+  warps: [{ x: GPC_DOOR.x, y: GPC_DOOR.y, map: "AgateVillage_PokemonCenter_1F", warp: 0 },
+    ...GFOREST.map((y, i) => ({ x: 1, y, map: "RelicForest", warp: i }))],
   signs: [{ x: GSIGN.x, y: GSIGN.y, script: "AgateVillage_EventScript_Sign", text: ["AGATE VILLAGE", "Where the Relic Stone keeps watch."] },
     ...[17, 18].map((x) => ({ x, y: GSHRINE.y + GSHRINE.h - 1, script: "AgateVillage_EventScript_RelicStone",
       text: ["It's the Relic Stone, the village's\nholy stone.", "It feels warm, somehow, as if it\nwere glad you came."] })),
@@ -1841,7 +1845,7 @@ const AGATE = {
     const x = i % GW, y = Math.floor(i / GW);
     AGATE.collision.push(solid.has(x + "," + y) ? 1 : 0);
     AGATE.elevation.push(3);
-    AGATE.behavior.push(x === GPC_DOOR.x && y === GPC_DOOR.y ? 0x69 : 0);
+    AGATE.behavior.push(x === GPC_DOOR.x && y === GPC_DOOR.y ? 0x69 : x === 1 && GFOREST.includes(y) ? 0x63 : 0);
     AGATE.encounter.push(0);
   }
   writePng(path.join(outMaps, "AgateVillage.png"), GW * 16, GH * 16, agate.below);
@@ -1855,6 +1859,89 @@ const PCG = pokemonCenterInside("AgateVillage_PokemonCenter_1F", "Agate Village"
   person(1, "AGATE_PC_GIRL", 11, 5, "em_girl_2", "face_left", "AgateVillage_PokemonCenter_1F_EventScript_Girl",
     ["My grandpa trains Pokémon up on\nMt. Battle, past the village.", "I want to be as strong as him\nsomeday!"])
 ]);
+
+// ---------- The Relic Forest (after Colosseum's; drawn here) ----------
+//
+// West of Agate, through the gap in its trees: a quiet wood, a pond, and Celebi's shrine in the clearing at its heart.
+// Play the Time Flute (Vander's, from Mt. Battle) at the shrine and Celebi comes across time to purify every Shadow
+// Pokémon with you (ui/game.js's relicForestShrine()).
+const FW = 22, FH = 18, FENTRY = [9, 10];
+const FSHRINE = { x: 9, y: 3, w: 4, h: 3 }, FPOND = { x: 3, y: 12, w: 5, h: 3 };
+const FTREES = [[5, 4], [15, 5], [4, 8], [8, 12], [14, 12], [17, 14], [12, 15], [2, 6], [18, 3]];
+const fEdge = (x, y) => (x >= FW - 2 && !(FENTRY.includes(y) && x === FW - 2)) || x < 2 || y < 2 || y >= FH - 2;
+const fTreeAt = (tx, ty) => fEdge(tx, ty) && fEdge(tx + 1, ty + 1) && !(tx === FW - 2 && (ty === 8 || ty === 10));
+const onFPath = (tx, ty) => (FENTRY.includes(ty) && tx >= 10) || (tx >= 10 && tx <= 11 && ty >= FSHRINE.y + FSHRINE.h && ty <= 10);
+const forest = E.render(new Array(FW * FH).fill(SAND), FW, FH, general, mauville, false);
+{
+  const c = canvas(FW * 16, FH * 16), DEEP = [[120, 184, 104], [96, 160, 88], [80, 136, 72], [48, 96, 56]];
+  seed = 251;
+  for (let ty = 0; ty < FH; ty++) for (let tx = 0; tx < FW; tx++) {
+    const pathTile = onFPath(tx, ty);
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const n = Math.sin((tx * 16 + x) * 0.17 + (ty * 16 + y) * 0.13) + Math.sin((tx * 16 + x) * 0.06 - (ty * 16 + y) * 0.23) * 0.6;
+      c.set(tx * 16 + x, ty * 16 + y, pathTile ? PATH[n > 1.2 ? 0 : n > -1.1 ? 1 : 2] : DEEP[n > 1 ? 0 : n > -0.2 ? 1 : 2]);
+    }
+    if (!pathTile) for (let k = 0; k < 3; k++) { const x = tx * 16 + 2 + Math.floor(rand() * 12), y = ty * 16 + 3 + Math.floor(rand() * 11); c.set(x, y, DEEP[3]); c.set(x + 2, y, DEEP[3]); c.set(x + 1, y - 1, DEEP[3]); }
+    if (!pathTile && rand() < 0.1) { const x = tx * 16 + 4 + Math.floor(rand() * 8), y = ty * 16 + 4 + Math.floor(rand() * 8), col = [[248, 168, 216], [200, 232, 248], [248, 248, 248]][Math.floor(rand() * 3)];
+      c.set(x, y - 1, col); c.set(x - 1, y, col); c.set(x + 1, y, col); c.set(x, y + 1, col); c.set(x, y, [248, 232, 104]); }
+  }
+  // The pond: still water, lily pads.
+  { const b = FPOND, x0 = b.x * 16, y0 = b.y * 16, w = b.w * 16, h = b.h * 16;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const dx = (x - w / 2 + 0.5) / (w / 2), dy = (y - h / 2 + 0.5) / (h / 2), r = dx * dx + dy * dy;
+      if (r > 1) continue;
+      const wave = Math.sin(x * 0.25 + y * 0.5) + Math.sin(x * 0.09 - y * 0.3);
+      c.set(x0 + x, y0 + y, r > 0.82 ? [64, 104, 72] : wave > 1.2 ? [184, 224, 248] : wave < -1.1 ? [72, 128, 208] : [104, 168, 232]);
+    }
+    for (const [px, py] of [[18, 14], [52, 30], [36, 10]]) { c.disc(x0 + px, y0 + py, 4, [72, 152, 72]); c.set(x0 + px + 2, y0 + py - 1, [104, 168, 232]); } }
+  // A clearing of short, bright grass round the shrine.
+  for (let y = (FSHRINE.y - 1) * 16; y < (FSHRINE.y + FSHRINE.h + 1) * 16; y++) for (let x = (FSHRINE.x - 1) * 16; x < (FSHRINE.x + FSHRINE.w + 1) * 16; x++) {
+    const dx = (x - (FSHRINE.x + FSHRINE.w / 2) * 16) / ((FSHRINE.w + 2) * 8), dy = (y - (FSHRINE.y + FSHRINE.h / 2) * 16) / ((FSHRINE.h + 2) * 8);
+    if (dx * dx + dy * dy < 1 && !onFPath(Math.floor(x / 16), Math.floor(y / 16))) c.set(x, y, (x * 7 + y * 3) % 23 === 0 ? [248, 248, 200] : [160, 216, 128]);
+  }
+  pasteOn(forest, FW, FH, c, 0, 0, -1);
+}
+for (let ty = 0; ty < FH; ty += 2) for (let tx = 0; tx < FW; tx += 2) if (fTreeAt(tx, ty)) pasteOn(forest, FW, FH, bigTree(), tx * 16, ty * 16 - 16, 30);
+for (const [x, y] of FTREES) pasteOn(forest, FW, FH, bigTree(), x * 16 - 8, y * 16 - 32, 40);
+// Celebi's shrine: a little wooden shrine, its roof green with moss, on a step of old stone; a round window in its door.
+{
+  const b = FSHRINE, w = b.w * 16, up = 24, h = b.h * 16 + up, c = canvas(w, h);
+  c.rect(6, h - 5, w - 10, 5, C.shadow);
+  c.box(4, h - 12, w - 8, 9, { fill: STONE[2], light: STONE[1], dark: STONE[3], line: STONE[4] });
+  c.box(14, 22, w - 28, h - 34, { fill: C.wood[1], light: C.wood[0], dark: C.wood[2], line: C.wood[3] });
+  c.disc(w / 2, 36, 6, C.wood[3]); c.disc(w / 2, 36, 5, [120, 200, 104]); c.disc(w / 2 - 1, 35, 2, [200, 248, 168]);
+  c.rect(w / 2 - 1, 43, 2, h - 56, C.wood[3]);
+  for (let y = 0; y < 24; y++) { const inset = Math.max(0, 14 - Math.round(y * 0.9)); c.hl(inset, w - 1 - inset, y, y % 4 === 3 ? C.green[3] : y < 4 ? C.green[0] : C.green[1]); }
+  c.hl(2, w - 3, 23, C.green[3]);
+  c.rect(w / 2 - 2, 0, 4, 4, [248, 216, 96]);
+  pasteOn(forest, FW, FH, c, b.x * 16, b.y * 16 - up, up + 16 * (b.h - 1));
+}
+const RELIC_FOREST = {
+  name: "RelicForest", title: "Relic Forest", width: FW, height: FH, type: "route", music: "em_petalburg_woods",
+  region: "orre", battleScene: "grass", showName: true, top: true, borderWidth: 2, borderHeight: 2,
+  collision: [], elevation: [], behavior: [], encounter: [], connections: [], triggers: [], hidden: [],
+  warps: FENTRY.map((y, i) => ({ x: FW - 2, y, map: "AgateVillage", warp: 1 + i })),
+  signs: [10, 11].map((x) => ({ x, y: FSHRINE.y + FSHRINE.h - 1, script: "RelicForest_EventScript_Shrine",
+    text: ["A little shrine, old and mossy. Its\nround window glows a soft green."] })),
+  people: [],
+  wild: null
+};
+{
+  const solid = new Set(), fill = (b) => { for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) solid.add(x + "," + y); };
+  for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) if (fEdge(x, y)) solid.add(x + "," + y);
+  fill(FSHRINE); fill(FPOND);
+  for (const [x, y] of FTREES) solid.add(x + "," + y);
+  for (let i = 0; i < FW * FH; i++) {
+    const x = i % FW, y = Math.floor(i / FW);
+    RELIC_FOREST.collision.push(solid.has(x + "," + y) ? 1 : 0);
+    RELIC_FOREST.elevation.push(3);
+    RELIC_FOREST.behavior.push(x === FW - 2 && FENTRY.includes(y) ? 0x62 : 0);
+    RELIC_FOREST.encounter.push(0);
+  }
+  writePng(path.join(outMaps, "RelicForest.png"), FW * 16, FH * 16, forest.below);
+  writePng(path.join(outMaps, "RelicForest-top.png"), FW * 16, FH * 16, forest.above);
+}
+fs.copyFileSync(path.join(outMaps, "AgateVillage-border.png"), path.join(outMaps, "RelicForest-border.png"));
 
 // ---------- Mt. Battle (after Colosseum's; drawn here) ----------
 //
@@ -2319,6 +2406,6 @@ fs.writeFileSync(orreFile,
     PyriteTown: PYRITE, PyriteTown_PokemonCenter_1F: PCY, PyriteCave: PYCAVE, PyriteTown_DukingsHouse: DUKING_HOUSE,
     PyriteTown_PyriteBuilding_1F: BUILDING_1F, PyriteTown_PyriteBuilding_4F: BUILDING_4F, PyriteCave_MirorBHideout: MIROR_HIDEOUT, AgateVillage_EaguansHouse: EAGUN_HOUSE, MtBattle: MTBATTLE, MtBattle_PokemonCenter_1F: PCB,
     TheUnder: UNDER, TheUnder_PokemonCenter_1F: PCU, TheUnder_Studio: STUDIO, ShadowLab_1F: LAB_1F, ShadowLab_B1F: LAB_B1F, ShadowLab_EinsRoom: LAB_EIN,
-    RealgamTower_1F: REALGAM_1F, RealgamTower_Dome: REALGAM_DOME, RealgamTower_Colosseum: REALGAM_COLO, RealgamTower_Top: REALGAM_TOP, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG }) + ");\n" + sinnohPart);
+    RealgamTower_1F: REALGAM_1F, RealgamTower_Dome: REALGAM_DOME, RealgamTower_Colosseum: REALGAM_COLO, RealgamTower_Top: REALGAM_TOP, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG, RelicForest: RELIC_FOREST }) + ");\n" + sinnohPart);
 console.log("wrote Pyrite Town (" + YW + "x" + YH + "), Pyrite Cave and Agate Village (" + GW + "x" + GH + ")");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");

@@ -2980,7 +2980,7 @@
       "PyriteTown_DukingsHouse_EventScript_Secc", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", "enter:PyriteTown_PyriteBuilding_4F",
       "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS),
       "enter:AgateVillage_EaguansHouse", "AgateVillage_EaguansHouse_EventScript_Eagun", "AgateVillage_EaguansHouse_EventScript_Beluh",
-      "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone",
+      "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone", "RelicForest_EventScript_Shrine",
       "arrive:MtBattle", "enter:MtBattle", "MtBattle_EventScript_Dakim", "MtBattle_EventScript_SummitSkrub", "MtBattle_EventScript_Vander",
       "MtBattle_EventScript_Trainer1", "MtBattle_EventScript_Trainer2", "MtBattle_EventScript_Turo", "MtBattle_EventScript_Berin",
       "MtBattle_PokemonCenter_1F_EventScript_Nurse", "TheUnder_PokemonCenter_1F_EventScript_Nurse",
@@ -4519,6 +4519,7 @@
       case "AgateVillage_EaguansHouse_EventScript_Eagun": case "AgateVillage_EaguansHouse_EventScript_Beluh": await eagunsHouse(script); return;
       case "AgateVillage_EventScript_Skrub": case "AgateVillage_EventScript_Peon": await agateShrine(); return;
       case "AgateVillage_EventScript_RelicStone": await relicStone(); return;
+      case "RelicForest_EventScript_Shrine": await relicForestShrine(); return;
       case "arrive:MtBattle": case "enter:MtBattle": await mtBattleArrival(); return;
       case "MtBattle_EventScript_Dakim": case "MtBattle_EventScript_SummitSkrub": case "MtBattle_EventScript_Vander": await mtBattleSummit(script); return;
       case "arrive:TheUnder": case "enter:TheUnder": await underArrival(); return;
@@ -10591,13 +10592,55 @@
       if (!(await confirm("Purify " + name + " at the\nRelic Stone?"))) continue;
       await Overworld.flash();
       sfx("se_m_reflect");
-      r.shadow = false;
-      delete r.heart;
-      r.moves = Party.create(r.species, r.level).moves;   // (the moves it would know at its level)
+      purify(r);
       await sayWithJingle("mus_heal", [name + "'s heart opened all the way!", name + " is a Shadow Pokémon no more!"]);
-      (f.orrePurified = f.orrePurified || []).push(r.species);
       await persist();
     }
+  }
+  function purify(r) {
+    r.shadow = false;
+    delete r.heart;
+    r.moves = Party.create(r.species, r.level).moves;   // (the moves it would know at its level)
+    (player.flags.orrePurified = player.flags.orrePurified || []).push(r.species);
+  }
+
+  // The Relic Forest's shrine (west of Agate): play the Time Flute there and Celebi comes across time and opens the
+  // heart of every Shadow Pokémon with you at once, however shut, as in Colosseum. The flute's song is spent then: it
+  // crumbles away, and Celebi goes back to its own time.
+  async function relicForestShrine() {
+    const f = player.flags;
+    await say(["A little shrine, old and mossy. Its\nround window glows a soft green."]);
+    if (f.orreCelebi) { await say(["Something gentle seems to watch over\nthe forest still."]); return; }
+    if (!Player.itemCount(player, "time-flute")) return;
+    const shadows = player.party.filter((r) => r.shadow);
+    if (!shadows.length) { await say(["The Time Flute stirs in your bag…", "But you have no Shadow Pokémon with\nyou. Better save its song for them."]); return; }
+    if (!(await confirm("Play the Time Flute?"))) return;
+    Screen.say("");
+    const at = Object.assign({}, player.location), CELEBI = "LOCALID_RELIC_CELEBI";
+    await say(["{PLAYER} played the Time Flute.", "A strange, faraway melody drifts\nthrough the trees…"]);
+    Screen.say("");
+    Overworld.follower.hide(true);   // (your Pokémon back in its ball: Celebi comes where it stood)
+    await Overworld.act([{ who: "player", moves: ["walk_down", "face_up"] }]);
+    music(null);
+    await Overworld.flash();
+    Overworld.addObject(CELEBI, { x: at.x, y: at.y, facing: "down" }, { sprite: "follow/251", width: 32, height: 32, frames: 9, offsetX: -8 });
+    cry("Celebi");
+    await sleep(600);
+    await say(["Celebi appeared from across time!"]);
+    Screen.say("");
+    await Overworld.flash();
+    sfx("se_m_reflect");
+    for (const r of shadows) purify(r);
+    await sayWithJingle("mus_heal", shadows.map((r) => Party.displayName(r) + "'s heart opened all the way!\n" + Party.displayName(r) + " is a Shadow Pokémon no more!"));
+    cry("Celebi");
+    await Overworld.act([{ who: CELEBI, moves: ["walk_up", "set_invisible"] }]);
+    Overworld.removeObject(CELEBI);
+    Overworld.follower.hide(false);
+    Player.removeItem(player, "time-flute", 1);
+    f.orreCelebi = true;
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+    await say(["Celebi went back to its own time…", "The Time Flute crumbled away to\nnothing."]);
+    await persist();
   }
 
   // ---------- Orre: Colosseum's story, Agate Village (orreStory 28 to 31) ----------
