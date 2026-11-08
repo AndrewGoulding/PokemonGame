@@ -369,15 +369,6 @@
     const wildDouble = wild && !!opts.wildDouble && foe.team.length > 1;
     const double = wildDouble || (!wild && !opts.safari && !!(opts.double || opts.partner || foe2));
     if (!wild) for (const r of foe.team.concat(foe2 ? foe2.team : [])) delete r.shiny;   // trainers' Pokémon are never shiny
-    // (Kanto's Trainers, from Brock's Badge on, a level or more higher: Player.kantoTrainerBonus. Not the battles of
-    // the Trainer Tower, the Stadium and the like, nor a random Trainer.)
-    const here0 = player.location && window.WORLD_MAPS[player.location.map];
-    const bonus = !wild && opts.foe && !opts.noExp && !(here0 && here0.region) ? Player.kantoTrainerBonus(player) : 0;
-    if (bonus) for (const r of foe.team.concat(foe2 ? foe2.team : [])) {
-      r.level = Math.min(100, r.level + bonus);
-      r.exp = Experience.expForLevel(Experience.growthRate(r.species), r.level);
-      r.hp = Party.maxHp(r);
-    }
     // (This game's own: one wild Pokémon in ten is a Tera Pokémon, of a random
     // Tera Type, already Terastallized when it appears; beat it for Tera Shards,
     // or catch it and it keeps its Tera Type. Not in the Safari Zone, a raid
@@ -5989,8 +5980,8 @@
     await sayWithJingle("mus_heal", "{PLAYER}'s Pokémon were fully healed!");
     await say("Leaf: There! Now let's battle!");
     // (Her Butterfree, her ace, Terastallizes into a pure Flying type: she has a Tera Orb too.)
-    const team = [Object.assign(Party.create("Butterfree", 14), { teraType: "Flying", teraAce: true }), Party.create(RIVAL_PICK[f.starter], 15),
-      Party.create("Jigglypuff", 13)];
+    const team = [Object.assign(Party.create("Butterfree", 15), { teraType: "Flying", teraAce: true }), Party.create(RIVAL_PICK[f.starter], 16),
+      Party.create("Jigglypuff", 14)];
     const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green", tera: true },
       defeatText: ["Wow! You really are strong,\n{PLAYER}!"] });
     if (outcome !== "won") return;
@@ -6026,8 +6017,8 @@
       "I came through the Underground\nPath too. Isn't Vermilion pretty?\nYou can smell the sea!",
       "My Pokémon have gotten a lot\nstronger since Pewter. Want to see?"]);
     // (Her Butterfree Terastallizes into a pure Flying type again.)
-    const team = [Object.assign(Party.create("Butterfree", 18), { teraType: "Flying", teraAce: true }), Party.create("Wigglytuff", 20),
-      Party.create("Nidorina", 21), Party.create(STAGE_TWO[RIVAL_PICK[f.starter]], 22)];
+    const team = [Object.assign(Party.create("Butterfree", 20), { teraType: "Flying", teraAce: true }), Party.create("Wigglytuff", 22),
+      Party.create("Nidorina", 23), Party.create(STAGE_TWO[RIVAL_PICK[f.starter]], 24)];
     const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green", tera: true },
       defeatText: ["Oh, no! You're still a step ahead\nof me, {PLAYER}!"] });
     if (outcome !== "won") return;
@@ -6234,7 +6225,7 @@
       "Jessie: Jessie!", "James: James!",
       "Jessie: Team Rocket, blast off at the\nspeed of light!", "James: Surrender now, or prepare to\nfight!",
       "Meowth: Meowth! That's right!"]);
-    const team = [Party.create("Ekans", 14), Party.create("Meowth", 14), Party.create("Koffing", 14)];
+    const team = [Party.create("Ekans", 15), Party.create("Meowth", 15), Party.create("Koffing", 15)];
     // (A double battle, the two of them together; with only one Pokémon that
     // can fight, a single one.)
     const outcome = await battle("trainer", { foe: { name: "Rocket Jessie & James", team, pic: "jessie_james" },
@@ -6256,15 +6247,15 @@
   //
   // Three more ambushes, each a double battle (a single one with only one
   // Pokémon that can fight): stepping out of the Rocket Hideout's elevator
-  // corridor toward Giovanni on B4F (Koffing, Meowth and Ekans, level 25),
+  // corridor toward Giovanni on B4F (Koffing, Meowth and Ekans, level 28),
   // coming up to Mr. Fuji on Pokémon Tower 7F (Meowth, Arbok and Weezing,
-  // 27), and stepping off Silph Co. 7F's warp pad on 11F (Weezing, Arbok and
-  // Meowth, 31). Each time they come at you from a few steps off, say their
+  // 30), and stepping off Silph Co. 7F's warp pad on 11F (Weezing, Arbok and
+  // Meowth, 35). Each time they come at you from a few steps off, say their
   // piece and battle; beaten, they blast off back the way they came. Beat
   // you, and they're waiting there again.
   const LATER_JESSIE_JAMES = {
     RocketHideout_B4F: {
-      flag: "jessieJamesHideout", team: [["Koffing", 25], ["Meowth", 25], ["Ekans", 25]],
+      flag: "jessieJamesHideout", team: [["Koffing", 28], ["Meowth", 28], ["Ekans", 28]],
       // (Only before Giovanni's beaten; up the way from the elevator.)
       due: (f, at) => !f.TRAINER_BOSS_GIOVANNI && at.y === 19 && (at.x === 16 || at.x === 17) && at.facing === "up",
       cols: [16, 17], dy: 1, steps: 3,
@@ -6280,7 +6271,7 @@
       after: ["Jessie, James & Meowth: Looks like\nTeam Rocket's blasting off again!"]
     },
     PokemonTower_7F: {
-      flag: "jessieJamesTower", team: [["Meowth", 27], ["Arbok", 27], ["Weezing", 27]],
+      flag: "jessieJamesTower", team: [["Meowth", 30], ["Arbok", 30], ["Weezing", 30]],
       // (Only while Mr. Fuji's still held there.)
       due: (f, at) => !f.rescuedMrFuji && at.y === 12 && at.x >= 10 && at.x <= 12 && at.facing === "up",
       cols: [10, 12], dy: 1, steps: 3,
@@ -6296,7 +6287,7 @@
       after: ["Jessie, James & Meowth: Looks like\nTeam Rocket's blasting off again!"]
     },
     SilphCo_11F: {
-      flag: "jessieJamesSilph", team: [["Weezing", 31], ["Arbok", 31], ["Meowth", 31]],
+      flag: "jessieJamesSilph", team: [["Weezing", 35], ["Arbok", 35], ["Meowth", 35]],
       // (Only before Giovanni's beaten; just off the warp pad from 7F.)
       due: (f, at) => !f.TRAINER_BOSS_GIOVANNI_2 && at.x <= 2 && (at.y === 6 || at.y === 7),
       cols: [0, 2], dy: 1, steps: 3,
@@ -6617,7 +6608,7 @@
   const LEAF_FOURTH = { Bulbasaur: "Vulpix", Squirtle: "Gloom", Charmander: "Poliwhirl" };
   const leafMegaTeam = () => {
     const starter = RIVAL_PICK[player.flags.starter] || "Bulbasaur";
-    return [["Butterfree", 27], ["Wigglytuff", 28], ["Nidorina", 29], [LEAF_FOURTH[starter], 30], [STAGE_TWO[starter], 31]];
+    return [["Butterfree", 30], ["Wigglytuff", 31], ["Nidorina", 32], [LEAF_FOURTH[starter], 33], [STAGE_TWO[starter], 34]];
   };
   // In the order you battle them. Each one's ace Terastallizes, as it has
   // before (`tera`): Leaf's Butterfree into a Flying type, Gary's Eevee, now
@@ -6630,12 +6621,12 @@
       defeat: ["Leaf: Aww! You're amazing,\n{PLAYER}!"],
       after: ["Leaf: That was so much fun!\nI can't wait to see what Mega\nEvolution is!"] },
     { key: "gary", name: () => "Rival " + player.rival, pic: "rival_late", music: "mus_encounter_rival",
-      team: () => [["Pidgeotto", 27], ["Growlithe", 28], ["Gyarados", 29], ["Exeggutor", 30], ["Umbreon", 31]], tera: ["Umbreon", "Ghost"],
+      team: () => [["Pidgeotto", 30], ["Growlithe", 31], ["Gyarados", 32], ["Exeggutor", 33], ["Umbreon", 34]], tera: ["Umbreon", "Ghost"],
       intro: ["{RIVAL}: Heh! Gramps called you too,\nhuh, {PLAYER}?", "Doesn't matter. I'll pass his test\nby beating you first! Let's go!"],
       defeat: ["{RIVAL}: What!? Not again!"],
       after: ["{RIVAL}: Tch… Fine. You passed.\nBut I'm not done getting stronger!"] },
     { key: "red", name: () => "Pokémon Trainer Red", pic: "red", music: "mus_encounter_rival",
-      team: () => [["Pikachu", 27], ["Charmeleon", 28], ["Wartortle", 29], ["Ivysaur", 30], ["Espeon", 31]], tera: ["Pikachu", "Water"],
+      team: () => [["Pikachu", 30], ["Charmeleon", 31], ["Wartortle", 32], ["Ivysaur", 33], ["Espeon", 34]], tera: ["Pikachu", "Water"],
       intro: ["Red: …", "Red stepped forward, ready to battle!"],
       defeat: ["…"],
       after: ["Red: …", "Red gave a small nod."] }
@@ -8026,7 +8017,7 @@
   const HIDEOUT_LEAF = "LOCALID_HIDEOUT_LEAF";
   // FireRed's team (Onix, Rhyhorn, Kangaskhan), with three more (his
   // Dugtrio, Nidorino and Persian) against the two of you.
-  const HIDEOUT_GIOVANNI_EXTRA = [["Dugtrio", 26], ["Nidorino", 26], ["Persian", 28]];
+  const HIDEOUT_GIOVANNI_EXTRA = [["Dugtrio", 29], ["Nidorino", 29], ["Persian", 31]];
   let hideoutLeafFrom = null;   // (the tile Leaf came in by, to leave by)
   // Which way to face from one tile to look at another.
   const toward = (from, to) => (to.x < from.x ? "left" : to.x > from.x ? "right" : to.y < from.y ? "up" : "down");
@@ -8339,7 +8330,7 @@
   // about FireRed's levels: Pidgeot, Growlithe, Gyarados (which holds its
   // Gyaradosite and Mega Evolves), Exeggutor, Umbreon (his Eevee) and Alakazam.
   // Then he's off by the warp pad.
-  const SILPH_RIVAL_TEAM = [["Pidgeot", 37], ["Growlithe", 35], ["Gyarados", 38, "gyaradosite"], ["Exeggutor", 35], ["Umbreon", 40], ["Alakazam", 35]];
+  const SILPH_RIVAL_TEAM = [["Pidgeot", 41], ["Growlithe", 39], ["Gyarados", 42, "gyaradosite"], ["Exeggutor", 39], ["Umbreon", 44], ["Alakazam", 39]];
   async function silphRival(top) {
     const f = player.flags, R = "LOCALID_SILPH_CO_RIVAL";
     music("mus_encounter_rival");
@@ -8381,12 +8372,12 @@
   // Silph Co. and from Saffron; and Red goes back the way he came.
   const SILPH_RED = "LOCALID_SILPH_CO_RED";
   // Red's Pokémon now: those he had at the top of Pokémon Tower, all fully
-  // evolved, and a Snorlax, all at Lv. 36; for the tag battle he picks three.
+  // evolved, and a Snorlax, all at Lv. 36 (your partner); for the tag battle he picks three.
   const RED_SILPH_ROSTER = [["Pikachu", 36], ["Charizard", 36, "charizardite-x"], ["Blastoise", 36], ["Venusaur", 36], ["Espeon", 36], ["Snorlax", 36]];
   const RED_SILPH_PICK = ["Charizard", "Snorlax", "Pikachu"];
   // FireRed's team for him (Nidorino, Kangaskhan, Rhyhorn, Nidoqueen), with
   // two more (his Dugtrio and Persian), six against the two of you.
-  const SILPH_GIOVANNI_EXTRA = [["Dugtrio", 38], ["Persian", 39]];
+  const SILPH_GIOVANNI_EXTRA = [["Dugtrio", 42], ["Persian", 43]];
   async function giovanniSilph(left) {
     const G = "LOCALID_SILPH_CO_GIOVANNI", ID = "TRAINER_BOSS_GIOVANNI_2", R = SILPH_RED;
     await Overworld.act([{ who: G, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
@@ -9182,9 +9173,9 @@
   const FINAL_STAGE = { Bulbasaur: "Venusaur", Charmander: "Charizard", Squirtle: "Blastoise" };
   const route22LeafTeam = () => {
     const starter = FINAL_STAGE[RIVAL_PICK[player.flags.starter] || "Bulbasaur"];
-    return [Party.create("Butterfree", 47, { ivs: 20 }), Party.create("Wigglytuff", 47, { ivs: 20 }), Party.create("Nidoqueen", 48, { ivs: 20 }),
-      Party.create("Politoed", 48, { ivs: 20 }), Party.create(starter, 50, { ivs: 25 }),
-      Object.assign(Party.create("Dragonite", 53, { ivs: 31 }), { item: "dragoninite", teraType: "Flying", teraAce: true })];
+    return [Party.create("Butterfree", 52, { ivs: 20 }), Party.create("Wigglytuff", 52, { ivs: 20 }), Party.create("Nidoqueen", 53, { ivs: 20 }),
+      Party.create("Politoed", 53, { ivs: 20 }), Party.create(starter, 55, { ivs: 25 }),
+      Object.assign(Party.create("Dragonite", 58, { ivs: 31 }), { item: "dragoninite", teraType: "Flying", teraAce: true })];
   };
   const route22LateRivalDue = () => !!(player.flags.TRAINER_LEADER_GIOVANNI && !player.flags.route22LateRival);
   async function route22LateRival(side) {
@@ -9296,7 +9287,7 @@
   // level 50: Pidgeot, Arcanine, Gyarados (holding its Gyaradosite: it Mega
   // Evolves), Exeggutor, Alakazam and Umbreon (his Eevee) as his ace. Then he
   // heads back up to the League.
-  const VICTORY_ROAD_RIVAL_TEAM = [["Pidgeot", 50], ["Arcanine", 50], ["Gyarados", 50, "gyaradosite"], ["Exeggutor", 49], ["Alakazam", 50], ["Umbreon", 53]];
+  const VICTORY_ROAD_RIVAL_TEAM = [["Pidgeot", 55], ["Arcanine", 55], ["Gyarados", 55, "gyaradosite"], ["Exeggutor", 54], ["Alakazam", 55], ["Umbreon", 58]];
   const victoryRoadRivalDue = () => {
     const at = Overworld.position();
     return !!(player.flags.TRAINER_LEADER_GIOVANNI && !player.flags.victoryRoadRival && at.map === "Route23" && at.x === 18 && at.y === 28 && canBattle());
@@ -9502,9 +9493,9 @@
   // Red, the Champion (this game's own; FireRed has Gary,
   // PokemonLeague_ChampionsRoom_EventScript_EnterRoom): Pikachu, Espeon,
   // Blastoise, Venusaur, Snorlax and his ace, Charizard, holding its
-  // Charizardite Y: it Mega Evolves. Levels about FireRed's Champion's (57-63),
-  // and with FLAG_SYS_CAN_LINK_WITH_RS its rematch ones (72-75).
-  const CHAMPION_TEAM = [["Pikachu", 58, 72], ["Espeon", 59, 72], ["Blastoise", 60, 73], ["Venusaur", 60, 73], ["Snorlax", 61, 74], ["Charizard", 63, 75, "charizardite-y"]];
+  // Charizardite Y: it Mega Evolves. Levels FireRed's Champion's and five more (62-68),
+  // and with FLAG_SYS_CAN_LINK_WITH_RS its rematch ones (77-80).
+  const CHAMPION_TEAM = [["Pikachu", 63, 77], ["Espeon", 64, 77], ["Blastoise", 65, 78], ["Venusaur", 65, 78], ["Snorlax", 66, 79], ["Charizard", 68, 80, "charizardite-y"]];
   function championTeam(rematch) {
     return CHAMPION_TEAM.map(([sp, lv, lv2, item]) => Object.assign(Party.create(sp, rematch ? lv2 : lv, { ivs: 31 }), item ? { item } : {}));
   }
@@ -14102,8 +14093,8 @@
   // ---------- The S.S. Anne ----------
   //
   // Red (where FireRed has Gary) comes out of a cabin on 2F and battles you:
-  // Pikachu (24, knowing Surf and Terastallizing into a Water type),
-  // Charmeleon, Wartortle and Ivysaur (25 each). The Captain,
+  // Pikachu (26, knowing Surf and Terastallizing into a Water type),
+  // Charmeleon, Wartortle and Ivysaur (27 each). The Captain,
   // seasick, gives you HM01 Cut once you've rubbed his back; the next time you
   // step out onto the dock, the ship sets sail and is gone.
   // Red's Pikachu (this game's own): it knows Surf, and Terastallizes into a Water type.
@@ -14123,7 +14114,7 @@
     if (side === "Left") await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
     await say("…");
     // (His Pikachu knows Surf, and Terastallizes into a Water type.)
-    const team = [surfingPikachu(24), Party.create("Charmeleon", 25), Party.create("Wartortle", 25), Party.create("Ivysaur", 25)];
+    const team = [surfingPikachu(26), Party.create("Charmeleon", 27), Party.create("Wartortle", 27), Party.create("Ivysaur", 27)];
     const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer Red", team, pic: "red", tera: true }, defeatText: ["…"] });
     if (outcome !== "won") return;
     f.ssAnneRed = true;

@@ -3516,15 +3516,20 @@ node tools/build-sinnoh.js <path to the Essentials project>
   (all of its share, or what's over the cap) goes, shared out evenly, to the
   party's Pokémon that can still gain Exp. Points ("The Exp. Share passed on the
   Exp. Points that couldn't be gained!"); with the Exp. Share off it's lost.
-- **Kanto's Trainers grow with you** (this game's own): from Brock's Badge on, every Trainer you battle in Kanto
-  (the Sevii Islands too) has Pokémon a little higher-levelled than FireRed's: +1 with one Badge, +2 with two or
-  three, +3 with four, +4 with five or six and +5 with seven or eight (`Player.kantoTrainerBonus`). Not the Trainer
-  Tower's, the Stadium's or the like. Kanto's level caps go up by the same, so you can keep up.
+- **Kanto's Trainers are stronger than FireRed's** (this game's own, `game/kanto-trainer-levels.js`): every Trainer
+  from Brock on has their Pokémon's levels raised, by how far into the game they stand: +1 on Route 3, in Mt. Moon,
+  on Route 4, in Cerulean and on Routes 24 and 25 (Misty); +2 on Routes 6, 9 and 11, in Vermilion and on the S.S.
+  Anne (Lt. Surge); +3 on Route 10, in Rock Tunnel, Pokémon Tower, on Routes 7 and 8, in Celadon and the Rocket
+  Hideout (Erika); +4 in Saffron and Silph Co. and on Routes 12 to 18 (Koga, Sabrina); +5 from Route 19 on, in
+  Cinnabar, Giovanni's Gym, Victory Road, the League and the Sevii Islands. Brock, Viridian Forest and the rival's
+  first two battles keep FireRed's levels. This game's own Kanto battles are raised the same way (Leaf in Pewter and
+  Vermilion, Red on the S.S. Anne, Jessie and James, Oak's Mega Evolution test, Silph Co.'s and Victory Road's
+  Gary, Leaf on Route 22, Champion Red). Kanto's level caps are the raised aces': 14, 22, 26, 32, 47, 47, 52, 55.
 - **Level caps** (this game's own: the adventure goes region by region,
   Kanto, then Johto, then the rest): in a region, your Pokémon grow no further
   than its cap for the Badges you have of that region's eight: the level of the
-  next Gym Leader's ace (in Kanto Lv. 14 with none, Brock's Onix, then 21, 24, 29,
-  43, 43, 47 and 50, each with the levels Kanto's Trainers have gained by then (below); in Johto 13, 17, 19, 25, 31, 35, 35 and 41, Pryce's 34 under
+  next Gym Leader's ace (in Kanto Lv. 14 with none, Brock's Onix, then 22, 26, 32,
+  47, 47, 52 and 55, the Leaders raised as above; in Johto 13, 17, 19, 25, 31, 35, 35 and 41, Pryce's 34 under
   Jasmine's 35; in Hoenn 15, 19, 24, 29, 31, 33, 42 and 46), and no cap with all
   eight (`Player.levelCap`). Kanto's side places (the Sevii Islands, Stadium Island, Orre, Faraway
   Island, and everything east of New Bark Town: Route 27, Tohjo Falls, Route 26,

@@ -1807,11 +1807,11 @@ for (const share of [false, true]) {
   for (const [side, from] of [["North", { x: 33, y: 18 }], ["South", { x: 33, y: 16 }], ["West", { x: 34, y: 17 }], ["East", { x: 32, y: 17 }]]) {
     assert.deepStrictEqual(replay(from, "PewterCity_Movement_PlayerWalkToMuseum" + side), { x: 17, y: 9 }, "to the Museum (" + side + ")");
   }
-  // Route 3's eight trainers, with FireRed's parties.
+  // Route 3's eight trainers, with FireRed's parties (a level higher: game/kanto-trainer-levels.js).
   const r3 = WORLD_MAPS.Route3.people.filter((p) => p.trainer).map((p) => WORLD_TRAINERS[p.trainer.id]);
   assert.deepStrictEqual(r3.map((t) => t.className + " " + t.name), ["Lass Robin", "Bug Catcher James", "Lass Sally", "Bug Catcher Greg",
     "Youngster Calvin", "Lass Janice", "Bug Catcher Colton", "Youngster Ben"]);
-  assert.deepStrictEqual(party("TRAINER_BUG_CATCHER_GREG"), ["Weedle 9", "Kakuna 9", "Caterpie 9", "Metapod 9"]);
+  assert.deepStrictEqual(party("TRAINER_BUG_CATCHER_GREG"), ["Weedle 10", "Kakuna 10", "Caterpie 10", "Metapod 10"]);
   for (const t of r3) assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front", t.pic + ".png")), t.pic);
   assert.deepStrictEqual(WORLD_MAPS.Route3.hidden.map((h) => h.item), ["oran-berry"]);
   assert(WORLD_MAPS.Route3.wild.slots.some((s) => s.species === "Mankey"), "FireRed's Route 3 has Mankey");
@@ -1820,7 +1820,7 @@ for (const share of [false, true]) {
     .map((p) => WORLD_TRAINERS[p.trainer.id].className + " " + WORLD_TRAINERS[p.trainer.id].name);
   assert.strictEqual(moonTrainers.length, 12);
   assert.strictEqual(moonTrainers.filter((t) => t === "Team Rocket Grunt").length, 4);
-  assert.deepStrictEqual(party("TRAINER_SUPER_NERD_MIGUEL"), ["Grimer 12", "Voltorb 12", "Koffing 12"]);
+  assert.deepStrictEqual(party("TRAINER_SUPER_NERD_MIGUEL"), ["Grimer 13", "Voltorb 13", "Koffing 13"]);
   assert.deepStrictEqual(WORLD_MAPS.MtMoon_B2F.people.filter((p) => p.sprite === "fossil").map((p) => [p.x, p.y]), [[13, 7], [14, 7]]);
   assert(WORLD_MAPS.MtMoon_1F.people.some((p) => p.item === "moon-stone"), "Mt. Moon's Moon Stone");
   assert.deepStrictEqual(Player.CENTERS.Route4_PokemonCenter_1F.map, "Route4_PokemonCenter_1F");
@@ -5241,9 +5241,9 @@ for (let seed = 1; seed <= GEN8; seed++) {
     // Victory Road (his Growlithe an Arcanine, about level 50), and Red the Champion (Mega Charizard Y).
     // Gary's second battle (Cerulean): his Eevee knows Shadow Ball and Terastallizes into a Ghost type.
     assert(/concat\(\["Shadow Ball"\]\);\n\s*const eevee = Object\.assign\(Party\.create\("Eevee"[^\n]*teraType: "Ghost", teraAce: true \}\);\n\s*const team = base[^\n]*\n[^\n]*pic: "rival_early", tera: true/.test(gameSrc), "Gary's Cerulean Eevee");
-    assert(/Party\.create\("Politoed", 48[^\n]*\n[^\n]*Object\.assign\(Party\.create\("Dragonite", 53, \{ ivs: 31 \}\), \{ item: "dragoninite", teraType: "Flying", teraAce: true \}\)/.test(gameSrc), "Leaf's Route 22 team");
-    assert(/const VICTORY_ROAD_RIVAL_TEAM = \[\["Pidgeot", 50\], \["Arcanine", 50\], \["Gyarados", 50, "gyaradosite"\]/.test(gameSrc) && /at\.map === "Route23" && at\.x === 18 && at\.y === 28/.test(gameSrc), "Gary at the end of Victory Road");
-    assert(/const CHAMPION_TEAM = \[\["Pikachu", 58, 72\], \["Espeon", 59, 72\], \["Blastoise", 60, 73\], \["Venusaur", 60, 73\], \["Snorlax", 61, 74\], \["Charizard", 63, 75, "charizardite-y"\]\]/.test(gameSrc)
+    assert(/Party\.create\("Politoed", 53[^\n]*\n[^\n]*Object\.assign\(Party\.create\("Dragonite", 58, \{ ivs: 31 \}\), \{ item: "dragoninite", teraType: "Flying", teraAce: true \}\)/.test(gameSrc), "Leaf's Route 22 team");
+    assert(/const VICTORY_ROAD_RIVAL_TEAM = \[\["Pidgeot", 55\], \["Arcanine", 55\], \["Gyarados", 55, "gyaradosite"\]/.test(gameSrc) && /at\.map === "Route23" && at\.x === 18 && at\.y === 28/.test(gameSrc), "Gary at the end of Victory Road");
+    assert(/const CHAMPION_TEAM = \[\["Pikachu", 63, 77\], \["Espeon", 64, 77\], \["Blastoise", 65, 78\], \["Venusaur", 65, 78\], \["Snorlax", 66, 79\], \["Charizard", 68, 80, "charizardite-y"\]\]/.test(gameSrc)
       && /foe: \{ name: "Champion Red", team, pic: "red" \}/.test(gameSrc), "Red, the Champion");
     // After him: your Pokémon in its ball while Oak walks up; Red (not Gary) out of the
     // Indigo Plateau before the credits, which Start always skips; the credits' scenes
@@ -5404,8 +5404,16 @@ for (let seed = 1; seed <= GEN9; seed++) {
   p.location = { map: "PalletTown", x: 5, y: 5 };
   assert.strictEqual(Player.levelCap(p), 14, "Brock's Onix");
   p.badges = ["boulder", "cascade", "thunder"];
-  assert.strictEqual(Player.levelCap(p), 29 + 2, "Erika's Vileplume, and the 2 levels Kanto's Trainers have on with 3 Badges");
-  assert.deepStrictEqual([0, 1, 4, 7, 8].map((n) => Player.kantoTrainerBonus({ badges: Player.REGION_BADGES.kanto.slice(0, n) })), [0, 1, 3, 5, 5]);
+  assert.strictEqual(Player.levelCap(p), 32, "Erika's Vileplume (FireRed's 29, and Celadon's 3 more: game/kanto-trainer-levels.js)");
+  // Kanto's Trainers raised by area: none at Brock, +1 past him, up to +5 at the end and on the Sevii Islands.
+  const R = window.KANTO_TRAINER_RAISE;
+  for (const [id, n] of [["TRAINER_LEADER_BROCK", undefined], ["TRAINER_BUG_CATCHER_RICK", undefined], ["TRAINER_RIVAL_ROUTE22_EARLY_SQUIRTLE", undefined],
+    ["TRAINER_LEADER_MISTY", 1], ["TRAINER_BUG_CATCHER_GREG", 1], ["TRAINER_LEADER_LT_SURGE", 2], ["TRAINER_RIVAL_SS_ANNE_SQUIRTLE", 2], ["TRAINER_LEADER_ERIKA", 3],
+    ["TRAINER_RIVAL_POKEMON_TOWER_SQUIRTLE", 3], ["TRAINER_LEADER_KOGA", 4], ["TRAINER_LEADER_SABRINA", 4], ["TRAINER_LEADER_BLAINE", 5], ["TRAINER_LEADER_GIOVANNI", 5],
+    ["TRAINER_ELITE_FOUR_LORELEI", 5], ["TRAINER_ELITE_FOUR_LORELEI_2", 5], ["TRAINER_LADY_SELPHY", 5]]) assert.strictEqual(R[id], n, id);
+  // (Every Kanto map's Trainers raised by how far in it is: none lower than the area before.)
+  const raised = new Set(Object.keys(R));
+  assert(raised.size > 400, "most of Kanto's Trainers raised: " + raised.size);
   p.badges = Player.REGION_BADGES.kanto.slice();
   assert.strictEqual(Player.levelCap(p), 100);
   assert.strictEqual(Player.levelCap(p, "Route29"), 13, "Johto goes by Johto's Badges: Falkner's Pidgeotto");
@@ -5922,7 +5930,7 @@ console.log("ok: hordes, " + HORDES + " random horde battles finished (" + horde
   const seven = ["cascade", "thunder", "rainbow", "soul", "marsh", "volcano"];
   assert(LeagueRoad.gymOpen(seven) && !LeagueRoad.gymOpen(["boulder"].concat(seven.slice(0, 5))) && LeagueRoad.gymOpen(["boulder"].concat(seven)));
   assert([MB.SPIN_RIGHT, MB.SPIN_LEFT, MB.SPIN_UP, MB.SPIN_DOWN, MB.STOP_SPINNING].every((b) => W("ViridianCity_Gym").behavior.includes(b)), "spin tiles");
-  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_GIOVANNI.party.map((m) => m.species + m.level), ["Rhyhorn45", "Dugtrio42", "Nidoqueen44", "Nidoking45", "Rhyhorn50"]);
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_LEADER_GIOVANNI.party.map((m) => m.species + m.level), ["Rhyhorn50", "Dugtrio47", "Nidoqueen49", "Nidoking50", "Rhyhorn55"]);   // (FireRed's, 5 levels higher)
   assert(Bag.machines().some((m) => Bag.machineMove(m) === "Earthquake"));
   assert.strictEqual(W("ViridianCity_Gym").people.filter((p) => p.trainer && !/LEADER/.test(p.trainer.id)).length, 8);
 
@@ -5989,8 +5997,8 @@ console.log("ok: hordes, " + HORDES + " random horde battles finished (" + horde
   rooms.slice(0, 4).forEach((m) => assert(W(m).patches.closed && W(m).patches.door, m + "'s patches"));
   assert(!patched("PokemonLeague_LancesRoom", []).at(6, 15).collision && patched("PokemonLeague_LancesRoom", ["closed"]).at(6, 15).collision);
   assert(["lorelei", "bruno", "agatha", "lance"].every((n) => fs.existsSync(path.join(root, "assets/sprites/trainers/front/elite_four_" + n + ".png"))));
-  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LORELEI.party.map((m) => m.species + m.level), ["Dewgong52", "Cloyster51", "Slowbro52", "Jynx54", "Lapras54"]);
-  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LANCE.party.map((m) => m.species + m.level), ["Gyarados56", "Dragonair54", "Dragonair54", "Aerodactyl58", "Dragonite60"]);
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LORELEI.party.map((m) => m.species + m.level), ["Dewgong57", "Cloyster56", "Slowbro57", "Jynx59", "Lapras59"]);
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LANCE.party.map((m) => m.species + m.level), ["Gyarados61", "Dragonair59", "Dragonair59", "Aerodactyl63", "Dragonite65"]);
   assert.deepStrictEqual(["BRUNO", "AGATHA", "LANCE"].map((n) => WORLD_TRAINERS["TRAINER_ELITE_FOUR_" + n].party.slice(-1)[0].item), ["sitrus-berry", "sitrus-berry", "sitrus-berry"]);
   assert.strictEqual(Player.prizeMoney("Elite Four Lance", [{ level: 60 }], "Elite Four"), 100 * 60);
   // The run: each room's entry scene once it's that room's turn, the way in
