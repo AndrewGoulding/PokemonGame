@@ -3521,10 +3521,10 @@ node tools/build-sinnoh.js <path to the Essentials project>
   on Route 4, in Cerulean and on Routes 24 and 25 (Misty); +2 on Routes 6, 9 and 11, in Vermilion and on the S.S.
   Anne (Lt. Surge); +3 on Route 10, in Rock Tunnel, Pokémon Tower, on Routes 7 and 8, in Celadon and the Rocket
   Hideout (Erika); +4 in Saffron and Silph Co. and on Routes 12 to 18 (Koga, Sabrina); +5 from Route 19 on, in
-  Cinnabar, Giovanni's Gym, Victory Road, the League and the Sevii Islands. Brock, Viridian Forest and the rival's
-  first two battles keep FireRed's levels. This game's own Kanto battles are raised the same way (Leaf in Pewter and
+  Cinnabar, Giovanni's Gym, Victory Road and the Sevii Islands. Brock, Viridian Forest, the rival's first two
+  battles, and the Elite Four and the Champion (and their rematches) keep their levels. This game's own Kanto battles are raised the same way (Leaf in Pewter and
   Vermilion, Red on the S.S. Anne, Jessie and James, Oak's Mega Evolution test, Silph Co.'s and Victory Road's
-  Gary, Leaf on Route 22, Champion Red). Kanto's level caps are the raised aces': 14, 22, 26, 32, 47, 47, 52, 55.
+  Gary, Leaf on Route 22). Kanto's level caps are the raised aces': 14, 22, 26, 32, 47, 47, 52, 55.
 - **Level caps** (this game's own: the adventure goes region by region,
   Kanto, then Johto, then the rest): in a region, your Pokémon grow no further
   than its cap for the Badges you have of that region's eight: the level of the

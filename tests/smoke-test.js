@@ -5243,7 +5243,7 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert(/concat\(\["Shadow Ball"\]\);\n\s*const eevee = Object\.assign\(Party\.create\("Eevee"[^\n]*teraType: "Ghost", teraAce: true \}\);\n\s*const team = base[^\n]*\n[^\n]*pic: "rival_early", tera: true/.test(gameSrc), "Gary's Cerulean Eevee");
     assert(/Party\.create\("Politoed", 53[^\n]*\n[^\n]*Object\.assign\(Party\.create\("Dragonite", 58, \{ ivs: 31 \}\), \{ item: "dragoninite", teraType: "Flying", teraAce: true \}\)/.test(gameSrc), "Leaf's Route 22 team");
     assert(/const VICTORY_ROAD_RIVAL_TEAM = \[\["Pidgeot", 55\], \["Arcanine", 55\], \["Gyarados", 55, "gyaradosite"\]/.test(gameSrc) && /at\.map === "Route23" && at\.x === 18 && at\.y === 28/.test(gameSrc), "Gary at the end of Victory Road");
-    assert(/const CHAMPION_TEAM = \[\["Pikachu", 63, 77\], \["Espeon", 64, 77\], \["Blastoise", 65, 78\], \["Venusaur", 65, 78\], \["Snorlax", 66, 79\], \["Charizard", 68, 80, "charizardite-y"\]\]/.test(gameSrc)
+    assert(/const CHAMPION_TEAM = \[\["Pikachu", 58, 72\], \["Espeon", 59, 72\], \["Blastoise", 60, 73\], \["Venusaur", 60, 73\], \["Snorlax", 61, 74\], \["Charizard", 63, 75, "charizardite-y"\]\]/.test(gameSrc)
       && /foe: \{ name: "Champion Red", team, pic: "red" \}/.test(gameSrc), "Red, the Champion");
     // After him: your Pokémon in its ball while Oak walks up; Red (not Gary) out of the
     // Indigo Plateau before the credits, which Start always skips; the credits' scenes
@@ -5410,7 +5410,7 @@ for (let seed = 1; seed <= GEN9; seed++) {
   for (const [id, n] of [["TRAINER_LEADER_BROCK", undefined], ["TRAINER_BUG_CATCHER_RICK", undefined], ["TRAINER_RIVAL_ROUTE22_EARLY_SQUIRTLE", undefined],
     ["TRAINER_LEADER_MISTY", 1], ["TRAINER_BUG_CATCHER_GREG", 1], ["TRAINER_LEADER_LT_SURGE", 2], ["TRAINER_RIVAL_SS_ANNE_SQUIRTLE", 2], ["TRAINER_LEADER_ERIKA", 3],
     ["TRAINER_RIVAL_POKEMON_TOWER_SQUIRTLE", 3], ["TRAINER_LEADER_KOGA", 4], ["TRAINER_LEADER_SABRINA", 4], ["TRAINER_LEADER_BLAINE", 5], ["TRAINER_LEADER_GIOVANNI", 5],
-    ["TRAINER_ELITE_FOUR_LORELEI", 5], ["TRAINER_ELITE_FOUR_LORELEI_2", 5], ["TRAINER_LADY_SELPHY", 5]]) assert.strictEqual(R[id], n, id);
+    ["TRAINER_ELITE_FOUR_LORELEI", undefined], ["TRAINER_ELITE_FOUR_LORELEI_2", undefined], ["TRAINER_CHAMPION_FIRST_SQUIRTLE", undefined], ["TRAINER_LADY_SELPHY", 5]]) assert.strictEqual(R[id], n, id);
   // (Every Kanto map's Trainers raised by how far in it is: none lower than the area before.)
   const raised = new Set(Object.keys(R));
   assert(raised.size > 400, "most of Kanto's Trainers raised: " + raised.size);
@@ -5997,8 +5997,8 @@ console.log("ok: hordes, " + HORDES + " random horde battles finished (" + horde
   rooms.slice(0, 4).forEach((m) => assert(W(m).patches.closed && W(m).patches.door, m + "'s patches"));
   assert(!patched("PokemonLeague_LancesRoom", []).at(6, 15).collision && patched("PokemonLeague_LancesRoom", ["closed"]).at(6, 15).collision);
   assert(["lorelei", "bruno", "agatha", "lance"].every((n) => fs.existsSync(path.join(root, "assets/sprites/trainers/front/elite_four_" + n + ".png"))));
-  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LORELEI.party.map((m) => m.species + m.level), ["Dewgong57", "Cloyster56", "Slowbro57", "Jynx59", "Lapras59"]);
-  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LANCE.party.map((m) => m.species + m.level), ["Gyarados61", "Dragonair59", "Dragonair59", "Aerodactyl63", "Dragonite65"]);
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LORELEI.party.map((m) => m.species + m.level), ["Dewgong52", "Cloyster51", "Slowbro52", "Jynx54", "Lapras54"]);
+  assert.deepStrictEqual(WORLD_TRAINERS.TRAINER_ELITE_FOUR_LANCE.party.map((m) => m.species + m.level), ["Gyarados56", "Dragonair54", "Dragonair54", "Aerodactyl58", "Dragonite60"]);
   assert.deepStrictEqual(["BRUNO", "AGATHA", "LANCE"].map((n) => WORLD_TRAINERS["TRAINER_ELITE_FOUR_" + n].party.slice(-1)[0].item), ["sitrus-berry", "sitrus-berry", "sitrus-berry"]);
   assert.strictEqual(Player.prizeMoney("Elite Four Lance", [{ level: 60 }], "Elite Four"), 100 * 60);
   // The run: each room's entry scene once it's that room's turn, the way in

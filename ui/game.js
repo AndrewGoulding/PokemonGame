@@ -9493,9 +9493,9 @@
   // Red, the Champion (this game's own; FireRed has Gary,
   // PokemonLeague_ChampionsRoom_EventScript_EnterRoom): Pikachu, Espeon,
   // Blastoise, Venusaur, Snorlax and his ace, Charizard, holding its
-  // Charizardite Y: it Mega Evolves. Levels FireRed's Champion's and five more (62-68),
-  // and with FLAG_SYS_CAN_LINK_WITH_RS its rematch ones (77-80).
-  const CHAMPION_TEAM = [["Pikachu", 63, 77], ["Espeon", 64, 77], ["Blastoise", 65, 78], ["Venusaur", 65, 78], ["Snorlax", 66, 79], ["Charizard", 68, 80, "charizardite-y"]];
+  // Charizardite Y: it Mega Evolves. Levels about FireRed's Champion's (57-63),
+  // and with FLAG_SYS_CAN_LINK_WITH_RS its rematch ones (72-75).
+  const CHAMPION_TEAM = [["Pikachu", 58, 72], ["Espeon", 59, 72], ["Blastoise", 60, 73], ["Venusaur", 60, 73], ["Snorlax", 61, 74], ["Charizard", 63, 75, "charizardite-y"]];
   function championTeam(rematch) {
     return CHAMPION_TEAM.map(([sp, lv, lv2, item]) => Object.assign(Party.create(sp, rematch ? lv2 : lv, { ivs: 31 }), item ? { item } : {}));
   }

@@ -9,8 +9,8 @@
 //   +2  Routes 6, 9 and 11, Vermilion City, the S.S. Anne, Diglett's Cave, Lt. Surge
 //   +3  Route 10, Rock Tunnel, Lavender and Pokémon Tower, Routes 7 and 8, Celadon, the Rocket Hideout, Erika
 //   +4  Saffron (the Dojo, Sabrina), Silph Co., Routes 12 to 18, Fuchsia (Koga), the Safari Zone
-//   +5  Routes 19 to 21, Cinnabar (Blaine, the Mansion), Giovanni's Gym, Routes 22 and 23, Victory Road, the
-//       Elite Four and the Champion, Cerulean Cave, the Sevii Islands
+//   +5  Routes 19 to 21, Cinnabar (Blaine, the Mansion), Giovanni's Gym, Routes 22 and 23, Victory Road,
+//       Cerulean Cave, the Sevii Islands (the Elite Four and the Champion, and their rematches, keep FireRed's)
 (function () {
   "use strict";
   const T = window.WORLD_TRAINERS, W = window.WORLD_MAPS;
@@ -30,7 +30,9 @@
     [/^TRAINER_RIVAL_SS_ANNE_/, 2],
     [/^TRAINER_(RIVAL_POKEMON_TOWER_|BOSS_GIOVANNI$)/, 3],
     [/^TRAINER_(RIVAL_SILPH_|BOSS_GIOVANNI_2$)/, 4],
-    [/^TRAINER_(RIVAL_ROUTE22_LATE_|ELITE_FOUR_|CHAMPION_|LADY_SELPHY|BIKER_GOON|CUE_BALL_PAXTON|TEAM_ROCKET_GRUNT_4[3-5]$)/, 5]
+    // (The Elite Four and the Champion, and their rematches, keep FireRed's levels.)
+    [/^TRAINER_(ELITE_FOUR_|CHAMPION_)/, 0],
+    [/^TRAINER_(RIVAL_ROUTE22_LATE_|LADY_SELPHY|BIKER_GOON|CUE_BALL_PAXTON|TEAM_ROCKET_GRUNT_4[3-5]$)/, 5]
   ];
   // Where each Trainer stands (FireRed's maps; Kanto's have no region).
   const where = {};
