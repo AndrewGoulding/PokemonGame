@@ -137,6 +137,42 @@
   for (const id of ["EM_TRAINER_MAXIE_MAGMA_HIDEOUT", "EM_TRAINER_MAXIE_MOSSDEEP"]) megaAce(id, "Camerupt", "cameruptite");
   megaAce("EM_TRAINER_ARCHIE", "Sharpedo", "sharpedonite");
 
+  // Omega Ruby and Alpha Sapphire's Magma Admin Courtney, who Emerald hasn't (its other admins, Tabitha, Matt and
+  // Shelly, are Emerald's own): in the Magma Hideout's deepest floor, by the way down from 3F, with ORAS's team.
+  TR.EM_TRAINER_COURTNEY = { className: "Magma Admin", name: "Courtney", pic: "em_magma_grunt_f", music: "em_encounter_magma", double: false,
+    party: [{ species: "Mightyena", level: 37, iv: 150, moves: ["Crunch", "Take Down", "Roar", "Swagger"] },
+      { species: "Golbat", level: 37, iv: 150, moves: ["Air Cutter", "Bite", "Confuse Ray", "Poison Fang"] },
+      { species: "Camerupt", level: 39, iv: 200, moves: ["Earth Power", "Flamethrower", "Rock Slide", "Yawn"] }] };
+  Object.assign(H.t, {
+    MagmaHideout_4F_Text_CourtneyIntro: ["Courtney: …Target… confirmed.", "Intruder… Ahaha…\nYou're the one Maxie said would come.",
+      "…Analyzing… Your Pokémon… Strong.\nI want… to see… them break."],
+    MagmaHideout_4F_Text_CourtneyDefeat: ["…Ahaha… Error… Error…"],
+    MagmaHideout_4F_Text_CourtneyPostBattle: ["Courtney: Maxie… Groudon… Ahaha…\nYou'll never… make it in time."]
+  });
+  S.MagmaHideout_4F_EventScript_Courtney = [["trainerbattle_single", "TRAINER_COURTNEY", "MagmaHideout_4F_Text_CourtneyIntro", "MagmaHideout_4F_Text_CourtneyDefeat"],
+    ["msgbox", "MagmaHideout_4F_Text_CourtneyPostBattle", "MSGBOX_AUTOCLOSE"], ["end"]];
+  const hideout = W.MagmaHideout_4F;
+  if (hideout && !hideout.people.some((p) => p.localId === "LOCALID_MAGMA_HIDEOUT_4F_COURTNEY")) hideout.people.push({ id: 40, x: 48, y: 9,
+    movement: "face_left", rangeX: 1, rangeY: 1, script: "MagmaHideout_4F_EventScript_Courtney", flag: "FLAG_HIDE_MAGMA_HIDEOUT_GRUNTS",
+    text: H.t.MagmaHideout_4F_Text_CourtneyPostBattle, trainer: { id: "EM_TRAINER_COURTNEY", intro: H.t.MagmaHideout_4F_Text_CourtneyIntro,
+      defeat: H.t.MagmaHideout_4F_Text_CourtneyDefeat, after: H.t.MagmaHideout_4F_Text_CourtneyPostBattle, sight: 4 },
+    localId: "LOCALID_MAGMA_HIDEOUT_4F_COURTNEY", sprite: "em_team_magma_magma_member_f", width: 16, height: 32, frames: 9 });
+
+  // Steven's favourite-colour question, Latias or Latios at Southern Island (ui/game.js's stevenEonQuestion): as he
+  // gives you HM Dive, or, past that, when you speak to him; and no news flash of a roaming Lati after the League.
+  const dive = S.MossdeepCity_StevensHouse_EventScript_StevenGivesDive;
+  if (dive && !dive.some((c) => c[1] === "Game_StevenEonQuestion")) {
+    const i = dive.findIndex((c) => c[0] === "msgbox" && c[1] === "MossdeepCity_StevensHouse_Text_ExplainDive");
+    if (i >= 0) dive.splice(i + 1, 0, ["special", "Game_StevenEonQuestion"]);
+  }
+  const steven = S.MossdeepCity_StevensHouse_EventScript_Steven;
+  if (steven && steven[0][1] !== "Game_StevenEonQuestion") steven.unshift(["special", "Game_StevenEonQuestion"]);
+  if (ticket) {
+    const a = ticket.findIndex((c) => c[0] === "setflag" && c[1] === "FLAG_SYS_TV_LATIAS_LATIOS");
+    const b = ticket.findIndex((c) => c[0] === "msgbox" && c[1] === "PlayersHouse_1F_Text_StillUnknownPokemon");
+    if (a >= 0 && b > a) ticket.splice(a, b - a + 2);
+  }
+
   // Oldale's Mart clerk: where she's walked you, by the Mart, from now on.
   const mart = S.OldaleTown_EventScript_ExplainPokemonMart;
   if (mart && !mart.some((c) => c[0] === "setobjectxyperm")) mart.unshift(["setobjectxyperm", "LOCALID_OLDALE_MART_EMPLOYEE", 13, 7]);

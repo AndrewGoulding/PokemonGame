@@ -3338,6 +3338,7 @@
     // (The Delta Episode's scenes and people, and Jirachi's deck: this game's own.)
     if (deltaDue(script)) { await deltaScene(script); return; }
     if (isHoenn(ev.map || player.location.map) && await deltaTalk(script, ev)) return;
+    if (await southernIsland(script)) return;
     // Hoenn's: Emerald's scripts (ui/hoenn-script.js), and its maps' scenes as you come in.
     if (/^(enter|arrive):/.test(script) && isHoenn(script.replace(/^\w+:/, ""))) {
       const due = hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
@@ -7588,10 +7589,11 @@
   // if you like. False when there's no room for it anywhere.
   // `given` runs once it's yours (before the nickname): paying for it, the
   // Poké Ball it was in going.
-  async function giftMon(species, level, obtained, vars, given) {
+  async function giftMon(species, level, obtained, vars, given, edit) {
     const room = player.party.length < Player.PARTY_SIZE || player.boxes.some((b) => Player.firstEmpty(b) >= 0);
     if (!room) { await say(T("Text_NoMoreRoomForPokemon")); return false; }
     const record = Party.create(species, level);
+    if (edit) edit(record);   // (as it comes: a held item, say)
     const where = Player.receive(player, record);
     if (given) given();
     Player.markSeen(player, species);
@@ -8633,6 +8635,88 @@
     return { species: out[Math.floor(Math.random() * out.length)], level: 40 };
   }
 
+  // ---------- Latias and Latios (this game's own, after Omega Ruby and Alpha Sapphire's) ----------
+  //
+  // When Steven gives you HM Dive at his house in Mossdeep (or, a save already past that, when you next speak to him),
+  // he asks your favourite colour: red, Latias; blue, Latios (player.flags.latiChoice). His ship takes you to
+  // Southern Island, far to the south, and at the stone in its heart that one comes down and joins you, Lv. 30,
+  // holding its Mega Stone; then you're given the Eon Flute, to call it and soar over Hoenn (ui/soaring.js). He leaves
+  // you the Eon Ticket, for the S.S. Tidal from Lilycove. Once you're Hoenn's Champion the other one is at the stone:
+  // a battle, Lv. 50, holding its own Mega Stone (player.flags.latiOther once it's caught). Emerald's news flash and
+  // its roaming Lati are gone (ui/hoenn-changes.js).
+  const LATI = { Latias: { stone: "latiasite", colour: "red", sprite: "follow/380" }, Latios: { stone: "latiosite", colour: "blue", sprite: "follow/381" } };
+  const latiOther = (sp) => (sp === "Latias" ? "Latios" : "Latias");
+  async function stevenEonQuestion() {
+    const f = player.flags;
+    if (f.latiChoice) return;
+    await say(["Steven: Oh, and {PLAYER}… This may\nsound like an odd question.", "What's your favourite colour?"]);
+    let i;
+    do i = await multichoice(null, 0, 0, ["Red", "Blue"]); while (i !== 0 && i !== 1);
+    Screen.say("");
+    f.latiChoice = i ? "Latios" : "Latias";
+    await say(["Steven: " + (i ? "Blue" : "Red") + "… Like the sea, or like a\nflame. Ha ha, I thought you might say\nthat.",
+      "Far to the south of Hoenn there's a\nlittle island, Southern Island.", "Something lives there that only shows\nitself to a Trainer it can trust.",
+      "I think it's been waiting for someone\nwho loves " + (i ? "blue" : "red") + ". Come, my ship can take\nus there!"]);
+    Player.addItem(player, "eon-ticket", 1);
+    hoenn.setFlag("FLAG_ENABLE_SHIP_SOUTHERN_ISLAND", true);
+    await sayWithJingle("mus_obtain_key_item", fill("{PLAYER} received the Eon Ticket!"));
+    await say(["Steven: That's for the S.S. Tidal from\nLilycove, if you ever want to go back.", "Now, let's go!"]);
+    afterScript = async () => {
+      await Overworld.fadeToBlack();
+      await Overworld.teleport({ map: "SouthernIsland_Exterior", x: 13, y: 22, facing: "up" });
+      await Overworld.fadeFromBlack();
+      await say(["Sailor: Here we are, Southern Island!\nI'll wait here for you, mate."]);
+      await persist();
+    };
+    await persist();
+  }
+  async function southernIsland(script) {
+    const f = player.flags;
+    if (script === "SouthernIsland_Exterior_EventScript_Sailor") {
+      if (!(await confirm(fill(window.HOENN_SCRIPTS.t.EventTicket_Text_SouthernIslandSailBack.join("\n").split("\n").slice(-2).join("\n"))))) { await say("Aye, as you like."); return true; }
+      await say("Aye, all aboard!");
+      Screen.say("");
+      await Overworld.fadeToBlack();
+      await Overworld.teleport({ map: "LilycoveCity_Harbor", x: 8, y: 11, facing: "down" });
+      await Overworld.fadeFromBlack();
+      return true;
+    }
+    if (script === "SouthernIsland_Exterior_EventScript_Sign") { await say(window.HOENN_SCRIPTS.t.SouthernIsland_Exterior_Text_Sign); return true; }
+    if (script !== "SouthernIsland_Interior_EventScript_Stone") return false;
+    const mine = f.latiChoice, other = mine && latiOther(mine), champ = hoennChampion(f);
+    const who = mine && !f.latiGift ? mine : other && champ && !f.latiOther ? other : null;
+    if (!who) { await say(window.HOENN_SCRIPTS.t.SouthernIsland_Interior_Text_Sign); return true; }
+    const L = "LOCALID_SOUTHERN_ISLAND_LATI", me = Overworld.position();
+    await say(window.HOENN_SCRIPTS.t.SouthernIsland_Interior_Text_Sign);
+    Screen.say("");
+    Overworld.follower.hide(true);
+    Overworld.addObject(L, { x: me.x, y: 2, facing: "down" }, { sprite: LATI[who].sprite, width: 32, height: 32, frames: 9, offsetX: -8 });
+    cry(who);
+    await Overworld.act([{ who: L, moves: Array(Math.max(0, me.y - 4)).fill("walk_down") }]);
+    if (who === mine) {
+      await say([who + " looks at {PLAYER} closely…", "It seems to want to come with you!"]);
+      const ok = await giftMon(who, 30, "{PLAYER} received " + who + "!", null, () => { f.latiGift = true; }, (r) => { r.item = LATI[who].stone; });
+      if (ok) {
+        Overworld.removeObject(L);
+        await say([who + " is holding " + article(Bag.name(LATI[who].stone)) + "."]);
+        Player.addItem(player, "eon-flute", 1);
+        await sayWithJingle("mus_obtain_key_item", fill("{PLAYER} received the Eon Flute!"));
+        await say(["Play the Eon Flute and " + who + " will\ncome flying, wherever you are, to\ncarry you over Hoenn's skies."]);
+      } else Overworld.removeObject(L);
+    } else {
+      await say([who + " came down from the sky!", "It doesn't seem to trust you yet…"]);
+      Screen.say("");
+      const outcome = await battle("wild", { foe: { name: "Wild", team: [Object.assign(wildMon(Party.create(who, 50)), { item: LATI[who].stone })] }, music: "em_vs_regi" });
+      if (outcome !== "lost") { show("world"); await Overworld.resume(); }
+      if (Overworld.personPosition(L)) Overworld.removeObject(L);
+      if (outcome === "caught") f.latiOther = true;
+      else if (outcome !== "lost") await say([who + " flew off into the sky…", "It might come back to the stone."]);
+    }
+    Overworld.follower.hide(false);
+    await persist();
+    return true;
+  }
+
   // ---------- The Delta Episode (this game's own, after Omega Ruby and Alpha Sapphire's) ----------
   //
   // After Hoenn's Hall of Fame (FLAG_SYS_GAME_CLEAR): a meteoroid is falling on Hoenn. player.flags.delta:
@@ -8659,6 +8743,7 @@
     const look = lookOf(p.sprite) || { sprite: p.sprite, width: 16, height: 32, frames: 9 };
     m.people.push(Object.assign({ rangeX: 0, rangeY: 0, flag: null, text: null }, p, { width: look.width, height: look.height, frames: look.frames }));
   }
+  ["SouthernIsland_Exterior_EventScript_Sailor", "SouthernIsland_Exterior_EventScript_Sign", "SouthernIsland_Interior_EventScript_Stone"].forEach((n) => SPECIAL.add(n));
   ["Delta_EventScript_Steven", "Delta_EventScript_Elder", "Delta_EventScript_Zinnia", "SpaceCenter_EventScript_DeckDoor", "SpaceCenter_EventScript_WishRock"].forEach((n) => SPECIAL.add(n));
   const hoennCleared = () => hoenn.flag("FLAG_SYS_GAME_CLEAR") || hoenn.flag("FLAG_IS_CHAMPION");
   const deltaStage = () => player.flags.delta | 0;
@@ -15174,6 +15259,8 @@
       }
       // The news flash's Pokémon (src/roamer.c's InitRoamer): red, Latias; blue, Latios. It roams Hoenn till caught.
       case "InitRoamer": player.flags.hoennRoamer = +api.getVar("VAR_0x8004") === 1 ? "Latios" : "Latias"; return true;
+      // (Steven's question at his house, after Dive: Latias or Latios, at Southern Island. This game's own.)
+      case "Game_StevenEonQuestion": await api.flush(); await stevenEonQuestion(); return true;
       // The S.S. Tidal's sailings from Lilycove (src/script_menu.c's CreateLilycoveSSTidalMultichoice; its
       // GetLilycoveSSTidalSelection is done here too): Slateport, the Battle Frontier once you've met Scott on board,
       // and an island for a ticket (or the Old Sea Map) that's good (VAR_0x8004 1: only those just shown).

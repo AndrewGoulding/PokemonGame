@@ -7067,6 +7067,16 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     for (const q of m.people) if (q.sprite && /^em_/.test(q.sprite)) assert(fs.existsSync(path.join(root, "assets/world/sprites/" + q.sprite + ".png")), name + ": sprite " + q.sprite);
   }
   assert(hoenn.some(([n]) => /_PokemonCenter_1F$/.test(n) && WORLD_MAPS[n].pokemonCenter), "Hoenn's Pokémon Centers heal");
+  // Southern Island (data/southern-island.js): in and out, the stone inside; Steven's question as he gives Dive; no
+  // roaming Lati from the news; Courtney in the Magma Hideout.
+  {
+    const E = WORLD_MAPS.SouthernIsland_Exterior, I = WORLD_MAPS.SouthernIsland_Interior;
+    assert(E && I && window.HOENN_SCRIPTS.consts.MAP_SOUTHERN_ISLAND_EXTERIOR === "SouthernIsland_Exterior", "Southern Island");
+    for (const w of E.warps) assert(World.warpTarget(w).map === "SouthernIsland_Interior");
+    assert(I.signs.some((g) => g.script === "SouthernIsland_Interior_EventScript_Stone") && E.people.some((p) => p.script === "SouthernIsland_Exterior_EventScript_Sailor"));
+    const changes = fs.readFileSync(path.join(root, "ui/hoenn-changes.js"), "utf8");
+    assert(/Game_StevenEonQuestion/.test(changes) && /FLAG_SYS_TV_LATIAS_LATIOS/.test(changes) && /EM_TRAINER_COURTNEY/.test(changes));
+  }
   // Its Town Map (Emerald's region map: tools/lib/hoenn-town-map.js): the grid, every map's section, and Fly's spots.
   const HT = window.HOENN_TOWN_MAP;
   assert.deepStrictEqual([HT.width, HT.height, HT.map.length, HT.towns.length], [28, 15, 15, 16]);
