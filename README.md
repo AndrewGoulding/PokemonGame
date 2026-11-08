@@ -1319,9 +1319,9 @@ again and again, for ₽10,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
 climbing down the last ladder in Mt. Moon as in Yellow (a double battle; they're back,
 as in Yellow and each time a double battle, on Rocket Hideout B4F on the way to Giovanni,
-walking up behind you out of the elevator, with Koffing, Meowth and Ekans at 25, on Pokémon Tower 7F before Mr. Fuji with Meowth,
-Arbok and Weezing at 27, coming up the stairs behind you, and on Silph Co. 11F just off the warp pad from 7F with
-Weezing, Arbok and Meowth at 31), Gary in Cerulean (FireRed's team, with
+walking up behind you out of the elevator, with Koffing, Meowth and Ekans at 28, on Pokémon Tower 7F before Mr. Fuji with Meowth,
+Arbok and Weezing at 30, coming up the stairs behind you, and on Silph Co. 11F just off the warp pad from 7F with
+Weezing, Arbok and Meowth at 35), Gary in Cerulean (FireRed's team, with
 his Eevee, which knows Shadow Ball and Terastallizes into a Ghost type), the Nugget Bridge Rocket (a Nugget, then a battle), the Rocket in
 the robbed house's yard (beat him and he gives back TM28 Dig), the Day-Care
 Man (`game/daycare.js`: one Pokémon gains 1 Exp. Point a step, learning its
@@ -1489,7 +1489,7 @@ up the middle to stand before Oak, and everyone faces him as he explains: he
 has been studying Mega Evolution and tests everyone. One at a time, you and the
 next one step away from the others, down the floor, to battle face to face, then
 they go back to their place: Leaf (Butterfree, Wigglytuff, Nidorina, then Vulpix, Gloom or Poliwhirl
-by her starter, then her starter's second stage; Lv. 27-31), Gary (Pidgeotto,
+by her starter, then her starter's second stage; Lv. 30-34), Gary (Pidgeotto,
 Growlithe, Gyarados, Exeggutor, Umbreon) and Red (Pikachu, Charmeleon,
 Wartortle, Ivysaur, Espeon). Each one's ace Terastallizes as before: Leaf's
 Butterfree into a Flying type, Gary's Umbreon into a Ghost type and Red's Pikachu,
