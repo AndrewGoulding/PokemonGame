@@ -979,9 +979,9 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
-  const REGISTERABLE = ["bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
+  const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "tin-bottle-cap" || item === "zygarde-cube" ||
@@ -1001,6 +1001,14 @@
     if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
     if (item === "vs-seeker") { fieldAction = vsSeeker; return "escaped"; }
     if (item === "bicycle") { fieldAction = bicycle; return "escaped"; }
+    if (item === "eon-flute") {
+      // (Outdoors in Hoenn, with your Latias or Latios: soaring, ui/soaring.js.)
+      const here = window.WORLD_MAPS[player.location.map] || {};
+      if (!isHoenn(player.location.map) || !OUTDOORS.includes(here.type)) { await message("You can't soar here."); return; }
+      if (!eonLati()) { await message("You play the Eon Flute…\nbut nothing answers."); return; }
+      fieldAction = soar;
+      return "escaped";
+    }
     if (RODS.includes(item)) {
       // (Only facing water: FireRed's FieldUseFunc_Rod.)
       if (!Overworld.ahead().fishable) { await message("Oak: " + player.name + "! This isn't the time to use that!"); return; }
@@ -7116,6 +7124,35 @@
   // outside its Pokémon Center (FireRed's heal locations). `mon` flies you:
   // FireRed's Fly out of battle (Overworld.flyOut, flyIn), unless you're
   // surfing (then just the sound and a fade).
+  // Soaring on your Latias or Latios (the Eon Flute's, ui/soaring.js): up from where you are, over Emerald's map of
+  // Hoenn, and down at a place Fly could take you to; or back down where you were.
+  const eonLati = () => player.party.concat(...(player.boxes || [])).find((r) => r && !r.egg && (r.species === "Latias" || r.species === "Latios")) || null;
+  async function soar() {
+    const R = HOENN_MAP, lati = eonLati(), visited = player.flags.visitedSections || [], T = window.TOWN_MAP;
+    if (!R || !lati) return;
+    visitSection(player.location.map);
+    // (Up from your square of the map: your section's first, or a cave's place.)
+    const mySec = R.mapSections[player.location.map];
+    let at = R.at[player.location.map] || null;
+    for (let y = 0; !at && y < R.height; y++) for (let x = 0; x < R.width; x++) if (R.map[y][x] === mySec) { at = [x, y]; break; }
+    at = at || [Math.floor(R.width / 2), Math.floor(R.height / 2)];
+    const spotOf = (sec) => (visited.includes(sec) && ((T.fly || {})[sec] || (R.fly || {})[sec])) || null;
+    await say(Party.displayName(lati) + " came flying at the sound\nof the Eon Flute!");
+    Screen.say("");
+    cry(lati.species);
+    await Overworld.flyOut({ species: lati.species, form: Party.form(lati), shiny: !!lati.shiny });
+    const was = (window.WORLD_MAPS[player.location.map] || {}).music;
+    const canvas = $("#overlay-full");
+    const sec = await Soaring.open(canvas, { map: R, start: at.slice(0, 2), lati: (lati.species === "Latias" ? "follow/380" : "follow/381"),
+      landing: (s) => !!spotOf(s), music, sfx });
+    canvas.classList.add("hidden");
+    let spot = sec && spotOf(sec);
+    if (spot && spot.girl && isGirl()) spot = Object.assign({}, spot, spot.girl);
+    if (spot) await Overworld.teleport({ map: spot.map, x: spot.x, y: spot.y, facing: "down", hidden: true });
+    else await Overworld.teleport(Object.assign({}, player.location, { hidden: true }));
+    music((window.WORLD_MAPS[player.location.map] || {}).music || was);
+    await Overworld.flyIn();
+  }
   async function fly(mon) {
     let spot = await townMap({ fly: true });
     await Overworld.resume();   // (the map was put away for the Town Map)

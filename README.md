@@ -2219,7 +2219,11 @@ scripts work too):
    stays where it was) and carries you up: Emerald's Sootopolis scene's flight, Rayquaza taking off and charging
    (`ui/rayquaza-scene.js`, mode 2), into the meteoroid, where **Deoxys** waits, wild at Lv. 80 over the
    meteoroid's rock among the stars (`assets/battle/space.png`). The meteoroid breaks apart into shooting stars
-   and you're back at the Space Center, thanked.
+   and you're back at the Space Center, thanked. Before it carries you up, the meteorites in Rayquaza's body and the
+   Draconids' wish make it **Mega Evolve**, as in Omega Ruby and Alpha Sapphire; a Rayquaza of yours in your party
+   learns **Dragon Ascent** there. Mega Rayquaza needs no Mega Stone: a Rayquaza that knows Dragon Ascent (and holds
+   no Z-Crystal) can Mega Evolve ("…'s fervent wish has reached Rayquaza!"), into Delta Stream. The Sky Pillar's
+   wild Rayquaza knows it, and the Draconid elder at Meteor Falls teaches it to yours after the meteoroid.
 4. **Jirachi**: 2F's researcher has found a strange energy signature in the sealed observation room, its door in
    2F's window wall (a red light; green once he's unsealed it). Inside, a small observation deck: a wide window
    on the night sky and a white rock in the middle. Check the rock and make a wish (only words); it glows, the
@@ -2234,6 +2238,38 @@ background's platforms as meteoroid rock over stars), the observation deck from 
 window, the rock, and the glow and the stars in line as patches) and 2F's door, and writes the deck's map and the
 door into `data/emerald-maps.js` between its markers. The story's in `ui/game.js` (`player.flags.delta`, 0-4;
 `jirachiMet`, `jirachiAfter`).
+
+## Omega Ruby and Alpha Sapphire's touches (this game's own)
+
+**Hoenn's Mega Stones**, as item balls, each where its Pokémon lives or its Trainer: the Gardevoirite on Route 102,
+the Galladite on Victory Road (1F), the Mawilite and Aggronite in Granite Cave (B2F) and the Sablenite on its B1F,
+the Medichamite outside Mt. Pyre and the Banettite on its 6F, the Manectite in New Mauville, the Absolite on Route
+120, the Glalitite in Shoal Cave's ice room, the Salamencite in Meteor Falls (B1F), the Altarianite on Route 115,
+the Cameruptite in the Magma Hideout and the Sharpedonite in the Aqua Hideout; the Metagrossite in Steven's Mossdeep
+house once you've beaten him at Meteor Falls; the Sceptilite, Blazikenite and Swampertite on Prof. Birch's lab's
+table once you're Hoenn's Champion; the Latiasite and Latiosite with their Pokémon (below).
+
+**The villains' and rivals' Megas**: Wally's Gardevoir is a Gallade at Victory Road, holding the Galladite;
+Steven's Metagross holds the Metagrossite; Maxie's Camerupt (the Magma Hideout, the Space Center) the Cameruptite;
+Archie's Sharpedo (the Seafloor Cavern) the Sharpedonite. Each Mega Evolves in the battle (`ui/hoenn-changes.js`).
+And **Magma Admin Courtney**, Omega Ruby and Alpha Sapphire's, who Emerald hasn't, in the Magma Hideout's deepest
+floor by the way down from 3F (Mightyena, Golbat and Camerupt, Lv. 37-39).
+
+**Latias and Latios** (`ui/game.js`'s `stevenEonQuestion`, `southernIsland`). As Steven gives you HM Dive at his
+house in Mossdeep (or, a save past that, when you next talk to him), he asks your favourite colour: red, Latias;
+blue, Latios. He gives you the Eon Ticket and his ship takes you to **Southern Island** (Emerald's, built from
+pokeemerald by `node tools/build-southern-island.js` into `data/southern-island.js`, which the Hoenn build leaves
+out). At the stone in its heart that one flies down and joins you, Lv. 30, holding its Mega Stone, and you're given
+the **Eon Flute**. The S.S. Tidal from Lilycove sails there again with the ticket; once you're Hoenn's Champion the
+other one is at the stone: a battle, Lv. 50, holding its own Mega Stone (run or win and it comes back another
+time). Emerald's news flash and its roaming Lati are gone.
+
+**Soaring** (`ui/soaring.js`; after Omega Ruby and Alpha Sapphire, and the flying of the Emerald hack Pokémon
+R.O.W.E.). Use the Eon Flute (from the Bag, or Select once it's registered) outdoors in Hoenn and your Latias or
+Latios comes and carries you up: you fly over Emerald's map of Hoenn, drawn four times over as the land below, clouds
+drifting under you and your Lati's shadow on the ground marking where you are. The D-pad steers; the place below is
+named at the top, and A lands there if Fly could take you (you've been, and there's somewhere to land); B goes back
+down where you took off.
 
 ## Faraway Island
 
