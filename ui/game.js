@@ -2980,7 +2980,7 @@
       "PyriteTown_DukingsHouse_EventScript_Secc", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", "enter:PyriteTown_PyriteBuilding_4F",
       "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS),
       "enter:AgateVillage_EaguansHouse", "AgateVillage_EaguansHouse_EventScript_Eagun", "AgateVillage_EaguansHouse_EventScript_Beluh",
-      "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone", "RelicForest_EventScript_Shrine",
+      "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone", "RelicForest_EventScript_Shrine", ...Object.keys(Orre.TOURNAMENTS), "MtBattle_EventScript_Challenge",
       "arrive:MtBattle", "enter:MtBattle", "MtBattle_EventScript_Dakim", "MtBattle_EventScript_SummitSkrub", "MtBattle_EventScript_Vander",
       "MtBattle_EventScript_Trainer1", "MtBattle_EventScript_Trainer2", "MtBattle_EventScript_Turo", "MtBattle_EventScript_Berin",
       "MtBattle_PokemonCenter_1F_EventScript_Nurse", "TheUnder_PokemonCenter_1F_EventScript_Nurse",
@@ -3459,6 +3459,7 @@
 
     if (Orre.FILLERS[script]) { await orreTrainer(script); return; }
     if (Orre.SHADOW_TRAINERS[script]) { await shadowTrainer(script); return; }
+    if (Orre.TOURNAMENTS[script]) { await orreTournament(script); return; }
     switch (script) {
       case "PalletTown_EventScript_SignLady":
         await signLady(ev.person);
@@ -4520,6 +4521,7 @@
       case "AgateVillage_EventScript_Skrub": case "AgateVillage_EventScript_Peon": await agateShrine(); return;
       case "AgateVillage_EventScript_RelicStone": await relicStone(); return;
       case "RelicForest_EventScript_Shrine": await relicForestShrine(); return;
+      case "MtBattle_EventScript_Challenge": await mtBattleChallenge(); return;
       case "arrive:MtBattle": case "enter:MtBattle": await mtBattleArrival(); return;
       case "MtBattle_EventScript_Dakim": case "MtBattle_EventScript_SummitSkrub": case "MtBattle_EventScript_Vander": await mtBattleSummit(script); return;
       case "arrive:TheUnder": case "enter:TheUnder": await underArrival(); return;
@@ -10602,6 +10604,98 @@
     delete r.heart;
     r.moves = Party.create(r.species, r.level).moves;   // (the moves it would know at its level)
     (player.flags.orrePurified = player.flags.orrePurified || []).push(r.species);
+  }
+
+  // The Pyrite Colosseum's and Phenac Stadium's tournaments (Orre.TOURNAMENTS): enter at the counter, four double
+  // battles in a row, healed between rounds; win all four for the prize. (player.flags.orreTourney: wins by key.)
+  async function orreTournament(script) {
+    const t = Orre.TOURNAMENTS[script], f = player.flags, wins = (f.orreTourney = f.orreTourney || {});
+    if ((f.orreStory | 0) < t.from) { await say(t.closed); return; }
+    await say(["Welcome to the " + t.name + "!", "Today's tournament: four double\nbattles in a row. Win them all and\nyou're the champion of the day!"]);
+    if (player.party.filter((r) => !r.egg).length < 2) { await say(["You'll need at least two Pokémon to\nenter. These are double battles!"]); return; }
+    if (!(await confirm("Enter the tournament?"))) { await say(["Please come again!"]); return; }
+    const top = Math.max(...player.party.filter((r) => !r.egg).map((r) => r.level));
+    const draw = Orre.tournamentDraw(t, top, Player.levelCap(player)), heal = () => player.party.forEach(Party.heal);
+    heal();
+    await say(["Your Pokémon have been restored to\nfull health.", "The entrants are ready. Please, step\nthis way!"]);
+    for (let round = 0; round < 4; round++) {
+      const e = draw[round];
+      await say([round === 3 ? "The final! Your opponent: " + e.name + "!" : "Round " + (round + 1) + "! Your opponent:\n" + e.name + "!"]);
+      Screen.say("");
+      const outcome = await storyBattle({ foe: { name: e.name, team: teamOf(e.team), pic: e.pic }, prizeClass: e.cls, noBlackout: true,
+        defeatText: [pickOne(["You're as tough as they said!", "Argh! I was so close!", "Well fought. Go win the\nwhole thing!", "Not bad… not bad at all."])] });
+      heal();
+      if (outcome !== "won") { await say(["Oh, what a shame! You're out of the\ntournament.", "Your Pokémon have been healed. Please\ntry again!"]); await persist(); return; }
+      if (round < 3) await say(["Congratulations! On to the next\nround!", "Your Pokémon have been restored to\nfull health."]);
+    }
+    const firstTime = !wins[t.key], item = firstTime ? t.first : pickOne(t.items);
+    wins[t.key] = (wins[t.key] | 0) + 1;
+    await sayWithJingle("mus_obtain_badge", ["Congratulations! You're today's\n" + t.name + " champion!"]);
+    Player.addMoney(player, t.prize);
+    await say(["{PLAYER} received ¥" + t.prize + " in prize money!"]);
+    Player.addItem(player, item, 1);
+    await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
+    // (The Deep Colosseum's first champion: its king comes out.)
+    if (t.key === "deep" && firstTime) { await say(["The Deep King has been watching you…", "He's waiting by the counter. Take him\non, if you dare!"]); Overworld.refreshPeople(); }
+    else await say(["Please come back and enter again!"]);
+    await persist();
+  }
+  const pickOne = (list) => list[Math.floor(Math.random() * list.length)];
+
+  // Mt. Battle's 100-Trainer challenge (Orre.MT_BATTLE): ten areas of ten double battles, the tenth the Area Leader;
+  // healed only between areas, where you may stop. player.flags.orreMtBattle: { best (the furthest area cleared),
+  // cleared (areas whose first-clear prize you've had), hooh (Ho-Oh given) }.
+  async function mtBattleChallenge() {
+    const f = player.flags, M = Orre.MT_BATTLE, rec = (f.orreMtBattle = f.orreMtBattle || { best: 0, cleared: [] });
+    if ((f.orreStory | 0) < M.from) { await say(["The challenge is closed while those\npurple crooks are on the mountain.", "Sorry, kid. Come back once they're\ngone."]); return; }
+    await say(["Welcome to Mt. Battle's challenge!", "Ten areas, ten Trainers each, all\ndouble battles. The tenth in each area\nis its Area Leader.",
+      "Your Pokémon are only healed between\nareas, and you can stop there. Beat all\n100 in one go and, they say, something\nwonderful happens!"]);
+    if (player.party.filter((r) => !r.egg).length < 2) { await say(["You'll need at least two Pokémon.\nThey're double battles!"]); return; }
+    const starts = M.starts.filter((a) => a === 1 || rec.best >= a - 1);
+    const at = await multichoice("Where will you start?", 0, 0, starts.map((a) => "Area " + a).concat(["Cancel"]));
+    if (at < 0 || at >= starts.length) { await say(["Come back any time!"]); return; }
+    const from = starts[at], heal = () => player.party.forEach(Party.heal);
+    heal();
+    await say(["Your Pokémon have been restored to\nfull health. Good luck!"]);
+    for (let area = from; area <= 10; area++) {
+      const foes = Orre.mtBattleArea(area, Player.levelCap(player));
+      await say(["Area " + area + "! Ten Trainers stand\nbetween you and the next area."]);
+      for (let k = 0; k < 10; k++) {
+        const e = foes[k];
+        await say([e.leader ? "Area " + area + "'s Area Leader steps up:\n" + e.name + "!" : "Battle " + ((area - 1) * 10 + k + 1) + ": " + e.name + "!"]);
+        Screen.say("");
+        const outcome = await storyBattle({ foe: { name: e.name, team: teamOf(e.team), pic: e.pic }, prizeClass: e.leader ? "Leader" : e.cls, noBlackout: true,
+          defeatText: [e.leader ? "You've earned the next area. Go on!" : pickOne(["Whoa! You're strong!", "Hmph. Good luck up there.", "My training wasn't enough…"])] });
+        if (outcome !== "won") {
+          heal();
+          await say(["You were beaten in Area " + area + ".", "Your Pokémon have been healed. Train\nup and try again!"]);
+          await persist();
+          return;
+        }
+      }
+      rec.best = Math.max(rec.best, area);
+      heal();
+      await sayWithJingle("mus_obtain_badge", ["You've cleared Area " + area + "!"]);
+      if (!rec.cleared.includes(area)) {
+        rec.cleared.push(area);
+        Player.addMoney(player, M.money(area));
+        await say(["{PLAYER} received ¥" + M.money(area) + "!"]);
+        const item = M.prizes[area];
+        Player.addItem(player, item, 1);
+        await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
+      }
+      await persist();
+      if (area < 10 && !(await confirm("Your Pokémon are healed. Go on to\nArea " + (area + 1) + "?"))) { await say(["Come back any time!"]); return; }
+    }
+    await say(["Incredible! You've beaten all of Mt.\nBattle's Trainers!"]);
+    if (from === 1 && !rec.hooh && (f.orreStory | 0) >= 44) {
+      await say(["…Huh? Look at the sky!", "A rainbow… and something's flying out\nof it!"]);
+      await Overworld.flash();
+      cry("Ho-Oh");
+      if (await giftMon("Ho-Oh", 70, "Ho-Oh came down to {PLAYER}!")) rec.hooh = true;
+    }
+    await say(["Come back and take the challenge\nagain any time!"]);
+    await persist();
   }
 
   // The Relic Forest's shrine (west of Agate): play the Time Flute there and Celebi comes across time and opens the

@@ -3216,6 +3216,58 @@ if (window.JOHTO_TOWN_MAP) {
     const orreScripts = new Set(Object.values(WORLD_MAPS).filter((m) => m.region === "orre").flatMap((m) => m.people.map((p) => p.script)));
     for (const [script, d] of Object.entries(Orre.SHADOW_TRAINERS)) assert(orreScripts.has(script) && Orre.shadowOf(d.trainer).length, script);
     for (const m of Object.values(WORLD_MAPS).filter((m) => m.region === "orre")) for (const w of m.warps) assert(WORLD_MAPS[w.map], m.name + " warps to " + w.map);
+    // The Pyrite Colosseum's and Phenac Stadium's tournaments: their doors in and out, the receptionist at the
+    // counter, and four entrants drawn, each different, of real Pokémon, at levels from the cap.
+    for (const [town, lobby] of [["PyriteTown", "PyriteTown_Colosseum"], ["PhenacCity", "PhenacCity_Stadium"], ["TheUnder", "TheUnder_DeepColosseum"]]) {
+      const T0 = WORLD_MAPS[town], L = WORLD_MAPS[lobby];
+      for (const w of T0.warps.filter((w) => w.map === lobby)) assert(T0.behavior[w.y * T0.width + w.x] === 0x69 && World.warpTarget(w).map === lobby, town + " -> " + lobby);
+      for (const w of L.warps) { const t = World.warpTarget(w), back = T0.warps[w.warp]; assert(t.map === town && back && back.map === lobby, lobby + " -> " + town); }
+      const t = Orre.TOURNAMENTS[L.people[0].script];
+      assert(t, lobby + "'s receptionist");
+      for (const top of [5, 40, 100]) {
+        const draw = Orre.tournamentDraw(t, top, 55);
+        assert.strictEqual(draw.length, 4);
+        assert.strictEqual(new Set(draw.map((e) => e.cls + e.pic)).size, 4, "four different entrants");
+        for (const e of draw) {
+          assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + e.pic + ".png")), e.pic);
+          for (const [sp, lv] of e.team) assert(DEX[sp] && lv >= t.min - 2 && lv <= Math.max(t.min, 55) + 1, sp + " " + lv);
+        }
+      }
+      for (const it of t.items.concat(t.first)) assert(ITEMS[it], it);
+      for (const [, pic, , species] of t.pool) { assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + pic + ".png")), pic); for (const sp of species) assert(DEX[sp], sp); }
+    }
+    for (const sp of Orre.MT_BATTLE.tiers.flat().concat(["Ho-Oh"])) assert(DEX[sp], sp);
+    // Mt. Battle's 100 Trainers: ten areas of ten, the tenth the Area Leader, levels rising and held to the cap.
+    {
+      const M = Orre.MT_BATTLE, mb = WORLD_MAPS.MtBattle;
+      assert(mb.people.some((p) => p.script === "MtBattle_EventScript_Challenge"), "Mt. Battle's attendant");
+      let last = 0;
+      for (let a = 1; a <= 10; a++) {
+        const area = Orre.mtBattleArea(a, 100);
+        assert.strictEqual(area.length, 10);
+        assert(area[9].leader && !area.slice(0, 9).some((e) => e.leader), "area " + a + "'s leader");
+        for (const e of area) {
+          assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + e.pic + ".png")), e.pic);
+          assert(e.team.length >= 2 && e.team.length <= 4 && new Set(e.team.map(([sp]) => sp)).size === e.team.length, e.name);
+          for (const [sp, lv] of e.team) assert(DEX[sp] && lv >= last, sp + " " + lv);
+        }
+        last = Math.min(...area[0].team.map(([, lv]) => lv));
+        assert(ITEMS[M.prizes[a]], M.prizes[a]);
+        assert(Orre.mtBattleArea(a, 40).every((e) => e.team.every(([, lv]) => lv <= 40)), "held to the cap");
+      }
+    }
+    // After the game (44): Biden and Agrev in the rebuilt hideout, Fein and Ancha at the Outskirt Stand, Agnol once
+    // the Deep Colosseum's been won; all Colosseum's, battling with their Shadow Pokémon.
+    {
+      const at = (map, key) => WORLD_MAPS[map].people.find((p) => p.localId === "LOCALID_ORRE_" + key);
+      for (const [map, key] of [["SnagemHideout", "SHADOW_BIDEN"], ["SnagemHideout", "SHADOW_AGREV"], ["OutskirtStand", "SHADOW_FEIN"], ["OutskirtStand", "ANCHA"]]) {
+        const p = at(map, key);
+        assert(p && Orre.visible(p, { orreStory: 44 }) && Orre.visible(p, { orreStory: 43 }) === false, key);
+      }
+      const ag = at("TheUnder_DeepColosseum", "SHADOW_AGNOL");
+      assert(!Orre.visible(ag, { orreStory: 44 }) && Orre.visible(ag, { orreStory: 44, orreTourney: { deep: 1 } }), "Agnol after the Deep Colosseum");
+      for (const tr of ["Biden", "Agrev", "Fein", "Agnol"]) assert(Orre.shadowOf(tr).length, tr);
+    }
     for (const pl of ["MtBattle", "ShadowLab_1F", "RealgamTower_1F"]) assert(Orre.PLACES.some((p) => p.map === pl), pl + " on Orre's map");
     assert(Orre.SHADOW.every((x) => DEX[x.species] && x.level >= 20 && x.level <= 55 && x.trainer));
     assert.deepStrictEqual(Orre.shadowOf("Trudly").map((x) => [x.species, x.level]), [["Makuhita", 30]]);

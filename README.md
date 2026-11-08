@@ -3248,6 +3248,24 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   ones (Smeargle, Ursaring, Shuckle, Togetic) and Rui's Celebi, is in Orre with its Trainer.
 - In a tag battle, snagging the second Trainer's Pokémon now gets you that Pokémon (the engine lists the partner's
   Pokémon after the Trainer's).
+- **The Pyrite Colosseum and Phenac Stadium** (`orreTournament` in `ui/game.js`, `Orre.TOURNAMENTS` in `game/orre.js`).
+  Their gates open (inside, Emerald's Battle Tent lobby and Battle Dome lobby). Talk to the receptionist to enter the
+  day's tournament: four double battles in a row against Trainers drawn from each place's own entrants, your Pokémon
+  healed between rounds; lose one and you're out. Win all four for prize money and an item (the first time, a Choice
+  Band at Pyrite, Leftovers at Phenac). The entrants are about as strong as your strongest Pokémon (held to Orre's
+  cap, and at least Lv. 30 at Pyrite and 50 at Phenac), rising a level each round. The Colosseum opens once you've
+  reached Pyrite in the story (`orreStory` 23), the Stadium after Evice (44).
+- **Mt. Battle's 100-Trainer challenge** (`mtBattleChallenge` in `ui/game.js`, `Orre.MT_BATTLE` in `game/orre.js`).
+  From `orreStory` 33, the attendant by Mt. Battle's way in: ten areas of ten double battles, the tenth each area's
+  Area Leader (Area 10's is Vander), levels rising from 23 to the 50s and held to Orre's cap, teams growing from two
+  Pokémon to four. Your Pokémon are healed only between areas, where you may stop; start again from Area 1, or from
+  4 or 7 once you've got that far. Each area's first clear gives money and an item (Protein … a Lucky Egg). Beat all
+  100 in one go from Area 1 after Colosseum's story and Ho-Oh comes down to you (Lv. 70), as in Colosseum.
+- **After the game** (`orreStory` 44 on): Team Snagem is back in its rebuilt hideout, Biden (Shadow Smeargle, Lv. 45)
+  and Agrev (Shadow Ursaring, Lv. 45) in the yard; at the Outskirt Stand Fein, a Cipher Peon passing himself off as
+  the hero who saved Orre (Shadow Togetic, Lv. 20), with Ancha the reporter who believes him; and in The Under's middle
+  shack the **Deep Colosseum** (Emerald's Battle Arena lobby), its own four-round tournament (Lv. 52 on; first prize a
+  Focus Band), after which Deep King Agnol (Shadow Shuckle, Lv. 45, with Forretress, Steelix and Scizor) takes you on.
 - **Colosseum's Shadow Pokémon** (`Orre.SHADOW` in `game/orre.js`): all 47 of them, in Colosseum's order, each with its
   level, its Trainer and where you meet them (Trudly's Makuhita, Lv. 30, at the Mayor's house; Rogue Cail's Furret,
   Lv. 33, in Pyrite Town; on to Evice's Tyranitar). From Colosseum's story proper on, a Trainer who has a Shadow Pokémon
@@ -3267,7 +3285,7 @@ Lv. 25.
 
 **Pyrite Town** (after Colosseum's, drawn in code): the lawless town in a canyon, its dusty ground scored with tyre
 tracks and walled in by red rock: rusty tin shacks with corrugated roofs, oil drums and crates, the Pokémon Center
-(Emerald's), and at the top the **Pyrite Colosseum**, a round arena of riveted iron, its gate chained shut for now. In
+(Emerald's), and at the top the **Pyrite Colosseum**, a round arena of riveted iron, where tournaments are held. In
 the east wall, the timbered mouth of **Pyrite Cave** (for now Emerald's Fiery Path, its picture and its layout, its
 north end fallen in and none of its boulders or items).
 
@@ -3279,7 +3297,7 @@ can heal a Pokémon whose heart is shut tight. Through a gap in the trees on the
 **Phenac City** (after Colosseum's, drawn in code): the city of water in the desert, all paved in sandstone, its
 white-walled buildings with flat roofs and blue trim, palms, and two channels of water running the length of it and
 falling as waterfalls over the edge of each terrace. At the top, Phenac Stadium (its arched entrance between two
-waterfalls, the Poké Ball above it; shut for now), the Mayor's house (its blue dome) and a house; down the stairs,
+waterfalls, the Poké Ball above it; its tournaments open after Evice), the Mayor's house (its blue dome) and a house; down the stairs,
 the fountain square with its round fountain in rings of paving, the Pokémon Center (Emerald's, as at the Air Strip,
 Mauville's inside) and a house; down again, the entrance plaza, its palms and two more houses, and the way out to
 the desert. Its townspeople say Colosseum's own words (`assets/text/colosseum.json`).

@@ -1603,7 +1603,6 @@ YSHACKS.forEach((b, i) => pasteOn(pyrite, YW, YH, tinShack(b, i), b.x * 16, b.y 
   for (let x = 3; x < w - 2; x += 6) { c.set(x, fy + 3, C.iron[3]); c.set(x, fy + fh - 4, C.iron[3]); }
   const ax = (YCOL_DOOR.x - b.x) * 16, aw = YCOL_DOOR.w * 16;
   c.rect(ax - 3, fy - 6, aw + 6, fh + 6, C.iron[3]); c.rect(ax, fy - 3, aw, fh + 3, [32, 28, 40]);
-  for (let x = ax + 3; x < ax + aw - 2; x += 5) c.vl(x, fy - 2, fy + fh - 1, C.iron[2]);
   c.box(ax + aw / 2 - 22, fy - 16, 44, 9, { fill: C.rust[1], light: C.rust[0], line: C.rust[3] });
   text(c, "COLOSSEUM", ax + aw / 2 - 18, fy - 14, [248, 240, 200]);
   pasteOn(pyrite, YW, YH, c, b.x * 16, b.y * 16 - up, up + 16 * (b.h - 1));
@@ -2018,6 +2017,8 @@ const MTBATTLE = {
     person(4, "DAKIM", 17, 5, "black_belt", "face_down", "MtBattle_EventScript_Dakim", null),
     person(5, "SUMMIT_SKRUB", 19, 5, "orre_peon_m", "face_down", "MtBattle_EventScript_SummitSkrub", null),
     person(6, "VANDER", 17, 7, "cooltrainer_m", "face_up", "MtBattle_EventScript_Vander", null),
+    // (The 100-Trainer challenge's attendant, by the way in: ui/game.js's mtBattleChallenge().)
+    person(8, "BATTLE_ATTENDANT", 20, 29, "em_expert_m", "face_left", "MtBattle_EventScript_Challenge", null),
     person(7, "BATTLE_PC_HIKER", 22, 27, "hiker", "wander_around", "MtBattle_EventScript_Hiker",
       ["Mt. Battle's the place to get strong.\nBut lately, purple-suited types have\nbeen chasing everyone off."], { rangeX: 1, rangeY: 1 })
   ],
@@ -2248,6 +2249,43 @@ const PCU = pokemonCenterInside("TheUnder_PokemonCenter_1F", "The Under", "TheUn
   PYRITE.signs = PYRITE.signs.filter((s) => !(s.x === d.x && s.y === d.y));
   PYRITE.behavior[d.y * YW + d.x] = 0x69;
 }
+// The Pyrite Colosseum and Phenac Stadium open: their gates doors, inside Emerald's Battle Tent lobby and Battle Dome
+// lobby, a receptionist at the counter for the day's tournament (ui/game.js's orreTournament(), Orre.TOURNAMENTS).
+function arenaDoors(m, xs, y, lobby) {
+  const at = m.warps.length;
+  for (const x of xs) { m.warps.push({ x, y, map: lobby, warp: 0 }); m.behavior[y * m.width + x] = 0x69; m.collision[y * m.width + x] = 1; }
+  m.signs = m.signs.filter((s) => !(s.y === y && xs.includes(s.x)));
+  return at;
+}
+const COLO_LOBBY_WARP = arenaDoors(PYRITE, [YCOL_DOOR.x, YCOL_DOOR.x + 1], YCOL.y + YCOL.h - 1, "PyriteTown_Colosseum");
+const COLO_LOBBY = emeraldRoom("FallarborTown_BattleTentLobby", "PyriteTown_Colosseum", "Pyrite Colosseum",
+  [{ x: 6, y: 9, map: "PyriteTown", warp: COLO_LOBBY_WARP }, { x: 7, y: 9, map: "PyriteTown", warp: COLO_LOBBY_WARP + 1 }], [
+    person(0, "COLO_RECEPTIONIST", 6, 5, "em_woman_2", "face_down", "PyriteTown_Colosseum_EventScript_Receptionist", null),
+    person(1, "COLO_FAN", 1, 5, "em_man_3", "face_right", "PyriteTown_Colosseum_EventScript_Fan",
+      ["Win four in a row and you're the\nchamp of the day. Simple as that!", "Two on two, mind. That's how we do\nit in Orre."]),
+    person(2, "COLO_KID", 12, 6, "em_little_boy", "face_left", "PyriteTown_Colosseum_EventScript_Kid",
+      ["The Colosseum used to give Shadow\nPokémon as prizes. Creepy, right?", "Now it's just money and stuff. Way\nbetter!"])
+  ], { music: "gs_battletower", showName: true });
+const ST_LOBBY_WARP = arenaDoors(PHENAC, [ST_DOOR.x, ST_DOOR.x + 1], STADIUM.y + STADIUM.h - 1, "PhenacCity_Stadium");
+const ST_LOBBY = emeraldRoom("BattleFrontier_BattleDomeLobby", "PhenacCity_Stadium", "Phenac Stadium",
+  [{ x: 11, y: 16, map: "PhenacCity", warp: ST_LOBBY_WARP }, { x: 12, y: 16, map: "PhenacCity", warp: ST_LOBBY_WARP + 1 }], [
+    person(0, "ST_RECEPTIONIST", 5, 10, "em_teala", "face_down", "PhenacCity_Stadium_EventScript_Receptionist", null),
+    person(1, "ST_FAN", 14, 14, "em_lass", "face_up", "PhenacCity_Stadium_EventScript_Fan",
+      ["Phenac Stadium's tournaments are the\nbest in Orre. Only the strongest\nTrainers enter!"]),
+    person(2, "ST_MAN", 1, 11, "em_man_3", "face_right", "PhenacCity_Stadium_EventScript_Man",
+      ["Mayor Es Cade used to run the shows\nhere. Since he was found out, the\ncity runs them fair and square."])
+  ], { music: "gs_battletower", showName: true });
+// The Deep Colosseum (after the game, as in Colosseum): through The Under's middle shack, Emerald's Battle Arena lobby;
+// its receptionist's tournament, and Deep King Agnol by the counter once you've won it.
+const DEEP_WARP = arenaDoors(UNDER, [doorBelow(USHACKS[1]).x], doorBelow(USHACKS[1]).y, "TheUnder_DeepColosseum");
+const DEEP = emeraldRoom("BattleFrontier_BattleArenaLobby", "TheUnder_DeepColosseum", "Deep Colosseum",
+  [{ x: 7, y: 12, map: "TheUnder", warp: DEEP_WARP }], [
+    person(0, "DEEP_RECEPTIONIST", 7, 7, "em_woman_5", "face_down", "TheUnder_DeepColosseum_EventScript_Receptionist", null),
+    person(1, "SHADOW_AGNOL", 12, 9, "fat_man", "face_left", "TheUnder_DeepColosseum_EventScript_Shadow_AGNOL", null),
+    person(2, "DEEP_MAN", 2, 10, "em_man_3", "face_right", "TheUnder_DeepColosseum_EventScript_Man",
+      ["Nobody upstairs knows this place is\nhere. Down here, anything goes.", "Win the tournament and the Deep King\nhimself might take you on."])
+  ], { music: "em_aqua_magma_hideout", showName: true });
+DEEP.collision[12 * DEEP.width + 7] = 0; DEEP.behavior[12 * DEEP.width + 7] = 0x65;
 // Venus's studio (Emerald's Contest hall: a stage), its way out at the bottom.
 const STUDIO = emeraldRoom("ContestHall", "TheUnder_Studio", "The Under", [{ x: 7, y: 10, map: "TheUnder", warp: 3 }], [
   person(0, "VENUS", 7, 5, "beauty", "face_down", "TheUnder_Studio_EventScript_Venus", null)
@@ -2333,6 +2371,15 @@ for (const [m, list] of [
   m.people.push(person(id, key, x, y, sprite, facing, m.name + "_EventScript_Filler_" + key.split("_").pop(), null));
 }
 
+// After the game: Team Snagem back in its rebuilt hideout (Biden, Agrev), and at the Outskirt Stand Fein, the fake hero,
+// with Ancha, the reporter who believes him (Colosseum's Shadow Smeargle, Ursaring and Togetic).
+for (const [m, list] of [[HIDE, [["BIDEN", 11, 10, "orre_snagem_m", "face_down"], ["AGREV", 14, 10, "orre_snagem_m", "face_down"]]],
+  [OUT, [["FEIN", 22, 15, "orre_peon_m", "face_down"]]]]) for (const [key, x, y, sprite, facing] of list) {
+  const id = Math.max(-1, ...m.people.map((p) => p.id)) + 1;
+  m.people.push(person(id, "SHADOW_" + key, x, y, sprite, facing, m.name + "_EventScript_Shadow_" + key, null));
+}
+OUT.people.push(person(Math.max(...OUT.people.map((p) => p.id)) + 1, "ANCHA", 23, 15, "em_reporter_f", "face_left", "OutskirtStand_EventScript_Ancha",
+  ["I'm Ancha, reporter! I'm doing a story\non Fein, the hero who saved Orre from\nCipher!", "Isn't he dreamy? …What? You don't\nbelieve him?"]));
 // ---------- Leaving a place: Orre's map ----------
 //
 // As in Colosseum, you don't walk from one place in Orre to the next: step out of a place's way out (its open edge
@@ -2406,6 +2453,6 @@ fs.writeFileSync(orreFile,
     PyriteTown: PYRITE, PyriteTown_PokemonCenter_1F: PCY, PyriteCave: PYCAVE, PyriteTown_DukingsHouse: DUKING_HOUSE,
     PyriteTown_PyriteBuilding_1F: BUILDING_1F, PyriteTown_PyriteBuilding_4F: BUILDING_4F, PyriteCave_MirorBHideout: MIROR_HIDEOUT, AgateVillage_EaguansHouse: EAGUN_HOUSE, MtBattle: MTBATTLE, MtBattle_PokemonCenter_1F: PCB,
     TheUnder: UNDER, TheUnder_PokemonCenter_1F: PCU, TheUnder_Studio: STUDIO, ShadowLab_1F: LAB_1F, ShadowLab_B1F: LAB_B1F, ShadowLab_EinsRoom: LAB_EIN,
-    RealgamTower_1F: REALGAM_1F, RealgamTower_Dome: REALGAM_DOME, RealgamTower_Colosseum: REALGAM_COLO, RealgamTower_Top: REALGAM_TOP, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG, RelicForest: RELIC_FOREST }) + ");\n" + sinnohPart);
+    RealgamTower_1F: REALGAM_1F, RealgamTower_Dome: REALGAM_DOME, RealgamTower_Colosseum: REALGAM_COLO, RealgamTower_Top: REALGAM_TOP, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG, RelicForest: RELIC_FOREST, PyriteTown_Colosseum: COLO_LOBBY, PhenacCity_Stadium: ST_LOBBY, TheUnder_DeepColosseum: DEEP }) + ");\n" + sinnohPart);
 console.log("wrote Pyrite Town (" + YW + "x" + YH + "), Pyrite Cave and Agate Village (" + GW + "x" + GH + ")");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");

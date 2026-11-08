@@ -171,6 +171,10 @@
       case ID("EVICE"): return story === 43;
       case ID("SHADOW_ARTON"): case ID("SHADOW_BAILA"): case ID("SHADOW_DIOGE"): case ID("SHADOW_JOMAS"): case ID("SHADOW_DELAN"):
       case ID("SHADOW_NELLA"): case ID("SHADOW_STON"): return story >= 41;
+      // (After the game, 44 on: Snagem's back in its hideout; Fein and Ancha at the Outskirt Stand; Deep King Agnol
+      // once you've won his Deep Colosseum's tournament.)
+      case ID("SHADOW_BIDEN"): case ID("SHADOW_AGREV"): case ID("SHADOW_FEIN"): case ID("ANCHA"): return story >= 44;
+      case ID("SHADOW_AGNOL"): return story >= 44 && ((flags.orreTourney || {}).deep | 0) > 0;
       case ID("HIDEOUT_MIROR_B"): case ID("HIDEOUT_PLUSLE"): return story === 26;
       case ID("SILVA"): case ID("BUILDING_DUKING"): case ID("MIROR_B"): case ID("NASCOUR"): case ID("REATH"): case ID("FERMA"):
       case ID("BUILDING_SILVA"): case ID("HIDEOUT_DUKING"): return false;   // (only in their scenes)
@@ -278,6 +282,20 @@
   // and what they say: before, beaten (but their Shadow Pokémon not snagged: they'll battle again), and once snagged.
   const T = (trainer, name, cls, pic, partners, intro, kept, after) => ({ trainer, name, cls, pic, partners, intro: [intro], kept: [kept], after: [after] });
   const SHADOW_TRAINERS = {
+    // (After the game, as in Colosseum: Team Snagem back in its rebuilt hideout, Biden and Agrev; Fein, the "hero"
+    // who's been telling everyone at the Outskirt Stand he saved Orre; Deep King Agnol, in The Under's Deep Colosseum.)
+    SnagemHideout_EventScript_Shadow_BIDEN: T("Biden", "Snagem Biden", "Team Rocket", "snagem_grunt", [["Mightyena", 44], ["Golbat", 44]],
+      "Well, well. The traitor comes home!\nWe rebuilt this place without you,\nand Cipher left us a little gift.", "Ha! Smeargle stays with Snagem!",
+      "Snagem's finished… again. Should've\nstuck to honest snagging."),
+    SnagemHideout_EventScript_Shadow_AGREV: T("Agrev", "Snagem Agrev", "Team Rocket", "snagem_grunt", [["Sneasel", 44], ["Houndoom", 44]],
+      "You wrecked the old hideout and ran\noff with the Snag Machine! Payback\ntime!", "Grr! Get out of our hideout!",
+      "Gonzap's gonna hear about this…"),
+    OutskirtStand_EventScript_Shadow_FEIN: T("Fein", "Hero Fein", "Team Rocket", "cipher_peon", [["Zubat", 22], ["Ekans", 22]],
+      "Ah, a fan! Yes, it's me, Fein: the\nhero who brought down Cipher!\nWant to see how I did it?", "See? Heroic, through and through!",
+      "Ancha: Wait… the real hero was YOU?\nWhat a scoop! Fein, you fraud!"),
+    TheUnder_DeepColosseum_EventScript_Shadow_AGNOL: T("Agnol", "Deep King Agnol", "Leader", "super_nerd", [["Forretress", 46], ["Steelix", 46], ["Scizor", 46]],
+      "So you're the one who beat my Deep\nColosseum. I am Agnol, its king.\nFace my Shuckle, if you dare!", "My reign goes on!",
+      "My Shuckle… Hmph. The Deep\nColosseum's yours, champion."),
     PyriteTown_EventScript_Shadow_CAIL: T("Cail", "Rogue Cail", "Rogue", "burglar", [["Mightyena", 31]],
       "Hey, you. I won this Furret in a\nchallenge at the Colosseum. Wanna\nsee what it can do?", "Heh. My Furret's still mine.",
       "My prize Furret… Ah, forget it. It\nwas scary anyway. Bit people."),
@@ -338,5 +356,123 @@
   // Rider Willie's two Zigzagoon (Lv. 25 and 26: met at the start of Colosseum's story proper).
   const willieTeam = () => [window.Party.create("Zigzagoon", 25), window.Party.create("Zigzagoon", 26)];
 
-  window.Orre = { SHADOW, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
+
+  // ---------- The Pyrite Colosseum and Phenac Stadium (Colosseum's tournaments; this game's own entrants) ----------
+  //
+  // Talk to the receptionist and enter: four double battles in a row against the day's entrants (picked from `pool`,
+  // a class, its picture, its name and the Pokémon it might use), healed between rounds; lose one and you're out.
+  // Win all four and you're the day's champion: `prize` money and one of `items` (the first time, `first`). The
+  // entrants' level is your strongest Pokémon's, held to `min` and to Orre's cap (Phenac's from Lv. 50), and rises a
+  // level a round. The Colosseum opens once Colosseum's story has you in Pyrite (orreStory 23, after Cail), the
+  // Stadium once Evice is beaten (44), and The Under's Deep Colosseum after the game too, its king Agnol waiting for
+  // whoever wins it.
+  const TOURNAMENTS = {
+    PyriteTown_Colosseum_EventScript_Receptionist: {
+      key: "pyrite", name: "Pyrite Colosseum", from: 23, min: 30, size: [2, 2, 3, 3], prize: 3000,
+      items: ["rare-candy", "pp-up", "protein", "iron", "calcium", "zinc", "carbos", "hp-up", "nugget", "ultra-ball"], first: "choice-band",
+      closed: ["The Colosseum's closed for the\nmoment. Come back later, hon."],
+      pool: [
+        ["Rocker", "rocker", ["Vince", "Jett", "Rudy"], ["Electabuzz", "Magneton", "Manectric", "Voltorb", "Loudred"]],
+        ["Biker", "biker", ["Gav", "Rex", "Zed"], ["Weezing", "Muk", "Mightyena", "Houndour", "Sneasel"]],
+        ["Black Belt", "black_belt", ["Doku", "Kaio", "Ryo"], ["Machoke", "Hitmonchan", "Hitmonlee", "Makuhita", "Breloom"]],
+        ["Burglar", "burglar", ["Vic", "Lenny", "Dash"], ["Murkrow", "Sableye", "Grimer", "Houndour", "Persian"]],
+        ["Psychic", "psychic_f", ["Lumi", "Nessa", "Ora"], ["Kadabra", "Xatu", "Grumpig", "Girafarig", "Kirlia"]],
+        ["Hiker", "hiker", ["Bert", "Grom", "Tor"], ["Graveler", "Onix", "Lairon", "Rhyhorn", "Sandslash"]],
+        ["Cooltrainer", "cooltrainer_m", ["Kale", "Reed", "Soren"], ["Grovyle", "Marshtomp", "Combusken", "Flaaffy", "Quilava"]],
+        ["Cooltrainer", "cooltrainer_f", ["Tia", "Wren", "Ana"], ["Bayleef", "Croconaw", "Kirlia", "Lombre", "Seadra"]],
+        ["Ruin Maniac", "ruin_maniac", ["Dez", "Abu"], ["Baltoy", "Claydol", "Vibrava", "Lunatone", "Solrock"]]
+      ] },
+    TheUnder_DeepColosseum_EventScript_Receptionist: {
+      key: "deep", name: "Deep Colosseum", from: 44, min: 52, size: [3, 4, 4, 4], prize: 10000,
+      items: ["rare-candy", "pp-max", "nugget", "star-piece", "max-revive", "full-restore", "kings-rock", "scope-lens", "quick-claw"], first: "focus-band",
+      closed: ["…This place isn't open to just\nanybody. Come back when you've made\na name for yourself."],
+      pool: [
+        ["Hunter", "cooltrainer_m", ["Rask", "Vorn"], ["Houndoom", "Absol", "Sharpedo", "Crobat", "Tyranitar", "Skarmory"]],
+        ["Chaser", "biker", ["Brakk", "Zett"], ["Weezing", "Muk", "Crawdaunt", "Mightyena", "Cacturne", "Honchkrow"]],
+        ["Bodybuilder", "black_belt", ["Hulk", "Grizz"], ["Machamp", "Hariyama", "Ursaring", "Slaking", "Hitmontop", "Rhydon"]],
+        ["Bandana Guy", "rocker", ["Jace", "Rook"], ["Electabuzz", "Magmar", "Manectric", "Raichu", "Jolteon", "Flareon"]],
+        ["Researcher", "scientist", ["Ovid", "Teller"], ["Porygon2", "Magneton", "Claydol", "Metagross", "Bronzong", "Starmie"]],
+        ["Rider", "cue_ball", ["Kaz", "Dex"], ["Dodrio", "Rapidash", "Arcanine", "Tauros", "Kangaskhan", "Granbull"]],
+        ["Curmudgeon", "gentleman", ["Mort", "Edgar"], ["Gengar", "Banette", "Dusclops", "Sableye", "Misdreavus", "Shiftry"]]
+      ] },
+    PhenacCity_Stadium_EventScript_Receptionist: {
+      key: "phenac", name: "Phenac Stadium", from: 44, min: 50, size: [3, 3, 4, 4], prize: 8000,
+      items: ["rare-candy", "pp-max", "pp-up", "nugget", "star-piece", "max-revive", "full-restore", "protein", "calcium", "carbos"], first: "leftovers",
+      closed: ["Welcome to Phenac Stadium.", "Our next tournament is still being\nplanned. Please come again!"],
+      pool: [
+        ["Cooltrainer", "cooltrainer_m", ["Garet", "Morus", "Lake"], ["Gardevoir", "Salamence", "Swampert", "Blaziken", "Ampharos", "Starmie"]],
+        ["Cooltrainer", "cooltrainer_f", ["Rena", "Mima", "Sela"], ["Milotic", "Altaria", "Sceptile", "Espeon", "Lanturn", "Vileplume"]],
+        ["Psychic", "psychic_m", ["Elon", "Darian"], ["Alakazam", "Slowking", "Metagross", "Medicham", "Exeggutor"]],
+        ["Black Belt", "black_belt", ["Kenzo", "Taku"], ["Hariyama", "Machamp", "Hitmontop", "Heracross", "Breloom"]],
+        ["Gentleman", "gentleman", ["Albert", "Reginald"], ["Arcanine", "Kingdra", "Skarmory", "Snorlax", "Tauros"]],
+        ["Beauty", "beauty", ["Lola", "Cyra"], ["Ninetales", "Wigglytuff", "Lapras", "Clefable", "Bellossom"]],
+        ["Pokémon Ranger", "pokemon_ranger_m", ["Jory", "Ash"], ["Tropius", "Ursaring", "Donphan", "Torkoal", "Dodrio"]],
+        ["Pokémon Ranger", "pokemon_ranger_f", ["Kiri", "Fia"], ["Jumpluff", "Meganium", "Absol", "Flygon", "Pelipper"]]
+      ] }
+  };
+  // The day's four entrants for `t`, the player's strongest Pokémon at `top` and Orre's cap `cap`: [{ name, cls, pic,
+  // team: [[species, level]] }], none the same twice. (`rand`: Math.random, or a seeded one in the tests.)
+  function tournamentDraw(t, top, cap, rand) {
+    rand = rand || Math.random;
+    const pick = (a) => a[Math.floor(rand() * a.length)];
+    const base = Math.max(t.min, Math.min(top, cap || 100)), pool = t.pool.slice(), out = [];
+    for (let round = 0; round < 4; round++) {
+      const [cls, pic, names, species] = pool.splice(Math.floor(rand() * pool.length), 1)[0];
+      const sp = species.slice(), team = [];
+      for (let i = 0; i < t.size[round]; i++) team.push([sp.splice(Math.floor(rand() * sp.length), 1)[0], Math.min(100, base - 2 + round)]);
+      out.push({ name: cls + " " + pick(names), cls, pic, team });
+    }
+    return out;
+  }
+
+
+  // ---------- Mt. Battle's 100-Trainer challenge (Colosseum's; this game's own Trainers) ----------
+  //
+  // Ten areas of ten Trainers, double battles, the tenth each area's Area Leader. Your Pokémon are healed only between
+  // areas, where you may stop (and start again later from Area 1, 4 or 7, once you've got that far). Each area's first
+  // clear gives `MT_BATTLE.prizes[area]`, and money. Win all 100 from Area 1 in one go, after Colosseum's story (44), and
+  // Ho-Oh comes to you, as it does in Colosseum. Levels rise through the areas, 23 to 52 (Area Leaders two more), held
+  // to Orre's cap; teams grow from two Pokémon to four.
+  const MT_BATTLE = {
+    from: 33, starts: [1, 4, 7],
+    prizes: [null, "protein", "iron", "calcium", "zinc", "carbos", "hp-up", "pp-up", "rare-candy", "pp-max", "lucky-egg"],
+    money: (area) => 1000 * area,
+    leaders: [null, ["Black Belt", "black_belt", "Kenta"], ["Hiker", "hiker", "Bolder"], ["Psychic", "psychic_f", "Mysa"],
+      ["Pokémon Ranger", "pokemon_ranger_m", "Torin"], ["Bird Keeper", "bird_keeper", "Aero"], ["Swimmer", "swimmer_f", "Marina"],
+      ["Cooltrainer", "cooltrainer_f", "Selene"], ["Gentleman", "gentleman", "Harlan"], ["Cooltrainer", "cooltrainer_m", "Drake"],
+      ["Ace Trainer", "cooltrainer_m", "Vander"]],
+    classes: [["Black Belt", "black_belt", ["Daisuke", "Gen", "Hiro"]], ["Hiker", "hiker", ["Clay", "Rocco", "Brent"]],
+      ["Psychic", "psychic_m", ["Ezra", "Milo"]], ["Psychic", "psychic_f", ["Ione", "Sage"]], ["Camper", "camper", ["Skip", "Abe"]],
+      ["Picnicker", "picnicker", ["Joy", "Lily"]], ["Bird Keeper", "bird_keeper", ["Hawk", "Robin"]], ["Rocker", "rocker", ["Axel", "Riff"]],
+      ["Pokémon Ranger", "pokemon_ranger_f", ["Dawn", "Fern"]], ["Pokémon Ranger", "pokemon_ranger_m", ["Bram", "Cole"]],
+      ["Cooltrainer", "cooltrainer_m", ["Rhett", "Lars"]], ["Cooltrainer", "cooltrainer_f", ["Ava", "Kira"]], ["Beauty", "beauty", ["Cleo", "Iris"]],
+      ["Ruin Maniac", "ruin_maniac", ["Omar", "Seth"]], ["Engineer", "engineer", ["Gus", "Volt"]], ["Swimmer", "swimmer_m", ["Finn", "Kai"]]],
+    // (Their Pokémon: the early areas' half-grown, the later areas' fully evolved.)
+    tiers: [
+      ["Pidgeotto", "Graveler", "Machoke", "Kadabra", "Haunter", "Ivysaur", "Wartortle", "Charmeleon", "Bayleef", "Quilava", "Croconaw",
+        "Grovyle", "Combusken", "Marshtomp", "Lairon", "Lombre", "Nuzleaf", "Vigoroth", "Kirlia", "Flaaffy", "Skiploom", "Seadra", "Loudred", "Vibrava"],
+      ["Arcanine", "Ninetales", "Golduck", "Rapidash", "Magneton", "Dodrio", "Electrode", "Hypno", "Kingler", "Marowak", "Hitmonlee", "Hitmonchan",
+        "Lanturn", "Ampharos", "Azumarill", "Sudowoodo", "Quagsire", "Girafarig", "Granbull", "Ursaring", "Magcargo", "Piloswine", "Mightyena",
+        "Breloom", "Manectric", "Sharpedo", "Camerupt", "Grumpig", "Cacturne", "Altaria", "Crawdaunt", "Claydol", "Banette", "Dusclops"],
+      ["Gyarados", "Lapras", "Snorlax", "Dragonite", "Tyranitar", "Salamence", "Metagross", "Gardevoir", "Blaziken", "Swampert", "Sceptile",
+        "Typhlosion", "Feraligatr", "Meganium", "Venusaur", "Charizard", "Blastoise", "Alakazam", "Machamp", "Gengar", "Starmie", "Scizor",
+        "Heracross", "Skarmory", "Kingdra", "Milotic", "Flygon", "Aggron", "Slaking", "Houndoom", "Espeon", "Umbreon", "Steelix", "Absol"]
+    ]
+  };
+  // Area `area`'s ten Trainers: [{ name, cls, pic, team: [[species, level]], leader }]. (Orre's cap `cap`.)
+  function mtBattleArea(area, cap, rand) {
+    rand = rand || Math.random;
+    const M = MT_BATTLE, pick = (a) => a[Math.floor(rand() * a.length)];
+    const tier = M.tiers[area <= 3 ? 0 : area <= 7 ? 1 : 2], size = area <= 3 ? 2 : area <= 6 ? 3 : 4, out = [];
+    for (let k = 0; k < 10; k++) {
+      const leader = k === 9, [cls, pic, names] = leader ? M.leaders[area].slice(0, 2).concat([[M.leaders[area][2]]]) : pick(M.classes);
+      const level = Math.min(cap || 100, 20 + 3 * area + (k >= 5 ? 1 : 0) + (leader ? 2 : 0));
+      const sp = tier.slice(), team = [];
+      for (let i = 0; i < Math.min(4, size + (leader ? 1 : 0)); i++) team.push([sp.splice(Math.floor(rand() * sp.length), 1)[0], level]);
+      out.push({ name: (leader ? "Area Leader " : cls + " ") + pick(names), cls, pic, team, leader });
+    }
+    return out;
+  }
+
+  window.Orre = { SHADOW, TOURNAMENTS, tournamentDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
 })();
