@@ -211,7 +211,8 @@ what it does in FireRed (Viridian: Poké Balls, Potions, Antidotes and
 Paralyze Heals), at Gen 6 prices, through FireRed's Mart: Buy / Sell / See
 ya!, the buy screen with the stock and prices on the right, your money and
 the map round you on the left and the item below (how many, then "That will
-be ¥… Okay?"), and selling from the Bag for half price (as many at once as
+be ¥… Okay?"; a TM or HM you already have shows "-----" for its price and can't
+be bought again), and selling from the Bag for half price (as many at once as
 you have, past 99).
 
 Battles open as in FireRed: from the map the screen flashes white twice and
@@ -1430,7 +1431,7 @@ your one. Where a map has hordes (`data/horde-encounters.js`: most of Kanto's,
 Johto's and Hoenn's routes and caves up to the Elite Four), one encounter in
 twenty in its grass, or on a cave's floor, is a horde (never on the water, nor
 Pokémon Tower's unidentified Ghosts), and **Sweet Scent** always draws one out:
-it's a field move now, for a Pokémon that knows it ("Oddish used Sweet Scent!"),
+it's a field move now, for a Pokémon that learns it or has its TM ("Oddish used Sweet Scent!"),
 from the party screen in the grass (where there are no hordes, a wild Pokémon
 comes out at once, as in FireRed; anywhere else, "Looks like there's nothing
 here…"). A horde is often five of a kind, sometimes four and one (four Oddish
@@ -2101,7 +2102,7 @@ farming XP, and the Berry Pouch works in Petalburg Woods: the farming level coun
 the volcanic ash on Route 113's and Jagged Pass's grass (walk through it and it falls off till you come back; with
 the Soot Sack it's gathered, for the Glass Workshop's flutes and glass furniture at Emerald's prices),
 the braille (shown in Braille's dots) and the Regis' puzzles as `src/braille_puzzles.c` has them: Dig under the
-Sealed Chamber's DIG HERE (Dig is a field move, for a Pokémon that knows it: out of a cave too, as an Escape Rope),
+Sealed Chamber's DIG HERE (Dig is a field move: out of a cave too, as an Escape Rope),
 Wailord first and Relicanth last at its back wall, then Rock Smash in the Desert Ruins, Flash in the Ancient Tomb and a
 lap of Island Cave's wall,
 no wild Pokémon on a beach's sand or Mt. Chimney's top (only where Emerald has them: grass, deep sand, caves, ash,
@@ -3663,8 +3664,11 @@ node tools/build-sinnoh.js <path to the Essentials project>
   Strength, Surf, Rock Smash and Waterfall, each with the Gym Badge FireRed asks
   for (Boulder, Cascade, Thunder, Rainbow, Soul, Marsh, Volcano). A Pokémon can
   use one if it knows the move, or if you have the HM in the Bag and it could
-  learn the move from it, so nothing has to give up a move slot. Dig and Teleport
-  (no HM: a Pokémon that knows them) are there too: Dig out of a cave as an Escape
+  learn the move from it, so nothing has to give up a move slot. Dig, Teleport and
+  Sweet Scent (TMs' moves, no HM) are there too, the same way: a Pokémon can use
+  one if it knows it, if it learns it some other way (by level, from a tutor, as an
+  Egg move; or something it evolved from does), or if it could learn it from its TM
+  and you have the TM ("You need TM28 Dig to use Dig."). Dig out of a cave as an Escape
   Rope takes you, Teleport from wherever Fly could go back outside the last
   Pokémon Center you were in (where blacking out would take you). On the party
   screen a Pokémon's menu lists every one of them it knows or could learn, in

@@ -2032,6 +2032,29 @@ if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto")
   assert.strictEqual(FieldMoves.check(pl, mon, "Cut"), null);
   assert.strictEqual(FieldMoves.check(pl, mon, "Fly"), null);
 }
+// Dig, Teleport, Sweet Scent and the other field moves that aren't HMs': a Pokémon that learns one (by level, from a
+// tutor, as an Egg move; or what it evolved from does) can use it without knowing it; one that could only learn it
+// from its TM needs the TM. HMs' moves still need the HM.
+{
+  const pl = Player.create("RED", 0), fresh = (sp) => { const r = Party.create(sp, 5); r.moves = [{ name: "Tackle", pp: 35 }]; return r; };
+  pl.location = { map: "PalletTown", x: 0, y: 0 };
+  assert.strictEqual(FieldMoves.check(pl, fresh("Diglett"), "Dig"), null, "Diglett learns Dig");
+  assert.strictEqual(FieldMoves.check(pl, fresh("Abra"), "Teleport"), null, "Abra learns Teleport");
+  assert.strictEqual(FieldMoves.check(pl, fresh("Alakazam"), "Teleport"), null, "Alakazam, from Abra");
+  assert.strictEqual(FieldMoves.check(pl, fresh("Oddish"), "Sweet Scent"), null, "Oddish learns Sweet Scent");
+  assert(FieldMoves.forMon(fresh("Diglett")).includes("Dig") && FieldMoves.forMon(fresh("Abra")).includes("Teleport"));
+  // (Only from TM28: needs it.)
+  const tmOnly = Object.keys(LEARNSETS_GEN6).find((sp) => DEX[sp] && Party.canLearnMachine({ species: sp }, "Dig") &&
+    !["levelup", "tutor", "egg"].some((k) => (LEARNSETS_GEN6[sp][k] || []).some((m) => (Array.isArray(m) ? m[1] : m) === "Dig")) && !Object.values(EVOLUTIONS).some((l) => l.some((e) => e.into === sp)));
+  assert(tmOnly, "a Pokémon that only gets Dig from its TM");
+  assert.strictEqual(FieldMoves.hmFor("Dig"), "tm28");
+  assert.strictEqual(FieldMoves.check(pl, fresh(tmOnly), "Dig"), "hm", tmOnly + " needs TM28");
+  Player.addItem(pl, "tm28", 1);
+  assert.strictEqual(FieldMoves.check(pl, fresh(tmOnly), "Dig"), null, tmOnly + " with TM28");
+  // (Surf's HM still needed, however else a Pokémon learns it.)
+  const surfer = fresh("Lapras");
+  assert.strictEqual(FieldMoves.check(pl, surfer, "Surf"), "hm");
+}
 
 // Trainer Tower's reward pools, Crystal's Battle Tower's too (game/trainer-tower.js).
 {

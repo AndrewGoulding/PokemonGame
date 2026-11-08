@@ -1932,7 +1932,8 @@
       smallNames: stock.length > 0 && stock.every((id) => /^(tm|hm)\d/.test(id)),
       money: () => player.money,
       inBag: (id) => Player.itemCount(player, id),
-      // (TMs and HMs: one each, and never twice.)
+      // (TMs and HMs: one each, and never twice; one you have shows "-----" for its price.)
+      soldOut: (id) => Bag.isMachine(id) && Player.itemCount(player, id) > 0,
       limit: (id) => (!Bag.isMachine(id) ? { max: 99 }
         : Player.itemCount(player, id) > 0 ? { max: 0, why: "You already have that " + Bag.name(id).split(" ")[0] + ".\nTMs and HMs never run out." } : { max: 1 }),
       buy: (id, n) => {

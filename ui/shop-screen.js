@@ -8,6 +8,7 @@
 //     money,    // () => your money
 //     inBag,    // (id) => how many you have
 //     limit,    // (id) => most you may buy at once (TMs: 1), or 0 with a reason: { max, why }
+//     soldOut,  // (id) => true for what can't be bought again (a TM you have): "-----" for its price
 //     buy,      // (id, n) => error message or null (it's bought), then maybe a second message
 //     frame,    // the Option screen's FRAME (0-9)
 //     map       // the overworld canvas and where the tile you face is on it: { canvas, x, y }
@@ -77,7 +78,7 @@
     // The list (window 4 at 88, 8): names at 97, prices right-aligned to 221.
     for (let r = 0; r < shown; r++) {
       const it = items[st.top + r], y = 10 + 16 * r;
-      const p = it && yen(it.price), room = it ? 222 - s.textWidth(p, "small") - 4 - 97 : Infinity, name = it ? it.name : "Cancel";
+      const p = it && (st.opts.soldOut && st.opts.soldOut(it.id) ? "-----" : yen(it.price)), room = it ? 222 - s.textWidth(p, "small") - 4 - 97 : Infinity, name = it ? it.name : "Cancel";
       // (A name too long for its row before the price, "TM99 Secret Power": in the small font.)
       s.text(name, 97, y, DARK, LIGHT, (it && st.opts.smallNames) || s.textWidth(name) > room ? "small" : undefined);
       if (it) s.text(p, 222 - s.textWidth(p, "small"), y, DARK, LIGHT, "small");
@@ -200,6 +201,8 @@
 
   async function buy(it) {
     const money = st.opts.money(), lim = st.opts.limit ? st.opts.limit(it.id) : { max: 99 };
+    // (Already yours, and it can't be bought twice: why not, before the money.)
+    if (!lim.max && st.opts.soldOut && st.opts.soldOut(it.id)) { await message(lim.why); return; }
     if (money < it.price) { await message(st.opts.currency ? st.opts.currency.short : "You don't have enough money."); return; }
     if (!lim.max) { await message(lim.why); return; }
     await print(it.name + "? Certainly.\nHow many would you like?");
