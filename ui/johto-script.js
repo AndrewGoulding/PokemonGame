@@ -494,7 +494,23 @@
           case "MenuItemAdd": if (menu) menu.items.push({ text: (text(typeof a[0] === "string" && !/^VAR_/.test(a[0]) ? a[0] : "bank:" + menu.bank + ":" + getVar(a[0])) || ["…"])[0], value: getVar(a[2]) }); break;
           case "MenuExec": {
             await flush();
-            const i = menu && menu.items.length ? await env.choose(menu.items.map((x) => x.text), menuQuestion) : -1;
+            // (A prize counter's TMs, as Goldenrod Game Corner's: a choice's TM is the one its Case goes to checks room
+            // for; one you already have shows "-----" for its price, and choosing it says so and asks again.)
+            const prizeTm = (v) => {
+              for (let k = pc; k < C.length && k < pc + 12; k++) if (C[k][0] === "Case" && +C[k][1] === +v && C[k][2] in L) {
+                const t = C[L[C[k][2]]];
+                return t && t[0] === "GoToIfNoItemSpace" && window.Bag && window.Bag.isMachine(t[1]) ? t[1] : null;
+              }
+              return null;
+            };
+            const owned = menu ? menu.items.map((x) => { const it = prizeTm(x.value); return it && env.itemCount(it) > 0 ? it : null; }) : [];
+            const texts = menu ? menu.items.map((x, k) => (owned[k] ? x.text.replace(/[\d,]+\s*Coins?\s*$/i, "-----") : x.text)) : [];
+            let i;
+            for (;;) {
+              i = menu && menu.items.length ? await env.choose(texts, menuQuestion) : -1;
+              if (i < 0 || !owned[i]) break;
+              await env.say(["You already have that " + env.itemName(owned[i]).split(" ")[0] + ".\nTMs and HMs never run out."]);
+            }
             menuQuestion = null;
             choice = i >= 0 && menu ? menu.items[i].value : (menu && menu.items.length ? menu.items[menu.items.length - 1].value : 0);
             setVar(menu && menu.v || "VAR_SPECIAL_RESULT", choice);

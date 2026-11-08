@@ -2493,7 +2493,10 @@
     const lv = (xp, skill) => "Lv. " + skill.level(xp);
     const debut = (player.flags.hallOfFame || []).find((e) => e.number === 1);
     const bp = K ? player.flags.bp || 0 : (player.flags.hoennFrontier || {}).bp || 0;
+    // (This game's own: every Badge you hold, all regions'; the front shows this region's.)
+    const allBadges = Object.values(Player.REGION_BADGES).flat().filter((b) => player.badges.includes(b)).length;
     const rows = [
+      ["TOTAL BADGES", String(allBadges)],
       ["BATTLE POINTS", bp + " BP"],
       // (With Four Island's sticker man's Hall of Fame sticker after it: one of four by entries.)
       ["HALL OF FAME DEBUT", debut ? time(debut.playTimeMs) + (player.flags.hofBragState ? " " + "*".repeat(player.flags.hofBragState) : "") : "---"],
@@ -2517,9 +2520,11 @@
         s.text("TIME", x, 96 + y, DARK, LIGHT); right(time(player.playTimeMs), r, 96 + y, DARK, LIGHT);
       } else {
         if (K) s.text(player.name, 144, 17, DARK, LIGHT); else right(player.name, 224, 17, DARK, LIGHT);
+        // (Kanto's panel is a row shorter than Hoenn's: its six rows closer together.)
+        const step = K ? 13 : 16, top0 = K ? 39 : 41;
         rows.forEach(([label, value], i) => {
-          s.text(label, K ? 16 : 24, 41 + i * 16, DARK, LIGHT);
-          right(value, 224, 41 + i * 16, RED, PINK);
+          s.text(label, K ? 16 : 24, top0 + i * step, DARK, LIGHT);
+          right(value, 224, top0 + i * step, RED, PINK);
         });
       }
       const g = canvas.getContext("2d");

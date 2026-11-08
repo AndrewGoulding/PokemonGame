@@ -194,7 +194,7 @@ new kind shows its habitat page and entry, as in FireRed),
 your Trainer Card (under your name: FireRed's card in Kanto, Johto, the Sevii Islands and Orre, Emerald's in Hoenn,
 drawn from their own graphics by `tools/build-trainer-cards.js` into `assets/trainer-card/`, its colour by its stars;
 the front has your name, ID No., money, Pokédex, play time and that region's Badges, and A turns it over to your
-Battle Points, Hall of Fame debut and mining, farming and fishing levels; B puts it away. HGSS's card for Johto
+total Badges (every region's), Battle Points, Hall of Fame debut and mining, farming and fishing levels; B puts it away. HGSS's card for Johto
 needs its graphics from the ROM, which aren't in the decomp), OPTION (as below, and in a game also SAVE NOW,
 DOWNLOAD SAVE, LOAD SAVE FILE and **DEBUG**, for
 testing; it asks for a password the first time each session): add any Pokémon at any level (type its name, e.g. `charizard` or
@@ -2731,7 +2731,9 @@ and the sign by the counter keeps your best streak.
 **Goldenrod's Game Corner** is the international HeartGold's: Mr. Game's
 table and its game, **Voltorb Flip** (`ui/voltorb-flip.js`, from
 `src/voltorb_flip/`), and two prize counters. Talk to Mr. Game and he gives
-you a Coin Case (Kanto's Game Corner takes it too, and Kanto's takes his);
+you a Coin Case (Kanto's Game Corner takes it too, and Kanto's takes his;
+at the prize counter, as at Celadon's and Mauville's, a TM you already have
+shows "-----" and can't be had again);
 sit across from him (the table's near side, facing up) and play. The board's
 25 cards hide 1s, 2s, 3s and Voltorb; the totals at the end of each row and
 column say what they add up to and how many Voltorb are among them. The

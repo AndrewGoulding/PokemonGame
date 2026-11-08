@@ -327,6 +327,13 @@
       // (A `message` that's followed by yesnobox or a multichoice: its last page is the question.)
       const nextAsks = () => { const code = st.code; for (let k = st.pc; k < code.length && k < st.pc + 4; k++) { const o = code[k][0]; if (o === "yesnobox" || /^multichoice/.test(o)) return true; if (!/^(waitmessage|delay|playfanfare|waitfanfare)$/.test(o)) return false; } return false; };
       const val = getVar;
+      // (The item a multichoice's choice `k` is for: the script its `case k` goes to sets it, setvar VAR_0x8004 or
+      // bufferitemname; or null.)
+      const choiceItem = (k) => {
+        const c = st.code.slice(st.pc, st.pc + 12).find((op) => op[0] === "case" && num(op[1]) === k), code = c && D.s[c[2]];
+        const set = code && code.find((op) => (op[0] === "setvar" && op[1] === "VAR_0x8004") || op[0] === "bufferitemname");
+        return set ? item(set[2]) : null;
+      };
       const trainerKey = (t) => "EM_" + t;
       const beaten = (t) => env.beaten(trainerKey(t));
       // A trainer battle: the intro, the battle (the defeat text is its own), then on to `after` (or the next command).
@@ -431,8 +438,20 @@
           }
           case "multichoice": case "multichoicedefault": case "multichoicegrid": {
             await flush();
-            const texts = D.multi[a[2]] || ["Yes", "No"];
-            const i = await env.choose(texts, question);
+            let texts = D.multi[a[2]] || ["Yes", "No"];
+            // (A prize counter's TMs, as the Game Corner's: each choice's item from the script its case goes to; one
+            // you already have shows "-----" for its price, and choosing it says so and asks again.)
+            // (Emerald's own list runs each TM into its price, "TM321,500 Coins": here in a column, as FireRed's.)
+            const isTm = texts.map((t, k) => { const it = choiceItem(k); return it && window.Bag && window.Bag.isMachine(it) ? it : null; });
+            const owned = isTm.map((it) => (it && env.itemCount(it) > 0 ? it : null));
+            if (isTm.some(Boolean)) texts = texts.map((t, k) => { const m = isTm[k] && /^([TH]M\d\d)\s*(.*)$/.exec(t);
+              return m ? m[1] + "{CLEAR_TO 40}{FONT_SMALL}" + (owned[k] ? "-----" : m[2]) : t; });
+            let i;
+            for (;;) {
+              i = await env.choose(texts, question);
+              if (i < 0 || !owned[i]) break;
+              await env.say(["You already have that " + env.itemName(owned[i]).split(" ")[0] + ".\nTMs and HMs never run out."]);
+            }
             question = null;
             setVar("VAR_RESULT", i < 0 ? 127 : i);
             break;
