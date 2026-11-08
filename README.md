@@ -538,7 +538,7 @@ time (after a YES / NO, the table waiting), forfeiting your buy-in. Spend Coins 
 Abra, Clefairy, Dratini, Scyther or Porygon, TMs (Ice Beam, Thunderbolt, Shadow
 Ball, Flamethrower, and Iron Tail, TM104 here, since this game's TM23 is Smack
 Down) or held items, each counter's prizes in FireRed's list with your Coins
-in their box. Beat the Rocket guarding the poster and the switch behind
+in their box (a TM you already have shows "-----" and can't be had again). Beat the Rocket guarding the poster and the switch behind
 it opens the stairs to the Rocket Hideout (B1F-B4F: its trainers, items and
 spinning arrow floors; FireRed's TM49 Snatch, TM107 here; the barriers that open once their guards are beaten; the
 Lift Key a Rocket drops on B4F, which works the elevator; and Giovanni: as you
@@ -1318,8 +1318,8 @@ afterwards (she waits a few steps from the door, sees you and walks over) for a 
 again and again, for ₽10,000 each time), the
 Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
 climbing down the last ladder in Mt. Moon as in Yellow (a double battle; they're back,
-as in Yellow and each time a double battle, on Rocket Hideout B4F on the way to Giovanni
-with Koffing, Meowth and Ekans at 25, on Pokémon Tower 7F before Mr. Fuji with Meowth,
+as in Yellow and each time a double battle, on Rocket Hideout B4F on the way to Giovanni,
+walking up behind you out of the elevator, with Koffing, Meowth and Ekans at 25, on Pokémon Tower 7F before Mr. Fuji with Meowth,
 Arbok and Weezing at 27, and on Silph Co. 11F just off the warp pad from 7F with
 Weezing, Arbok and Meowth at 31), Gary in Cerulean (FireRed's team, with
 his Eevee, which knows Shadow Ball and Terastallizes into a Ghost type), the Nugget Bridge Rocket (a Nugget, then a battle), the Rocket in

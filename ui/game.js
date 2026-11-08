@@ -6222,7 +6222,13 @@
       flag: "jessieJamesHideout", team: [["Koffing", 25], ["Meowth", 25], ["Ekans", 25]],
       // (Only before Giovanni's beaten; up the way from the elevator.)
       due: (f, at) => !f.TRAINER_BOSS_GIOVANNI && at.y === 19 && (at.x === 16 || at.x === 17) && at.facing === "up",
-      cols: [16, 17], dy: -1, steps: 3,
+      cols: [16, 17], dy: 1, steps: 3,
+      // (Out of the elevator behind you, down a step, along and up the corridor to stand behind you.)
+      enter: (me, other) => [[me.x, 20], [other, 21]].map(([x], i) => {
+        const ex = 20 + i;
+        return { start: { x: ex, y: 23, facing: "down" },
+          moves: ["walk_down"].concat(Array(ex - x).fill("walk_left"), Array(4).fill("walk_up")) };
+      }),
       intro: ["Jessie: Not another step, brat!", "James: How dare you humiliate us\nat Mt. Moon!",
         "Jessie: It's payback time, you brat!"],
       defeat: ["Jessie: Such a dreadful twerp!"],
@@ -6264,25 +6270,42 @@
     const come = J.dy < 0 ? "down" : "up", back = J.dy < 0 ? "up" : "down";
     await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
     await say(J.intro.slice(0, 1));
-    Overworld.addObject(JE, { x: me.x, y: from, facing: come }, window.WORLD_SPRITES.jessie);
-    Overworld.addObject(JA, { x: other, y: from, facing: come }, window.WORLD_SPRITES.james);
-    const walk = Array(J.steps).fill("walk_" + come);
-    await Overworld.act([{ who: JE, moves: walk }, { who: JA, moves: walk }]);
+    const paths = J.enter ? J.enter(me, other) : null;
+    if (paths) {
+      // (A way of their own: B4F's, out of the elevator behind you.)
+      sfx("se_door");
+      Overworld.follower.hide(true);   // (your Pokémon back in its ball: they stop where it walked)
+      Overworld.addObject(JE, paths[0].start, window.WORLD_SPRITES.jessie);
+      Overworld.addObject(JA, paths[1].start, window.WORLD_SPRITES.james);
+      await Overworld.act([{ who: JE, moves: paths[0].moves }, { who: JA, moves: paths[1].moves }]);
+    } else {
+      Overworld.addObject(JE, { x: me.x, y: from, facing: come }, window.WORLD_SPRITES.jessie);
+      Overworld.addObject(JA, { x: other, y: from, facing: come }, window.WORLD_SPRITES.james);
+      const walk = Array(J.steps).fill("walk_" + come);
+      await Overworld.act([{ who: JE, moves: walk }, { who: JA, moves: walk }]);
+    }
     await Overworld.act([{ who: "player", moves: ["face_" + back] }]);
     await say(J.intro.slice(1));
     const team = J.team.map(([sp, lv]) => Party.create(sp, lv));
     const outcome = await battle("trainer", { foe: { name: "Rocket Jessie & James", team, pic: "jessie_james" },
       defeatText: J.defeat, prize: 54 * J.team[0][1], double: canDouble() });
-    if (outcome !== "won") return;
+    if (outcome !== "won") { Overworld.follower.hide(false); return; }
     f[J.flag] = true;
     show("world");
     await Overworld.resume();
     await say(J.after);
     // Back the way they came, and gone.
-    const leave = Array(J.steps).fill("walk_" + back).concat(["set_invisible"]);
-    await Overworld.act([{ who: JE, moves: leave }, { who: JA, moves: leave }]);
+    if (paths) {
+      const undo = { walk_up: "walk_down", walk_down: "walk_up", walk_left: "walk_right", walk_right: "walk_left" };
+      const leave = (p) => p.moves.slice().reverse().map((m) => undo[m]).concat(["set_invisible"]);
+      await Overworld.act([{ who: JE, moves: leave(paths[0]) }, { who: JA, moves: leave(paths[1]) }]);
+    } else {
+      const leave = Array(J.steps).fill("walk_" + back).concat(["set_invisible"]);
+      await Overworld.act([{ who: JE, moves: leave }, { who: JA, moves: leave }]);
+    }
     Overworld.removeObject(JE);
     Overworld.removeObject(JA);
+    Overworld.follower.hide(false);
     music((window.WORLD_MAPS[me.map] || {}).music);
   }
 
@@ -7881,12 +7904,15 @@
       const list = PRIZES[counter], menu = PRIZE_MENU[counter];
       const label = ([what]) => counter === "Mons" ? Party.speciesName(what) : counter === "TMs" ? Bag.name(machineFor(what)) : Bag.name(what);
       const short = (p) => (counter === "TMs" ? label(p).split(" ")[0] : label(p));
+      // (A TM you already have: "-----" for its price, and it can't be had twice, as at the Poké Marts.)
+      const owned = ([what]) => counter === "TMs" && Player.itemCount(player, machineFor(what)) > 0;
       const v = await multichoice(P("WhichPrize")[0], menu.left, 0, list.map((p, i) => short(p) + "{CLEAR_TO " + menu.at(i) + "}{FONT_SMALL}" +
-        (counter === "Mons" ? " " : "") + plainCoins(p[1]) + " Coins").concat(["No thanks"]));
+        (counter === "Mons" ? " " : "") + (owned(p) ? "-----" : plainCoins(p[1]) + " Coins")).concat(["No thanks"]));
       Screen.say("");
       if (v < 0 || v >= list.length) return;
       const [what, price, level] = list[v];
       const name = label(list[v]);
+      if (owned(list[v])) { await say("You already have that " + short(list[v]) + ".\nTMs and HMs never run out."); return; }
       const ok = counter === "TMs" ? await confirm(fill(P("YouWantTM")[0], ["", what])) : await confirm(fill(P("YouWantPrize")[0], [name]));
       if (!ok) return;
       if (coins() < price) { await say(P("NeedMoreCoins")); return; }
