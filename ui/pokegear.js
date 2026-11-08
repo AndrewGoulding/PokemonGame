@@ -644,6 +644,18 @@
       if (n > 0 && !J().flag("FLAG_UNK_" + (0x97B + n).toString(16).toUpperCase())) n = n - 1 > 0 ? n - 1 : 0;
       return set[n];
     }
+    // (This game's own "Rematch?", ui/game.js's trainerRematch: the team a Trainer you talk to battles as, HGSS's
+    // choice as above, whether or not they've called for it: their first tier you haven't beaten, as far as the
+    // story's let them go; their own trainer id if they've none. And what they say first.)
+    function rematchFor(id) {
+      const set = P() && P().rematch[id];
+      if (!set) return id;
+      let n = set.length - 1;
+      for (let k = 1; k < set.length; k++) if (!env.beaten(set[k])) { n = k; break; }
+      while (n > 0 && !J().flag("FLAG_UNK_" + (0x97B + n).toString(16).toUpperCase())) n--;
+      return set[n] || id;
+    }
+    const rematchIntroOf = (id, tier) => (window.WORLD_TRAINERS[tier] && tier !== id ? window.WORLD_TRAINERS[tier].intro : P() && P().rematchIntro[id]) || null;
     // Their number (HGSS's std trainer script: GetPhoneContactMsgIds 0, or 3
     // asking again): Yes, and it's in the Pokégear.
     async function askNumber(i, ask) {
@@ -687,7 +699,8 @@
         return true;
       }
       if (g.gifts[i]) { const item = g.gifts[i]; delete g.gifts[i]; await giveGift(i, item); return true; }
-      if (!registered(i)) { await askNumber(i, 4); return true; }
+      // (Asking for your number: then, after it, this game's "Rematch?" all the same.)
+      if (!registered(i)) { await askNumber(i, 4); return "asked"; }
       return false;
     }
 
@@ -1364,7 +1377,7 @@
       }
     }
 
-    return { has, open, call, registerCard, rematch, setTrigger: trigger, step, ring, wantsNumber, beatTrainer, talkTrainer, encounterRate,
+    return { has, open, call, registerCard, rematch, rematchFor, rematchIntroOf, setTrigger: trigger, step, ring, wantsNumber, beatTrainer, talkTrainer, encounterRate,
       registered, contactOf, radioOn, storyCall: (pages) => navStoryCall(pages), timeOfDay, passwordSet, savePrize, momHome, talkPerson, visible, deliveryman, radioStations,
       // (For tests: a call due on the next step; what someone says on a call.)
       callDue: () => { walked = CALL_STEPS; }, callLines: (i, incoming) => whatTheySay(i, !!incoming, null) };

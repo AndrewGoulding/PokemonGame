@@ -1349,7 +1349,13 @@ Islands') grow stronger at FireRed's VS Seeker points: once you've been to Vermi
 Champion, and finished the Sevii Islands' story, the team's best goes up to about FireRed's rematch levels there
 (20, 25, 30, 50, 55) or 2, 4, 6, 10 or 14 levels more than it was, whichever's higher, the rest with it; and each
 Pokémon that would have evolved by then has: by level as its evolution says, by a stone from Lv. 32, trading from 38,
-friendship from 35 (`rematchTeam`). Johto's and Hoenn's go by their own games' rematches; Hoenn's own Match Call
+friendship from 35 (`rematchTeam`). Johto's and Hoenn's send out the team their own games would (`rematchFoe`): a
+Johto Trainer with HGSS rematch teams battles as the Pokégear would choose (their first tier you haven't beaten, as
+far as the story lets them: the Radio Tower, the Elite Four, Blue), whether or not they've called; a Hoenn Trainer
+in Emerald's rematch table, once you've five of Hoenn's Badges (when Emerald's rematches begin), their first team
+you haven't beaten, or their last (Emerald's later teams, from pokeemerald by `node tools/build-hoenn-rematches.js`
+into `data/hoenn-rematches.js`); otherwise the same team again. A Johto Trainer who asks for your number asks first,
+then "Rematch?". Johto's phone rematches they call for still happen as before; Hoenn's own Match Call
 rematches still come first; the woman in Vermilion's Pokémon Center who gave FireRed's VS Seeker says so, and an
 old save's VS Seeker is taken out of the Bag), the woman on
 the S.S. Anne who lets you rest (the screen goes black while the healing jingle

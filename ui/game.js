@@ -3381,8 +3381,12 @@
         if (!beaten) await afterRocket(ev.person);
         if (!beaten && f[ev.person.trainer.id] && gear.wantsNumber(ev.person)) { show("world"); await Overworld.resume(); await gear.beatTrainer(ev.person); }
         if (ev.person.trainer.id === DOJO_MASTER) await dojoDenDoor();
-      } else if (await gear.talkTrainer(ev.person)) return;   // (a Johto trainer on the phone: a rematch, a gift)
-      else {
+      } else {
+        // (A Johto trainer with a phone: a rematch they called for, a gift, or asking for your number, then
+        // "Rematch?" as anyone's.)
+        const phone = await gear.talkTrainer(ev.person);
+        if (phone === "asked") { await trainerRematch(ev.person); return; }
+        if (phone) return;
         await say(dojoAfter(ev.person.trainer.id) || ev.person.trainer.after || ev.person.text || []);
         await trainerRematch(ev.person);
       }
@@ -5236,12 +5240,14 @@
     Screen.say("");
     if (pick !== 0) return;
     const text = /^EM_/.test(t.id) ? pairText(Object.assign({}, person, { trainer: Object.assign({}, t, { double: false }) })) : null;
-    const intro = (text && text.intro) || t.intro;
+    const intro = (/^HGSS_/.test(t.id) && gear.rematchIntroOf(t.id, rematchFoe(t.id))) || (text && text.intro) || t.intro;
     if (intro && [].concat(intro).length) await say(intro);
     if (!canBattle()) return;
-    const double = !!(data.double || t.double) && canDouble();
-    await battle("trainer", { foe: { name: data.className + " " + data.name, team: rematchTeam(t.id), pic: data.pic },
-      defeatText: (text && text.defeat) || t.defeat, trainerId: t.id, prizeClass: data.className, double });
+    // (Johto's and Hoenn's: the team their own game would send out: rematchFoe.)
+    const foeId = rematchFoe(t.id), foeData = window.WORLD_TRAINERS[foeId] || data;
+    const double = !!(foeData.double || data.double || t.double) && canDouble();
+    await battle("trainer", { foe: { name: foeData.className + " " + foeData.name, team: rematchTeam(foeId), pic: foeData.pic || data.pic },
+      defeatText: (text && text.defeat) || t.defeat, trainerId: foeId, prizeClass: foeData.className, double });
     show("world");
     await Overworld.resume();
     music((window.WORLD_MAPS[player.location.map] || {}).music);
@@ -5253,9 +5259,26 @@
   // levels there (REMATCH_TARGET) or a few levels more than it was (REMATCH_BUMP), whichever's higher, the rest by
   // as much. A Pokémon that would have evolved by then has: by level, as its evolution says; by a stone from
   // Lv. 32, by trading from 38, by friendship from 35 (one of several ways chosen by the Trainer, the same each
-  // time). Johto's and Hoenn's rematches are their own games' (the Pokégear's, Emerald's Match Call), and a
-  // Trainer of theirs you talk to keeps their team.
+  // time). Johto's and Hoenn's are their own games' teams (rematchFoe).
   const REMATCH_TARGET = [0, 20, 25, 30, 50, 55], REMATCH_BUMP = [0, 2, 4, 6, 10, 14];
+  // Whom a Trainer you talk to battles as, in a rematch: Kanto's as themselves (grown: rematchTeam). Johto's as HGSS
+  // would (the Pokégear's choice of tier: gear.rematchFor). Hoenn's as Emerald would (src/battle_setup.c's
+  // GetRematchTrainerIdFromTable): once you've five of Hoenn's Badges, when Emerald's rematches begin, their first
+  // team in its rematch table (HOENN_MATCH_CALL.teams; the later ones, data/hoenn-rematches.js) you haven't beaten,
+  // or their last; before that, their first. (Not the Gym Leaders', Wally's or the Elite Four's: theirs are their
+  // own scenes.) Beating that team counts it beaten, so the next time it's the next one.
+  const HOENN_REMATCH_SPECIAL = /^EM_TRAINER_(WALLY|ROXANNE|BRAWLY|WATTSON|FLANNERY|NORMAN|WINONA|TATE_AND_LIZA|JUAN|SIDNEY|PHOEBE|GLACIA|DRAKE|WALLACE)/;
+  function rematchFoe(id) {
+    if (/^HGSS_/.test(id)) return gear.rematchFor(id) || id;
+    if (!/^EM_/.test(id) || HOENN_REMATCH_SPECIAL.test(id)) return id;
+    const tiers = ((window.HOENN_MATCH_CALL || {}).teams || {})[id];
+    if (!tiers || Player.REGION_BADGES.hoenn.filter((b) => player.badges.includes(b)).length < 5) return id;
+    for (let i = 1; i < tiers.length; i++) {
+      if (!window.WORLD_TRAINERS[tiers[i]]) return tiers[i - 1];
+      if (!player.flags[tiers[i]]) return tiers[i];
+    }
+    return tiers[tiers.length - 1];
+  }
   function kantoRematchTier() {
     const f = player.flags, seen = f.visitedSections || [];
     return f.canLinkWithRS ? 5 : f.gameClear ? 4 : seen.includes("FUCHSIA_CITY") ? 3 : seen.includes("CELADON_CITY") ? 2 : seen.includes("VERMILION_CITY") ? 1 : 0;

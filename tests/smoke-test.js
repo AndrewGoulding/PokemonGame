@@ -3526,7 +3526,15 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
 {
   const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
   assert(!/fieldAction = vsSeeker/.test(gameJs) && /async function trainerRematch\(person\)/.test(gameJs) && /\["Rematch\?", "Never mind"\]/.test(gameJs));
-  assert(/const REMATCH_TARGET = \[0, 20, 25, 30, 50, 55\], REMATCH_BUMP = \[0, 2, 4, 6, 10, 14\];/.test(gameJs) && /team: rematchTeam\(t\.id\)/.test(gameJs), "Kanto's rematches grow with the story");
+  assert(/const REMATCH_TARGET = \[0, 20, 25, 30, 50, 55\], REMATCH_BUMP = \[0, 2, 4, 6, 10, 14\];/.test(gameJs) && /team: rematchTeam\(foeId\)/.test(gameJs), "Kanto's rematches grow with the story");
+  // Johto's and Hoenn's "Rematch?": their own games' teams (the Pokégear's tiers; Emerald's rematch table, its later
+  // teams from pokeemerald: data/hoenn-rematches.js).
+  assert(/const foeId = rematchFoe\(t\.id\)/.test(gameJs) && /gear\.rematchFor\(id\)/.test(gameJs));
+  for (const [first, tiers] of Object.entries(window.HOENN_MATCH_CALL.teams)) {
+    if (/WALLY|ROXANNE|BRAWLY|WATTSON|FLANNERY|NORMAN|WINONA|TATE_AND_LIZA|JUAN|SIDNEY|PHOEBE|GLACIA|DRAKE|WALLACE/.test(first)) continue;
+    for (const k of tiers) assert(WORLD_TRAINERS[k] && WORLD_TRAINERS[k].party.length && WORLD_TRAINERS[k].party.every((m) => DEX[m.species]), k);
+  }
+  assert.deepStrictEqual(WORLD_TRAINERS.EM_TRAINER_CALVIN_5.party.map((m) => m.species + m.level), ["Swellow34", "Linoone32", "Mightyena36"]);
   const old = Player.create("RED", 0);
   old.bag["vs-seeker"] = 1;
   old.flags.registered = "vs-seeker";
