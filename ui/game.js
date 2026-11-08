@@ -5719,6 +5719,7 @@
   // as item balls where they stood, and Sabrina gives hers when you talk to
   // her again.
   const megaFlag = (item) => "megaStone:" + item;
+  const hoennChampion = (f) => !!(f.hoenn && f.hoenn.f && f.hoenn.f.FLAG_SYS_GAME_CLEAR);
   const MEGA_STONE_BALLS = [
     { map: "ViridianForest", x: 3, y: 55, item: "beedrillite" },
     { map: "MtMoon_B2F", x: 46, y: 22, item: "aerodactylite" },
@@ -5737,7 +5738,28 @@
     { map: "PowerPlant", x: 11, y: 38, item: "raichunite-x" },
     { map: "PowerPlant", x: 47, y: 9, item: "raichunite-y" },
     { map: "SeafoamIslands_B4F", x: 33, y: 5, item: "starminite" },
-    { map: "SafariZone_West", x: 7, y: 15, item: "dragoninite" }
+    { map: "SafariZone_West", x: 7, y: 15, item: "dragoninite" },
+    // Hoenn's (this game's own spots, after Omega Ruby and Alpha Sapphire's stones): each where its Pokémon lives, or
+    // its Trainer; the starters' on Prof. Birch's lab's table once you're Hoenn's Champion, Steven's Metagrossite in
+    // his Mossdeep house once you've beaten him at Meteor Falls. (Latias's and Latios's come with them: latiGift.)
+    { map: "Route102", x: 11, y: 14, item: "gardevoirite", id: 1260 },
+    { map: "HoennVictoryRoad_1F", x: 41, y: 26, item: "galladite", id: 1261 },
+    { map: "GraniteCave_B2F", x: 3, y: 4, item: "mawilite", id: 1262 },
+    { map: "GraniteCave_B2F", x: 4, y: 5, item: "aggronite", id: 1263 },
+    { map: "GraniteCave_B1F", x: 14, y: 21, item: "sablenite", id: 1264 },
+    { map: "MtPyre_Exterior", x: 27, y: 14, item: "medichamite", id: 1265 },
+    { map: "MtPyre_6F", x: 5, y: 9, item: "banettite", id: 1266 },
+    { map: "NewMauville_Inside", x: 35, y: 39, item: "manectite", id: 1267 },
+    { map: "Route120", x: 20, y: 54, item: "absolite", id: 1268 },
+    { map: "ShoalCave_LowTideIceRoom", x: 11, y: 8, item: "glalitite", id: 1269 },
+    { map: "MeteorFalls_B1F_1R", x: 9, y: 5, item: "salamencite", id: 1270 },
+    { map: "Route115", x: 24, y: 38, item: "altarianite", id: 1271 },
+    { map: "MagmaHideout_4F", x: 4, y: 7, item: "cameruptite", id: 1272 },
+    { map: "AquaHideout_B2F", x: 2, y: 13, item: "sharpedonite", id: 1273 },
+    { map: "MossdeepCity_StevensHouse", x: 3, y: 3, item: "metagrossite", id: 1274, when: (f) => !!f.EM_TRAINER_STEVEN },
+    { map: "LittlerootTown_ProfessorBirchsLab", x: 8, y: 11, item: "sceptilite", id: 1275, when: (f) => hoennChampion(f) },
+    { map: "LittlerootTown_ProfessorBirchsLab", x: 9, y: 11, item: "blazikenite", id: 1276, when: (f) => hoennChampion(f) },
+    { map: "LittlerootTown_ProfessorBirchsLab", x: 10, y: 11, item: "swampertite", id: 1277, when: (f) => hoennChampion(f) }
   ].map((b, i) => Object.assign({ id: 950 + i, script: "Game_EventScript_MegaStone_" + b.item, flag: megaFlag(b.item),
     movement: "face_down", text: null, sprite: "item_ball", width: 16, height: 16, frames: 1, inanimate: true }, b));
   for (const b of MEGA_STONE_BALLS) ITEM_BALLS.add(b.script);
@@ -8729,6 +8751,15 @@
       : ["A roar came down from beyond the\nclouds, and Rayquaza descended!", "Zinnia: It came… Go on, Champion.\nIt will carry you. Ride it!"]));
     cry("Rayquaza");
     await sleep(600);
+    // (As in Omega Ruby and Alpha Sapphire: the meteorites it has eaten, and the people's wish, and it Mega Evolves;
+    // yours learns Dragon Ascent, the move that lets it.)
+    await say(["The energy of the meteorites within\nRayquaza's body began to surge…", "The Draconids' wish reached\nRayquaza!"]);
+    Screen.say("");
+    await screenFlash([255, 255, 255], 3);
+    cry("Rayquaza");
+    await say(["Rayquaza Mega Evolved into\nMega Rayquaza!"]);
+    const mine = player.party.find((r) => !r.egg && r.species === "Rayquaza");
+    if (mine && !Party.knowsMove(mine, "Dragon Ascent")) { await say(["Zinnia: Your Rayquaza… it knows the\nmove of our people's legend now."]); await learnMove(mine, "Dragon Ascent"); }
     Screen.say("");
     await Overworld.fadeToBlack();
     await RayquazaScene.play($("#overlay"), 2, { cry, sfx, music });
@@ -8767,6 +8798,13 @@
         f.delta = 2;
         await persist();
       } else await say(st >= 3 ? ["Elder: The star broke apart over\nthe sea. The story ends well, this\ntime.", "Thank you, child."] : ["Elder: Hurry to the Sky Pillar."]);
+      // (From the meteoroid on: she teaches Dragon Ascent, Lord Rayquaza's move, to a Rayquaza: Mega Rayquaza's key.)
+      if (st >= 3 && player.party.some((r) => !r.egg && r.species === "Rayquaza" && !Party.knowsMove(r, "Dragon Ascent"))) {
+        if (!(await confirm("Elder: Ah, Lord Rayquaza is with you.\nShall I teach it Dragon Ascent?"))) return true;
+        const r = await choosePartyFor("Teach which {PKMN}?", null, player.party.map((q) => (q.egg || q.species !== "Rayquaza" ? "NOT ABLE" : Party.knowsMove(q, "Dragon Ascent") ? "LEARNED" : "ABLE")));
+        show("world");
+        if (r && !r.egg && r.species === "Rayquaza" && !Party.knowsMove(r, "Dragon Ascent")) await learnMove(r, "Dragon Ascent");
+      }
       return true;
     }
     if (script === "Delta_EventScript_Zinnia") { await deltaScene("arrive:" + DELTA.TOP); return true; }
@@ -14540,7 +14578,8 @@
     setBeaten: (id, on) => { if (on) player.flags[id] = true; else delete player.flags[id]; },
     trainerBattle: (id, o) => hoennBattle(id, o),
     // (The weather the legendaries bring: Kyogre's rain, Groudon's sun, Rayquaza's winds.)
-    wildBattle: (species, level, item) => johtoBattle("wild", species, level, { weather: ({ Kyogre: "PrimordialSea", Groudon: "DesolateLand", Rayquaza: "DeltaStream" })[species] }),
+    wildBattle: (species, level, item) => johtoBattle("wild", species, level, { weather: ({ Kyogre: "PrimordialSea", Groudon: "DesolateLand", Rayquaza: "DeltaStream" })[species],
+      teach: species === "Rayquaza" ? "Dragon Ascent" : undefined }),
     warp: (mapConst, at) => hoennWarp(mapConst, at),
     setWeather: (name) => { hoennSaved = hoennKind(name); },
     decorMart: (keys) => hoennDecor.mart(keys),
@@ -15474,7 +15513,10 @@
         defeatText: data.defeat || ["…"], trainerId: id, prizeClass: data.className, double: !!data.double && canDouble() });
     } else {
       if (!window.DEX[id]) return "won";
-      outcome = await battle("wild", Object.assign({ foe: { name: "Wild", team: [wildMon(Party.create(id, level))] } }, extra));
+      const mon = wildMon(Party.create(id, level));
+      // (A move it has as Omega Ruby and Alpha Sapphire's has it: the Sky Pillar's Rayquaza, Dragon Ascent.)
+      if (extra && extra.teach && !Party.knowsMove(mon, extra.teach)) Party.teachMove(mon, extra.teach, mon.moves.length >= 4 ? 0 : undefined);
+      outcome = await battle("wild", Object.assign({ foe: { name: "Wild", team: [mon] } }, extra));
     }
     if (outcome !== "lost") { show("world"); await Overworld.resume(); }
     return outcome;

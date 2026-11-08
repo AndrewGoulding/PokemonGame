@@ -1580,6 +1580,10 @@
     // stone: Zygardite only from the Complete Forme (Legends: Z-A), and
     // Legends: Z-A's others by their megaStone map.
     megaForme(mon) {
+      // (Rayquaza's needs no stone: knowing Dragon Ascent, and not holding a Z-Crystal, as from Omega Ruby and Alpha
+      // Sapphire on.)
+      if (!mon.transformed && (mon.species === "Rayquaza" || mon.baseSpecies === "Rayquaza") && mon.moves.some((m) => m.name === "Dragon Ascent") &&
+        !(window.Z_MOVES && window.Z_MOVES.crystals && window.Z_MOVES.crystals[mon.item])) return "Rayquaza-Mega";
       const forme = MEGA_MAP[mon.item];
       if (!forme || mon.transformed) return null;
       // (A stone for several: by species, a female Meowstic's by gender.)

@@ -120,6 +120,23 @@
       ticket.splice(i + 1, 0, ["msgbox", "PlayersHouse_1F_Text_SinnohTicketToo", "MSGBOX_DEFAULT"], ["giveitem", "ITEM_SINNOH_TICKET"]);
   }
 
+  // Omega Ruby and Alpha Sapphire's Mega Evolutions, in Emerald's battles: Wally's Gallade (his Gardevoir's place, at
+  // Victory Road), Steven's Metagross (at Meteor Falls), Maxie's Camerupt (in the Magma Hideout and at the Space
+  // Center) and Archie's Sharpedo (in the Seafloor Cavern), each holding its Mega Stone; they Mega Evolve as the
+  // battle goes (game/opponent-ai.js).
+  const TR = window.WORLD_TRAINERS || {};
+  const megaAce = (id, species, stone, into) => {
+    const t = TR[id], mon = t && t.party.find((p) => p.species === species);
+    if (!mon) return;
+    if (into) { mon.species = into.species; mon.moves = into.moves; }
+    mon.item = stone;
+  };
+  for (const id of ["EM_TRAINER_WALLY_VR_1", "EM_TRAINER_WALLY_VR_2"])
+    megaAce(id, "Gardevoir", "galladite", { species: "Gallade", moves: ["Leaf Blade", "Psycho Cut", "Close Combat", "Swords Dance"] });
+  megaAce("EM_TRAINER_STEVEN", "Metagross", "metagrossite");
+  for (const id of ["EM_TRAINER_MAXIE_MAGMA_HIDEOUT", "EM_TRAINER_MAXIE_MOSSDEEP"]) megaAce(id, "Camerupt", "cameruptite");
+  megaAce("EM_TRAINER_ARCHIE", "Sharpedo", "sharpedonite");
+
   // Oldale's Mart clerk: where she's walked you, by the Mart, from now on.
   const mart = S.OldaleTown_EventScript_ExplainPokemonMart;
   if (mart && !mart.some((c) => c[0] === "setobjectxyperm")) mart.unshift(["setobjectxyperm", "LOCALID_OLDALE_MART_EMPLOYEE", 13, 7]);

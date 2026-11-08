@@ -4752,6 +4752,15 @@ assert.deepStrictEqual(["hp", "atk", "def", "spa", "spd", "spe"].map((k) => DEX.
     p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: ["Splash"] }] } });
   pika.start();
   assert(!pika.getRequest("p1").active.canMega);
+  // Mega Rayquaza: no stone, Dragon Ascent (and not with a Z-Crystal); Delta Stream as it Mega Evolves.
+  const ray = (moves, item) => { const r = new Battle({ seed: 1, p1: { name: "A", team: [{ species: "Rayquaza", level: 70, item, moves }] },
+    p2: { name: "B", team: [{ species: "Snorlax", level: 50, moves: ["Splash"] }] } }); r.start(); return r; };
+  assert(!ray(["Dragon Claw"]).getRequest("p1").active.canMega, "no Mega Rayquaza without Dragon Ascent");
+  assert(!ray(["Dragon Ascent"], "dragonium-z").getRequest("p1").active.canMega, "nor holding a Z-Crystal");
+  const rq = ray(["Dragon Ascent", "Dragon Claw"]);
+  assert(rq.getRequest("p1").active.canMega, "Dragon Ascent: Mega Rayquaza");
+  play(rq, { p1: { type: "move", move: 0, mega: true }, p2: mv(0) });
+  assert.strictEqual(rq.sides.p1.active.species, "Rayquaza-Mega");
 }
 
 // Z-Moves: a Z-Crystal turns a move of its type into its Z-Move (status moves
@@ -6558,9 +6567,19 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
     // (Cerulean Cave's B1F is reached by water).
     const starts = m.warps.flatMap((w) => [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]].map(([dx, dy]) => ({ map: b.map, x: w.x + dx, y: w.y + dy })));
     if (b.map === "CeruleanCave_B1F") starts.push({ map: b.map, x: 7, y: 13 });
+    // (A route walked into over its edge: from its edges' open tiles.)
+    if (!m.warps.length || m.connections.length) for (let x = 0; x < m.width; x++) for (let y = 0; y < m.height; y++)
+      if ((x === 0 || y === 0 || x === m.width - 1 || y === m.height - 1) && !m.collision[y * m.width + x]) starts.push({ map: b.map, x, y });
     assert(starts.some((s) => World.walkable(s, occupied, 9999).has(b.x + "," + b.y)), b.item + " is reachable");
   }
   assert(/when: \(f\) => f\.foughtMewtwo/.test(gameJs), "Mewtwonites once Mewtwo is caught or beaten");
+  // Hoenn's Mega Stones (Omega Ruby and Alpha Sapphire's), and the Megas of Wally, Steven, Maxie and Archie.
+  for (const id of ["sceptilite", "blazikenite", "swampertite", "gardevoirite", "galladite", "mawilite", "aggronite", "medichamite", "manectite",
+    "sharpedonite", "cameruptite", "altarianite", "sablenite", "banettite", "absolite", "glalitite", "metagrossite", "salamencite"]) assert(all.has(id), id + " can be found");
+  const TR = WORLD_TRAINERS;
+  for (const [id, sp, stone] of [["EM_TRAINER_WALLY_VR_1", "Gallade", "galladite"], ["EM_TRAINER_STEVEN", "Metagross", "metagrossite"],
+    ["EM_TRAINER_MAXIE_MAGMA_HIDEOUT", "Camerupt", "cameruptite"], ["EM_TRAINER_ARCHIE", "Sharpedo", "sharpedonite"]])
+    assert(/megaAce\(/.test(fs.readFileSync(path.join(root, "ui/hoenn-changes.js"), "utf8")) && TR[id], id + ": " + sp + " @ " + stone);
 }
 console.log("ok: Gen 7, " + GEN7 + " random battles finished (" + gen7Turns + " turns)");
 console.log("ok: Gen 8, " + GEN8 + " random battles finished (" + gen8Turns + " turns)");

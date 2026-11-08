@@ -1864,8 +1864,10 @@
         const into = /into (Mega [^.]+)\./.exec(((window.ITEMS || {})[c] || {}).effect || "");
         const change = battle.events.slice(cursor).find((e) => e[0] === "detailschange" && e[1] === a);
         const trainer = battle.sides[side].name;
+        // (Rayquaza's, with no stone: Omega Ruby and Alpha Sapphire's words for it.)
+        const ray = change && change[2] === "Rayquaza-Mega";
         return async () => {
-          await message(fill("{who}'s " + ballName(c) + " is reacting to " + trainer + "'s Mega Ring!", a));
+          await message(ray ? fill(trainer + "'s fervent wish has\nreached {who}!", a) : fill("{who}'s " + ballName(c) + " is reacting to " + trainer + "'s Mega Ring!", a));
           await megaEvolution(pos, change && change[2]);
           await message(fill("{who} has Mega Evolved into " + (into ? into[1] : "Mega " + b) + "!", a));
         };
