@@ -478,11 +478,16 @@
   // (Orre's, this game's own: one cap for the whole prologue, while you're with Team Snagem, 26;
   // player.flags.orreLevelCap raises it, for Colosseum's story proper.)
   const ORRE_LEVEL_CAP = 26;
+  // (This game's own: Kanto's Trainers a little stronger as you go, from Brock's Badge on: +1 level with one Badge,
+  // up to +5 with seven or more; Kanto's caps go up with them.)
+  const KANTO_TRAINER_BONUS = [0, 1, 2, 2, 3, 4, 4, 5, 5];
+  const kantoBadges = (player) => REGION_BADGES.kanto.filter((b) => (player.badges || []).includes(b)).length;
+  const kantoTrainerBonus = (player) => KANTO_TRAINER_BONUS[kantoBadges(player)] || 0;
   function levelCap(player, map) {
     if (regionOf(map || (player.location && player.location.map)) === "orre") return (player.flags && player.flags.orreLevelCap) || ORRE_LEVEL_CAP;
     const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
     const n = REGION_BADGES[region].filter((b) => (player.badges || []).includes(b)).length;
-    return n < LEVEL_CAPS[region].length ? LEVEL_CAPS[region][n] : 100;
+    return n < LEVEL_CAPS[region].length ? LEVEL_CAPS[region][n] + (region === "kanto" ? KANTO_TRAINER_BONUS[n] : 0) : 100;
   }
 
   // The game's clock (this game's own: no real-time clock). Time goes by as
@@ -542,7 +547,7 @@
   window.Player = {
     newGamePlus, KEPT_KEY_ITEMS,
     STEPS_PER_HOUR, STEPS_PER_DAY, gameTime, advanceClock,
-    REGION_BADGES, LEVEL_CAPS, levelCap,
+    REGION_BADGES, LEVEL_CAPS, levelCap, kantoTrainerBonus,
     VERSION, LOOKS, PLAYER_LOOK, RIVAL_NAME, PARTY_SIZE, BOX_COUNT, BOX_SIZE, STARTING_MONEY, STARTING_BAG, STARTING_PC_ITEMS, NEW_GAME_LOCATION, HOME, CENTERS,
     create, markSeen, markCaught, hasCaught, nationalDex, KANTO_DEX_COUNT, dexNumber, dexCount, dexRating, hasAllMons, receive, deposit, withdraw, swapWithBox, healBoxes, release, boxCount, firstEmpty, boxed,
     itemCount, addItem, removeItem, depositItem, withdrawItem, addMoney, prizeMoney, blackoutLoss, serialize, load

@@ -5404,7 +5404,8 @@ for (let seed = 1; seed <= GEN9; seed++) {
   p.location = { map: "PalletTown", x: 5, y: 5 };
   assert.strictEqual(Player.levelCap(p), 14, "Brock's Onix");
   p.badges = ["boulder", "cascade", "thunder"];
-  assert.strictEqual(Player.levelCap(p), 29, "Erika's Vileplume");
+  assert.strictEqual(Player.levelCap(p), 29 + 2, "Erika's Vileplume, and the 2 levels Kanto's Trainers have on with 3 Badges");
+  assert.deepStrictEqual([0, 1, 4, 7, 8].map((n) => Player.kantoTrainerBonus({ badges: Player.REGION_BADGES.kanto.slice(0, n) })), [0, 1, 3, 5, 5]);
   p.badges = Player.REGION_BADGES.kanto.slice();
   assert.strictEqual(Player.levelCap(p), 100);
   assert.strictEqual(Player.levelCap(p, "Route29"), 13, "Johto goes by Johto's Badges: Falkner's Pidgeotto");

@@ -369,6 +369,15 @@
     const wildDouble = wild && !!opts.wildDouble && foe.team.length > 1;
     const double = wildDouble || (!wild && !opts.safari && !!(opts.double || opts.partner || foe2));
     if (!wild) for (const r of foe.team.concat(foe2 ? foe2.team : [])) delete r.shiny;   // trainers' Pokémon are never shiny
+    // (Kanto's Trainers, from Brock's Badge on, a level or more higher: Player.kantoTrainerBonus. Not the battles of
+    // the Trainer Tower, the Stadium and the like, nor a random Trainer.)
+    const here0 = player.location && window.WORLD_MAPS[player.location.map];
+    const bonus = !wild && opts.foe && !opts.noExp && !(here0 && here0.region) ? Player.kantoTrainerBonus(player) : 0;
+    if (bonus) for (const r of foe.team.concat(foe2 ? foe2.team : [])) {
+      r.level = Math.min(100, r.level + bonus);
+      r.exp = Experience.expForLevel(Experience.growthRate(r.species), r.level);
+      r.hp = Party.maxHp(r);
+    }
     // (This game's own: one wild Pokémon in ten is a Tera Pokémon, of a random
     // Tera Type, already Terastallized when it appears; beat it for Tera Shards,
     // or catch it and it keeps its Tera Type. Not in the Safari Zone, a raid
@@ -6274,7 +6283,13 @@
       flag: "jessieJamesTower", team: [["Meowth", 27], ["Arbok", 27], ["Weezing", 27]],
       // (Only while Mr. Fuji's still held there.)
       due: (f, at) => !f.rescuedMrFuji && at.y === 12 && at.x >= 10 && at.x <= 12 && at.facing === "up",
-      cols: [10, 12], dy: -1, steps: 3,
+      cols: [10, 12], dy: 1, steps: 3,
+      // (Up the stairs from 6F behind you, round and up to stand behind you.)
+      enter: (me, other) => [me.x, other].map((x, i, both) => {
+        const sx = x <= both[1 - i] ? 11 : 12;
+        return { start: { x: sx, y: 16, facing: "up" },
+          moves: ["walk_up", "walk_up"].concat(Array(Math.abs(x - sx)).fill(x < sx ? "walk_left" : "walk_right"), ["walk_up"]) };
+      }),
       intro: ["Jessie: Stop right there!", "James: Grampa here wanted to\ncomplain, so we're setting him\nstraight.",
         "Jessie: So render yourself invisible,\nor prepare to fight!"],
       defeat: ["James: You will regret this!"],
@@ -6309,7 +6324,7 @@
     const paths = J.enter ? J.enter(me, other) : null;
     if (paths) {
       // (A way of their own: B4F's, out of the elevator behind you.)
-      sfx("se_door");
+      sfx(me.map === "PokemonTower_7F" ? "se_exit" : "se_door");
       Overworld.follower.hide(true);   // (your Pokémon back in its ball: they stop where it walked)
       Overworld.addObject(JE, paths[0].start, window.WORLD_SPRITES.jessie);
       Overworld.addObject(JA, paths[1].start, window.WORLD_SPRITES.james);
@@ -6430,7 +6445,8 @@
   // from the others with you, down the floor, to battle you (their aces
   // Terastallize; the others battle off screen), and goes back to their
   // place; after each, Oak comes down to heal your Pokémon and goes back to
-  // his. Lose one and you black out as usual, and the
+  // his, while you stay where you are till all three are done (your Pokémon
+  // back in its Ball the whole time: there's no room). Lose one and you black out as usual, and the
   // test starts over when you come back. Win all three and you go up to Oak
   // for the Mega Ring and the Kanto starters' Mega Stones, and Leaf, Gary and
   // Red each step up for a Mega Ring of their own; then Red, Leaf,
@@ -6634,6 +6650,14 @@
   async function megaTower() {
     const f = player.flags, beaten = f.megaBeaten || (f.megaBeaten = {});
     const OAK_ = MEGA_CAST.oak, FUJI = MEGA_CAST.fuji;
+    // (Your Pokémon back in its Ball first: there's little room up here. Out again once it's all over.)
+    if (follower.look(player.location.map)) {
+      const lead = player.party.find((r) => !r.egg && !Party.isFainted(r));
+      await say("{PLAYER} returned " + (lead ? Party.displayName(lead) : "the Pokémon") + " to its\nPoké Ball. It's crowded up here.");
+      Screen.say("");
+      sfx("se_ball");
+    }
+    Overworld.follower.hide(true);
     music("mus_oak");
     // Up the aisle, to stand before Prof. Oak, and everyone looks to him.
     await walkTo("player", MEGA_SPOT, "up");
@@ -6675,7 +6699,7 @@
       const outcome = await battle("trainer", { foe: { name: r.name(), team, pic: r.pic, tera: !!r.tera }, defeatText: r.defeat,
         prize: 36 * team[team.length - 1].level });
       // (Blacked out: the whole test again next time.)
-      if (outcome !== "won") { delete f.megaBeaten; await persist(); return; }
+      if (outcome !== "won") { delete f.megaBeaten; Overworld.follower.hide(false); await persist(); return; }
       show("world");
       await Overworld.resume();
       beaten[r.key] = true;
@@ -6687,7 +6711,7 @@
       player.party.forEach(Party.heal);
       await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
       await walkTo(OAK_, { x: ox, y: oy }, "down");
-      await walkTo("player", MEGA_SPOT, "up");
+      // (You stay where you are, down the floor, till all three are done.)
     }
     music("mus_oak");
     await say(["Oak: Splendid! Simply splendid!",
@@ -6738,10 +6762,7 @@
     await megaLeaves(GARY);
     music("mus_oak");
     await say(["Oak: Well! I must get back to my\nresearch. There's still so much to\nlearn about Mega Evolution!",
-      "{PLAYER}, keep training, and keep\nfilling in that Pokédex! I'll be\ncalling on you again.",
-      "Oh! And let me heal your Pokémon\nbefore I go."]);
-    player.party.forEach(Party.heal);
-    await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
+      "{PLAYER}, keep training, and keep\nfilling in that Pokédex! I'll be\ncalling on you again."]);
     await megaLeaves(OAK_);
     music((window.WORLD_MAPS[player.location.map] || {}).music);
     // Mr. Fuji, last: he comes over to you.
@@ -6756,6 +6777,7 @@
     await say(["Mr. Fuji: It is the Mega Stone for\nGengar. Treat it kindly.",
       "Now, I must return to the Pokémon\nHouse. The little ones will be\nwaiting for me."]);
     await megaLeaves(FUJI);
+    Overworld.follower.hide(false);
     f.megaTowerDone = true;
     await persist();
   }
