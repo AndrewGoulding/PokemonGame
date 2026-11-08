@@ -360,8 +360,10 @@
   // defeatText, prizeClass }: a second opposing trainer beside the first.
   // Returns the outcome ("cancelled" when you back out of choosing).
   let lastRecord = null;   // (the last battle's record, if it was asked for: the Battle Frontier's, for the Frontier Pass)
+  let battleCount = 0;   // (how many battles so far: whether a script battled)
   async function battle(kind, opts) {
     opts = opts || {};
+    battleCount++;
     const wild = kind === "wild";
     const foe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
     const foe2 = !wild && opts.foe2 || null;
@@ -477,7 +479,6 @@
       // (The League's trainers' flags are cleared each time it starts over: League.reset. This keeps
       // that you've beaten them, for the raids' invitations: game/raid-dens.js.)
       if (/^TRAINER_(ELITE_FOUR|CHAMPION)_/.test(opts.trainerId)) (player.flags.leagueEverBeaten || (player.flags.leagueEverBeaten = {}))[opts.trainerId] = true;
-      if (player.flags.vsRematch) delete player.flags.vsRematch[opts.trainerId];
     }
     if (result.outcome === "won" && !wild && !opts.noPrize) {
       // (Each opposing trainer's, doubled in a double battle, as FireRed's.)
@@ -979,9 +980,9 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "vs-seeker", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
-  const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "vs-seeker", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
+  const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "tin-bottle-cap" || item === "zygarde-cube" ||
@@ -999,7 +1000,6 @@
     if (item === "pokeblock-case") { await hoennPokeblock.menu(); return null; }   // (Hoenn's Pokéblocks: ui/hoenn-pokeblock.js)
     if (item === "berry-pouch") return (await berryPouch()) ? "escaped" : null;
     if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
-    if (item === "vs-seeker") { fieldAction = vsSeeker; return "escaped"; }
     if (item === "bicycle") { fieldAction = bicycle; return "escaped"; }
     if (item === "eon-flute") {
       // (Outdoors in Hoenn, with your Latias or Latios: soaring, ui/soaring.js.)
@@ -1065,41 +1065,6 @@
     await say(["Huh?\nThe Itemfinder's responding!", "There's an item buried around here!"]);
   }
 
-  // The VS Seeker (FireRed's src/vs_seeker.c, but charged by 50 steps, not
-  // 100): it signals the trainers on screen. One you haven't beaten shows
-  // "!"; one you have always wants a rematch ("!!") and stays put, facing the
-  // way they were, until you beat them or leave the map (with the same team,
-  // for now).
-  const VS_SEEKER_CHARGE = 50;
-  async function vsSeeker() {
-    const f = player.flags;
-    const steps = f.vsSeekerSteps == null ? VS_SEEKER_CHARGE : f.vsSeekerSteps;
-    if (steps < VS_SEEKER_CHARGE) {
-      await say(["The battery isn't charged enough.", "No. of steps required to fully\ncharge the battery: " + (VS_SEEKER_CHARGE - steps)]);
-      return;
-    }
-    const at = Overworld.position();
-    const near = Overworld.people().filter((p) => p.def.trainer && p.def.trainer.id && TRAINER_SCRIPTS.has(p.def.script) &&
-      Math.abs(p.x - at.x) <= 7 && Math.abs(p.y - at.y) <= 5);
-    if (!near.length) { await say(["There are no Trainers within range\nwho can battle…", "The VS Seeker was turned off."]); return; }
-    const rematch = f.vsRematch || (f.vsRematch = {});
-    const tracks = [], ready = [];
-    for (const p of near) {
-      const id = p.def.trainer.id, who = "#" + p.def.id;
-      if (!f[id] || rematch[id]) { tracks.push({ who, moves: [f[id] ? "emote_double_excl_mark" : "emote_exclamation_mark"] }); continue; }
-      // (Kept by facing, so they stay that way after a battle or the menu.)
-      ready.push(id);
-      rematch[id] = p.facing || "down";
-      Overworld.lockPerson(p.def.id, rematch[id]);
-      tracks.push({ who, moves: ["walk_in_place_faster_" + rematch[id], "emote_double_excl_mark"] });
-    }
-    sfx("se_pin");
-    if (ready.length) f.vsSeekerSteps = 0;
-    await Overworld.act(tracks);
-    if (!ready.length && !near.some((p) => !f[p.def.trainer.id] || rematch[p.def.trainer.id])) {
-      await say(["The other Trainers don't appear\nto be ready for battle.", "Let's wait till later."]);
-    }
-  }
   // Every 200 steps, each Pokémon in the party grows a little friendlier
   // (FireRed's UpdateFriendshipStepCounter is every 128 steps, half the time).
   const FRIENDSHIP_STEPS = 200;
@@ -1109,10 +1074,7 @@
     if (f.friendshipSteps) return;
     for (const r of player.party) if (!r.egg) Party.adjustFriendship(r, "walking", player.location.map);
   }
-  function vsSeekerStep() {
-    const f = player.flags;
-    if (f.vsSeekerSteps != null && f.vsSeekerSteps < VS_SEEKER_CHARGE) f.vsSeekerSteps++;
-  }
+
 
   // Johto's Town Map (window.JOHTO_TOWN_MAP, at the end of data/johto-maps.js:
   // tools/build-johto-town-map.js): HGSS's Pokégear map drawn in FireRed's
@@ -3025,11 +2987,9 @@
   SPECIAL.add("LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter"); SPECIAL.add("FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner");
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
-  // (or, signalled by the VS Seeker, want a rematch)
   // (or, once you're Champion, the Fighting Dojo wants its rematch: dojoRematch())
   const trainerWaiting = (person) => !!(person.trainer && person.trainer.id &&
-    (!player.flags[person.trainer.id] || (player.flags.vsRematch && player.flags.vsRematch[person.trainer.id]) ||
-      dojoRematch(person.trainer.id)));
+    (!player.flags[person.trainer.id] || dojoRematch(person.trainer.id)));
 
   function visible(person, map) {
     if (isHoenn(map || player.location.map)) { const dv = deltaVisible(person); if (dv !== undefined) return dv; const b = hoennBerries.visible(person, map || player.location.map); return b !== undefined ? b : hoennVisible(person, map || player.location.map); }
@@ -3062,9 +3022,6 @@
     if (person.flag && tempFlags.has((map || player.location.map) + ":" + person.flag)) return false;   // (a tree you've cut)
     const spot = person.trainer && f.trainerSpots && f.trainerSpots[person.trainer.id];
     if (spot) return { x: spot.x, y: spot.y, movement: "face_" + spot.facing };
-    // Waiting for a rematch from the VS Seeker: standing still, facing one way.
-    const rematchFacing = person.trainer && f.vsRematch && f.vsRematch[person.trainer.id];
-    if (rematchFacing) return { movement: "face_" + (rematchFacing === true ? "down" : rematchFacing) };
     // Miguel stays by the fossil he took (FireRed's copyobjectxytoperm).
     if (person.script === "MtMoon_B2F_EventScript_Miguel" && f.mtMoonFossil) return { x: f.mtMoonFossil === "dome-fossil" ? 14 : 13, y: 8, movement: "face_up" };
     // Daisy sits at the table, before and after giving you the Town Map.
@@ -3353,7 +3310,14 @@
       if (due) { await outOfDoorway(); await runHoenn(due, null); }
       return;
     }
-    { const hs = hoennScriptFor(ev); if (hs) { await runHoenn(hs, ev.person); return; } }
+    { const hs = hoennScriptFor(ev); if (hs) {
+      // (A Hoenn Trainer you'd beaten: after what their script says, if it battled nothing (Emerald's own rematches
+      // do), the rematch offer.)
+      const t = ev.person && ev.person.trainer, was = t && !!player.flags[t.id], n = battleCount;
+      await runHoenn(hs, ev.person);
+      if (was && battleCount === n && TRAINER_SCRIPTS.has(script)) await trainerRematch(ev.person);
+      return;
+    } }
 
     // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
     if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await outOfDoorway(); await runJohto(due, null); return; } }
@@ -3418,7 +3382,10 @@
         if (!beaten && f[ev.person.trainer.id] && gear.wantsNumber(ev.person)) { show("world"); await Overworld.resume(); await gear.beatTrainer(ev.person); }
         if (ev.person.trainer.id === DOJO_MASTER) await dojoDenDoor();
       } else if (await gear.talkTrainer(ev.person)) return;   // (a Johto trainer on the phone: a rematch, a gift)
-      else await say(dojoAfter(ev.person.trainer.id) || ev.person.trainer.after || ev.person.text || []);
+      else {
+        await say(dojoAfter(ev.person.trainer.id) || ev.person.trainer.after || ev.person.text || []);
+        await trainerRematch(ev.person);
+      }
       return;
     }
 
@@ -3529,17 +3496,11 @@
         await say(T("SSAnne_1F_Room6_Text_GladEveryoneIsRefreshed"));
         return;
 
-      // The woman in Vermilion's Pokémon Center who gives you the VS Seeker.
-      case "VermilionCity_PokemonCenter_1F_EventScript_VSSeekerWoman": {
-        const V = (label) => T("VermilionCity_PokemonCenter_1F_Text_" + label);
-        if (f.gotVsSeeker) { await say(V("ExplainVSSeeker")); return; }
-        await say(V("UrgeToBattleSomeoneAgain"));
-        Player.addItem(player, "vs-seeker");
-        f.gotVsSeeker = true;
-        await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the VS Seeker!");
-        await say(V("UseDeviceForRematches"));
+      // The woman in Vermilion's Pokémon Center who gave you FireRed's VS Seeker: there's none in this game, a
+      // Trainer you've beaten offers a rematch when you talk to them (trainerRematch).
+      case "VermilionCity_PokemonCenter_1F_EventScript_VSSeekerWoman":
+        await say(["Do you ever get the urge to battle a\nTrainer you've beaten before?", "Just go and talk to them! Trainers love\na rematch. They'll battle you again\nany time you ask."]);
         return;
-      }
 
       case "PalletTown_PlayersHouse_2F_EventScript_PC":
         // Your own PC at home holds items, as in FireRed (BedroomPC).
@@ -5264,14 +5225,34 @@
         { map: player.location.map, x: person.x + dx * approach, y: person.y + dy * approach, facing };
     }
   }
+  // A Trainer you've beaten (this game's own, in place of FireRed's VS Seeker): when you talk to them they say
+  // their line, then "Rematch?" or "Never mind". A rematch is the same battle again, their intro and team; win or
+  // lose, nothing else changes (they've been beaten already). Not in Orre, a Battle Pyramid's or the Fighting
+  // Dojo's (which has its own: dojoRematch).
+  async function trainerRematch(person) {
+    const t = person.trainer, data = t && window.WORLD_TRAINERS[t.id];
+    if (!data || !data.party || person.pyramid != null || (window.WORLD_MAPS[player.location.map] || {}).region === "orre") return;
+    const pick = await multichoice(null, 0, 0, ["Rematch?", "Never mind"]);
+    Screen.say("");
+    if (pick !== 0) return;
+    const text = /^EM_/.test(t.id) ? pairText(Object.assign({}, person, { trainer: Object.assign({}, t, { double: false }) })) : null;
+    const intro = (text && text.intro) || t.intro;
+    if (intro && [].concat(intro).length) await say(intro);
+    if (!canBattle()) return;
+    const double = !!(data.double || t.double) && canDouble();
+    await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(t.id), pic: data.pic },
+      defeatText: (text && text.defeat) || t.defeat, trainerId: t.id, prizeClass: data.className, double });
+    show("world");
+    await Overworld.resume();
+    music((window.WORLD_MAPS[player.location.map] || {}).music);
+  }
   // Two trainers who see you at once (Overworld's `second`): both walk up, one then the other, as Emerald's do, and
   // it's a double battle against the two of them, in every region but Orre (where every battle is a double). Not
   // for a trainer who battles two on their own, a rematch, the Battle Pyramid's or one buried in the sand; nor with
   // fewer than two Pokémon able to battle. Then (false) the first one comes alone, and the other after.
   function pairText(person) {
     const t = person.trainer, data = t && window.WORLD_TRAINERS[t.id];
-    if (!data || data.double || t.double || t.buried || person.pyramid != null || dojoRematch(t.id) ||
-      (player.flags.vsRematch && player.flags.vsRematch[t.id])) return null;
+    if (!data || data.double || t.double || t.buried || person.pyramid != null || dojoRematch(t.id)) return null;
     if (!/^EM_/.test(t.id)) return { intro: t.intro || [], defeat: t.defeat || ["…"] };
     // (Hoenn's: what its trainerbattle says, from Emerald's script.)
     const c = (window.HOENN_SCRIPTS.s[person.script] || []).find((op) => /^trainerbattle/.test(op[0]));
@@ -16135,7 +16116,7 @@
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
         onStep: () => {
           Player.advanceClock(player);   // (the game's clock: Player.gameTime)
-          leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); DayCare.step(player.flags.johtoDayCare); vsSeekerStep(); friendshipStep();
+          leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); DayCare.step(player.flags.johtoDayCare); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
@@ -16147,7 +16128,6 @@
         onMap: (m) => {
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
-          if (m !== tempFlagsMap) delete player.flags.vsRematch;   // (rematches last while you stay on the map)
           if (m !== tempFlagsMap) strengthOn = false;
           // (Flying, blacking out or teleporting out of the Safari Zone ends the
           // Safari Game: Overworld_ResetStateAfterFly and the like.)

@@ -3521,12 +3521,17 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
   assert(Math.abs(hz(J.songs.gs_t_wakaba.bank, psg) - 440) < 4, "PSG A4: " + hz(J.songs.gs_t_wakaba.bank, psg));
 }
 
-// The VS Seeker: a key item with FireRed's picture and description, given in
-// Vermilion's Pokémon Center; the S.S. Anne's resting woman's lines are there too.
+// No VS Seeker (this game's own): a Trainer you've beaten offers "Rematch?" when you talk to them; an old save's
+// VS Seeker is taken out of the Bag. The S.S. Anne's resting woman's lines are there.
 {
-  assert(window.ITEMS["vs-seeker"] && Bag.isKeyItem("vs-seeker") && Bag.sprite("vs-seeker") && window.ITEM_DESCRIPTIONS["vs-seeker"]);
-  assert.strictEqual(Bag.name("vs-seeker"), "VS Seeker");
-  for (const l of ["UrgeToBattleSomeoneAgain", "UseDeviceForRematches", "ExplainVSSeeker"]) assert(window.WORLD_TEXT["VermilionCity_PokemonCenter_1F_Text_" + l], l);
+  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  assert(!/fieldAction = vsSeeker/.test(gameJs) && /async function trainerRematch\(person\)/.test(gameJs) && /\["Rematch\?", "Never mind"\]/.test(gameJs));
+  const old = Player.create("RED", 0);
+  old.bag["vs-seeker"] = 1;
+  old.flags.registered = "vs-seeker";
+  old.party = [Party.create("Pikachu", 5)];
+  const back = Player.load(JSON.parse(Player.serialize(old))).player;
+  assert(!back.bag["vs-seeker"] && back.flags.registered !== "vs-seeker", "an old save's VS Seeker is gone");
   for (const l of ["TakeAShortRest", "GladEveryoneIsRefreshed", "SorryYouLookLikeMyBrother", "SorryYouLookLikeMySister"]) assert(window.WORLD_TEXT["SSAnne_1F_Room6_Text_" + l], l);
 }
 

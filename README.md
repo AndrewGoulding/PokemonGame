@@ -1342,12 +1342,11 @@ ship sailing off when you next step onto the dock, Turner's trade in Route 11's
 gate (Nina the Nidorina for a Nidorino), Prof. Oak's aide there with the
 Itemfinder for thirty kinds of Pokémon caught (use it from the Bag: within 7
 steps across and 5 up or down of a hidden item it responds and you turn toward
-the nearest; standing on one, you dig it up), the woman in Vermilion's
-Pokémon Center with the VS Seeker (use it from the Bag once charged by 50
-steps, half FireRed's 100: trainers on screen you haven't beaten show "!", and
-ones you have always want a rematch, "!!"; they stop where they are, facing the
-way they were (as FireRed does, so wanderers stop wandering), and battle you
-again, with the same team, until you beat them or leave the map), the woman on
+the nearest; standing on one, you dig it up), rematches without a VS
+Seeker (this game's own: there's none; talk to a Trainer you've already beaten, in any region but Orre, and after
+their line comes "Rematch?" or "Never mind": the same battle again, their intro and team; Hoenn's own Match Call
+rematches still come first; the woman in Vermilion's Pokémon Center who gave FireRed's VS Seeker says so, and an
+old save's VS Seeker is taken out of the Bag), the woman on
 the S.S. Anne who lets you rest (the screen goes black while the healing jingle
 plays, as with Red's Mom), the Tradeback Guy upstairs
 in every Pokémon Center (he trades you a Lv. 5 Rattata for your Pokémon and

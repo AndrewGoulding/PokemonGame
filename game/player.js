@@ -412,6 +412,10 @@
     if (player.flags.gotEventTickets) delete player.bag["aurora-ticket"];
     // (HGSS's Berry Pots, from Route 36's Floria, are gone: the game had nothing for them to do.)
     delete player.bag["berry-pots"];
+    // (The VS Seeker is gone: a Trainer you've beaten offers a rematch when you talk to them.)
+    delete player.bag["vs-seeker"];
+    if (player.flags.registered === "vs-seeker") delete player.flags.registered;
+    delete player.flags.vsRematch; delete player.flags.vsSeekerSteps;
     if (player.pcItems) delete player.pcItems["berry-pots"];
     for (const k of ["gotEventTickets", "enableShipNavelRock", "enableShipBirthIsland", "shownMysticTicket", "shownAuroraTicket",
       "worldMapNavelRock", "worldMapBirthIsland", "foughtHoOh", "hoOhFlewAway", "foughtLugia", "lugiaFlewAway", "foughtDeoxys", "deoxysFlewAway"]) delete player.flags[k];
