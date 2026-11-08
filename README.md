@@ -1320,7 +1320,7 @@ Magikarp salesman, Super Nerd Miguel and the Mt. Moon fossils, Jessie & James
 climbing down the last ladder in Mt. Moon as in Yellow (a double battle; they're back,
 as in Yellow and each time a double battle, on Rocket Hideout B4F on the way to Giovanni,
 walking up behind you out of the elevator, with Koffing, Meowth and Ekans at 25, on Pokémon Tower 7F before Mr. Fuji with Meowth,
-Arbok and Weezing at 27, and on Silph Co. 11F just off the warp pad from 7F with
+Arbok and Weezing at 27, coming up the stairs behind you, and on Silph Co. 11F just off the warp pad from 7F with
 Weezing, Arbok and Meowth at 31), Gary in Cerulean (FireRed's team, with
 his Eevee, which knows Shadow Ball and Terastallizes into a Ghost type), the Nugget Bridge Rocket (a Nugget, then a battle), the Rocket in
 the robbed house's yard (beat him and he gives back TM28 Dig), the Day-Care
@@ -1493,9 +1493,11 @@ by her starter, then her starter's second stage; Lv. 27-31), Gary (Pidgeotto,
 Growlithe, Gyarados, Exeggutor, Umbreon) and Red (Pikachu, Charmeleon,
 Wartortle, Ivysaur, Espeon). Each one's ace Terastallizes as before: Leaf's
 Butterfree into a Flying type, Gary's Umbreon into a Ghost type and Red's Pikachu,
-knowing Surf, into a Water type. Oak heals your Pokémon before the first battle,
-and after each one he walks down to you to heal them and goes back to his
-place, and you go back to yours. You have to
+knowing Surf, into a Water type. Your Pokémon goes back in its Ball before it
+all starts (it's crowded up there) and stays there till the end. Oak heals your
+Pokémon before the first battle, and after each one he walks down to you to heal
+them and goes back to his place; you stay down the floor, where you battle, till
+all three are done. You have to
 win all three: lose one and you black out as usual, and the test starts over
 when you come back. Win them all and you step up to Oak for the Mega Ring and
 the Kanto starters' Mega Stones (Venusaurite, Charizardite X and Y,
@@ -3514,11 +3516,15 @@ node tools/build-sinnoh.js <path to the Essentials project>
   (all of its share, or what's over the cap) goes, shared out evenly, to the
   party's Pokémon that can still gain Exp. Points ("The Exp. Share passed on the
   Exp. Points that couldn't be gained!"); with the Exp. Share off it's lost.
+- **Kanto's Trainers grow with you** (this game's own): from Brock's Badge on, every Trainer you battle in Kanto
+  (the Sevii Islands too) has Pokémon a little higher-levelled than FireRed's: +1 with one Badge, +2 with two or
+  three, +3 with four, +4 with five or six and +5 with seven or eight (`Player.kantoTrainerBonus`). Not the Trainer
+  Tower's, the Stadium's or the like. Kanto's level caps go up by the same, so you can keep up.
 - **Level caps** (this game's own: the adventure goes region by region,
   Kanto, then Johto, then the rest): in a region, your Pokémon grow no further
   than its cap for the Badges you have of that region's eight: the level of the
   next Gym Leader's ace (in Kanto Lv. 14 with none, Brock's Onix, then 21, 24, 29,
-  43, 43, 47 and 50; in Johto 13, 17, 19, 25, 31, 35, 35 and 41, Pryce's 34 under
+  43, 43, 47 and 50, each with the levels Kanto's Trainers have gained by then (below); in Johto 13, 17, 19, 25, 31, 35, 35 and 41, Pryce's 34 under
   Jasmine's 35; in Hoenn 15, 19, 24, 29, 31, 33, 42 and 46), and no cap with all
   eight (`Player.levelCap`). Kanto's side places (the Sevii Islands, Stadium Island, Orre, Faraway
   Island, and everything east of New Bark Town: Route 27, Tohjo Falls, Route 26,
