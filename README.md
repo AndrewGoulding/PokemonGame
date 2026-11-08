@@ -3222,6 +3222,24 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   up to 40. Two of the mountain's Trainers, Cipher Peons Turo and Berin on the slopes, and at the summit Cipher Admin
   **Dakim** (Shadow Entei, Lv. 40, with Golem, Claydol and Marowak), who has beaten Area Leader Vander for his Time
   Flute. Beaten, Dakim pulls out and sends Skrub off to "Ein's lab"; Vander gives you the **Time Flute** (a key item).
+- **The Under** (`orreStory` 33 to 36; new, drawn in `tools/build-orre.js`: the dark town under Pyrite, its stairs down in
+  Pyrite's bottom-left shack, lamps, tin shacks, a Pokémon Center, the subway platform and tracks, and Venus's TV
+  studio). After Mt. Battle Duking calls about a creepy Pokémon on Venus's show. Cipher Peon Kloak (Shadow Ledian)
+  guards the studio; inside (Emerald's Contest hall), Cipher Admin **Venus** (Shadow Suicune, Lv. 40) lets slip where
+  Shadow Pokémon are made: Ein's lab. On the subway platform, Hunter Frena (Gligar), Chaser Liaks (Stantler),
+  Bodybuilder Lonia (Piloswine) and Rider Nelis (Sneasel). Cap 45.
+- **The Shadow Pokémon Lab** (36 to 40; on Orre's map in the south-west desert; Mossdeep Space Center's floors inside,
+  its doors out to Orre's map). Its Peons Cole (Aipom), Lare (Murkrow), Vana (Forretress), Lesar (Ariados) and Remil
+  (Vibrava); the **Mystery Troop**, Verde and Bluno together (Shadow Bayleef and Croconaw) then Rosso (Shadow Quilava
+  and Raikou); and **Ein**, whose life's work the Shadow Pokémon are, who boasts that Master Evice's plan goes ahead at
+  Realgam Tower. Cap 48.
+- **Realgam Tower** (40 to 44; on Orre's map on the south-east coast; the Pokémon League's rooms inside). In its dome
+  Peons Arton (Delibird), Baila (Sunflora) and Dioge (Heracross), and **Gonzap** at the far door, out for revenge
+  (Shadow Skarmory, Lv. 47); in its Colosseum Bodybuilder Jomas (Miltank), Rider Delan (Absol) and Peons Nella
+  (Houndoom) and Ston (Tropius), and **Nascour** (Shadow Metagross, Lv. 50); at the top, **Evice**, the head of Cipher,
+  who is Phenac's Mayor Es Cade (Shadow Tyranitar, Lv. 55). Beat him and Cipher's finished; Prof. Oak calls. Cap 55.
+  That's Colosseum's story told through (`orreStory` 44); every one of its Shadow Pokémon, but for the after-the-game
+  ones (Smeargle, Ursaring, Shuckle, Togetic) and Rui's Celebi, is in Orre with its Trainer.
 - In a tag battle, snagging the second Trainer's Pokémon now gets you that Pokémon (the engine lists the partner's
   Pokémon after the Trainer's).
 - **Colosseum's Shadow Pokémon** (`Orre.SHADOW` in `game/orre.js`): all 47 of them, in Colosseum's order, each with its

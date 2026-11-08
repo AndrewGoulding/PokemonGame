@@ -2981,7 +2981,11 @@
       "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone",
       "arrive:MtBattle", "enter:MtBattle", "MtBattle_EventScript_Dakim", "MtBattle_EventScript_SummitSkrub", "MtBattle_EventScript_Vander",
       "MtBattle_EventScript_Trainer1", "MtBattle_EventScript_Trainer2", "MtBattle_EventScript_Turo", "MtBattle_EventScript_Berin",
-      "MtBattle_PokemonCenter_1F_EventScript_Nurse",
+      "MtBattle_PokemonCenter_1F_EventScript_Nurse", "TheUnder_PokemonCenter_1F_EventScript_Nurse",
+      "arrive:TheUnder", "enter:TheUnder", "TheUnder_EventScript_Kloak", "enter:TheUnder_Studio", "TheUnder_Studio_EventScript_Venus",
+      "arrive:ShadowLab_1F", "enter:ShadowLab_1F", "enter:ShadowLab_B1F", "ShadowLab_B1F_EventScript_Troop", "enter:ShadowLab_EinsRoom",
+      "ShadowLab_EinsRoom_EventScript_Ein", "arrive:RealgamTower_1F", "enter:RealgamTower_1F", "RealgamTower_Dome_EventScript_Gonzap",
+      "RealgamTower_Colosseum_EventScript_Nascour", "enter:RealgamTower_Top", "RealgamTower_Top_EventScript_Evice",
       "PyriteTown_PokemonCenter_1F_EventScript_Nurse", "AgateVillage_PokemonCenter_1F_EventScript_Nurse",
       ...Object.keys(Orre.FILLERS),
       "PhenacCity_PokemonCenter_1F_EventScript_Nurse"
@@ -4515,6 +4519,16 @@
       case "AgateVillage_EventScript_RelicStone": await relicStone(); return;
       case "arrive:MtBattle": case "enter:MtBattle": await mtBattleArrival(); return;
       case "MtBattle_EventScript_Dakim": case "MtBattle_EventScript_SummitSkrub": case "MtBattle_EventScript_Vander": await mtBattleSummit(script); return;
+      case "arrive:TheUnder": case "enter:TheUnder": await underArrival(); return;
+      case "TheUnder_EventScript_Kloak": await underKloak(); return;
+      case "enter:TheUnder_Studio": case "TheUnder_Studio_EventScript_Venus": await underVenus(); return;
+      case "arrive:ShadowLab_1F": case "enter:ShadowLab_1F": await labArrival(); return;
+      case "enter:ShadowLab_B1F": case "ShadowLab_B1F_EventScript_Troop": await labTroop(); return;
+      case "enter:ShadowLab_EinsRoom": case "ShadowLab_EinsRoom_EventScript_Ein": await labEin(); return;
+      case "arrive:RealgamTower_1F": case "enter:RealgamTower_1F": await realgamArrival(); return;
+      case "RealgamTower_Dome_EventScript_Gonzap": await realgamGonzap(); return;
+      case "RealgamTower_Colosseum_EventScript_Nascour": await realgamNascour(); return;
+      case "enter:RealgamTower_Top": case "RealgamTower_Top_EventScript_Evice": await realgamEvice(); return;
       case "MtBattle_EventScript_Trainer1": case "MtBattle_EventScript_Trainer2": case "MtBattle_EventScript_Turo": case "MtBattle_EventScript_Berin":
         await orreTrainer(script); return;
       case "OrreAirStrip_EventScript_Pilot": await orrePilot(); return;
@@ -10709,6 +10723,147 @@
     f.orreStory = 33;
     Overworld.refreshPeople();
     await persist();
+    await gear.storyCall(["Duking: {PLAYER}! It's Duking. I've\nbeen asking around, like I said.", "Folks in The Under swear they saw a\ncreepy Pokémon on Venus's TV show.",
+      "The Under's a town hidden under Pyrite.\nThe stairs down are in the old shack at\nthe bottom left of town."].map((p) => fill(p)));
+    await persist();
+  }
+  // ---------- Orre: Colosseum's story, The Under, Ein's lab and Realgam Tower (orreStory 33 to 44) ----------
+  //
+  // 33: after Mt. Battle, Duking calls: talk of a creepy Pokémon on Venus's TV show, down in The Under, under Pyrite
+  // (the stairs in Pyrite's bottom-left shack). 34: in The Under (cap 45), Kloak guards Venus's studio; 35: Venus
+  // (Shadow Suicune); beaten, she lets slip where Shadow Pokémon are made: Ein's lab, out in the desert (36). In the
+  // lab (cap 48; 37) the Mystery Troop, Verde, Bluno and Rosso (their Shadow Bayleef, Croconaw, Quilava, and Rosso's
+  // Raikou); 38: Ein himself, who boasts of Master Evice's plan at Realgam Tower (40). At the tower (cap 55; 41):
+  // Gonzap, out for revenge (Shadow Skarmory); 42: Nascour (Shadow Metagross); 43: at the top, Evice, who is Phenac's
+  // Mayor Es Cade (Shadow Tyranitar). Beaten, Cipher's finished (44): Prof. Oak calls.
+  const ORRE_UNDER_CAP = 45, ORRE_LAB_CAP = 48, ORRE_REALGAM_CAP = 55;
+  const raiseCap = async (cap) => {
+    const f = player.flags;
+    if ((f.orreLevelCap | 0) >= cap) return;
+    f.orreLevelCap = cap;
+    await say("Your Pokémon can now grow up to\nLv. " + cap + " in Orre!");
+  };
+  // A story battle with a Trainer's Colosseum Shadow Pokémon (Orre.SHADOW) and the rest of their team: won?
+  async function bossBattle(trainer, name, pic, partners, defeat, extra) {
+    const f = player.flags, shadows = Orre.shadowOf(trainer);
+    const opts = Object.assign({ foe: { name, team: shadows.map(Orre.shadowMon).concat(teamOf(partners)), pic }, prizeClass: "Leader", noBlackout: true,
+      snag: shadows.map((s) => s.species), defeatText: defeat }, extra || {});
+    const outcome = await storyBattle(opts);
+    if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
+    return outcome === "won";
+  }
+  const goAway = async (key, moves) => { const who = ORRE(key); Screen.say(""); await Overworld.act([{ who, moves: (moves || ["walk_fast_down", "walk_fast_down"]).concat(["set_invisible"]) }]); Overworld.removeObject(who); };
+  async function underArrival() {
+    await say(["Rui: So this is The Under… A whole town,\nhidden under Pyrite!", "Duking said the creepy Pokémon was on\nVenus's TV show. Her studio must be\nhere somewhere."]);
+    player.flags.orreStory = 34;
+    await raiseCap(ORRE_UNDER_CAP);
+    await persist();
+  }
+  async function underKloak() {
+    await say(["Kloak: The studio's closed! Miss Venus\nis rehearsing, and she's not to be\ndisturbed!"]);
+    if (!(await bossBattle("Kloak", "Cipher Peon Kloak", "cipher_peon", [["Ninjask", 39]], ["Gah!"], { prizeClass: "Team Rocket" }))) return;
+    await say(["Kloak: Miss Venus will make you sorry\nfor this!"]);
+    await goAway("KLOAK", ["walk_fast_right", "walk_fast_down", "walk_fast_down"]);
+    player.flags.orreStory = 35;
+    await persist();
+  }
+  async function underVenus() {
+    await say(["Venus: Oh, visitors! How rude, barging\ninto my studio during rehearsal.", "Still, you're rather cute. Let's put on\na show for my viewers, shall we?",
+      "And don't you dare go easy on me!"]);
+    if (!(await bossBattle("Venus", "Cipher Admin Venus", "beauty", [["Delcatty", 41], ["Vileplume", 41], ["Banette", 41]], ["Not my face!"]))) {
+      await say(["Venus: Better luck next show, darling."]); return;
+    }
+    await say(["Venus: Ugh, my ratings! Fine, fine.", "You want to know where the Shadow Pokémon\ncome from? Dear old Ein's lab, out in the\ndesert. He makes them there.",
+      "Not that you'll get past his door! Ta-ta!"]);
+    await goAway("VENUS", ["walk_fast_down", "walk_fast_down", "walk_fast_down"]);
+    await say(["Rui: Ein's lab… That's where Dakim sent\nSkrub, too! {PLAYER}, let's go!"]);
+    player.flags.orreStory = 36;
+    Orre.unlock(player.flags, "ShadowLab_1F");
+    await say("The Shadow Pokémon Lab was marked on\nthe Orre Map!");
+    await persist();
+  }
+  async function labArrival() {
+    await say(["Rui: So this is where they make Shadow\nPokémon… It's so cold in here.", "Let's find Ein, {PLAYER}, and stop this!"]);
+    player.flags.orreStory = 37;
+    await raiseCap(ORRE_LAB_CAP);
+    await persist();
+  }
+  async function labTroop() {
+    await say(["Verde: Halt! We are the Mystery Troop,\nCipher's elite!", "Bluno: You'll go no further!", "Rosso: Leave them to us!"]);
+    await say(["Rui: {PLAYER}, all three of them… They\nhave Shadow Pokémon!"]);
+    const pair = await bossBattle("Verde", "Peon Verde", "cipher_peon", [["Breloom", 44]], ["Impossible!"], {
+      foe2: { name: "Peon Bluno", team: Orre.shadowOf("Bluno").map(Orre.shadowMon).concat(teamOf([["Walrein", 44]])), pic: "cipher_peon", prizeClass: "Team Rocket", defeatText: ["Bah!"] },
+      snag: ["Bayleef", "Croconaw"], prizeClass: "Team Rocket" });
+    if (!pair) { await say(["Verde: The Mystery Troop prevails!"]); return; }
+    await say(["Rosso: Pathetic! I'll handle this myself!"]);
+    if (!(await bossBattle("Rosso", "Peon Rosso", "cipher_peon", [["Magcargo", 44]], ["The Mystery Troop… defeated?!"], { prizeClass: "Team Rocket" }))) {
+      await say(["Rosso: Hah! The Mystery Troop prevails!"]); return;
+    }
+    await say(["Verde: Retreat! Retreat!"]);
+    Screen.say("");
+    for (const k of ["VERDE", "ROSSO", "BLUNO"]) await goAway(k, ["walk_fast_down", "walk_fast_down"]);
+    player.flags.orreStory = 38;
+    await persist();
+  }
+  async function labEin() {
+    await say(["Ein: Who let you in here? I'm in the\nmiddle of something wonderful.", "My life's work: Pokémon with their\nhearts shut tight. Perfect fighting\nmachines!",
+      "And now you've been snagging my\nmasterpieces? Unforgivable!"]);
+    if (!(await bossBattle("Ein", "Cipher Admin Ein", "scientist", [["Muk", 45], ["Weezing", 45], ["Crobat", 46], ["Electrode", 45]], ["My data! My beautiful data!"]))) {
+      await say(["Ein: Fascinating. You'll make a fine test\nsubject."]); return;
+    }
+    await say(["Ein: No matter. My finest work is already\nat Realgam Tower.", "Master Evice's grand plan will go ahead\nthere, and no one can stop it now!"]);
+    await goAway("EIN", ["walk_fast_left", "walk_fast_down", "walk_fast_down"]);
+    await say(["Rui: Realgam Tower… That's the huge\nColosseum by the sea!", "{PLAYER}, that must be where it all\nends. Let's go!"]);
+    player.flags.orreStory = 40;
+    Orre.unlock(player.flags, "RealgamTower_1F");
+    await say("Realgam Tower was marked on\nthe Orre Map!");
+    await persist();
+  }
+  async function realgamArrival() {
+    await say(["Rui: Realgam Tower… Cipher's heart.", "{PLAYER}, whatever's at the top, we face\nit together. Okay?"]);
+    player.flags.orreStory = 41;
+    await raiseCap(ORRE_REALGAM_CAP);
+    await persist();
+  }
+  async function realgamGonzap() {
+    await say(["Gonzap: Gwaahahah! Well, if it isn't my\nfavourite rookie!", "You blew up my hideout and wiped out\nTeam Snagem. Time you paid up for that!"]);
+    if (!(await bossBattle("Gonzap", "Snagem Head Gonzap", "biker", [["Crawdaunt", 46], ["Victreebel", 46], ["Golem", 46]], ["You've grown a lot better, rookie."]))) {
+      await say(["Gonzap: Gwahaha! Still a rookie!"]); return;
+    }
+    await say(["Gonzap: Humph. Go on, then. There's no\ngoing back for you now."]);
+    await goAway("GONZAP", ["walk_fast_left", "walk_fast_down", "walk_fast_down", "walk_fast_down"]);
+    player.flags.orreStory = 42;
+    await persist();
+  }
+  async function realgamNascour() {
+    await say(["Nascour: So you've come this far. Our\nShadow Pokémon plan was so near\ncompletion.", "I won't allow a pair of children to\nruin it. Prepare yourselves!"]);
+    if (!(await bossBattle("Nascour", "Cipher Admin Nascour", "gentleman", [["Alakazam", 49], ["Gardevoir", 49], ["Slaking", 49]], ["This… cannot be."]))) {
+      await say(["Nascour: As expected. Leave."]); return;
+    }
+    await say(["Nascour: Hmph. Master Evice awaits you\nat the top. Go, and see for yourselves."]);
+    await goAway("REALGAM_NASCOUR", ["walk_fast_left", "walk_fast_down", "walk_fast_down", "walk_fast_down"]);
+    player.flags.orreStory = 43;
+    await persist();
+  }
+  async function realgamEvice() {
+    const f = player.flags;
+    await say(["???: Welcome, my young friends. I'm so\nglad to see that you're safe."]);
+    await say(["Rui: That voice… Mr. Mayor?!\nEs Cade?!"]);
+    await say(["Evice: Es Cade was a convenient mask.\nI am Evice, the head of Cipher.",
+      "Phenac's kindly Mayor, ordering an\n\"investigation\"… while my Shadow Pokémon\nspread across Orre. Delightful, wasn't it?",
+      "With an army of Shadow Pokémon, Orre\nwould have been mine. Then the world.", "You've ruined a great deal. Now I'll ruin\nyou!"]);
+    if (!(await bossBattle("Evice", "Cipher Head Evice", "gentleman", [["Slowking", 52], ["Gengar", 52], ["Snorlax", 52], ["Gyarados", 52]], ["No… My plan…"]))) {
+      await say(["Evice: As I thought. Children."]); return;
+    }
+    await say(["Evice: Impossible… My Shadow Pokémon…\nmy Cipher… beaten by children…", "This isn't over! I'll be back!"]);
+    await goAway("EVICE", ["walk_fast_down", "walk_fast_down", "walk_fast_down", "walk_fast_down"]);
+    await say(["Rui: {PLAYER}… We did it! Cipher's\nfinished!", "But there are still Shadow Pokémon out\nthere, with hearts shut tight.",
+      "Let's open every one of them. Together.\nOkay?"]);
+    f.orreStory = 44;
+    await persist();
+    await gear.storyCall(["Prof. Oak: {PLAYER}! The news from Orre\nis everywhere! Cipher, defeated!", "Snagem and Cipher, both stopped, and the\nShadow Pokémon being saved…",
+      "I sent you there as an undercover agent.\nYou've come back a hero!", "Take all the time you need in Orre.\nI'm proud of you, {PLAYER}!"].map((p) => fill(p)));
+    await persist();
   }
   // ---------- Orre: Colosseum's story, Pyrite Town (orreStory 21 to 28) ----------
   //
@@ -15440,6 +15595,16 @@
     if (script === "enter:PyriteCave_MirorBHideout" && (player.flags.orreStory | 0) === 26) return true;
     if (script === "enter:AgateVillage_EaguansHouse" && (player.flags.orreStory | 0) === 28) return true;
     if ((script === "arrive:MtBattle" || script === "enter:MtBattle") && (player.flags.orreStory | 0) === 31) return true;
+    {
+      const story = player.flags.orreStory | 0, at = (name) => script === "arrive:" + name || script === "enter:" + name;
+      if (at("TheUnder") && story === 33) return true;
+      if (script === "enter:TheUnder_Studio" && story === 35) return true;
+      if (at("ShadowLab_1F") && story === 36) return true;
+      if (script === "enter:ShadowLab_B1F" && story === 37) return true;
+      if (script === "enter:ShadowLab_EinsRoom" && story === 38) return true;
+      if (at("RealgamTower_1F") && story === 40) return true;
+      if (script === "enter:RealgamTower_Top" && story === 43) return true;
+    }
     if (script === "Orre_WorldMap") return true;   // (Orre: out of a place, its map: orreTravel())
     // Johto: its scripts (a step's, while its var has its value), its
     // Apricorn trees, and its maps' frame tables as you come in.

@@ -3196,6 +3196,11 @@ if (window.JOHTO_TOWN_MAP) {
     // Colosseum's Shadow Pokémon: all there, Trudly's his Makuhita (Lv. 30), each one battle-ready as a Shadow
     // Pokémon; and the prologue's own Trainers are none of Colosseum's Shadow Pokémon Trainers.
     assert.strictEqual(Orre.SHADOW.length, 47);
+    // (Every Shadow Pokémon Trainer of the story is placed in Orre, battling with theirs; every Orre warp goes somewhere.)
+    const orreScripts = new Set(Object.values(WORLD_MAPS).filter((m) => m.region === "orre").flatMap((m) => m.people.map((p) => p.script)));
+    for (const [script, d] of Object.entries(Orre.SHADOW_TRAINERS)) assert(orreScripts.has(script) && Orre.shadowOf(d.trainer).length, script);
+    for (const m of Object.values(WORLD_MAPS).filter((m) => m.region === "orre")) for (const w of m.warps) assert(WORLD_MAPS[w.map], m.name + " warps to " + w.map);
+    for (const pl of ["MtBattle", "ShadowLab_1F", "RealgamTower_1F"]) assert(Orre.PLACES.some((p) => p.map === pl), pl + " on Orre's map");
     assert(Orre.SHADOW.every((x) => DEX[x.species] && x.level >= 20 && x.level <= 55 && x.trainer));
     assert.deepStrictEqual(Orre.shadowOf("Trudly").map((x) => [x.species, x.level]), [["Makuhita", 30]]);
     const sm = Orre.shadowMon(Orre.shadowOf("Trudly")[0]);

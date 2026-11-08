@@ -2005,7 +2005,7 @@ const BUILDING_4F = emeraldRoom("RustboroCity_DevonCorp_3F", "PyriteTown_PyriteB
 const MIROR_HIDEOUT = emeraldRoom("GraniteCave_StevensRoom", "PyriteCave_MirorBHideout", "Miror B.'s Hideout",
   [{ x: 7, y: 3, map: "PyriteCave", warp: 1 }], [
     person(0, "HIDEOUT_MIROR_B", 7, 8, "rocker", "face_up", "PyriteCave_MirorBHideout_EventScript_MirorB", null),
-    person(1, "HIDEOUT_PLUSLE", 11, 9, "follow/311", "face_left", "PyriteCave_MirorBHideout_EventScript_Plusle", null,
+    person(1, "HIDEOUT_PLUSLE", 10, 9, "follow/311", "face_left", "PyriteCave_MirorBHideout_EventScript_Plusle", null,
       { width: 32, height: 32, frames: 9, offsetX: -8 }),
     person(2, "HIDEOUT_DUKING", 7, 4, "black_belt", "face_down", "PyriteCave_MirorBHideout_EventScript_Duking", null)
   ], { music: "em_aqua_magma_hideout", showName: true });
@@ -2045,6 +2045,190 @@ for (const [key, x, y, sprite, facing, script] of [["SKRUB", 17, 6, "orre_peon_m
 PYCAVE.warps.push({ x: 26, y: 4, map: "PyriteCave_MirorBHideout", warp: 0 });
 PYCAVE.patches = { hideout: { x: 26, y: 4, w: 1, h: 1, top: false, collision: [[26, 4, 0, 0x65]] } };
 writePng(path.join(outMaps, "FieryPath-patch-hideout.png"), 16, 16, new Uint8ClampedArray(16 * 16 * 4));
+
+// ---------- The Under (after Colosseum's; drawn here), Ein's lab and Realgam Tower ----------
+//
+// The Under: the town hidden under Pyrite, down the stairs in Pyrite's bottom-left shack: dark stone underfoot, the
+// cavern's rock all round, lamps, tin shacks, the Pokémon Center, the subway platform with its tracks along the east
+// side, and at the top Venus's TV studio. Drawn here. Venus's studio, Ein's Shadow Pokémon Lab (its floors Mossdeep
+// Space Center's) and Realgam Tower (its lobby and halls the Pokémon League's) are Emerald rooms, as Orre's other
+// insides; the lab and the tower are places on Orre's map of their own, their doors the way back out to it.
+const UW = 34, UH = 28;
+const UPC = { x: 3, y: 9, w: 4, h: 4 }, UPC_DOOR = { x: 4, y: 12 };
+const USTUDIO = { x: 11, y: 2, w: 10, h: 5 }, USTAIRS = { x: 16, y: 26 };
+const UTRACK = { x: 28, y: 3, w: 3, h: 22 }, UPLATFORM = { x: 24, y: 6, w: 4, h: 16 };
+const USHACKS = [{ x: 3, y: 18, w: 6, h: 4 }, { x: 13, y: 15, w: 6, h: 4 }];
+const ULAMPS = [[9, 9], [22, 9], [9, 22], [22, 22], [14, 11]];
+const uRock = (x, y) => x < 2 || x >= UW - 2 || y < 2 || y >= UH - 1;
+const ublocks = new Array(UW * UH).fill(SAND);
+{
+  const L = layouts.LAYOUT_MAUVILLE_CITY, mv = fs.readFileSync(path.join(EM, L.blockdata_filepath));
+  for (let y = 0; y < UPC.h; y++) for (let x = 0; x < UPC.w; x++) ublocks[(UPC.y + y) * UW + UPC.x + x] = mv.readUInt16LE(((2 + y) * L.width + 21 + x) * 2);
+}
+const under = E.render(ublocks, UW, UH, general, mauville, false);
+const UFLOOR = [[104, 104, 120], [92, 92, 108], [80, 80, 96], [60, 60, 76]];
+const UROCK = [[120, 108, 128], [96, 84, 104], [72, 64, 84], [52, 44, 64], [32, 28, 44]];
+function drawUnder() {
+  const c = canvas(UW * 16, UH * 16);
+  seed = 191;
+  for (let ty = 0; ty < UH; ty++) for (let tx = 0; tx < UW; tx++) {
+    if (tx >= UPC.x && tx < UPC.x + UPC.w && ty >= UPC.y && ty < UPC.y + UPC.h) continue;
+    c.rect(tx * 16, ty * 16, 16, 16, UFLOOR[(tx + ty) % 2 ? 1 : 2]);
+    c.hl(tx * 16, tx * 16 + 15, ty * 16 + 15, UFLOOR[3]); c.vl(tx * 16 + 15, ty * 16, ty * 16 + 15, UFLOOR[3]);
+    for (let k = 0; k < 3; k++) c.set(tx * 16 + Math.floor(rand() * 15), ty * 16 + Math.floor(rand() * 15), UFLOOR[0]);
+  }
+  // The subway platform's edge and the tracks: sleepers, two rails.
+  c.rect(UPLATFORM.x * 16, UPLATFORM.y * 16, UPLATFORM.w * 16, UPLATFORM.h * 16, [128, 124, 136]);
+  c.rect((UPLATFORM.x + UPLATFORM.w) * 16 - 4, UPLATFORM.y * 16, 4, UPLATFORM.h * 16, [232, 200, 72]);
+  c.rect(UTRACK.x * 16, UTRACK.y * 16, UTRACK.w * 16, UTRACK.h * 16, [48, 44, 52]);
+  for (let y = UTRACK.y * 16; y < (UTRACK.y + UTRACK.h) * 16; y += 8) c.rect(UTRACK.x * 16 + 4, y, UTRACK.w * 16 - 8, 3, C.wood[3]);
+  for (const rx of [UTRACK.x * 16 + 12, UTRACK.x * 16 + 34]) { c.rect(rx, UTRACK.y * 16, 3, UTRACK.h * 16, [176, 176, 184]); c.vl(rx, UTRACK.y * 16, (UTRACK.y + UTRACK.h) * 16 - 1, [224, 224, 232]); }
+  rockTiles(c, uRock, UW, UH, UROCK);
+  // The stairs up to Pyrite.
+  { const x0 = USTAIRS.x * 16, y0 = USTAIRS.y * 16; for (let k = 0; k < 4; k++) { c.rect(x0, y0 + k * 4, 32, 4, k % 2 ? UROCK[1] : UROCK[0]); c.hl(x0, x0 + 31, y0 + k * 4 + 3, UROCK[3]); } }
+  return c;
+}
+pasteOn(under, UW, UH, drawUnder(), 0, 0, -1);
+USHACKS.forEach((b, i) => pasteOn(under, UW, UH, tinShack(b, 20 + i), b.x * 16, b.y * 16 - 16, 16 + 16 * (b.h - 2)));
+// Venus's TV studio: a dark building with a lit marquee, "STUDIO", and a pink door.
+{
+  const b = USTUDIO, w = b.w * 16, up = 16, h = b.h * 16 + up, c = canvas(w, h);
+  c.rect(4, h - 5, w - 4, 5, C.shadow);
+  c.box(0, 0, w, h - 4, { fill: [64, 48, 88], light: [96, 72, 128], dark: [40, 28, 56], line: [24, 16, 32] });
+  for (let x = 6; x < w - 6; x += 8) { c.disc(x, 8, 2, [248, 232, 120]); c.disc(x, h - 30, 1, [248, 160, 200]); }
+  c.box(w / 2 - 30, 16, 60, 11, { fill: [216, 64, 128], light: [248, 128, 184], line: [96, 24, 56] });
+  text(c, "STUDIO", w / 2 - 12, 19, [248, 248, 248]);
+  const dx = Math.floor(b.w / 2) * 16;
+  c.box(dx - 2, h - 28, 20, 24, { fill: [216, 80, 144], light: [248, 144, 192], line: [96, 24, 56] });
+  pasteOn(under, UW, UH, c, b.x * 16, b.y * 16 - up, up + 16 * (b.h - 1));
+}
+function lamp() {
+  const c = canvas(16, 40);
+  c.rect(5, 36, 7, 3, C.shadow);
+  c.rect(7, 10, 3, 28, [56, 56, 64]); c.disc(8, 8, 5, [248, 232, 160]); c.disc(8, 8, 3, [255, 255, 224]);
+  for (let r = 6; r < 14; r++) c.ring(8, 8, r, [248, 232, 160, 18]);
+  return c;
+}
+for (const [x, y] of ULAMPS) pasteOn(under, UW, UH, lamp(), x * 16, y * 16 - 24, 30);
+pcCorners(under, UW, UPC);
+const UNDER = {
+  name: "TheUnder", title: "The Under", width: UW, height: UH, type: "city", music: "em_mt_pyre",
+  region: "orre", battleScene: "cave", cycling: false, showName: true, top: true, borderWidth: 2, borderHeight: 2,
+  collision: [], elevation: [], behavior: [], encounter: [], connections: [], triggers: [], hidden: [],
+  warps: [{ x: UPC_DOOR.x, y: UPC_DOOR.y, map: "TheUnder_PokemonCenter_1F", warp: 0 },
+    { x: USTAIRS.x, y: USTAIRS.y, map: "PyriteTown", warp: 4 }, { x: USTAIRS.x + 1, y: USTAIRS.y, map: "PyriteTown", warp: 4 },
+    { x: USTUDIO.x + Math.floor(USTUDIO.w / 2), y: USTUDIO.y + USTUDIO.h - 1, map: "TheUnder_Studio", warp: 0 }],
+  signs: USHACKS.map((b) => ({ x: doorBelow(b).x, y: doorBelow(b).y, script: "TheUnder_EventScript_LockedDoor", text: ["The door is locked."] })),
+  people: [
+    person(0, "KLOAK", USTUDIO.x + Math.floor(USTUDIO.w / 2), USTUDIO.y + USTUDIO.h, "orre_peon_m", "face_down", "TheUnder_EventScript_Kloak", null),
+    person(1, "UNDER_MAN", 10, 13, "balding_man", "wander_around", "TheUnder_EventScript_Man",
+      ["Welcome to The Under. Folks down here\ndon't ask questions.", "Lately, though, there's been talk of a\nPokémon on TV that'd give you chills."], { rangeX: 2, rangeY: 1 }),
+    person(2, "UNDER_WOMAN", 20, 20, "woman_3", "face_left", "TheUnder_EventScript_Woman",
+      ["Venus's show is on every night. She's\nso glamorous!", "…Her Pokémon gives me the creeps,\nthough."])
+  ],
+  wild: null
+};
+{
+  const solid = new Set(), fill = (b) => { for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) solid.add(x + "," + y); };
+  for (let y = 0; y < UH; y++) for (let x = 0; x < UW; x++) if (uRock(x, y)) solid.add(x + "," + y);
+  for (const b of [UPC, USTUDIO, UTRACK, ...USHACKS]) fill(b);
+  const studioDoor = UNDER.warps[3];
+  for (const d of [UPC_DOOR, studioDoor]) solid.delete(d.x + "," + d.y);
+  solid.delete(USTAIRS.x + "," + USTAIRS.y); solid.delete((USTAIRS.x + 1) + "," + USTAIRS.y);
+  for (const [x, y] of ULAMPS) solid.add(x + "," + y);
+  for (let i = 0; i < UW * UH; i++) {
+    const x = i % UW, y = Math.floor(i / UW);
+    UNDER.collision.push(solid.has(x + "," + y) ? 1 : 0);
+    UNDER.elevation.push(3);
+    // (Doors; the stairs up to Pyrite a south arrow warp, as a cave's mouth: walk on, press down.)
+    UNDER.behavior.push((x === UPC_DOOR.x && y === UPC_DOOR.y) || (x === studioDoor.x && y === studioDoor.y) ? 0x69 : y === USTAIRS.y && (x === USTAIRS.x || x === USTAIRS.x + 1) ? 0x65 : 0);
+    UNDER.encounter.push(0);
+  }
+  writePng(path.join(outMaps, "TheUnder.png"), UW * 16, UH * 16, under.below);
+  writePng(path.join(outMaps, "TheUnder-top.png"), UW * 16, UH * 16, under.above);
+  const b = canvas(32, 32);
+  rockTiles(b, () => true, 2, 2, UROCK);
+  save(b, path.join(outMaps, "TheUnder-border.png"));
+}
+const PCU = pokemonCenterInside("TheUnder_PokemonCenter_1F", "The Under", "TheUnder", 0, [
+  person(1, "UNDER_PC_MAN", 11, 5, "em_man_3", "face_left", "TheUnder_PokemonCenter_1F_EventScript_Man",
+    ["The subway down here used to run all\nthe way out to the desert.", "Now only shady types use the tunnels."])
+]);
+// Pyrite's bottom-left shack: the stairs down to The Under.
+{
+  const d = doorBelow(YSHACKS[3]);
+  PYRITE.warps.push({ x: d.x, y: d.y, map: "TheUnder", warp: 1 });
+  PYRITE.signs = PYRITE.signs.filter((s) => !(s.x === d.x && s.y === d.y));
+  PYRITE.behavior[d.y * YW + d.x] = 0x69;
+}
+// Venus's studio (Emerald's Contest hall: a stage), its way out at the bottom.
+const STUDIO = emeraldRoom("ContestHall", "TheUnder_Studio", "The Under", [{ x: 7, y: 10, map: "TheUnder", warp: 3 }], [
+  person(0, "VENUS", 7, 5, "beauty", "face_down", "TheUnder_Studio_EventScript_Venus", null)
+], { music: "em_game_corner" });
+STUDIO.collision[10 * STUDIO.width + 7] = 0; STUDIO.behavior[10 * STUDIO.width + 7] = 0x65;
+// The Under's subway Trainers, on the platform (Colosseum's Shadow Pokémon: Frena, Liaks, Lonia and Nelis).
+for (const [key, x, y, sprite, facing] of [["FRENA", 25, 8, "cooltrainer_f", "face_right"], ["LIAKS", 26, 11, "camper", "face_left"],
+  ["LONIA", 25, 15, "black_belt", "face_right"], ["NELIS", 26, 19, "biker", "face_left"]]) {
+  UNDER.people.push(person(Math.max(...UNDER.people.map((p) => p.id)) + 1, "SHADOW_" + key, x, y, sprite, facing, "TheUnder_EventScript_Shadow_" + key, null));
+}
+// Ein's Shadow Pokémon Lab: 1F, B1F, and Ein's room (Mossdeep Space Center's floors and its deck); its doors out to
+// Orre's map.
+const orreDoorsOut = (m) => { for (const w of m.warps.filter((w) => w.y === m.height - 1)) m.triggers.push({ x: w.x, y: w.y, script: "Orre_WorldMap" }); m.warps = m.warps.filter((w) => w.y !== m.height - 1); };
+const LAB_1F = emeraldRoom("MossdeepCity_SpaceCenter_1F", "ShadowLab_1F", "Shadow Pokémon Lab",
+  [{ x: 7, y: 9, map: null }, { x: 8, y: 9, map: null }, { x: 13, y: 1, map: "ShadowLab_B1F", warp: 0 }], [
+    person(0, "SHADOW_COLE", 4, 4, "orre_peon_m", "face_right", "ShadowLab_1F_EventScript_Shadow_COLE", null),
+    person(1, "SHADOW_LARE", 12, 4, "orre_peon_f", "face_left", "ShadowLab_1F_EventScript_Shadow_LARE", null)
+  ], { music: "em_aqua_magma_hideout", showName: true, type: "indoor" });
+orreDoorsOut(LAB_1F);
+LAB_1F.warps = [{ x: 13, y: 1, map: "ShadowLab_B1F", warp: 0 }];
+const LAB_B1F = emeraldRoom("MossdeepCity_SpaceCenter_2F", "ShadowLab_B1F", "Shadow Pokémon Lab",
+  [{ x: 13, y: 1, map: "ShadowLab_1F", warp: 0 }, { x: 7, y: 1, map: "ShadowLab_EinsRoom", warp: 0 }], [
+    person(0, "SHADOW_VANA", 2, 6, "orre_peon_m", "face_right", "ShadowLab_B1F_EventScript_Shadow_VANA", null),
+    person(1, "SHADOW_LESAR", 12, 6, "orre_peon_f", "face_left", "ShadowLab_B1F_EventScript_Shadow_LESAR", null),
+    person(2, "SHADOW_REMIL", 6, 8, "orre_peon_m", "face_right", "ShadowLab_B1F_EventScript_Shadow_REMIL", null),
+    person(3, "VERDE", 6, 3, "orre_peon_m", "face_down", "ShadowLab_B1F_EventScript_Troop", null),
+    person(4, "ROSSO", 7, 2, "orre_peon_m", "face_down", "ShadowLab_B1F_EventScript_Troop", null),
+    person(5, "BLUNO", 8, 3, "orre_peon_m", "face_down", "ShadowLab_B1F_EventScript_Troop", null)
+  ], { music: "em_aqua_magma_hideout" });
+// (Its door to Ein's room is the Space Center's sealed one, which the Delta Episode opens: open here, a step-on warp as
+// its stairs are.)
+LAB_B1F.collision[1 * LAB_B1F.width + 7] = 0; LAB_B1F.behavior[1 * LAB_B1F.width + 7] = 0x60;
+LAB_B1F.patches = undefined;
+const LAB_EIN = emeraldRoom("MossdeepCity_SpaceCenter_ObservationDeck", "ShadowLab_EinsRoom", "Shadow Pokémon Lab",
+  [{ x: 4, y: 7, map: "ShadowLab_B1F", warp: 1 }], [
+    person(0, "EIN", 4, 3, "scientist", "face_down", "ShadowLab_EinsRoom_EventScript_Ein", null)
+  ], { music: "em_aqua_magma_hideout" });
+// Realgam Tower: the lobby (the League's), its dome (Sidney's room), its Colosseum (Glacia's) and the top (the
+// Champion's room).
+const REALGAM_1F = emeraldRoom("EverGrandeCity_PokemonLeague_1F", "RealgamTower_1F", "Realgam Tower",
+  [{ x: 9, y: 11, map: null }, { x: 10, y: 11, map: null }, { x: 9, y: 1, map: "RealgamTower_Dome", warp: 0 }, { x: 10, y: 1, map: "RealgamTower_Dome", warp: 0 }], [
+    person(0, "REALGAM_CLERK", 14, 6, "em_woman_5", "face_down", "RealgamTower_1F_EventScript_Clerk",
+      ["Welcome to Realgam Tower, Orre's finest\nColosseum!", "…Master Evice's guests are expected in\nthe dome. Go on up."])
+  ], { music: "em_ever_grande", showName: true });
+orreDoorsOut(REALGAM_1F);
+REALGAM_1F.warps = [{ x: 9, y: 1, map: "RealgamTower_Dome", warp: 0 }, { x: 10, y: 1, map: "RealgamTower_Dome", warp: 0 }];
+const REALGAM_DOME = emeraldRoom("EverGrandeCity_SidneysRoom", "RealgamTower_Dome", "Realgam Tower",
+  [{ x: 6, y: 13, map: "RealgamTower_1F", warp: 0 }, { x: 6, y: 2, map: "RealgamTower_Colosseum", warp: 0 }], [
+    person(0, "GONZAP", 6, 3, "fat_man", "face_down", "RealgamTower_Dome_EventScript_Gonzap", null),
+    person(1, "SHADOW_ARTON", 3, 8, "orre_peon_m", "face_right", "RealgamTower_Dome_EventScript_Shadow_ARTON", null),
+    person(2, "SHADOW_BAILA", 9, 8, "orre_peon_f", "face_left", "RealgamTower_Dome_EventScript_Shadow_BAILA", null),
+    person(3, "SHADOW_DIOGE", 6, 6, "orre_peon_m", "face_down", "RealgamTower_Dome_EventScript_Shadow_DIOGE", null)
+  ], { music: "em_victory_road" });
+const REALGAM_COLO = emeraldRoom("EverGrandeCity_GlaciasRoom", "RealgamTower_Colosseum", "Realgam Tower",
+  [{ x: 6, y: 13, map: "RealgamTower_Dome", warp: 1 }, { x: 6, y: 2, map: "RealgamTower_Top", warp: 0 }], [
+    person(0, "REALGAM_NASCOUR", 6, 3, "gentleman", "face_down", "RealgamTower_Colosseum_EventScript_Nascour", null),
+    person(1, "SHADOW_JOMAS", 3, 6, "black_belt", "face_right", "RealgamTower_Colosseum_EventScript_Shadow_JOMAS", null),
+    person(2, "SHADOW_DELAN", 9, 6, "biker", "face_left", "RealgamTower_Colosseum_EventScript_Shadow_DELAN", null),
+    person(3, "SHADOW_NELLA", 3, 10, "orre_peon_f", "face_right", "RealgamTower_Colosseum_EventScript_Shadow_NELLA", null),
+    person(4, "SHADOW_STON", 9, 10, "orre_peon_m", "face_left", "RealgamTower_Colosseum_EventScript_Shadow_STON", null)
+  ], { music: "em_victory_road" });
+// (The League's rooms' far doors are shut till their Elite Four member's beaten (the game's own collision): open here;
+// Gonzap and Nascour stand in front of them till they're beaten.)
+for (const m of [REALGAM_DOME, REALGAM_COLO]) m.collision[2 * m.width + 6] = 0;
+const REALGAM_TOP = emeraldRoom("EverGrandeCity_ChampionsRoom", "RealgamTower_Top", "Realgam Tower",
+  [{ x: 6, y: 12, map: "RealgamTower_Colosseum", warp: 1 }], [
+    person(0, "EVICE", 6, 4, "gentleman", "face_down", "RealgamTower_Top_EventScript_Evice", null)
+  ], { music: "em_victory_road" });
 
 // ---------- Orre's filler Trainers ----------
 //
@@ -2133,6 +2317,8 @@ fs.writeFileSync(orreFile,
   "// Orre's Outskirt Stand and Snagem Hideout, from Pokémon Colosseum, and the Orre Air Strip, added to FireRed's maps (data/world-maps.js).\n" +
   "Object.assign(window.WORLD_MAPS, " + JSON.stringify({ OutskirtStand: OUT, OutskirtStand_Diner: IN, OrreAirStrip: AIR, OrreAirStrip_PokemonCenter_1F: PCI, SnagemHideout: HIDE, PhenacCity: PHENAC, PhenacCity_PokemonCenter_1F: PCP, PhenacCity_MayorsHouse: MAYOR_HOUSE,
     PyriteTown: PYRITE, PyriteTown_PokemonCenter_1F: PCY, PyriteCave: PYCAVE, PyriteTown_DukingsHouse: DUKING_HOUSE,
-    PyriteTown_PyriteBuilding_1F: BUILDING_1F, PyriteTown_PyriteBuilding_4F: BUILDING_4F, PyriteCave_MirorBHideout: MIROR_HIDEOUT, AgateVillage_EaguansHouse: EAGUN_HOUSE, MtBattle: MTBATTLE, MtBattle_PokemonCenter_1F: PCB, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG }) + ");\n" + sinnohPart);
+    PyriteTown_PyriteBuilding_1F: BUILDING_1F, PyriteTown_PyriteBuilding_4F: BUILDING_4F, PyriteCave_MirorBHideout: MIROR_HIDEOUT, AgateVillage_EaguansHouse: EAGUN_HOUSE, MtBattle: MTBATTLE, MtBattle_PokemonCenter_1F: PCB,
+    TheUnder: UNDER, TheUnder_PokemonCenter_1F: PCU, TheUnder_Studio: STUDIO, ShadowLab_1F: LAB_1F, ShadowLab_B1F: LAB_B1F, ShadowLab_EinsRoom: LAB_EIN,
+    RealgamTower_1F: REALGAM_1F, RealgamTower_Dome: REALGAM_DOME, RealgamTower_Colosseum: REALGAM_COLO, RealgamTower_Top: REALGAM_TOP, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG }) + ");\n" + sinnohPart);
 console.log("wrote Pyrite Town (" + YW + "x" + YH + "), Pyrite Cave and Agate Village (" + GW + "x" + GH + ")");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");

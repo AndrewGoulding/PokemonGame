@@ -112,6 +112,8 @@
     { map: "PyriteTown", name: "Pyrite Town", x: 204, y: 104, arrive: { x: 17, y: 28, facing: "up" } },
     { map: "AgateVillage", name: "Agate Village", x: 180, y: 44, arrive: { x: 17, y: 28, facing: "up" } },
     { map: "MtBattle", name: "Mt. Battle", x: 208, y: 30, arrive: { x: 16, y: 30, facing: "up" } },
+    { map: "ShadowLab_1F", name: "Shadow Pokémon Lab", x: 40, y: 120, arrive: { x: 7, y: 8, facing: "up" } },
+    { map: "RealgamTower_1F", name: "Realgam Tower", x: 222, y: 126, arrive: { x: 9, y: 10, facing: "up" } },
     { map: "OrreAirStrip", name: "Orre Air Strip", x: 96, y: 132, arrive: { x: 21, y: 2, facing: "down" } }
   ];
   const OPEN_AT_FIRST = ["OrreAirStrip", "SnagemHideout"];
@@ -155,6 +157,20 @@
       // (Mt. Battle, Colosseum's story 31 to 33: Cipher's Peons on the slopes and Dakim and Skrub at the summit, till
       // Dakim's beaten; Vander there throughout.)
       case ID("TURO"): case ID("BERIN"): case ID("DAKIM"): case ID("SUMMIT_SKRUB"): return story >= 31 && story < 33;
+      // (The Under, 33 to 36: Kloak at the studio door till he's beaten, Venus in it till she is; the subway's Trainers.
+      // Ein's lab, 36 to 40: its Peons; the Mystery Troop till beaten (37), Ein (38). Realgam Tower, 40 on: Gonzap (41)
+      // and Nascour (42) at their doors till beaten, Evice at the top (43); their halls' Trainers.)
+      case ID("KLOAK"): return story === 34;
+      case ID("VENUS"): return story === 35;
+      case ID("SHADOW_FRENA"): case ID("SHADOW_LIAKS"): case ID("SHADOW_LONIA"): case ID("SHADOW_NELIS"): return story >= 34;
+      case ID("SHADOW_COLE"): case ID("SHADOW_LARE"): case ID("SHADOW_VANA"): case ID("SHADOW_LESAR"): case ID("SHADOW_REMIL"): return story >= 37;
+      case ID("VERDE"): case ID("ROSSO"): case ID("BLUNO"): return story === 37;
+      case ID("EIN"): return story === 38;
+      case ID("GONZAP"): return story === 41;
+      case ID("REALGAM_NASCOUR"): return story === 42;
+      case ID("EVICE"): return story === 43;
+      case ID("SHADOW_ARTON"): case ID("SHADOW_BAILA"): case ID("SHADOW_DIOGE"): case ID("SHADOW_JOMAS"): case ID("SHADOW_DELAN"):
+      case ID("SHADOW_NELLA"): case ID("SHADOW_STON"): return story >= 41;
       case ID("HIDEOUT_MIROR_B"): case ID("HIDEOUT_PLUSLE"): return story === 26;
       case ID("SILVA"): case ID("BUILDING_DUKING"): case ID("MIROR_B"): case ID("NASCOUR"): case ID("REATH"): case ID("FERMA"):
       case ID("BUILDING_SILVA"): case ID("HIDEOUT_DUKING"): return false;   // (only in their scenes)
@@ -283,6 +299,38 @@
       "Miror B.'s boys gave me this\nMeditite. Nobody gets past!", "Hah! Not today!", "Miror B. won't be pleased…"),
     PyriteCave_EventScript_Shadow_SOSH: T("Sosh", "Rider Sosh", "Rider", "biker", [["Linoone", 31]],
       "This cave's off-limits! My Dunsparce\nsays so!", "Back off!", "Fine, go on. I'm done here."),
+    TheUnder_EventScript_Shadow_FRENA: T("Frena", "Hunter Frena", "Hunter", "cooltrainer_f", [["Crawdaunt", 42]],
+      "Waiting for the train? So am I. Let's\nkill time with a battle!", "Ha! Next stop: your defeat!", "My Gligar… Well. The train's late anyway."),
+    TheUnder_EventScript_Shadow_LIAKS: T("Liaks", "Chaser Liaks", "Chaser", "camper", [["Kecleon", 42]],
+      "I chase down the best battles in Orre.\nYou look like one!", "Not today!", "Chased down and snagged. Ha. Fair enough."),
+    TheUnder_EventScript_Shadow_LONIA: T("Lonia", "Bodybuilder Lonia", "Bodybuilder", "black_belt", [["Hariyama", 42]],
+      "My Piloswine and I lift weights all day!\nWanna test our strength?", "Still the strongest!", "I'll lift heavier. You'll see."),
+    TheUnder_EventScript_Shadow_NELIS: T("Nelis", "Rider Nelis", "Rider", "biker", [["Mightyena", 42]],
+      "The tunnels are my road. My Sneasel's\nthe sharpest rider down here!", "Vroom! Can't touch me!", "Ride safe, Sneasel."),
+    ShadowLab_1F_EventScript_Shadow_COLE: T("Cole", "Cipher Peon Cole", "Team Rocket", "cipher_peon", [["Golbat", 42]],
+      "Intruders in the lab?! Get them!", "Hah! Out you go!", "Dr. Ein's going to have my hide…"),
+    ShadowLab_1F_EventScript_Shadow_LARE: T("Lare", "Cipher Peon Lare", "Team Rocket", "cipher_peon_f", [["Mightyena", 42]],
+      "This is Cipher's lab! Not a museum!", "Get lost!", "How did they get this far?!"),
+    ShadowLab_B1F_EventScript_Shadow_VANA: T("Vana", "Cipher Peon Vana", "Team Rocket", "cipher_peon", [["Magneton", 42]],
+      "The specimens down here are not for\nyour eyes!", "Hah!", "So much for security…"),
+    ShadowLab_B1F_EventScript_Shadow_LESAR: T("Lesar", "Cipher Peon Lesar", "Team Rocket", "cipher_peon_f", [["Crobat", 42]],
+      "You walked right into our web!", "Caught you!", "The web's torn…"),
+    ShadowLab_B1F_EventScript_Shadow_REMIL: T("Remil", "Cipher Peon Remil", "Team Rocket", "cipher_peon", [["Claydol", 42]],
+      "One more test subject for Dr. Ein!", "Hah! Specimen secured!", "My data's ruined!"),
+    RealgamTower_Dome_EventScript_Shadow_ARTON: T("Arton", "Cipher Peon Arton", "Team Rocket", "cipher_peon", [["Glalie", 44]],
+      "Welcome to Realgam Tower! You won't\nbe leaving!", "Hah!", "Cipher's grand plan… crumbling…"),
+    RealgamTower_Dome_EventScript_Shadow_BAILA: T("Baila", "Cipher Peon Baila", "Team Rocket", "cipher_peon_f", [["Bellossom", 44]],
+      "Master Evice's guests are not to go any\nfurther!", "Turn back!", "I can't stop you…"),
+    RealgamTower_Dome_EventScript_Shadow_DIOGE: T("Dioge", "Cipher Peon Dioge", "Team Rocket", "cipher_peon", [["Pinsir", 44]],
+      "You've come a long way. This is where\nit ends!", "Ha!", "Unbelievable…"),
+    RealgamTower_Colosseum_EventScript_Shadow_JOMAS: T("Jomas", "Bodybuilder Jomas", "Bodybuilder", "black_belt", [["Hariyama", 47]],
+      "The tower's Colosseum is mine! My Miltank\nnever loses!", "Still the champ!", "Lost my Miltank and my title. Rough day."),
+    RealgamTower_Colosseum_EventScript_Shadow_DELAN: T("Delan", "Rider Delan", "Rider", "biker", [["Manectric", 47]],
+      "My Absol brings disaster to everyone it\nbattles!", "Disaster! For you!", "Maybe the disaster was me."),
+    RealgamTower_Colosseum_EventScript_Shadow_NELLA: T("Nella", "Cipher Peon Nella", "Team Rocket", "cipher_peon_f", [["Ninetales", 47]],
+      "Master Nascour said to burn anyone who\ncame this far!", "Burn!", "Doused…"),
+    RealgamTower_Colosseum_EventScript_Shadow_STON: T("Ston", "Cipher Peon Ston", "Team Rocket", "cipher_peon", [["Rhydon", 48]],
+      "You're not getting past this Colosseum!", "Hah!", "Master Evice… forgive me…"),
     PyriteCave_EventScript_Shadow_ZALO: T("Zalo", "Hunter Zalo", "Hunter", "cooltrainer_m", [["Golbat", 31]],
       "My Swablu doesn't sing anymore. It\nhunts! Let's go!", "My catch stays mine!", "Huh. It never did like the dark.")
   };
