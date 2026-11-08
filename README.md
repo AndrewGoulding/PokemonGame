@@ -449,7 +449,7 @@ guard), and the Underground Path's east entrance and tunnel, and its west
 entrance onto Route 7, with its gate to Saffron, and Celadon City: its Pokémon
 Center, the Department Store (five floors and the roof; the elevator takes you
 to any floor: FireRed's floor list and its "Now on:" window, and the car shakes
-while it hums, then dings; the 2F TM counter (every name in the small font, as the long ones must be), the 4F toys and stones, the 5F drugstore (its vitamin
+while it hums, then dings; the 2F TM counter (this game's own: Hyper Beam, Dark Pulse, Flash Cannon and Stone Edge; FireRed's others there are found elsewhere in Kanto; every name in the small font, as the long ones must be), the 4F toys and stones, the 5F drugstore (its vitamin
 counter also sells the six Wings, ₽300 each); the
 Counter tutor on 3F; on the roof, vending machines with Fresh Water, Soda Pop
 and Lemonade (FireRed's list with the prices, and your money in its box at the

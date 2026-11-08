@@ -6582,6 +6582,9 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
     assert(starts.some((s) => World.walkable(s, occupied, 9999).has(b.x + "," + b.y)), b.item + " is reachable");
   }
   assert(/when: \(f\) => f\.foughtMewtwo/.test(gameJs), "Mewtwonites once Mewtwo is caught or beaten");
+  // Celadon Dept. Store 2F's TM counter: Hyper Beam, Dark Pulse, Flash Cannon and Stone Edge, each a TM of this game.
+  assert(/const CELADON_TMS = \["Hyper Beam", "Dark Pulse", "Flash Cannon", "Stone Edge"\]/.test(gameJs) && /await mart\(CELADON_TMS\)/.test(gameJs));
+  for (const mv of ["Hyper Beam", "Dark Pulse", "Flash Cannon", "Stone Edge"]) assert(Bag.machines().some((m) => /^tm/.test(m) && Bag.machineMove(m) === mv), mv + "'s TM");
   // Hoenn's Mega Stones (Omega Ruby and Alpha Sapphire's), and the Megas of Wally, Steven, Maxie and Archie.
   for (const id of ["sceptilite", "blazikenite", "swampertite", "gardevoirite", "galladite", "mawilite", "aggronite", "medichamite", "manectite",
     "sharpedonite", "cameruptite", "altarianite", "sablenite", "banettite", "absolite", "glalitite", "metagrossite", "salamencite"]) assert(all.has(id), id + " can be found");

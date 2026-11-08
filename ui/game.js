@@ -4087,8 +4087,12 @@
       case "CeladonCity_PokemonCenter_1F_EventScript_Nurse":
         await nurse(ev.map, ev.person);
         return;
-      case "CeladonCity_DepartmentStore_2F_EventScript_ClerkItems":
+      // (This game's own TM counter: FireRed's Hyper Beam, and Dark Pulse, Flash Cannon and Stone Edge; its other
+      // TMs, Roar, Dig, Brick Break, Secret Power and Attract, are found elsewhere in Kanto.)
       case "CeladonCity_DepartmentStore_2F_EventScript_ClerkTMs":
+        await mart(CELADON_TMS);
+        return;
+      case "CeladonCity_DepartmentStore_2F_EventScript_ClerkItems":
       case "CeladonCity_DepartmentStore_4F_EventScript_Clerk":
       case "CeladonCity_DepartmentStore_5F_EventScript_ClerkXItems":
         await mart(ev.person.mart);
@@ -5575,6 +5579,9 @@
     return true;
   }
 
+  // Celadon Dept. Store 2F's TM counter: Hyper Beam, Dark Pulse, Flash Cannon and Stone Edge (by the move, this
+  // game's numbers).
+  const CELADON_TMS = ["Hyper Beam", "Dark Pulse", "Flash Cannon", "Stone Edge"].map((mv) => Bag.machines().find((m) => /^tm/.test(m) && Bag.machineMove(m) === mv));
   // What the move tutors charge each time they teach.
   const TUTOR_PRICE = 10000;
 
