@@ -33,7 +33,8 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [x] Solaceon Ruins chamber network, all Unown forms and Maniac Tunnel research
 - [x] Pal Park catching show, source scoring and safe offline PC practice
 - [ ] Remaining optional challenges
-- [ ] Super Contests, accessories, Poffins and contest rewards
+- [x] Poffin cooking/feeding, source shop and Beauty evolution
+- [ ] Super Contests, dress-up accessories and contest rewards
 - [ ] Battle Tower, Factory, Arcade, Castle and Hall
 - [x] Offline Underground, source mining/fossils, Spheres, Secret Bases and Spiritomb
 - [ ] Remaining cross-feature collection rewards and trophies

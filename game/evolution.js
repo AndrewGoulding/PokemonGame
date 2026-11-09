@@ -25,6 +25,7 @@
 
   function meetsConditions(record, e, ctx) {
     const party = ctx.party || [];
+    if(e.beauty&&(record.contest?.beauty||0)<e.beauty)return false;
     if (e.gender && record.gender !== e.gender) return false;
     // ("dusk": 5pm to 6pm, Ultra Sun and Moon's evening, Dusk Lycanroc's.)
     if (e.time === "dusk") { if (ctx.time ? ctx.time !== "dusk" : clockHour() !== 17) return false; }

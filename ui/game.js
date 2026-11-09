@@ -1734,7 +1734,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -1751,6 +1751,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
+    if(item==="poffin-case"){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohPoffinDevice.openCase(scene,player);}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="seal-case"){fieldAction=async()=>{show("scene");clearMenu();try{await SinnohCapsules.open(scene,{player});}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="poke-radar"){fieldAction=async()=>{show("world");await Overworld.resume();const text=SinnohRadar.use(player,Overworld.avatar());sfx("se_m_reflect");await say(text);};return "escaped";}
     if(item==="poketch"){fieldAction=async()=>{show("scene");clearMenu();try{await SinnohPoketch.open(scene,{player,sfx});}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
@@ -5942,6 +5943,9 @@
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
     saveCheckpoint: async()=>{tick();Save.write(player);},
+    choosePoffinBerries: async()=>{Screen.say("");show("scene");clearMenu();try{return await SinnohPoffinDevice.ingredients(scene,player);}finally{show("world");await Overworld.resume();}},
+    cookPoffin: async berries=>{Screen.say("");show("scene");clearMenu();try{return await SinnohPoffinDevice.cook(scene,berries);}finally{show("world");await Overworld.resume();}},
+    openPoffinCase: async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohPoffinDevice.openCase(scene,player);}finally{show("world");await Overworld.resume();}},
     chooseParkPokemon: async()=>{Screen.say("");show("scene");clearMenu();try{return await SinnohParkSelection.open(scene,player);}finally{show("world");await Overworld.resume();}},
     mineUnderground: async()=>{Screen.say("");show("scene");clearMenu();const xp=miningXp(),dig=Mining.create(Math.random,Mining.level(xp),player.location.map,{pool:SinnohUnderground.pool(player),count:2+Math.floor(Math.random()*3),rocks:3,energy:50,tools:Mining.TOOLS.slice(0,2)}),found=await MiningScreen.run(scene,dig,xp);player.flags.miningXp=xp+dig.xp;for(const id of found){const ok=SinnohUnderground.found(player,id,dig.energy/dig.maxEnergy);await MiningScreen.message(ok?"You dug up "+Bag.name(id)+"!":"Your Underground inventory is full.");}if(!found.length)await MiningScreen.message("Nothing was dug up…");MiningScreen.clear();show("world");await Overworld.resume();await persist();},
     decorateUnderground: async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohUndergroundDevice.decorate(scene,player);}finally{show("world");await Overworld.resume();}},
@@ -11619,6 +11623,7 @@
   async function explore() {
     SinnohDaily.correctLocation(player);
     SinnohPark.recover(player);
+    SinnohPoffins.recover(player);
     Orre.correctLocation(player);
     World.setDynamicWarp(player.flags.dynamicWarp);
     for (;;) {

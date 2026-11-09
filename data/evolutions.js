@@ -10,7 +10,7 @@
 //           "shed"        Shedinja: appears next to Ninjask if there's room and a Poké Ball
 //           "crits"       after a battle in which it landed `crits` critical hits (Sirfetch'd)
 //   conditions: time ("day"|"night"|"dusk"), gender ("M"|"F"), stats ("atk>def"|"atk<def"|"atk=def"),
-//               partyType, partySpecies, moveType, personality ("low"|"high"),
+//               beauty (minimum Contest Beauty), partyType, partySpecies, moveType, personality ("low"|"high"),
 //               cloak ("plant"|"sandy"|"trash", Burmy's cloak), natures (one of them),
 //               hpLost (at least that much HP down), recoil (that much recoil
 //               damage taken in all), moveUses ({ move: times used, in all }),
@@ -202,7 +202,7 @@ window.EVOLUTIONS = {
   "Baltoy": [{"into":"Claydol","method":"level","level":36}],
   "Lileep": [{"into":"Cradily","method":"level","level":40}],
   "Anorith": [{"into":"Armaldo","method":"level","level":40}],
-  "Feebas": [{"into":"Milotic","method":"trade","item":"prism-scale"}],
+  "Feebas": [{"into":"Milotic","method":"trade","item":"prism-scale"},{"into":"Milotic","method":"level","beauty":170}],
   "Shuppet": [{"into":"Banette","method":"level","level":37}],
   "Duskull": [{"into":"Dusclops","method":"level","level":37}],
   "Dusclops": [{"into":"Dusknoir","method":"trade","item":"reaper-cloth"}],
