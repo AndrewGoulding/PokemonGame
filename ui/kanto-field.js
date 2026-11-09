@@ -206,7 +206,7 @@
 
     function safariStep() {
       const s = env.player.flags.safari;
-      if (!s || s.hgss) return null;   // (Johto's has no steps: ui/johto-safari.js)
+      if (!s || s.hgss || s.park) return null;   // (Johto's has no steps: ui/johto-safari.js)
       // (Hoenn's: 500 steps in its areas, and its Pokéblock feeders' blocks last 100: SafariZoneTakeStep.)
       if (s.hoenn) {
         if (!/^HoennSafariZone_/.test(env.player.location.map)) return null;
@@ -269,6 +269,7 @@
     // counter and on your way out. `walkIn`: the last Safari Ball missed in a
     // battle (FireRed's ExitWalkIn: you come in a step first).
     async function safariOver(text, walkIn) {
+      if(env.player.flags.safari?.park){await env.sinnohParkExit();return;}
       if (env.player.flags.safari && env.player.flags.safari.sinnoh) { await env.sinnohMarshExit(); return; }
       if (text) { env.sfx("se_ding_dong"); await env.say(env.T(text)); }
       Screen.say("");

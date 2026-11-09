@@ -765,6 +765,7 @@
   async function battleAction(canvas, opts) {
     const frame = "type" + ((opts.frame || 0) + 1), msg = G().battle.palette;
     let cursor = opts.cursor || 0;
+    if(opts.enabled&&!opts.enabled[cursor])cursor=Math.max(0,opts.enabled.findIndex(Boolean));
     // (The Safari Zone's: BALL BAIT / ROCK RUN, "What will …\nthrow?".)
     const LABELS = opts.labels || ["FIGHT", "BAG", "POKéMON", "RUN"];
     const prompt = opts.prompt || ["What will", opts.name + " do?"];
@@ -782,9 +783,12 @@
     canvas.classList.remove("hidden");
     draw();
     const r = await keys((k) => {
-      if (k === "left" || k === "right") { cursor ^= 1; draw(); }
-      else if (k === "up" || k === "down") { cursor ^= 2; draw(); }
-      else if (k === "a") { se(); return ["fight", "bag", "pokemon", "run"][cursor]; }
+      if (["left","right","up","down"].includes(k)) {
+        const previous=cursor;cursor ^= (k==="left"||k==="right")?1:2;
+        if(opts.enabled&&!opts.enabled[cursor])cursor=opts.enabled.findIndex((on,i)=>on&&i!==previous);
+        if(cursor<0)cursor=previous;draw();
+      }
+      else if (k === "a" && (!opts.enabled||opts.enabled[cursor])) { se(); return ["fight", "bag", "pokemon", "run"][cursor]; }
       else if (k === "b" && opts.canBack) { se(); return "back"; }   // (B_ACTION_CANCEL_PARTNER)
       else if (k === "b" && cursor !== 3) { cursor = 3; draw(); }   // B goes to RUN
       return undefined;

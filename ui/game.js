@@ -84,6 +84,7 @@
     get ROUTE23_BADGES() { return ROUTE23_BADGES; },
     get SAFARI_EXIT() { return SAFARI_EXIT; },
     get SAFARI_GATE() { return SAFARI_GATE; },
+    get sinnohParkExit() { return () => sinnohStory.run("pt:park-retire"); },
     get sinnohMarshExit() { return () => sinnohStory.run("pt:daily-marsh-exit"); },
     get SIGN_LADY() { return SIGN_LADY; },
     get SILPH_DOORS() { return SILPH_DOORS; },
@@ -1158,7 +1159,7 @@
       zRing: !opts.noGimmicks && Player.itemCount(player, "z-ring") > 0,
       dynamaxBand: !opts.noGimmicks && Player.itemCount(player, "dynamax-band") > 0,
       teraOrb,
-      safari: opts.safari ? Object.assign({ balls: player.flags.safari.balls, hgss: !!(player.flags.safari.hgss || player.flags.safari.sinnoh), ...(player.flags.safari.sinnoh ? { fleeRate: PLATINUM_DATA.daily.flee[foe.team[0].species] || 0 } : {}) },
+      safari: opts.safari ? Object.assign({ balls: player.flags.safari.balls,park:!!player.flags.safari.park, hgss: !!(player.flags.safari.hgss || player.flags.safari.sinnoh), ...(player.flags.safari.sinnoh ? { fleeRate: PLATINUM_DATA.daily.flee[foe.team[0].species] || 0 } : {}) },
         player.flags.safari.hoenn ? { hoenn: true, pokeblocks: () => hoennPokeblock.blocks().map(HoennPokeblock.name), usePokeblock: (i) => hoennPokeblock.blocks().splice(i, 1)[0] } : {}) : undefined,
       wild, roamer: !!opts.roamer, weather: opts.weather,
       exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
@@ -3294,7 +3295,7 @@
       if (!safari && !contest) items.push({ key: "save", label: "Save" });
       items.push({ key: "option", label: "Option" }, { key: "exit", label: "Exit" });
       for (const it of items) it.help = it.help || START_HELP[it.key];
-      const stats = safari ? (safari.hgss ? [] : [String(safari.steps).padStart(3, " ") + "/" + (safari.hoenn || safari.sinnoh ? 500 : Safari.STEPS)]).concat("Balls  " + String(safari.balls).padStart(2, " ")) : bugContest.menuStats();
+      const stats = safari ? (safari.park?["Found  "+SinnohPark.count(player)+"/6"]:safari.hgss ? [] : [String(safari.steps).padStart(3, " ") + "/" + (safari.hoenn || safari.sinnoh ? 500 : Safari.STEPS)]).concat("Balls  " + String(safari.balls).padStart(2, " ")) : bugContest.menuStats();
       const r = await GbaMenus.startMenu($("#overlay"), { items, cursor: startCursor, frame: GameOptions.get().frame, stats });
       startCursor = r.cursor;
       const v = r.key;
@@ -5940,6 +5941,8 @@
 
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
+    saveCheckpoint: async()=>{tick();Save.write(player);},
+    chooseParkPokemon: async()=>{Screen.say("");show("scene");clearMenu();try{return await SinnohParkSelection.open(scene,player);}finally{show("world");await Overworld.resume();}},
     mineUnderground: async()=>{Screen.say("");show("scene");clearMenu();const xp=miningXp(),dig=Mining.create(Math.random,Mining.level(xp),player.location.map,{pool:SinnohUnderground.pool(player),count:2+Math.floor(Math.random()*3),rocks:3,energy:50,tools:Mining.TOOLS.slice(0,2)}),found=await MiningScreen.run(scene,dig,xp);player.flags.miningXp=xp+dig.xp;for(const id of found){const ok=SinnohUnderground.found(player,id,dig.energy/dig.maxEnergy);await MiningScreen.message(ok?"You dug up "+Bag.name(id)+"!":"Your Underground inventory is full.");}if(!found.length)await MiningScreen.message("Nothing was dug up…");MiningScreen.clear();show("world");await Overworld.resume();await persist();},
     decorateUnderground: async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohUndergroundDevice.decorate(scene,player);}finally{show("world");await Overworld.resume();}},
     escapeUndergroundTrap: async id=>{Screen.say("");show("scene");clearMenu();try{await SinnohUndergroundDevice.escapeTrap(scene,id);}finally{show("world");await Overworld.resume();}}, confirm, showPicture, hidePicture, canBattle, battle, sfx, forgetMove: chooseMoveToForget,
@@ -11615,6 +11618,7 @@
 
   async function explore() {
     SinnohDaily.correctLocation(player);
+    SinnohPark.recover(player);
     Orre.correctLocation(player);
     World.setDynamicWarp(player.flags.dynamicWarp);
     for (;;) {
@@ -11661,7 +11665,7 @@
           SinnohLegends.syncForms(player);
           return sinnohStory.step() || orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
-        adjustWild: (mon, table) => { SinnohDaily.apply(player); const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !SinnohRadar.suppresses(player) && !Sevii.tanobyLocked(player.flags, player.location.map) &&
+        adjustWild: (mon, table) => { SinnohDaily.apply(player); const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !SinnohPark.suppresses(player) && !SinnohRadar.suppresses(player) && !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
           SinnohRoamers.onMap(player,m); SinnohRadar.onMap(player,m);
@@ -11670,7 +11674,7 @@
           if (m !== tempFlagsMap) strengthOn = false;
           // (Flying, blacking out or teleporting out of the Safari Zone ends the
           // Safari Game: Overworld_ResetStateAfterFly and the like.)
-          if (player.flags.safari && !player.flags.safari.hoenn && !player.flags.safari.sinnoh && !/^SafariZone_/.test(m) && m !== SAFARI_GATE) delete player.flags.safari;
+          if (player.flags.safari && !player.flags.safari.hoenn && !player.flags.safari.sinnoh && !player.flags.safari.park && !/^SafariZone_/.test(m) && m !== SAFARI_GATE) delete player.flags.safari;
           if (player.flags.safari && player.flags.safari.sinnoh && !/^PlatinumMarsh[1-6]$/.test(m)) delete player.flags.safari;
           if (player.flags.safari && player.flags.safari.hoenn && !/^HoennSafariZone_/.test(m) && m !== "Route121_SafariZoneEntrance") delete player.flags.safari;
           bugContest.onMap(m);   // (and away from the National Park, the Bug-Catching Contest)

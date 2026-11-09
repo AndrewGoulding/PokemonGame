@@ -376,11 +376,11 @@
 
   // The box and its text, redrawn when what it shows changes (box-relative).
   function safariLayer(b) {
-    const key = "safari|" + b.data.balls;
+    const key = "safari|" + !!b.data.park + "|" + b.data.balls;
     if (b.layer && b.layerKey === key) return b.layer;
     b.layerKey = key;
     const s = window.GbaMenus.Surface();
-    s.text("SAFARI BALLS", 16, 3, HB_TEXT, HB_SHADOW, "small");
+    s.text(b.data.park?"PARK BALLS":"SAFARI BALLS", 16, 3, HB_TEXT, HB_SHADOW, "small");
     const left = "Left: " + b.data.balls;
     s.text(left, 96 - s.textWidth(left, "small"), 19, HB_TEXT, HB_SHADOW, "small");
     const c = document.createElement("canvas");
@@ -625,7 +625,7 @@
   }
   // Your Safari box, sliding in as the battle starts; then the count of balls.
   function showSafariBox(balls) {
-    hb.p1.data = { safari: true, name: "safari", balls };
+    hb.p1.data = { safari: true, park:!!config.safari?.park, name: "safari", balls };
     hbShow("p1", true);
     hbStart();
   }
@@ -2458,10 +2458,12 @@
       clearMenu();
       // (Emerald's Safari Zone: BALL, POKéBLOCK, GO NEAR, RUN; one of the case's blocks is thrown, and the wild
       // Pokémon takes it by its nature: curious, enthralled, or it ignores it (ui/hoenn-pokeblock.js).)
-      const hoenn = !!(config.safari && config.safari.hoenn);
+      const hoenn = !!(config.safari && config.safari.hoenn),park=!!config.safari?.park;
       const a = await window.GbaMenus.battleAction(overlay(), { name: battle.sides.p1.name, cursor: safariCursor, frame: frame(),
-        labels: hoenn ? ["BALL", "POKéBLOCK", "GO NEAR", "RUN"] : ["BALL", "BAIT", battle.safari.hgss ? "MUD" : "ROCK", "RUN"], prompt: ["What will " + battle.sides.p1.name, hoenn ? "do?" : "throw?"] });
+        enabled:park?[true,false,false,true]:undefined,
+        labels: hoenn ? ["BALL", "POKéBLOCK", "GO NEAR", "RUN"] : park?["BALL","","","RUN"]:["BALL", "BAIT", battle.safari.hgss ? "MUD" : "ROCK", "RUN"], prompt: ["What will " + battle.sides.p1.name, hoenn ? "do?" : "throw?"] });
       safariCursor = a.cursor;
+      if(park)return{type:a.cursor===0?"ball":"run"};
       if (!hoenn) return { type: ["ball", "bait", "rock", "run"][a.cursor] };
       if (a.cursor === 1) {
         const list = config.safari.pokeblocks();

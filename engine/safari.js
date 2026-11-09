@@ -72,6 +72,7 @@
 
   // A Safari battle starting (BattleStartClearSetData; HGSS's: both stages 6; Emerald's: escape factor 3).
   function encounter(species, opts) {
+    if(opts && opts.park)return{species,park:true};
     if (opts && opts.hgss) return { species, hgss: true, catchStage: 6, fleeStage: 6, fleeRate: opts.fleeRate != null ? opts.fleeRate : hgssFleeRate(species) };
     if (opts && opts.hoenn) return { species, hoenn: true, catchFactor: baseCatchFactor(species), escapeFactor: 3, bait: 0, rock: 0, pkbl: 0, near: 0 };
     const escape = Math.floor((FLEE_RATES[species] || 0) * 100 / 1275);
@@ -90,7 +91,7 @@
   }
   // (u8)(Random() % 100) < the chance.
   // (HGSS's: Random() % 255 <= its flee rate at its stage.)
-  const flees = (s, rng) => (s.hgss ? Math.floor(rng() * 65536) % 255 <= stageOf(s.fleeRate, s.fleeStage)
+  const flees = (s, rng) => (s.park?false:s.hgss ? Math.floor(rng() * 65536) % 255 <= stageOf(s.fleeRate, s.fleeStage)
     : Math.floor(rng() * 65536) % 100 < fleeChance(s));
 
   // HandleAction_ThrowBait: eating for 2-6 more turns (at most 6), no longer

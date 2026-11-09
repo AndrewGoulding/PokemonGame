@@ -1878,8 +1878,8 @@
       const req = this.getRequest(sideId);
       if (req.phase === "wait") return { ok: false, error: "Not waiting for a choice from " + sideId };
       if (this.safari) {
-        if (!choice || !["ball", "bait", "rock", "run", "pokeblock", "gonear"].includes(choice.type)) return { ok: false, error: "Invalid choice" };
-        if (choice.type === "ball" && this.safari.balls <= 0) return { ok: false, error: "You have no Safari Balls left!" };
+        if (!choice || !(this.safari.park?["ball","run"]:["ball", "bait", "rock", "run", "pokeblock", "gonear"]).includes(choice.type)) return { ok: false, error: "Invalid choice" };
+        if (choice.type === "ball" && this.safari.balls <= 0) return { ok: false, error: this.safari.park?"You have no Park Balls left!":"You have no Safari Balls left!" };
         side.choice = { type: choice.type, liking: choice.liking | 0, name: choice.name };
       } else if (req.phase === "switch") {
         if (!choice || choice.type !== "switch" || !req.switches.includes(choice.index))
@@ -2870,11 +2870,12 @@
       }
       if (c.type === "ball") {
         s.balls--;
-        const r = window.Safari.attempt(s, { hp: foe.hp, maxhp: foe.maxhp, status: foe.status }, rng);
+        const ball = s.park ? "park-ball" : "safari-ball";
+        const r = s.park ? {caught:true,shakes:4} : window.Safari.attempt(s, { hp: foe.hp, maxhp: foe.maxhp, status: foe.status }, rng);
         // [side, ball, target, shakes (0-3), "caught"|"", balls left]
-        this.add("-ball", "p1", "safari-ball", foe, Math.min(3, r.shakes), r.caught ? "caught" : "", s.balls);
+        this.add("-ball", "p1", ball, foe, Math.min(3, r.shakes), r.caught ? "caught" : "", s.balls);
         if (r.caught) {
-          this.add("caught", foe, "safari-ball");
+          this.add("caught", foe, ball);
           this.caught = foe;
           end();
           this.winner = "p1";
