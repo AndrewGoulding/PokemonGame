@@ -29,7 +29,9 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [x] Solaceon Day-Care, breeding and Lost Tower
 - [x] Honey trees, Trophy Garden and Great Marsh daily encounters
 - [x] Pokétch, Poké Radar, roaming route tracker/flee AI and Defog/Flash integration
-- [ ] Pal Park catching show, Amity Square and remaining optional challenges
+- [x] Amity Square walking companions, source finds and daily gifts
+- [x] Solaceon Ruins chamber network, all Unown forms and Maniac Tunnel research
+- [ ] Pal Park catching show and remaining optional challenges
 - [ ] Super Contests, accessories, Poffins and contest rewards
 - [ ] Battle Tower, Factory, Arcade, Castle and Hall
 - [ ] Underground, fossils and collection rewards

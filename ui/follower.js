@@ -34,7 +34,7 @@
 
   function create(env) {
     // The Pokémon walking with you: the first that can still fight.
-    const lead = () => env.player().party.find((r) => !r.egg && r.hp > 0) || null;
+    const lead = () => (window.SinnohLeisure && SinnohLeisure.lead(env.player())) || env.player().party.find((r) => !r.egg && r.hp > 0) || null;
 
     // Its sheet: its form's (Rotom-Heat's, an Unown's letter), a female's own, or its species'.
     function sheet(r) {
@@ -51,6 +51,7 @@
     function allowed(map, name, r) {
       const m = window.WORLD_MAPS[map];
       if (!m) return false;
+      if(window.SinnohLeisure && SinnohLeisure.lead(env.player()) && map===SinnohLeisure.data().amity.map)return true;
       const opt = window.GameOptions ? window.GameOptions.get().follower | 0 : 0;
       if (opt === 1) return false;
       if ((r.species === "Diglett" || r.species === "Dugtrio") && BELL_TOWER.test(map)) return false;

@@ -1198,7 +1198,7 @@
     if (opts.raid) opts.raidBall = result.raidBall || null;   // (the Ball its Pokémon was caught in, if it was)
     for (const e of b.events) {
       if (opts.ghost) break;   // (an unidentified Ghost isn't seen)
-      if ((e[0] === "switch" || e[0] === "drag") && String(e[1]).startsWith("p2")) Player.markSeen(player, String(e[2]).split(", L")[0]);
+      if ((e[0] === "switch" || e[0] === "drag") && String(e[1]).startsWith("p2")) {Player.markSeen(player, String(e[2]).split(", L")[0]);SinnohLeisure.seen(player,foe.team[+e[5]]);}
     }
     // (A tag battle: only the three you chose; your partner's are theirs.)
     const leveledUp = [], critical = [];
@@ -11576,7 +11576,7 @@
     const mons = [first, second];
     if (!mons.every(repelAllows)) return false;
     await battle("wild", { wildDouble: true, terrain, foe: { name: "Wild", team: mons.map((m) => wildMon(Party.create(m.species, m.level,
-      { unown: Sevii.unownLetter(mapName, m.slot) || JohtoAlph.unownLetter(mapName, alphSolved()) }))) } });
+      { unown: SinnohLeisure.unownLetter(mapName) || Sevii.unownLetter(mapName, m.slot) || JohtoAlph.unownLetter(mapName, alphSolved()) }))) } });
     return true;
   }
   const ableToBattle = () => player.party.filter(Party.canFight).length;
@@ -11695,7 +11695,7 @@
       else if (ev.type === "waterfall") await waterfall();
       else if (ev.type === "whirlpool") await whirlpool();
       else if (ev.type === "rockclimb") await rockClimb();
-      else if (ev.type === "follower") await follower.talk();
+      else if (ev.type === "follower") {if(SinnohLeisure.active(player))await sinnohStory.run("pt:leisure-amity-companion");else await follower.talk();}
       else if (ev.type === "headbutt") await johtoField.headbutt(ev.map, ev.x, ev.y);
       else if (ev.type === "safari-object") await johtoSafari.fieldObject(ev.x, ev.y);
       else if (ev.type === "repel-ended" || ev.type === "lure-ended") await repelWoreOff(ev.type === "lure-ended");
@@ -11737,7 +11737,7 @@
         else if (!towerGhost() && ableToBattle() >= 2 && wildTable(here) && (lureOn() === "lure" || (Overworld.avatar() !== "surf" && Hordes.rollDouble()))
           && await wildDoubleBattle(ev, at.map, terrain, wildTable(here))) { /* (fought) */ }
         else await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(ev.species, ev.level,
-          { unown: Sevii.unownLetter(at.map, ev.slot) || JohtoAlph.unownLetter(at.map, alphSolved()) }))] },
+          { unown: SinnohLeisure.unownLetter(at.map) || Sevii.unownLetter(at.map, ev.slot) || JohtoAlph.unownLetter(at.map, alphSolved()) }))] },
           terrain, ghost: towerGhost() });
       } else {
         await story(ev);
