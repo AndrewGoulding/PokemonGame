@@ -1486,7 +1486,11 @@
         case "arrive:PhenacCity": case "enter:PhenacCity": await env.phenacFT(); return;
         case "enter:PhenacCity_MayorsHouse": await env.mayorScene(); return;
         case "PhenacCity_EventScript_Truck": await env.phenacTruck(ev.person); return;
-        case "PhenacCity_EventScript_Folly": case "PhenacCity_EventScript_Trudly": await env.say(["Folly: Back for more, rookie?"]); await env.phenacFTBattle(); return;
+        case "PhenacCity_EventScript_Folly": case "PhenacCity_EventScript_Trudly":
+          await env.say(["Folly: Heh. You again? You haven't\nlearned any lessons now, have you?", "Folly: Well, fine. I'll take you on as\noften as you dare!"]);
+          await env.phenacFTBattle(); return;
+        case "PhenacCity_EventScript_Troop_VERDE": case "PhenacCity_EventScript_Troop_ROSSO": case "PhenacCity_EventScript_Troop_BLUNO":
+          await env.phenacTroop(script); return;
         case "PhenacCity_MayorsHouse_EventScript_EsCade": await env.esCade(); return;
         case "arrive:PyriteTown": case "enter:PyriteTown": await env.pyriteArrival(); return;
         case "PyriteTown_DukingsHouse_EventScript_Duking": case "PyriteTown_DukingsHouse_EventScript_Marcia":
@@ -1510,6 +1514,9 @@
         case "enter:ShadowLab_EinsRoom": case "ShadowLab_EinsRoom_EventScript_Ein": await env.labEin(); return;
         case "arrive:RealgamTower_1F": case "enter:RealgamTower_1F": await env.realgamArrival(); return;
         case "RealgamTower_Dome_EventScript_Gonzap": await env.realgamGonzap(); return;
+        case "RealgamTower_Dome_EventScript_Admin_MIROR_B": case "RealgamTower_Dome_EventScript_Admin_DAKIM":
+        case "RealgamTower_Dome_EventScript_Admin_VENUS": case "RealgamTower_Dome_EventScript_Admin_EIN": await env.realgamAdmin(script); return;
+        case "enter:RealgamTower_Colosseum": await env.realgamDoor(); return;
         case "RealgamTower_Colosseum_EventScript_Nascour": await env.realgamNascour(); return;
         case "enter:RealgamTower_Top": case "RealgamTower_Top_EventScript_Evice": await env.realgamEvice(); return;
         case "MtBattle_EventScript_Trainer1": case "MtBattle_EventScript_Trainer2": case "MtBattle_EventScript_Turo": case "MtBattle_EventScript_Berin":
@@ -2063,8 +2070,10 @@
       // (Orre: up the road from the Air Strip to the Outskirt Stand the first time, Folly and Trudly come out.)
       if ((script === "arrive:OutskirtStand" || script === "enter:OutskirtStand") && (!(env.player.flags.orre | 0) || ((env.player.flags.orreStory | 0) === 18 && !env.player.flags.orreStandFT))) return true;
       // (Colosseum's story proper: Folly and Trudly at Phenac City; the Mayor's house's scene.)
+      // (And Team Snagem's Wakin outside the Mayor's house once he's heard Rui out: orreMayor 1.)
       if ((script === "arrive:PhenacCity" || script === "enter:PhenacCity") && (env.player.flags.orreStory | 0) === 19 && !env.player.flags.orreFT) return true;
-      if (script === "enter:PhenacCity_MayorsHouse" && (env.player.flags.orreStory | 0) === 20) return true;
+      if ((script === "arrive:PhenacCity" || script === "enter:PhenacCity") && (env.player.flags.orreStory | 0) === 20 && (env.player.flags.orreMayor | 0) === 1) return true;
+      if (script === "enter:PhenacCity_MayorsHouse" && (env.player.flags.orreStory | 0) === 20 && (env.player.flags.orreMayor | 0) !== 1) return true;
       // (Colosseum's story, Pyrite: coming to town, the Pyrite Building's top floor, Miror B.'s hideout.)
       if ((script === "arrive:PyriteTown" || script === "enter:PyriteTown") && (env.player.flags.orreStory | 0) === 21) return true;
       if (script === "enter:PyriteTown_PyriteBuilding_4F" && (env.player.flags.orreStory | 0) === 25) return true;
@@ -2080,6 +2089,7 @@
         if (script === "enter:ShadowLab_EinsRoom" && story === 38) return true;
         if (at("RealgamTower_1F") && story === 40) return true;
         if (script === "enter:RealgamTower_Top" && story === 43) return true;
+        if (script === "enter:RealgamTower_Colosseum" && env.realgamDoorShut()) return true;   // (without the Admins' four ID Badges)
       }
       // Orre entrance scenes above are conditional; do not let the generic
       // handler registry replay completed scenes when revisiting a building.

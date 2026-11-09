@@ -164,7 +164,20 @@
       case ID("VENUS"): return story === 35;
       case ID("SHADOW_FRENA"): case ID("SHADOW_LIAKS"): case ID("SHADOW_LONIA"): case ID("SHADOW_NELIS"): return story >= 34;
       case ID("SHADOW_COLE"): case ID("SHADOW_LARE"): case ID("SHADOW_VANA"): case ID("SHADOW_LESAR"): case ID("SHADOW_REMIL"): return story >= 37;
-      case ID("VERDE"): case ID("ROSSO"): case ID("BLUNO"): return story === 37;
+      // (The Mystery Troop's no longer in the lab: as in Colosseum, you meet them in Phenac City.)
+      case ID("VERDE"): case ID("ROSSO"): case ID("BLUNO"): return person.script === "ShadowLab_B1F_EventScript_Troop" ? false : undefined;
+      case ID("SHADOW_TANIE"): return story >= 37;
+      // (Realgam Tower's domes, as in Colosseum: Cipher's Admins Miror B., Dakim, Venus and Ein once Gonzap's beaten
+      // (42); each battles you once, or till their Shadow Pokémon's snagged if it never was.)
+      case ID("REALGAM_MIROR_B"): case ID("REALGAM_DAKIM"): case ID("REALGAM_VENUS"): case ID("REALGAM_EIN"):
+        return story >= 42 && !REALGAM_ADMINS.find((a) => a.id === person.localId).done(flags);
+      // (After the game: the Mystery Troop in the rebuilt hideout, those whose starter you didn't snag in Phenac City;
+      // one snagged here stays, with their words for it.)
+      case ID("SHADOW_HIDEOUT_VERDE"): case ID("SHADOW_HIDEOUT_ROSSO"): case ID("SHADOW_HIDEOUT_BLUNO"): {
+        const name = person.localId.split("_").pop(), who = name.charAt(0) + name.slice(1).toLowerCase();
+        const snagged = shadowOf(who).every((s) => (flags.orreShadowSnagged || []).includes(s.species));
+        return story >= 44 && (!snagged || (flags.orreShadowDone || []).includes(person.script));
+      }
       case ID("EIN"): return story === 38;
       case ID("GONZAP"): return story === 41;
       case ID("REALGAM_NASCOUR"): return story === 42;
@@ -179,7 +192,10 @@
       case ID("SILVA"): case ID("BUILDING_DUKING"): case ID("MIROR_B"): case ID("NASCOUR"): case ID("REATH"): case ID("FERMA"):
       case ID("BUILDING_SILVA"): case ID("HIDEOUT_DUKING"): return false;   // (only in their scenes)
       case ID("PHENAC_RUI"): case ID("MAYOR_RUI"): case ID("MAYOR_FOLLY"): case ID("MAYOR_TRUDLY"):
-      case ID("MAYOR_GRUNT_1"): case ID("MAYOR_GRUNT_2"): return false;   // (only in their scenes)
+      case ID("MAYOR_GRUNT_1"): case ID("MAYOR_GRUNT_2"): case ID("MAYOR_MIROR_B"): case ID("PHENAC_WAKIN"): case ID("PHENAC_GRUNT"):
+        return false;   // (only in their scenes)
+      // (The Mystery Troop by Phenac's way out, after the Mayor's house, till you've beaten one: player.flags.orreTroop.)
+      case ID("PHENAC_VERDE"): case ID("PHENAC_ROSSO"): case ID("PHENAC_BLUNO"): return story === 21 && !flags.orreTroop;
       default: return undefined;
     }
   }
@@ -398,49 +414,197 @@
   // and what they say: before, beaten (but their Shadow Pokémon not snagged: they'll battle again), and once snagged.
   const T = (trainer, name, cls, pic, intro, kept, after) => ({ trainer, name, cls, pic, intro: [].concat(intro), kept: [].concat(kept), after: [].concat(after) });
   const SHADOW_TRAINERS = {
-    // (After the game, as in Colosseum: Team Snagem back in its rebuilt hideout, Biden and Agrev; Fein, the "hero"
-    // who's been telling everyone at the Outskirt Stand he saved Orre; Deep King Agnol, in The Under's Deep Colosseum.)
-    SnagemHideout_EventScript_Shadow_BIDEN: T("Biden", "Snagem Biden", "Team Rocket", "snagem_grunt", "Well, well. The traitor comes home!\nWe rebuilt this place without you,\nand Cipher left us a little gift.", "Ha! Smeargle stays with Snagem!",
-      "Snagem's finished… again. Should've\nstuck to honest snagging."),
-    SnagemHideout_EventScript_Shadow_AGREV: T("Agrev", "Snagem Agrev", "Team Rocket", "snagem_grunt", "You wrecked the old hideout and ran\noff with the Snag Machine! Payback\ntime!", "Grr! Get out of our hideout!",
-      "Gonzap's gonna hear about this…"),
-    OutskirtStand_EventScript_Shadow_FEIN: T("Fein", "Hero Fein", "Team Rocket", "cipher_peon", "Ah, a fan! Yes, it's me, Fein: the\nhero who brought down Cipher!\nWant to see how I did it?", "See? Heroic, through and through!",
-      "Ancha: Wait… the real hero was YOU?\nWhat a scoop! Fein, you fraud!"),
-    TheUnder_DeepColosseum_EventScript_Shadow_AGNOL: T("Agnol", "Deep King Agnol", "Leader", "super_nerd", "So you're the one who beat my Deep\nColosseum. I am Agnol, its king.\nFace my Shuckle, if you dare!", "My reign goes on!",
-      "My Shuckle… Hmph. The Deep\nColosseum's yours, champion."),
-    PyriteTown_EventScript_Shadow_CAIL: T("Cail", "Rogue Cail", "Rogue", "burglar", "Hey, you. I won this Furret in a\nchallenge at the Colosseum. Wanna\nsee what it can do?", "Heh. My Furret's still mine.",
-      "My prize Furret… Ah, forget it. It\nwas scary anyway. Bit people."),
-    PyriteTown_EventScript_Shadow_VANT: T("Vant", "Rider Vant", "Rider", "biker", "My Misdreavus never laughs anymore.\nIt just fights. Kinda cool, huh?", "Ha! Still mine!", "It used to giggle at night…\nI miss that, actually."),
-    PyriteTown_EventScript_Shadow_NOVER: T("Nover", "Rider Nover", "Rider", "biker", "Rev it up! My Noctowl's got a mean\nstreak since I won it!", "Vroom! Can't catch me!", "Huh. Maybe it'll calm down with you."),
-    PyriteTown_EventScript_Shadow_DIOGO: T("Diogo", "St. Performer Diogo", "St. Performer", "juggler", "Step right up! Watch my Flaaffy's\nterrifying new act!", "The show goes on!", "My Flaaffy's act was a little too\nwild anyway."),
-    PyriteTown_EventScript_Shadow_LEBA: T("Leba", "Rider Leba", "Rider", "biker", "My Skiploom doesn't float around\nanymore. It attacks! Want to see?", "Ha! Back off!", "Bye, Skiploom. Be nicer with them."),
-    PyriteTown_EventScript_Shadow_DIVEL: T("Divel", "Bandana Guy Divel", "Bandana Guy", "rocker", "Quagsire used to be such a lazybones.\nNow it never stops!", "Still mine, pal!", "Take care of the big guy, will ya?"),
+    // (After the game, as in Colosseum: Team Snagem back in its rebuilt hideout, Biden and Agrev, and the Mystery
+    // Troop's other two (those you didn't meet in Phenac City); Fein, the impostor at the Outskirt Stand who's been
+    // passing himself off as you, with Ancha the reporter; Deep King Agnol, in The Under's Deep Colosseum. Colosseum's
+    // words: S2_building_1F_2, S1_out, and Agnol's battle lines.)
+    SnagemHideout_EventScript_Shadow_BIDEN: T("Biden", "Snagem Biden", "Team Rocket", "snagem_grunt",
+      ["Yo! If it isn't {PLAYER}! You've got\nguts showing up here after betraying\nTeam Snagem!", "This is where it ends. I know you're\nhere to wreck the Snag Machine like\nbefore."],
+      ["We'll paint your loser face next time\nfor sure!"],
+      ["I was going to knock you out, then\npaint your loser face with my\nSmeargle…", "But I ended up on the receiving end\nof the paint…"]),
+    SnagemHideout_EventScript_Shadow_AGREV: T("Agrev", "Snagem Agrev", "Team Rocket", "snagem_grunt",
+      ["So it's {PLAYER}… I'm guessing that\nyou were drawn here by rumors of the\nSnag Machine.", "Did you really think we could fix the\nSnag Machine? Are you that gullible?", "It was all an elaborate trap by\nMaster Gonzap to sucker you into\ncoming!"],
+      ["Heh… You obviously haven't mastered\nthe Snag Machine yet.", "Maybe there's a chance for me to beat\nyou still!"],
+      ["You know how to work that Snag\nMachine, all right… I don't like\nadmitting it, but you've beaten me", "thoroughly."]),
+    SnagemHideout_EventScript_Shadow_VERDE: Object.assign(T("Verde", "Mystery Troop Verde", "Team Rocket", "cipher_peon",
+      ["Wha-What, {PLAYER}?! It's been a\nwhile! Not since the Mayor's house in\nPhenac City.", "You quit Team Snagem. There's\nnothing here for you.", "Or did you come out to see me,\nVerde?", "Fufufu… If that's the case,\nI'd better not disappoint you."],
+      ["Tch! You win, but just today!", "But remember this! You haven't seen\nBayleef's real power! What you've\nseen is nothing!"],
+      ["Enjoy Snagging my Shadow Bayleef\nwhile you can!", "There are still more Shadow Pokémon\ntrainers out there!"]), { key: "Verde@Hideout" }),
+    SnagemHideout_EventScript_Shadow_ROSSO: Object.assign(T("Rosso", "Mystery Troop Rosso", "Team Rocket", "cipher_peon",
+      ["Wha-What, {PLAYER}?! It's been a\nwhile! Not since the Mayor's house in\nPhenac City.", "You quit Team Snagem. There's\nnothing here for you.", "Or did you come out to see me,\nRosso?", "Fufufu… If that's the case,\nI'd better not disappoint you."],
+      ["Tch! You win, but just today!", "But remember this! You haven't seen\nQuilava's real power! What you've\nseen is nothing!"],
+      ["Enjoy Snagging my Shadow Quilava\nwhile you can!", "There are still more Shadow Pokémon\ntrainers out there!"]), { key: "Rosso@Hideout" }),
+    SnagemHideout_EventScript_Shadow_BLUNO: Object.assign(T("Bluno", "Mystery Troop Bluno", "Team Rocket", "cipher_peon",
+      ["Wha-What, {PLAYER}?! It's been a\nwhile! Not since the Mayor's house in\nPhenac City.", "You quit Team Snagem. There's\nnothing here for you.", "Or did you come out to see me,\nBluno?", "Fufufu… If that's the case,\nI'd better not disappoint you."],
+      ["Tch! You win, but just today!", "But remember this! You haven't seen\nCroconaw's real power! What you've\nseen is nothing!"],
+      ["Enjoy Snagging my Shadow Croconaw\nwhile you can!", "There are still more Shadow Pokémon\ntrainers out there!"]), { key: "Bluno@Hideout" }),
+    OutskirtStand_EventScript_Shadow_FEIN: T("Fein", "Shady Guy Fein", "Team Rocket", "cipher_peon",
+      ["???: Fufufu! The resemblance is\nuncanny, hey? You are me, and I am\nyou, and we are all together here.", "???: I can see that you don't\nunderstand. But there is one thing\ncertain!", "???: You're going to battle me!"],
+      ["Fein: My name is Fein! I am the\nmaster of disguise!", "Fein: How do you like the job I did?\nYour reputation's totally trashed!\nMwahahahah!", "Fein: Since my cover's blown, you\nleave me with no choice! We battle\nnow!"],
+      ["Ancha: Oh, my gosh! The perpetrator\nof the attacks wasn't this trainer,\nbut an impostor!", "Ancha: This is a major scoop! It's a\nhuge break in the story!"]),
+    TheUnder_DeepColosseum_EventScript_Shadow_AGNOL: T("Agnol", "Deep King Agnol", "Leader", "super_nerd",
+      ["Kekeke! Try not to overdo it!"],
+      ["I see… You are skilled!"],
+      ["You really are strong! Outstandingly\nso!"]),
+    PyriteTown_EventScript_Shadow_CAIL: T("Cail", "Rogue Cail", "Rogue", "burglar", ["What are you looking at? I\nhaven't seen your faces around these\nparts. What are you, tourists?", "If you don't want to get hurt,\nyou should get lost, and quick. For\nthe good of your health. Heheh.",
+        "Hah? What's that? You're\nwanting to know if I have a weird\nPokémon?", "Hehe. If you want to know that\nmuch, you may as well see it with\nyour own eyes!"],
+      "Moan… I've learned how tough\nyou are battling. It's a full-body\nexperience.",
+      ["People talk, hey? The word is,\nthere's a lot scarier presence in the\nshadows behind that Miror B.", "It's probably best that you\ndon't stick your nose too deeply in\nthere. For the good of your health."]),
+    PyriteTown_EventScript_Shadow_VANT: T("Vant", "Rider Vant", "Rider", "biker", ["Kyahahahah! You're looking to\nbattle with me?", "That's too funny! Come at me as if\nyour life depended on it!\nKyahahahah!"],
+      "Next time, I get to win and do the\nlaughing! Kyahahahah!", "Wow. That was easy for you. Losing\nlike that snapped me out of my hyper\nstate."),
+    PyriteTown_EventScript_Shadow_NOVER: T("Nover", "Rider Nover", "Rider", "biker", ["This is Duel Square, where even\ncrying kids know they'd better shut\nup. This is where roughnecks gather.", "So, how about it? How would you like\nto battle with me?",
+        "Excellent! I like a man who can come\nto a quick decision! Let's have it\nout!"],
+      "You're pretty good at this. But I'm\nnot losing the next time!", "Everyone's itching for the chance to\nbattle it out. If you ever get the\nurge, come back."),
+    PyriteTown_EventScript_Shadow_DIOGO: T("Diogo", "St. Performer Diogo", "St. Performer", "juggler", ["Hohohoho! Do you feel like sticking\naround for a demonstration of my\nPokémon's moves?", "Good, good. I like your attitude.\nFeast your eyes on these!"],
+      "Your Pokémon surpassed my little\ndarlings. But you won't get to win\nnext time!",
+      ["You're surprisingly good. I think you\ndeserve to know a little secret about\na certain Pokémon move.", "The move Shadow Rush inflicts damage\non any kind of Pokémon without being\naffected by their types.",
+        "The amount of damage doesn't vary\nwith the target Pokémon's type, so\nit's easy to use."]),
+    PyriteTown_EventScript_Shadow_LEBA: T("Leba", "Rider Leba", "Rider", "biker", "If you try talking to anyone in Duel\nSquare, there's only one answer!",
+      ["Ooh, that was an incredible battle!\nI simply love strong guys! That's\nL-O-V-E!", "If you ever get the urge to battle\nwith me again, I'll always be here\nfor you, honey!"],
+      ["Ooh, that was an incredible battle!\nI simply love strong guys! That's\nL-O-V-E!", "If you ever get the urge to battle\nwith me again, I'll always be here\nfor you, honey!"]),
+    PyriteTown_EventScript_Shadow_DIVEL: T("Divel", "Bandana Guy Divel", "Bandana Guy", "rocker", ["Huh? You want to battle me?", "Sure thing! Battling fans are always\nwelcome!"],
+      "You're way tough! We've gotta battle\nagain!", "You're way tough! We've gotta battle\nagain!"),
     PyriteTown_EventScript_Shadow_LON: T("Lon", "Roller Boy Lon", "Roller Boy", "youngster", "Check out my Slugma! It's hot-headed\nnow. Like, really hot-headed!", "Wheee! Still mine!", "Aw… My Slugma…"),
-    PyriteTown_EventScript_Shadow_DOKEN: T("Doken", "Hunter Doken", "Hunter", "cooltrainer_m", "A Hunter knows a good catch. My\nQwilfish is the best in Pyrite!", "You'll never land it!", "Snagged… by a kid. Unbelievable."),
-    PyriteCave_EventScript_Shadow_TWAN: T("Twan", "Rider Twan", "Rider", "biker", "Miror B.'s boys gave me this\nMeditite. Nobody gets past!", "Hah! Not today!", "Miror B. won't be pleased…"),
-    PyriteCave_EventScript_Shadow_SOSH: T("Sosh", "Rider Sosh", "Rider", "biker", "This cave's off-limits! My Dunsparce\nsays so!", "Back off!", "Fine, go on. I'm done here."),
-    TheUnder_EventScript_Shadow_FRENA: T("Frena", "Hunter Frena", "Hunter", "cooltrainer_f", "Waiting for the train? So am I. Let's\nkill time with a battle!", "Ha! Next stop: your defeat!", "My Gligar… Well. The train's late anyway."),
-    TheUnder_EventScript_Shadow_LIAKS: T("Liaks", "Chaser Liaks", "Chaser", "camper", "I chase down the best battles in Orre.\nYou look like one!", "Not today!", "Chased down and snagged. Ha. Fair enough."),
-    TheUnder_EventScript_Shadow_LONIA: T("Lonia", "Bodybuilder Lonia", "Bodybuilder", "black_belt", "My Piloswine and I lift weights all day!\nWanna test our strength?", "Still the strongest!", "I'll lift heavier. You'll see."),
-    TheUnder_EventScript_Shadow_NELIS: T("Nelis", "Rider Nelis", "Rider", "biker", "The tunnels are my road. My Sneasel's\nthe sharpest rider down here!", "Vroom! Can't touch me!", "Ride safe, Sneasel."),
-    ShadowLab_1F_EventScript_Shadow_COLE: T("Cole", "Cipher Peon Cole", "Team Rocket", "cipher_peon", "Intruders in the lab?! Get them!", "Hah! Out you go!", "Dr. Ein's going to have my hide…"),
-    ShadowLab_1F_EventScript_Shadow_LARE: T("Lare", "Cipher Peon Lare", "Team Rocket", "cipher_peon_f", "This is Cipher's lab! Not a museum!", "Get lost!", "How did they get this far?!"),
-    ShadowLab_B1F_EventScript_Shadow_VANA: T("Vana", "Cipher Peon Vana", "Team Rocket", "cipher_peon", "The specimens down here are not for\nyour eyes!", "Hah!", "So much for security…"),
-    ShadowLab_B1F_EventScript_Shadow_LESAR: T("Lesar", "Cipher Peon Lesar", "Team Rocket", "cipher_peon_f", "You walked right into our web!", "Caught you!", "The web's torn…"),
-    ShadowLab_B1F_EventScript_Shadow_REMIL: T("Remil", "Cipher Peon Remil", "Team Rocket", "cipher_peon", "One more test subject for Dr. Ein!", "Hah! Specimen secured!", "My data's ruined!"),
-    RealgamTower_Dome_EventScript_Shadow_ARTON: T("Arton", "Cipher Peon Arton", "Team Rocket", "cipher_peon", "Welcome to Realgam Tower! You won't\nbe leaving!", "Hah!", "Cipher's grand plan… crumbling…"),
-    RealgamTower_Dome_EventScript_Shadow_BAILA: T("Baila", "Cipher Peon Baila", "Team Rocket", "cipher_peon_f", "Master Evice's guests are not to go any\nfurther!", "Turn back!", "I can't stop you…"),
-    RealgamTower_Dome_EventScript_Shadow_DIOGE: T("Dioge", "Cipher Peon Dioge", "Team Rocket", "cipher_peon", "You've come a long way. This is where\nit ends!", "Ha!", "Unbelievable…"),
-    RealgamTower_Colosseum_EventScript_Shadow_JOMAS: T("Jomas", "Bodybuilder Jomas", "Bodybuilder", "black_belt", "The tower's Colosseum is mine! My Miltank\nnever loses!", "Still the champ!", "Lost my Miltank and my title. Rough day."),
-    RealgamTower_Colosseum_EventScript_Shadow_DELAN: T("Delan", "Rider Delan", "Rider", "biker", "My Absol brings disaster to everyone it\nbattles!", "Disaster! For you!", "Maybe the disaster was me."),
-    RealgamTower_Colosseum_EventScript_Shadow_NELLA: T("Nella", "Cipher Peon Nella", "Team Rocket", "cipher_peon_f", "Master Nascour said to burn anyone who\ncame this far!", "Burn!", "Doused…"),
-    RealgamTower_Colosseum_EventScript_Shadow_STON: T("Ston", "Cipher Peon Ston", "Team Rocket", "cipher_peon", "You're not getting past this Colosseum!", "Hah!", "Master Evice… forgive me…"),
-    PyriteCave_EventScript_Shadow_ZALO: T("Zalo", "Hunter Zalo", "Hunter", "cooltrainer_m", "My Swablu doesn't sing anymore. It\nhunts! Let's go!", "My catch stays mine!", "Huh. It never did like the dark.")
+    PyriteTown_EventScript_Shadow_DOKEN: T("Doken", "Hunter Doken", "Hunter", "cooltrainer_m", ["That guy earlier was too weak for\nwords. How about you?", "Are you going to keep me amused?"],
+      "Battling you was fun, so that's good\nenough for me.", ["Oh, yeah, I love strong guys.", "…Wait. I said \"love,\" but don't get\nany wrong ideas…"]),
+    PyriteCave_EventScript_Shadow_TWAN: T("Twan", "Rider Twan", "Rider", "biker", "Hold it! Don't think you're going\nanywhere when you catch my eye.",
+      "Are you maybe even stronger than\nMiror B.?", "My Pokémon have won a knockout\nchallenge! You're no average trainer\nfor beating them!"),
+    PyriteCave_EventScript_Shadow_SOSH: T("Sosh", "Rider Sosh", "Rider", "biker", "Kukukuku… Welcome to here!",
+      "No way, no way! You're supposed to\ntell me that you're so strong!", "No way, no way! I'm supposed to beat\nsomeone as strong as you? They must\nbe joking!"),
+    // (The Under's subway, Colosseum's words.)
+    TheUnder_EventScript_Shadow_FRENA: T("Frena", "Hunter Frena", "Hunter", "cooltrainer_f", "If you're mean to me, I'm going to\ncry. Okay?", "But I want to cry… Waaaaah!", "Waaaaaaah!"),
+    TheUnder_EventScript_Shadow_LIAKS: T("Liaks", "Chaser Liaks", "Chaser", "camper", ["What the…? What're you two doing all\nthe way down here?", "What's Frena doing up top?"],
+      "I know why Frena up top let you two\nthrough. Oh, I get it. I got it real\ngood.", "I know why Frena up top let you two\nthrough. Oh, I get it. I got it real\ngood."),
+    TheUnder_EventScript_Shadow_LONIA: T("Lonia", "Bodybuilder Lonia", "Bodybuilder", "black_belt", "Well, what do you know. I hardly\nthought that I'd have to get involved\nin this.",
+      "I'm a loser… I can't show my face in\nfront of Lady Venus like this…", "I'm a loser… I can't show my face in\nfront of Lady Venus like this…"),
+    TheUnder_EventScript_Shadow_NELIS: T("Nelis", "Rider Nelis", "Rider", "biker", "Forget about getting past me. I'll\nprotect Lady Venus from you!",
+      "This makes me feel like going\nsomewhere far away by train…", "This makes me feel like going\nsomewhere far away by train…"),
+    // (The Shadow Pokémon Lab's Peons, Tanie with them as in Colosseum, and Realgam Tower's Trainers: Colosseum's
+    // words, from the lab's and the tower's own lines and its battle lines, D1_labo_*, D4_dome_*, D4_casino_colo.)
+    ShadowLab_1F_EventScript_Shadow_COLE: T("Cole", "Cipher Peon Cole", "Team Rocket", "cipher_peon",
+      ["Oh, hey! Intruder alert!"],
+      ["Oh? You again! You're not getting off\nscot-free this time!"],
+      ["It's off-limits beyond here!"]),
+    ShadowLab_1F_EventScript_Shadow_LARE: T("Lare", "Cipher Peon Lare", "Team Rocket", "cipher_peon_f",
+      ["Waaaargh! You two! You're not Lab\nstaff!"],
+      ["Back for more mischief?!"],
+      ["Uh-uh, you're not supposed to be in\nhere!"]),
+    ShadowLab_B1F_EventScript_Shadow_VANA: T("Vana", "Cipher Peon Vana", "Team Rocket", "cipher_peon",
+      ["Uh-oh! Intruder alert!"],
+      ["Back again? No welcome for you this\ntime!"],
+      ["Stop right there! There's no entry\nbeyond this point!"]),
+    ShadowLab_B1F_EventScript_Shadow_LESAR: T("Lesar", "Cipher Peon Lesar", "Team Rocket", "cipher_peon_f",
+      ["Wh-What? What are outsiders doing\nhere? Why isn't security doing their\njob?"],
+      ["So long as I have my Shadow Ariados,\nI won't abandon my plans!"],
+      ["Sweeties, you've caused enough\nmischief already!"]),
+    ShadowLab_B1F_EventScript_Shadow_REMIL: T("Remil", "Cipher Peon Remil", "Team Rocket", "cipher_peon",
+      ["Waah! How did you sneak up on me like\nthat?", "Huh? Don't I know you from somewhere?\nLike at the Mayor's home in Phenac?", "You've been spoiling Cipher's plans\nall over, haven't you? You're not\ngoing to mess my plan up!"],
+      ["I'm going to become a Cipher Admin no\nmatter what! Don't get in my way!"],
+      ["What? Quit annoying me. You'd better\nget ready, or Master Ein will… Huh?!"]),
+    ShadowLab_B1F_EventScript_Shadow_TANIE: T("Tanie", "Cipher Peon Tanie", "Team Rocket", "cipher_peon_f",
+      ["Hi, there! There's no alarm blaring,\nbut here I am anyways!"],
+      ["So long as I have my Shadow Granbull,\nI won't abandon my plans!"],
+      ["What in the name of… How did you two\navoid the eyes of our security staff?"]),
+    RealgamTower_Dome_EventScript_Shadow_ARTON: T("Arton", "Cipher Peon Arton", "Team Rocket", "cipher_peon",
+      ["Are you looking to get past this\ndoor?", "Hmm… I'm guessing there's a daredevil\nin you.", "Heh… You'll know right away if that's\npossible by battling me!"],
+      ["It's to your doom!"],
+      ["That's the right idea. You're about\nten years too young to challenge me."]),
+    RealgamTower_Dome_EventScript_Shadow_BAILA: T("Baila", "Cipher Peon Baila", "Team Rocket", "cipher_peon_f",
+      ["Oh, yeah? So you're telling me that\nyou'll knock me out of the way?", "Heh… You'll know right away if that's\npossible by battling me!"],
+      ["Humph. The way you battle, you'd need\nmore lives than a cat!"],
+      ["Oh, having trouble, are we?", "Perhaps you're lost in the expanse of\nthis building?"]),
+    RealgamTower_Dome_EventScript_Shadow_DIOGE: T("Dioge", "Cipher Peon Dioge", "Team Rocket", "cipher_peon",
+      ["Whoa, stop right there. I can't very\nwell let you go any farther."],
+      ["Hohoho. Yes, turn your back on the\nenemy; that's so fundamentally wrong.\nI would say amateurish, even."],
+      ["Ah, that is good to hear. Go with\ncare."]),
+    RealgamTower_Colosseum_EventScript_Shadow_JOMAS: T("Jomas", "Bodybuilder Jomas", "Bodybuilder", "black_belt",
+      ["A big crowd like this… It is a little\nintimidating.", "I don't want to be embarrassed here,\nso I'll battle to win!"],
+      ["Okay, that's that, then. My Pokémon\nare all nursed back to perfect health\nand readiness.", "Now we can go full tilt against you\nin battle!"],
+      ["I lost this battle, but it made me a\nlittle bit stronger, too."]),
+    RealgamTower_Colosseum_EventScript_Shadow_DELAN: T("Delan", "Rider Delan", "Rider", "biker",
+      ["My turn next!"],
+      ["It's no fun at all to lose!"],
+      ["I lost, but I had fun, so that makes\nit okay!"]),
+    RealgamTower_Colosseum_EventScript_Shadow_NELLA: T("Nella", "Cipher Peon Nella", "Team Rocket", "cipher_peon_f",
+      ["You must be {PLAYER}. I've been\nlooking forward to meeting you.", "Don't you think it's a great honor to\nbattle on this fabulous stage?", "I'm going to beat you and earn my\npromotion to an Admin!"],
+      ["You beating me is unthinkable,\nimpossible, and downright unreal!"],
+      ["I lost! How improbable is that?"]),
+    RealgamTower_Colosseum_EventScript_Shadow_STON: T("Ston", "Cipher Peon Ston", "Team Rocket", "cipher_peon",
+      ["I'm the last battler.", "I'll show you exactly why I was\nchosen to anchor our squad!"],
+      ["I'm simply not about to lose!"],
+      ["This made me a little bit stronger!"]),
+    PyriteCave_EventScript_Shadow_ZALO: T("Zalo", "Hunter Zalo", "Hunter", "cooltrainer_m", "I need to score points with Miror B.\nso I can get a promotion!",
+      "I'll get you! Next time, I'll run a\nbattle that will knock your socks\noff!", "You ruined all my hopes of getting\na promotion… Sob…")
   };
 
   // Rider Willie's two Zigzagoon (Lv. 24, as in Colosseum: met at the start of its story proper).
   const willieTeam = () => team("Willie");
 
+
+  // ---------- Realgam Tower's Admins, and the people this file adds to Orre's maps (Colosseum's) ----------
+  //
+  // In Colosseum's Realgam Tower, once Gonzap's beaten, Cipher's Admins Miror B., Dakim, Venus and Ein each wait in
+  // one of the domes, with a new team (Orre.TEAMS "…@Realgam"; their Shadow Pokémon too, if it was never snagged, and
+  // it can be snagged then), and each gives you an ID Badge when beaten; the four open the way on to the tower's
+  // Colosseum. Their words are Colosseum's (D4_dome_2, _4, _8, _11, and their battle lines). player.flags
+  // .orreRealgamAdmins: those beaten. An Admin stays (battling again with their "again" words) till their Shadow
+  // Pokémon's snagged.
+  const REALGAM_ADMINS = [
+    { trainer: "Miror B.", name: "Cipher Admin Miror B.", pic: "rocker", sprite: "rocker", frames: 10, x: 2, y: 5, facing: "face_right",
+      intro: ["Miror B.: Fuhohohoh. You've kept me\nhanging around, {PLAYER}. You ruined\nthings in Pyrite for us.", "Miror B.: But, you know, we're not\nabout to lose over and over to you.", "This time, I'll win. And I mean it\nthis time.", "Miror B.: Let the music play! …Oh,\nnever mind that. We'll battle right\naway!"],
+      again: ["Miror B.: Fuhohoho! When will you\nrealize how futile it is for you to\nchallenge me?", "Miror B.: But if that's the way you\nlike it, uh-huh, I'll show you how\nit's done. Let's battle!"],
+      defeat: ["Oh, no, no, no! My tempo is off\nagain! This won't do at all!"],
+      won: ["Miror B.: This just won't do! But\nI'll admit you've beaten me\nthoroughly.", "Miror B.: Okay, since I'm done, I'll\ngive you this. Here!"],
+      badge: "{PLAYER} obtained the Red ID Badge!", after: ["Miror B.: Think of that as a little\ngift from our great leader Nascour.", "Don't leave without it, because\nyou'll get nowhere.", "Miror B.: But, you know, maybe it'd\nbe for your own good if you didn't go\non. Fuhohoho!"],
+      lost: ["Miror B.: Fwohohoho! My dancing is\nsheer perfection today!"] },
+    { trainer: "Dakim", name: "Cipher Admin Dakim", pic: "black_belt", sprite: "black_belt", frames: 10, x: 10, y: 5, facing: "face_left",
+      intro: ["Dakim: Daahahah! Your luck ran out\nwhen you showed up before me!", "Dakim: Your stab at adventure's gone\non long enough!"],
+      again: ["Dakim: Back, are you? You won't give\nup even after being pummeled.", "Dakim: That's gutsy! I like that, but\nyou won't live long that way!\nDaahahahah!"],
+      defeat: ["This can't be! The mighty Dakim loses\nagain?"],
+      won: ["Dakim: In all the time I've been\nbattling, my only losses came at the\nhands of Master Nascour and you.", "Dakim: Now, take this. It's your\npassport to terror and despair!"],
+      badge: "{PLAYER} obtained the Green ID Badge!", after: ["Dakim: If you're thinking of turning\nback, now's the time to do it. Go on\nhome to Mommy! Daahahahah!"],
+      lost: ["Dakim: Dahaha! You have experienced\nthe real might of the mighty Dakim!"] },
+    { trainer: "Venus", name: "Cipher Admin Venus", pic: "beauty", sprite: "beauty", frames: 10, x: 1, y: 10, facing: "face_right",
+      intro: ["Venus: Oh, well if it isn't that\ndarling boy and girl. What kept you\nso long? I'm rather tired of waiting.", "Venus: Now, say your good-byes. This\ntime, I really am going to be as\nserious as serious can be!"],
+      again: ["Venus: Oh, my darlings, you're back\nagain! Don't you ever get tired of\nthis?", "Or did you want to see me that much?", "Venus: I can understand how you feel,\nbut I have no use for children!\nOhohohoh!"],
+      defeat: ["Aiyeeh! How dare you! How dare you!"],
+      won: ["Venus: Me, lose again? My pride will\nnot stand for it!", "Venus: Here, take this thing away!\nFor that, I want your silence that\nthis battle never happened!"],
+      badge: "{PLAYER} obtained the Blue ID Badge!", after: ["Venus: I shall forget that I ever\nbattled with you. Yes, that's what\nI'll do. Ohohohoh!"],
+      lost: ["Venus: Ohohoho! It serves you right!"] },
+    { trainer: "Ein", name: "Cipher Admin Ein", pic: "scientist", sprite: "scientist", frames: 10, x: 11, y: 10, facing: "face_left",
+      intro: ["Ein: Well, well. So, you have come.\nHand-in-hand like a happy couple on\nan aimless stroll.", "Ein: Well, let me inform you, this is\nno picnic. You will never defeat me\nwith such a frivolous mind!"],
+      again: ["Ein: Hmm? Now, what a pleasant\nsurprise.", "Ein: After the thrashing I last\nadministered, you still possess the\nwill to challenge me again!"],
+      defeat: ["Urrrgh… What unbelievable power…"],
+      won: ["Ein: Grr… It is a shame that you\noppose us, {PLAYER}.", "Ein: Here, use this. Go on, open the\ndoor with it."],
+      badge: "{PLAYER} obtained the Yellow ID Badge!", after: ["Ein: Fufufu… What awaits beyond the\ndoor? Why, you should see with your\nown eyes!"],
+      lost: ["Ein: Wahahah! Eat your heart out!"] }
+  ].map((a) => {
+    const tag = a.trainer.replace(/\W/g, "").toUpperCase().replace("MIRORB", "MIROR_B");
+    return Object.assign(a, { key: a.trainer + "@Realgam", id: "LOCALID_ORRE_REALGAM_" + tag, script: "RealgamTower_Dome_EventScript_Admin_" + tag,
+      beaten: (flags) => (flags.orreRealgamAdmins || []).includes(a.trainer),
+      // (Gone once beaten, unless their Shadow Pokémon's still theirs.)
+      done: (flags) => a.beaten(flags) && shadowOf(a.trainer).every((s) => (flags.orreShadowSnagged || []).includes(s.species)) });
+  });
+  const realgamAdmin = (script) => REALGAM_ADMINS.find((a) => a.script === script);
+  // All four ID Badges: the way on to the tower's Colosseum.
+  const realgamBadges = (flags) => REALGAM_ADMINS.every((a) => a.beaten(flags));
+
+  // People added to Orre's maps here (data/orre-maps.js is built from an Emerald checkout): Cipher Peon Tanie in the
+  // Shadow Pokémon Lab, the four Admins in Realgam Tower's domes, the Mystery Troop in the rebuilt Snagem Hideout.
+  {
+    const W = window.WORLD_MAPS || {};
+    const add = (map, localId, x, y, facing, script, sprite, frames) => {
+      const m = W[map];
+      if (!m || m.people.some((p) => p.localId === localId)) return;
+      m.people.push({ id: Math.max(-1, ...m.people.map((p) => p.id)) + 1, x, y, movement: facing, rangeX: 0, rangeY: 0, script, flag: null, text: null,
+        localId, sprite, width: 16, height: 32, frames });
+    };
+    add("ShadowLab_B1F", "LOCALID_ORRE_SHADOW_TANIE", 11, 3, "face_left", "ShadowLab_B1F_EventScript_Shadow_TANIE", "orre_peon_f", 9);
+    for (const a of REALGAM_ADMINS) add("RealgamTower_Dome", a.id, a.x, a.y, a.facing, a.script, a.sprite, a.frames);
+    add("SnagemHideout", "LOCALID_ORRE_SHADOW_HIDEOUT_VERDE", 9, 6, "face_down", "SnagemHideout_EventScript_Shadow_VERDE", "orre_peon_m", 9);
+    add("SnagemHideout", "LOCALID_ORRE_SHADOW_HIDEOUT_ROSSO", 12, 6, "face_down", "SnagemHideout_EventScript_Shadow_ROSSO", "orre_peon_m", 9);
+    add("SnagemHideout", "LOCALID_ORRE_SHADOW_HIDEOUT_BLUNO", 16, 6, "face_down", "SnagemHideout_EventScript_Shadow_BLUNO", "orre_peon_m", 9);
+  }
 
   // ---------- The Pyrite Colosseum and Phenac Stadium (Colosseum's tournaments; this game's own entrants) ----------
   //
@@ -580,4 +744,5 @@
   }
 
   window.Orre = { correctLocation, SHADOW, TEAMS, team, snaggable, TOURNAMENTS, tournamentDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
+  Object.assign(window.Orre, { REALGAM_ADMINS, realgamAdmin, realgamBadges });
 })();

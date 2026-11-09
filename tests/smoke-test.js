@@ -3258,7 +3258,7 @@ if (window.JOHTO_TOWN_MAP) {
     }
     for (const [k, team] of Object.entries(Orre.TEAMS)) {
       assert(team.length >= 2 && team.length <= 6 && team.every(([sp, lv]) => DEX[sp] && lv >= 20 && lv <= 70), k);
-      assert(Orre.team(k).length === team.length, k);
+      assert(Orre.team(k, Orre.SHADOW.map((s) => s.species)).length <= team.length && Orre.team(k).length >= team.length, k);
     }
     assert.deepStrictEqual(Orre.shadowOf("Ein").map((x) => x.species), ["Raikou"]);
     assert.deepStrictEqual(Orre.shadowOf("Tanie").map((x) => [x.species, x.level]), [["Granbull", 43]]);
@@ -3266,6 +3266,15 @@ if (window.JOHTO_TOWN_MAP) {
     // (A later battle brings back a Shadow Pokémon never snagged; one snagged stays gone.)
     assert(Orre.team("Ein@Realgam").some((r) => r.species === "Raikou" && r.shadow) && !Orre.team("Ein@Realgam", ["Raikou"]).some((r) => r.species === "Raikou"));
     assert.deepStrictEqual(Orre.snaggable("Biden"), ["Smeargle"]);
+    // The Mystery Troop in Phenac after the Mayor's house, till one's beaten; the other two after the game in the
+    // Snagem Hideout; Tanie in Ein's lab; the four Admins' ID Badges at Realgam.
+    {
+      const at = (map, id) => WORLD_MAPS[map].people.find((p) => p.localId === id);
+      const pv = { localId: "LOCALID_ORRE_PHENAC_VERDE" };
+      assert(Orre.visible(pv, { orreStory: 21 }) && !Orre.visible(pv, { orreStory: 21, orreTroop: "Rosso" }) && !Orre.visible(pv, { orreStory: 20 }));
+      assert(at("ShadowLab_B1F", "LOCALID_ORRE_SHADOW_TANIE"), "Tanie in the lab");
+      assert(Orre.REALGAM_ADMINS.length === 4 && !Orre.realgamBadges({}) && Orre.realgamBadges({ orreRealgamAdmins: ["Miror B.", "Dakim", "Venus", "Ein"] }));
+    }
     // (Every Shadow Pokémon Trainer of the story is placed in Orre, battling with theirs; every Orre warp goes somewhere.)
     const orreScripts = new Set(Object.values(WORLD_MAPS).filter((m) => m.region === "orre").flatMap((m) => m.people.map((p) => p.script)));
     for (const [script, d] of Object.entries(Orre.SHADOW_TRAINERS)) assert(orreScripts.has(script) && Orre.shadowOf(d.trainer).length, script);

@@ -3222,7 +3222,16 @@ lose the battle.
 may not obey. It's **26** for the whole prologue (Snagem's tests), the level Colosseum's story proper is pitched for,
 and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
 
-**Colosseum's story proper** (this game's own telling of it, mostly in Colosseum's own words, `assets/text/colosseum.json`;
+**Colosseum's story proper**, from the break with Team Snagem on, is told in Colosseum's own words (its lines from
+`assets/text/colosseum.json`, put into this game's message box by `tools/colosseum-say.js`; only the prologue above, Prof.
+Oak's calls and a few bridging lines are this game's own), and its Trainers battle with Colosseum's own parties
+(`Orre.TEAMS`, `Orre.team(key, snagged)` in `game/orre.js`, from altissimo1's Colosseum guide): Willie's two Zigzagoon
+(Lv. 24), Folly alone at Phenac, Team Snagem's Wakin outside the Mayor's house, Folly and Trudly inside it after Miror B.
+leaves, then the **Mystery Troop** blocking Phenac's way out (Verde, Rosso and Bluno; beat one, `orreTroop`, and the
+others go, to turn up in the rebuilt Snagem Hideout after the game); Cipher Peon Tanie (Shadow Granbull) in Ein's lab and
+Ein with Shadow Raikou; and at Realgam Tower the four Admins again (Miror B., Dakim, Venus and Ein, each with their Shadow
+Pokémon back if it was never snagged), whose four ID Badges open the way to the tower's Colosseum.
+(`snagemBreak`,
 `snagemBreak`, `orreStandStory`, `phenacFT`, `phenacTruck` and `mayorScene` in `ui/game.js`):
 - **The break with Team Snagem.** With the five tests passed, the guards take you through the gate to meet Master
   Gonzap (on a dark screen, as Colosseum's opening is a cutscene). He boasts that Team Snagem only got its Snag
@@ -3233,19 +3242,20 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   keep the Snag Machine, and use it to snag back Cipher's Shadow Pokémon, and only those.
 - **The Outskirt Stand.** Folly and Trudly's truck is back. They come out of the diner pleased with "a great big catch"
   for their boss, recognise you, and drive off with the sack in the back, which moves. Then **Rider Willie** runs out
-  after you ("Yo! Wait! Wait up!") and battles you with two Zigzagoon (Lv. 25 and 26); afterwards he points you to
+  after you ("Yo! Wait! Wait up!") and battles you with two Zigzagoon (Lv. 24); afterwards he points you to
   Phenac City, where the truck was headed. Lose, and he's in the diner to battle again; after, he chats there.
-- **Phenac City.** Folly and Trudly are by their truck in the entrance plaza; they battle you together, Folly with a
-  Whismur and a Baltoy, Trudly with a Lotad and a Zigzagoon (Lv. 25), then run off, leaving the truck. Undo the knot of
-  the squirming sack in the back and out comes **Rui**, kidnapped from Pyrite Town; she asks you to stay with her and
-  take her to the Mayor.
+- **Phenac City.** Folly and Trudly are by their truck in the entrance plaza; Folly battles you (two Whismur, Lv. 24
+  and 25), then they run off, leaving the truck. Undo the knot of the squirming sack in the back and out comes **Rui**,
+  kidnapped from Pyrite Town; she asks you to stay with her and take her to the Mayor.
 - **The Mayor's house** (the big house with the blue dome; for now Emerald's Dewford Hall inside). Mayor **Es Cade**
   hears Rui out (a Pokémon with a black aura, like a fighting machine, that attacks people) and goes to look into it
-  himself. Two Snagem grunts burst in for their traitor and the Snag Machine (a tag battle, Lv. 26-27), and Rui learns
-  you were with Team Snagem; it doesn't matter to her. Then Folly (Loudred and Baltoy, Lv. 27), and Trudly, whose
-  Makuhita (Lv. 30) is a **Shadow Pokémon**: Rui can see its black aura, and asks you to snag it back. Miror B. calls them back
-  to Pyrite, and Rui says that's where you should go next. A battle lost there ends the scene; go back in to carry on
-  from it (`player.flags.orreMayor`).
+  himself. Outside, Team Snagem's **Wakin** comes for his traitor and the Snag Machine (`phenacWakin`; Corphish and
+  Koffing), and Rui learns you were with Team Snagem; it doesn't matter to her. Back inside, Miror B. leaves Folly and
+  Trudly to it: Folly (Whismur and Lotad), then Trudly (Duskull, Spinarak and his Makuhita, Lv. 30, a **Shadow
+  Pokémon**: Rui can see its black aura, and asks you to snag it back). A battle lost there ends the scene; go back in to
+  carry on from it (`orreMayor`, `orreMayorMirorB`). Then the **Mystery Troop** block Phenac's way out
+  (`phenacTroop`): beat one of Verde, Rosso and Bluno (each with a Shadow Bayleef, Quilava or Croconaw, Lv. 30) and
+  the others go (`orreTroop`).
 - `player.flags.orreStory` 18 once you've broken with Team Snagem, 19 with Willie battled, 20 with Rui out of the sack,
   21 with the Mayor's house's scene done (`orreShadowSnagged`: the Shadow Pokémon you've snagged). Pyrite Town is next.
 - **Pyrite Town** (`orreStory` 21 to 28; `pyriteArrival`, `dukingsHouse`, `pyriteNore`, `pyriteTopFloor` and
@@ -3293,12 +3303,12 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   Bodybuilder Lonia (Piloswine) and Rider Nelis (Sneasel). Cap 45.
 - **The Shadow Pokémon Lab** (36 to 40; on Orre's map in the south-west desert; Mossdeep Space Center's floors inside,
   its doors out to Orre's map). Its Peons Cole (Aipom), Lare (Murkrow), Vana (Forretress), Lesar (Ariados) and Remil
-  (Vibrava); the **Mystery Troop**, Verde and Bluno together (Shadow Bayleef and Croconaw) then Rosso (Shadow Quilava
-  and Raikou); and **Ein**, whose life's work the Shadow Pokémon are, who boasts that Master Evice's plan goes ahead at
+  (Vibrava), Tanie (Granbull); and **Ein** (Shadow Raikou), whose life's work the Shadow Pokémon are, who boasts that Master Evice's plan goes ahead at
   Realgam Tower. Cap 48.
 - **Realgam Tower** (40 to 44; on Orre's map on the south-east coast; the Pokémon League's rooms inside). In its dome
   Peons Arton (Delibird), Baila (Sunflora) and Dioge (Heracross), and **Gonzap** at the far door, out for revenge
-  (Shadow Skarmory, Lv. 47); in its Colosseum Bodybuilder Jomas (Miltank), Rider Delan (Absol) and Peons Nella
+  (Shadow Skarmory, Lv. 47); then the four Admins in the domes, Miror B., Dakim, Venus and Ein, each giving an ID Badge
+  when beaten (`orreRealgamAdmins`), the four opening the Colosseum's door; in its Colosseum Bodybuilder Jomas (Miltank), Rider Delan (Absol) and Peons Nella
   (Houndoom) and Ston (Tropius), and **Nascour** (Shadow Metagross, Lv. 50); at the top, **Evice**, the head of Cipher,
   who is Phenac's Mayor Es Cade (Shadow Tyranitar, Lv. 55). Beat him and Cipher's finished; Prof. Oak calls. Cap 55.
   That's Colosseum's story told through (`orreStory` 44); every one of its Shadow Pokémon, but for the after-the-game
@@ -3323,8 +3333,9 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   the hero who saved Orre (Shadow Togetic, Lv. 20), with Ancha the reporter who believes him; and in The Under's middle
   shack the **Deep Colosseum** (Emerald's Battle Arena lobby), its own four-round tournament (Lv. 52 on; first prize a
   Focus Band), after which Deep King Agnol (Shadow Shuckle, Lv. 45, with Forretress, Steelix and Scizor) takes you on.
-- **Colosseum's Shadow Pokémon** (`Orre.SHADOW` in `game/orre.js`): all 47 of them, in Colosseum's order, each with its
-  level, its Trainer and where you meet them (Trudly's Makuhita, Lv. 30, at the Mayor's house; Rogue Cail's Furret,
+- **Colosseum's Shadow Pokémon** (`Orre.SHADOW` in `game/orre.js`): all 48 of them, in Colosseum's order, each with its
+  level, its Trainer, where you meet them, its held item and Colosseum's four moves (Shadow Rush in the first one's place
+  till it's purified, when it gets that move back; only a Shadow Pokémon can be snagged from a Trainer who has one) (Trudly's Makuhita, Lv. 30, at the Mayor's house; Rogue Cail's Furret,
   Lv. 33, in Pyrite Town; on to Evice's Tyranitar). From Colosseum's story proper on, a Trainer who has a Shadow Pokémon
   in Colosseum battles you with that one, at that level (`Orre.shadowOf(trainer)`, `Orre.shadowMon`); the prologue's own
   Trainers keep clear of those Trainers' names.

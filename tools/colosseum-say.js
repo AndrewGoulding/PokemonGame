@@ -45,7 +45,9 @@ function pages(text, speaker) {
       if (line && (line + " " + w).length > 37) { lines.push(line); line = w; } else line = line ? line + " " + w : w;
     }
     if (line) lines.push(line);
-    for (let i = 0; i < lines.length; i += 3) out.push(lines.slice(i, i + 3).join("\n"));
+    // (Lines shared out evenly between the pages, so none is left with a word on its own.)
+    const n = Math.ceil(lines.length / 3);
+    for (let k = 0, i = 0; k < n; k++) { const take = Math.ceil((lines.length - i) / (n - k)); out.push(lines.slice(i, i + take).join("\n")); i += take; }
   }
   return out;
 }
