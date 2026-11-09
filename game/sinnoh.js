@@ -3,6 +3,7 @@
 (function () {
   "use strict";
   const D = window.PLATINUM_DATA;
+  const quests = player => state(player).sidequests || (state(player).sidequests = {});
   window.ITEMS["works-key"] = { name: "works-key", category: "key-items", effect: "Opens the locked door at Valley Windworks." };
   for (const [id, effect] of Object.entries({"secret-potion":"Cynthia's medicine for Route 210's Psyduck.","old-charm":"Deliver to Cynthia's grandmother in Celestic Town.","galactic-storage-key":"Opens Team Galactic's warehouse basement.","galactic-key":"Opens Team Galactic's headquarters."})) window.ITEMS[id]={name:id,category:"key-items",effect};
   Object.assign(window.WORLD_TRAINERS, D.trainers);
@@ -55,6 +56,8 @@
     const m = WORLD_MAPS[map];
     if (map === "SnowpointCity_Gym") return ["snow" + (state(player).snowballs | 0)];
     if (m && m.gear != null) return ["gear" + ((state(player).gears || [])[m.gear] || 0)];
+    if (map === "StarkMountain") return ["questDoor"];
+    if (map === "EternaForest_2") return ["chateau"];
     if (map === "MtCoronet_3") return ["northStairs"];
     if (map === "PokemonLeague") return ["cave", "upperCave"];
     if (map === "AcuityLakefront") return ["climb"];
@@ -71,7 +74,12 @@
     return null;
   }
   function forestPartner(player) {
-    if (player.location.map !== "EternaForest_2") return null;
+    const map=player.location.map;
+    if(!["PlatinumIronIsland","PlatinumStarkInterior","EternaForest_2"].includes(map))return null;
+    const q=(player.flags.sinnoh||{}).sidequests||{};
+    if(map==="PlatinumIronIsland"&&q.rileyJoined&&!q.ironCleared)return{name:"Riley",team:team("PT_TRAINER_RILEY_IRON_ISLAND"),pic:"pt_riley"};
+    if(map==="PlatinumStarkInterior"&&q.buckJoined&&!q.charonArrested)return{name:"Buck",team:team("PT_TRAINER_BUCK_STARK_MOUNTAIN"),pic:"pt_buck"};
+    if (map !== "EternaForest_2") return null;
     const s = state(player);
     return s.cherylJoined && !s.cherylDone
       ? { name: "Cheryl", team: team("PT_TRAINER_CHERYL_ETERNA_FOREST"), pic: "pt_cheryl" } : null;
@@ -96,7 +104,7 @@
     const m = WORLD_MAPS[map];
     return m && m.haunt ? {radius:4, lights:[{x:m.haunt.rune.x+.5,y:m.haunt.rune.y+.5,r:1}],rects:[]} : null;
   }
-  const flyTowns = ["SandgemTown", "JubilifeCity", "OreburghCity", "FloaromaTown", "EternaCity", "HearthomeCity", "VeilstoneCity", "PastoriaCity", "SolaceonTown", "CelesticTown", "CanalaveCity", "SnowpointCity", "SunyshoreCity", "PokemonLeague"];
+  const flyTowns = ["SandgemTown", "JubilifeCity", "OreburghCity", "FloaromaTown", "EternaCity", "HearthomeCity", "VeilstoneCity", "PastoriaCity", "SolaceonTown", "CelesticTown", "CanalaveCity", "SnowpointCity", "SunyshoreCity", "PokemonLeague", "FightArea", "SurvivalArea", "ResortArea"];
   function visit(player, map) {
     if (typeof map !== "string") return;
     transition(player, map);
@@ -124,6 +132,7 @@
     state(player).snowballs = (state(player).snowballs | 0) | (1 << n); return true;
   }
   function distortionSwitch(player, map, x, y) {
+    if(map==="PlatinumStarkInterior"&&y===10&&[9,23].includes(x)){const n=x===9?0:1;if(!(quests(player).starkStones||[]).includes(n))return{type:"trigger",map,trigger:{script:"pt:sq-stone-"+n}};}
     const match=/^DistortionWorld_([012])$/.exec(map);
     if (!match || x!==9 || y!==5 || (state(player).distortionStones||[]).includes(+match[1])) return null;
     return {type:"trigger",map,trigger:{script:"pt:distortion-goal-"+match[1]}};
@@ -134,7 +143,24 @@
     const f=player.flags;
     const entry={number:(f.hofCount||0)+1,region:"sinnoh",playTimeMs:player.playTimeMs||0,trainer:{name:player.name,id:player.trainerId},team:player.party.filter(r=>!r.egg).slice(0,6).map(r=>({species:r.species,nickname:r.nickname||null,level:r.level,gender:r.gender||"",shiny:!!r.shiny,form:Party.form(r)||undefined,personality:r.personality,ot:r.ot||{name:player.name,id:player.trainerId}}))};
     f.hofCount=entry.number;(f.hallOfFame||(f.hallOfFame=[])).push(entry);while(f.hallOfFame.length>League.MAX_TEAMS)f.hallOfFame.shift();
+    const q=quests(player);for(const sp of ["azelf","uxie","heatran","mesprit"])if(!q[sp+"Caught"]){delete q[sp+"Defeated"];if(sp==="mesprit"&&q.mespritReleased){q.mespritRoaming=true;delete q.mespritRecord;}}
     f.sinnohLeagueClear=true;s.champion=true;s.league={active:false,step:5,completed:true};return entry;
   }
-  window.Sinnoh = { state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed, hauntShape, darkness, visit, flySpots, transition, snowballStopped, distortionSwitch, recordChampion };
+  function roamerWild(player,mon,table,rng=Math.random){
+    const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map];
+    if(mon&&q.mespritRoaming&&!q.mespritCaught&&m&&m.region==="sinnoh"&&/^Route\d/.test(player.location.map)&&(table===m.wild||table===m.water)&&rng()<1/16)return{species:"Mesprit",level:50};
+    return mon;
+  }
+  function roamerRecord(player,record){
+    const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map];if(record.species!=="Mesprit"||!q.mespritRoaming||!m||m.region!=="sinnoh"||!/^Route\d/.test(player.location.map))return record;
+    if(!q.mespritRecord){const d=D.sidequests.encounters.Mesprit;q.mespritRecord=Party.create("Mesprit",d.level,{moves:d.moves});}
+    return JSON.parse(JSON.stringify(q.mespritRecord));
+  }
+  function finishRoamer(player,mon,outcome){
+    const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map];if(!mon||mon.species!=="Mesprit"||!q.mespritRoaming||!m||m.region!=="sinnoh"||!/^Route\d/.test(player.location.map))return;
+    if(q.mespritRecord)Party.syncFromBattle(q.mespritRecord,mon);
+    if(outcome==="caught"){q.mespritCaught=true;q.mespritRoaming=false;delete q.mespritRecord;}
+    else if(mon.fainted||mon.hp<=0){q.mespritDefeated=true;q.mespritRoaming=false;}
+  }
+  window.Sinnoh = { quests, roamerWild, roamerRecord, finishRoamer, state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed, hauntShape, darkness, visit, flySpots, transition, snowballStopped, distortionSwitch, recordChampion };
 })();

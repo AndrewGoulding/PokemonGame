@@ -3598,6 +3598,11 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
   rooms retain source trainer/actor positions and reciprocal stair connections in newly
   drawn 2D interiors; the DS room models and exact partition layouts are not imported.
   The existing Cycle Shop map ID is preserved for saves. TMs remain reusable, as elsewhere in this game.
+- **Optional quests and postgame**: Riley’s Iron Island escort and Riolu Egg, the Old Chateau’s
+  nighttime Rotom encounter, the lake trio (including Mesprit’s saved roaming state), and
+  Buck’s Stark Mountain expedition through Charon’s arrest and Heatran are playable.
+  Snowpoint’s postgame ferry and Buck’s guided Battle Zone travel connect the expedition.
+  See [Sinnoh side quests](docs/sinnoh-sidequests.md) for locations, retries and adaptations.
 - **Still unfinished**: the full Twinleaf opening, catching demonstration, Trainer School,
   Looker and Pokétch introduction, native Pokétch apps, optional interiors and side quests,
   Contests, the Battle Zone and postgame. The implemented main story reaches Cynthia;
@@ -3609,7 +3614,7 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
 
 `tools/build-platinum.js` reads the public `pret/pokeplatinum` decompilation directly; no built ROM
 is needed. `data/platinum.js` records the exact source commit and the source event/script paths.
-It contains 1,282 imported messages, 301 trainer teams (including partner/starter variants), held
+It contains 1,359 imported messages, 331 trainer teams (including partner/starter variants), held
 items, authored moves and explicit placements. Imported
 character sprites and trainer portraits live under `assets/world/sprites/pt_*` and
 `assets/sprites/trainers/front/pt_*`. Rebuild with:

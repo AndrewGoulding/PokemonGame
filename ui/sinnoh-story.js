@@ -3,6 +3,7 @@
 (function () {
   "use strict";
   function create(env) {
+    const quests = SinnohSidequests.create(env);
     const next = SinnohEterna.create(env), galactic = SinnohGalactic.create(env), middle = SinnohMidgame.create(env), finale = SinnohFinale.create(env);
     const player = () => env.player();
     const state = () => Sinnoh.state(player());
@@ -116,6 +117,7 @@
       await env.say(player().badges.includes("coal") ? "The Coal Badge lets you use\nRock Smash here in Sinnoh." : "You can teach Rock Smash now.\nEarn the Coal Badge to use it\noutside battle here in Sinnoh.");
     }
     function visible(person) {
+      const optional = quests.visible(person); if (optional !== undefined) return optional;
       const end = finale.visible(person); if (end !== undefined) return end;
       const mid = middle.visible(person); if (mid !== undefined) return mid;
       const third = galactic.visible(person); if (third !== undefined) return third;
@@ -127,6 +129,7 @@
       return undefined;
     }
     function step() {
+      const optional = quests.step(); if (optional) return optional;
       const end = finale.step(); if (end) return end;
       const mid = middle.step(); if (mid) return mid;
       const third = galactic.step(); if (third) return third;
@@ -141,7 +144,7 @@
     }
     async function run(script) {
       if (!script || !script.startsWith("pt:") || script.startsWith("pt:PT_TRAINER_")) return false;
-      if (await finale.run(script) || await middle.run(script) || await galactic.run(script) || await next.run(script)) return true;
+      if (await quests.run(script) || await finale.run(script) || await middle.run(script) || await galactic.run(script) || await next.run(script)) return true;
       switch (script.slice(3)) {
         case "rowan": await rowan(); break;
         case "aide": await aide(); break;

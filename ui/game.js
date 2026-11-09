@@ -1095,6 +1095,7 @@
       opts = Sinnoh.forestBattle(player, kind, opts, () => wildMon(Encounters.wild(partyLevel())));
     }
     const foe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
+    if(wild&&foe.team.length===1)foe.team[0]=Sinnoh.roamerRecord(player,foe.team[0]);
     const foe2 = !wild && opts.foe2 || null;
     // (Two wild Pokémon, opts.wildDouble: Black and White's wild double battle, this game's own way: game/hordes.js.)
     const wildDouble = wild && !!opts.wildDouble && foe.team.length > 1;
@@ -1189,6 +1190,7 @@
       }
     });
     const b = result.battle;
+    if(wild&&foe.team.length===1)Sinnoh.finishRoamer(player,b.sides.p2.pokemon[0],result.outcome);
     lastRecord = result.record || null;
     if (opts.raid) opts.raidBall = result.raidBall || null;   // (the Ball its Pokémon was caught in, if it was)
     for (const e of b.events) {
@@ -5253,6 +5255,7 @@
   // roams on.
   const JOHTO_ROAMERS = ["Raikou", "Entei"];
   function roamerWild(mon, table) {
+    mon=Sinnoh.roamerWild(player,mon,table);
     // (A save from past the Burned Tower before the beasts roamed: off they go.)
     if (!player.flags.johtoRoamers && johto.flag("FLAG_HIDE_BURNED_TOWER_B1F_RAIKOU")) player.flags.johtoRoamers = { Raikou: true, Entei: true };
     const r = player.flags.johtoRoamers, m = window.WORLD_MAPS[player.location.map] || {};
@@ -11669,6 +11672,7 @@
         // (A Max Lure on: always a horde, from the map's hordes or its own wild Pokémon (on the water, its water's).)
         else if (lureOn() === "max-lure" && !towerGhost() && wildTable(here) && await hordeBattle(at.map, terrain, wildTable(here))) { /* (fought) */ }
         // (X and Y's hordes: one grass or cave encounter in twenty, where the map has them; never on the water.)
+        else if (ev.species === "Mesprit" && here.region === "sinnoh" && ((player.flags.sinnoh || {}).sidequests || {}).mespritRoaming) await battle("wild", {foe:{name:"Wild",team:[Party.create("Mesprit",50)]},terrain,noGimmicks:true});
         else if (Overworld.avatar() !== "surf" && !towerGhost() && Hordes.roll(at.map) && await hordeBattle(at.map, terrain)) { /* (fought) */ }
         // (Two wild Pokémon, with two of yours able to battle: one land encounter in Hordes.DOUBLE_CHANCE; a Lure on, always.)
         else if (!towerGhost() && ableToBattle() >= 2 && wildTable(here) && (lureOn() === "lure" || (Overworld.avatar() !== "surf" && Hordes.rollDouble()))

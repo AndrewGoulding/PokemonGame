@@ -1,8 +1,8 @@
 # Sinnoh through the Champion
 
 The main story now continues from Crasher Wake through Cynthia. Rebuild with
-`node tools/build-platinum.js /path/to/pret/pokeplatinum`. The combined import
-contains 1,282 messages and 301 trainer records. Parties retain Platinum's
+`node tools/build-platinum.js /path/to/pret/pokeplatinum`. At the finale milestone, the import
+contained 1,282 messages and 301 trainer records. Parties retain Platinum's
 species, levels, moves and held items, including Cynthia's six Pokémon and
 level 62 Garchomp. Source event/script paths remain attached as provenance.
 
@@ -52,8 +52,9 @@ survive reloading. The base exterior maps remain Essentials imports; the new
 Sunyshore solar bridge and gate connect their existing paths.
 
 This completes the implemented main-story progression, not every Platinum
-feature. Optional quests, full NPC scripting, Contests, the Battle Zone and
-postgame legendary stories still need dedicated work.
+feature. [Side quests and the Stark Mountain postgame](sinnoh-sidequests.md) now extend
+this milestone. Full NPC scripting, Contests, Frontier facilities and remaining
+legendary stories still need dedicated work.
 
 ## Validation
 

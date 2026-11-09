@@ -1,0 +1,48 @@
+// Saved optional Platinum quest chains. No DS script interpreter is implied.
+(function(){
+ "use strict";
+ function create(env){
+  const p=()=>env.player(),s=()=>Sinnoh.quests(p()),data=PLATINUM_DATA.sidequests,refresh=()=>env.refreshMap?env.refreshMap():env.refreshPeople();
+  const say=t=>env.say(t),source=id=>say(Sinnoh.text(id,p())),complete=()=>!!p().flags.sinnohLeagueClear;
+  async function battle(id,extra={}){if(!env.canBattle())return false;const t=PLATINUM_DATA.trainers[id];const result=await env.battle('trainer',{foe:{name:t.name,team:Sinnoh.team(id),pic:t.pic},trainerId:id,defeatText:t.defeat,prizeClass:t.className,...extra});if(result!=='won')return false;p().flags[id]=true;env.showWorld();await env.resume();return true;}
+  async function egg(){if(s().rioluEgg){await say('Riley: Thank you for helping!\nTake good care of that Pokémon Egg.');return;}if(!await env.confirm('Accept Riley’s Pokémon Egg?'))return;if(p().party.length>=6){await say('Riley: Your party is full.\nMake room, then come back to me.');return;}p().party.push(Breeding.giftEgg('Riolu',{map:'PlatinumIronIsland',from:'Riley'}));s().rioluEgg=true;await say('{PLAYER} received a Pokémon Egg!');}
+  async function riley(){if(!p().badges.includes('mine')){await say('Riley: Earn Canalave’s Mine Badge\nbefore investigating deeper.');return;}if(s().ironCleared){await egg();return;}await source('IronIslandB2FLeftRoom_Text_LetsTeamUp');s().rileyJoined=true;p().party.forEach(Party.heal);refresh();await say('Riley: Let’s investigate together.\nMy Lucario will help in battle.\nI’ll keep your Pokémon healthy.');}
+  async function iron(){if(s().ironCleared){await say('The Galactic Grunts have left.\nRiley has an Egg for you.');return;}if(!s().rileyJoined){await say('The Grunts are working together.\nSpeak to Riley near the entrance.');return;}const id='PT_TRAINER_GALACTIC_GRUNT_IRON_ISLAND_2',t=PLATINUM_DATA.trainers[id];await source('IronIslandB2FLeftRoom_Text_WereAbductingPokemon');if(!await battle('PT_TRAINER_GALACTIC_GRUNT_IRON_ISLAND_1',{foe2:{name:'Galactic Grunt',team:Sinnoh.team(id),pic:t.pic,defeatText:t.defeat,prizeClass:t.className}}))return;p().flags[id]=true;s().ironCleared=true;p().party.forEach(Party.heal);refresh();await say('The Galactic Grunts fled!\nThe Pokémon on Iron Island\nhave calmed down.');await egg();}
+  async function encounter(sp){const q=s(),d=data.encounters[sp],key=sp.toLowerCase();if(q[key+'Caught']){await say('The Pokémon has already joined you.');return;}if(sp==='Rotom'){
+    const time=Player.gameTime(p());if(time.timeOfDay!=='night'){await say('The television is silent.\nSomething may appear at night.');return;}if(q.rotomDay===time.day){await say('The television is quiet now.\nTry again on another night.');return;}if(!await env.confirm('Something is inside the television.\nThump the television?'))return;
+   }else{if(!Sinnoh.state(p()).trioFreed||!Sinnoh.state(p()).giratinaResolved){await say('The cavern is quiet.\nResolve the crisis at Mt. Coronet\nand free the lake Pokémon first.');return;}if(sp==='Heatran'&&(!complete()||!q.magmaRestored)){await say('The Magma Stone has not settled.\nSpeak to Buck in Survival Area.');return;}if(q[key+'Defeated']){await say('The Pokémon has disappeared.\nAnother Sinnoh League victory\nmay bring it back.');return;}}
+   if(!env.canBattle())return;if(sp==='Rotom')q.rotomDay=Player.gameTime(p()).day;
+   const result=await env.battle('wild',{foe:{name:'Wild',team:[Party.create(d.species,d.level,{moves:d.moves})]},terrain:sp==='Rotom'?'building':'cave',noGimmicks:true});env.showWorld();await env.resume();
+   if(result==='caught')q[key+'Caught']=true;else if(result==='won'&&sp!=='Rotom')q[key+'Defeated']=true;refresh();
+  }
+  async function mesprit(){if(!Sinnoh.state(p()).trioFreed||!Sinnoh.state(p()).giratinaResolved){await say('Mesprit has not returned yet.');return;}if(s().mespritReleased){await say('Mesprit is roaming Sinnoh’s routes.');return;}s().mespritReleased=true;s().mespritRoaming=true;Player.markSeen(p(),'Mesprit');refresh();await say('Mesprit flew away!\nRowan: It wants you to follow.\nSearch the grass and water\nalong Sinnoh’s routes.');}
+  async function commander(which){if(!complete()){await say('The northern expedition opens\nafter becoming Sinnoh Champion.');return;}const key=which==='mars'?'starkMars':'starkJupiter';if(s()[key])return;if(which==='jupiter'&&!s().starkMars){await say('Defeat Mars before challenging\nJupiter.');return;}await source(which==='mars'?'StarkMountainRoom1_Text_IllMakeYouTalk':'StarkMountainRoom1_Text_IllGoUpNext');if(await battle('PT_TRAINER_COMMANDER_'+which.toUpperCase()+'_STARK_MOUNTAIN')){s()[key]=true;refresh();await say(which==='mars'?'Mars left Team Galactic.\nJupiter is still waiting ahead.':'Jupiter departed too.\nBuck is waiting in the next cavern.');}}
+  async function buck(){if(!complete()||!s().starkJupiter)return;if(s().charonArrested){await say('Buck returned to Survival Area.');return;}s().buckJoined=true;p().party.forEach(Party.heal);refresh();await say('Buck: I’ll back you up with Claydol.\nUse Strength to push both boulders\nnorth onto the marked hollows.');}
+  async function charon(){if(s().charonArrested){await say('Looker arrested Charon.\nMeet Buck in Survival Area.');return;}if(!s().buckJoined||(s().starkStones||[]).length!==2)return;await source('StarkMountainRoom3_Text_MagmaStoneWillBeMine');s().charonArrested=true;refresh();await say(['Charon: The Magma Stone will make\nme rich! Nobody can stop us!','Looker’s Croagunk recovered the\nMagma Stone. Looker and the police\narrested Charon.','Buck: Let’s return to Survival Area.\nThe mountain needs its stone back.']);await env.teleport(data.travel.SurvivalArea);}
+  async function buckReturn(){if(!complete()){await say('Buck: Become Sinnoh Champion,\nthen we can explore the mountain.');return;}if(s().charonArrested&&!s().magmaRestored){s().magmaRestored=true;refresh();await say('Buck: I returned the Magma Stone.\nA powerful Pokémon has returned\nto the deepest chamber.');return;}if(await env.confirm('Buck: Head to Stark Mountain?'))await env.teleport({map:'PlatinumStarkEntrance',x:9,y:20,facing:'up'});}
+  async function run(script){if(!script||!script.startsWith('pt:sq-'))return false;const key=script.slice(6);let match;
+   if((match=/^stone-([01])$/.exec(key))){if(s().buckJoined&&FieldMoves.user(p(),'Strength')){const stones=s().starkStones||(s().starkStones=[]),n=+match[1];if(!stones.includes(n))stones.push(n);refresh();await say('The boulder settled in the hollow.');}return true;}
+   switch(key){
+    case'riley':await riley();break;case'iron-grunts':await iron();break;case'iron-grunt-two':await say('Galactic Grunt: You won’t stop us!');break;
+    case'chateau-guide':await say('The old mansion’s television\nis haunted at night. Its doorway\nis nearby in this clearing.');break;case'rotom-tv':await encounter('Rotom');break;
+    case'azelf':await encounter('Azelf');break;case'uxie':await encounter('Uxie');break;case'mesprit':await mesprit();break;case'heatran':await encounter('Heatran');break;
+    case'battle-ferry':if(!complete())await say('The ferry to the Battle Zone\nopens for the Sinnoh Champion.');else if(await env.confirm('Sail to the Battle Zone?'))await env.teleport(data.travel.FightArea);break;
+    case'snowpoint-ferry':if(await env.confirm('Sail back to Snowpoint City?'))await env.teleport(data.travel.SnowpointCity);break;
+    case'battle-zone-guide':if(!complete()){await say('Become Sinnoh Champion first.');break;}if(await env.confirm('Buck: I can guide you to\nSurvival Area. Come along?'))await env.teleport(data.travel.SurvivalArea);break;
+    case'buck-return':await buckReturn();break;case'stark-mars':await commander('mars');break;case'stark-jupiter':await commander('jupiter');break;
+    case'stark-interior':if(s().starkJupiter&&complete())await env.teleport({map:'PlatinumStarkInterior',x:16,y:31,facing:'up'});else await say('Defeat Mars and Jupiter first.');break;
+    case'buck':await buck();break;case'stark-chamber':if(complete()&&s().buckJoined&&(s().starkStones||[]).length===2)await env.teleport({map:'PlatinumStarkChamber',x:9,y:18,facing:'up'});else await say('Join Buck and move both boulders\ninto their marked hollows first.');break;
+    case'charon':await charon();break;case'looker':await say('Looker: Charon’s scheme ends here.\nKeep the Magma Stone safe.');break;
+    case'stark-return':await env.teleport(data.travel.SurvivalArea);break;default:throw Error('Unknown Sinnoh side quest '+script);
+   }return true;
+  }
+  function visible(a){if(a.sinnohQuestStone==null&&!(a.script||'').startsWith('pt:sq-'))return undefined;const key=(a.script||'').slice(6),q=s();if(a.sinnohQuestStone!=null)return!(q.starkStones||[]).includes(a.sinnohQuestStone);if(!(a.script||'').startsWith('pt:sq-'))return undefined;
+   if(key==='iron-grunts'||key==='iron-grunt-two')return!q.ironCleared;if(key==='stark-mars')return!q.starkMars;if(key==='stark-jupiter')return!q.starkJupiter;if(key==='charon'||key==='looker')return!q.charonArrested;
+   if(key==='buck')return!q.charonArrested;
+   if(key==='heatran')return complete()&&!!q.magmaRestored&&!q.heatranCaught&&!q.heatranDefeated;if(key==='azelf'||key==='uxie')return!!Sinnoh.state(p()).giratinaResolved&&!q[key+'Caught']&&!q[key+'Defeated'];if(key==='mesprit')return!!Sinnoh.state(p()).giratinaResolved&&!q.mespritReleased;return undefined;
+  }
+  function step(){const map=p().location.map;if(/^PlatinumStark/.test(map)&&!complete())return{type:'trigger',map,trigger:{script:'pt:sq-stark-return'}};return null;}
+  return{run,visible,step};
+ }
+ window.SinnohSidequests={create};
+})();

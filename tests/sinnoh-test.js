@@ -4,7 +4,7 @@ const root = path.join(__dirname, "..");
 global.window = global;
 global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g)) {
-  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna|galactic|midgame|finale)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
+  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna|galactic|midgame|finale|sidequests)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
 }
 function fixture(choice = "Turtwig") {
   let p = Player.create("TEST"); p.location = { map: "SandgemTown_RowansLab", x: 6, y: 4, facing: "up" };
@@ -20,7 +20,7 @@ function fixture(choice = "Turtwig") {
 }
 async function main() {
   assert(/^[a-f0-9]{40}$/.test(PLATINUM_DATA.source.commit));
-  assert.equal(Object.keys(PLATINUM_DATA.trainers).length, 301);
+  assert.equal(Object.keys(PLATINUM_DATA.trainers).length, 331);
   for (const [id, t] of Object.entries(PLATINUM_DATA.trainers)) {
     assert(t.party.length > 0, id);
     for (const m of t.party) { assert(DEX[m.species], id); for (const move of m.moves || []) assert(MOVES[move], move); }
