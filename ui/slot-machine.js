@@ -550,6 +550,7 @@
     function winPayout() {
       switch (data[0]) {
         case 0:
+          if (opts.onWin) opts.onWin(m.payout);
           playFanfare(m.slotRewardClass === logic.PAYOUT.ROCKET || m.slotRewardClass === logic.PAYOUT.SEVEN ? "mus_slots_jackpot" : "mus_slots_win");
           setClefairy(2);
           v.flash = { state: 0, d1: 0, d2: 0, d4: 0, d5: 0, light: 0 };

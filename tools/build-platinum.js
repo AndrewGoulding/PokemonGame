@@ -36,6 +36,20 @@ moves.vicegrip=moves.visegrip;moves.smellingsalt=moves.smellingsalts;
 moves.hijumpkick = moves.highjumpkick;
 moves.faintattack = moves.feintattack; // Gen 4 spelling, renamed in Gen 6
 const convert = (value, prefix, table) => { const out = table[key(value.replace(prefix, ""))]; if (!out) throw new Error("Unknown " + value); return out; };
+const naturalMoveCache = new Map();
+function sourceMoves(mon) {
+  if (mon.moves) return mon.moves.map(m => convert(m, "MOVE_", moves));
+  let speciesId = mon.species.replace("SPECIES_", "").toLowerCase();
+  if (speciesId === "wormadam" && mon.form) speciesId += "/forms/" + (mon.form === 1 ? "sandy" : "trash");
+  if (!naturalMoveCache.has(speciesId)) naturalMoveCache.set(speciesId, json("res/pokemon/" + speciesId + "/data.json").learnset.by_level);
+  const known = [];
+  for (const [level, move] of naturalMoveCache.get(speciesId)) if (level <= mon.level) {
+    const name = convert(move, "MOVE_", moves), at = known.indexOf(name);
+    if (at >= 0) known.splice(at, 1);
+    known.push(name);
+  }
+  return known.slice(-4);
+}
 const sourceSealIds=read("generated/seals.txt").trim().split(/\s+/), sourceCapsules=json("res/trainers/ball_capsules.json").capsules;
 const trainers = {}, sprites = new Set(["prof_rowan", "roark", "barry"]), portraits = new Set(["leader_roark", "rival"]);
 function trainer(id) {
@@ -48,7 +62,7 @@ function trainer(id) {
     region: "sinnoh", double: !!t.double_battle, pic: "pt_" + cls, music: "mus_encounter_boy", party: t.party.map((m) => ({ species: m.species === "SPECIES_WORMADAM" ? ["Wormadam-Plant", "Wormadam-Sandy", "Wormadam-Trash"][m.form || 0] : convert(m.species, "SPECIES_", species), level: m.level, iv: m.iv_scale,
       ...(m.ball_seal ? {ballSeals:sourceCapsules[m.ball_seal-1].map(s=>({id:sourceSealIds.indexOf(s.id),x:Math.max(0,Math.min(1,(s.x-130)/120)),y:Math.max(0,Math.min(1,(s.y-10)/120))}))} : {}),
       ...(m.item && m.item !== "ITEM_NONE" ? { item: convert(m.item, "ITEM_", items) } : {}),
-      ...(m.moves ? { moves: m.moves.map((s) => convert(s, "MOVE_", moves)) } : {}) })),
+      moves: sourceMoves(m) })),
     intro: message("TRMSG_PRE_BATTLE"), defeat: message("TRMSG_DEFEAT"), after: message("TRMSG_POST_BATTLE") };
   return tid;
 }
@@ -139,6 +153,7 @@ const seals=require("./lib/platinum-seals")({source,kit:quests.kit,provenance});
 const frontier=require("./lib/platinum-frontier")({root,source,kit:quests.kit,provenance,ctx,portraits,speciesName:s=>convert(s,"SPECIES_",species),moveName:m=>convert(m,"MOVE_",moves),itemName:i=>convert(i,"ITEM_",items)});
 const services=require("./lib/platinum-services")({root,source,kit:quests.kit,person,provenance,ctx,moveName:m=>convert(m,"MOVE_",moves),itemName:i=>convert(i,"ITEM_",items),speciesName:s=>convert(s,"SPECIES_",species)});
 const optional=require("./lib/platinum-optional")({root,source,kit:quests.kit,doors:quests.doors,additions,provenance,trainer,trainers,person,ctx,routes,itemName:i=>convert(i,"ITEM_",items),moveName:m=>convert(m,"MOVE_",moves),speciesName:s=>convert(s,"SPECIES_",species)});
+const completion=require("./lib/platinum-completion")({root,source,kit:quests.kit,doors:quests.doors,priorDoors:chapter.doors,additions,provenance,trainer,trainers,person,ctx,routes,optional,leisure,itemName:i=>convert(i,"ITEM_",items),moveName:m=>convert(m,"MOVE_",moves),speciesName:s=>convert(s,"SPECIES_",species)});
 Object.assign(chapter.maps,quests.maps);chapter.doors.push(...quests.doors);
 for (const people of Object.values(additions)) for (const p of people) if (p.trainer) {
   const t = trainers[p.trainer.id]; Object.assign(p.trainer, { intro: t.intro, defeat: t.defeat, after: t.after }); p.text = t.after;
@@ -169,7 +184,7 @@ for (const [icon,id] of [["gracidea","gracidea"],["secret_key","platinum-secret-
   for(let y=0;y<pic.height;y++)for(let x=0;x<pic.width;x++)out.set(rgba(pic,x,y),(y*pic.width+x)*4);
   writePng(path.join(root,"assets/sprites/items/key-item/"+id+".png"),pic.width,pic.height,out);
 }
-for (const name of ["cheryl", "dawn_dp", "riley", "buck", "mira", "marley", "barry_dp"]) {
+for (const name of ["cheryl", "dawn_dp", "riley", "buck", "mira", "marley", "barry_dp", "lucas_dp"]) {
   const pic = readPng(path.join(source, "res/graphics/battle/trainer_backs/" + name + ".png"));
   const out = new Uint8ClampedArray(80 * 80 * 4);
   for (let y = 0; y < 80; y++) for (let x = 0; x < 80; x++) out.set(rgba(pic, x, y), (y * 80 + x) * 4);
@@ -188,6 +203,6 @@ for(const type of ["bug","dark","dragon","electric","fighting","fire","flying","
 }
 execFileSync(process.execPath,[path.join(root,"tools/build-sprite-metrics.js")],{cwd:root,stdio:"pipe"});
 const data = { source: { repository: "https://github.com/pret/pokeplatinum", commit: execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
-  scope: "Adapted Platinum campaign, side quests, event stories and postgame rematches; not a DS script interpreter", events: provenance }, texts, trainers, additions, gym, maps: chapter.maps, doors: chapter.doors, legendary: finale.legendary, sidequests: quests.sidequests, legends, towns, expeditions, routes, daily, gadgets, services, seals, villa, leisure, underground, park, poffins, contests, frontier, optional, roaming:require("./lib/platinum-roaming")(source) };
+  scope: "Adapted Platinum campaign, side quests, event stories and postgame rematches; not a DS script interpreter", events: provenance }, texts, trainers, additions, gym, maps: chapter.maps, doors: chapter.doors, legendary: finale.legendary, sidequests: quests.sidequests, legends, towns, expeditions, routes, daily, gadgets, services, seals, villa, leisure, underground, park, poffins, contests, frontier, optional, completion, roaming:require("./lib/platinum-roaming")(source) };
 fs.writeFileSync(path.join(root, "data/platinum.js"), "// Generated by tools/build-platinum.js from pret/pokeplatinum.\nwindow.PLATINUM_DATA = " + JSON.stringify(data) + ";\n");
 console.log("Imported " + Object.keys(texts).length + " messages and " + Object.keys(trainers).length + " trainer teams from Platinum");

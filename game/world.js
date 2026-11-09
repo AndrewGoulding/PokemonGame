@@ -306,7 +306,8 @@
   function pickWild(m, rng, table) {
     const at = window.Game && window.Game.player && window.Game.player.location;
     const zone = !table && m.platinumWildZones && at && at.map === m.name && m.platinumWildZones.find(z => (z.minX==null||at.x>=z.minX)&&(z.maxX==null||at.x<=z.maxX)&&(z.minY==null||at.y>=z.minY)&&(z.maxY==null||at.y<=z.maxY));
-    const t = table || (zone && zone.wild) || m.wild, weights = t.weights || (table ? WATER_SLOT_WEIGHTS : LAND_SLOT_WEIGHTS);
+    const adapted = !table && m.region === "sinnoh" && window.Game && Game.player && window.SinnohCompletion ? SinnohCompletion.turnback(Game.player,m.name) : null;
+    const t = table || adapted || (zone && zone.wild) || m.wild, weights = t.weights || (table ? WATER_SLOT_WEIGHTS : LAND_SLOT_WEIGHTS);
     let roll = Math.floor(rng() * 100), slot = 0;
     while (slot < weights.length - 1 && roll >= weights[slot]) roll -= weights[slot++];
     const s = t.slots[slot];

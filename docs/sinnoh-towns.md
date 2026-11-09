@@ -57,7 +57,6 @@ morning/day/night slots now follow the walking clock; other regions retain
 their previous encounter selection. Escort battles generate their second
 wild opponent from the local table instead of the player's level.
 
-This raises the imported roster to **464 trainer records**. The route list is
-saved in `PLATINUM_DATA.routes.coverage`. It is not a claim that every old
-Essentials cave branch or field item has been audited; those remain on the
-completion checklist.
+The route import's coverage is saved in `PLATINUM_DATA.routes.coverage`.
+The later [source coverage audit](sinnoh-completion-audit.md) completes the
+remaining trainer, cave, encounter, field-item and town-reward passes.

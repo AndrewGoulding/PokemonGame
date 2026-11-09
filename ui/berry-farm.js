@@ -46,6 +46,7 @@
     const KEY = opts.key || "berryFarm", SPOT_RE = opts.spotRe || /^BerryFarm_Tree_(\d+)$/;
     const owns = opts.owns || ((map) => !!D() && map === D().map);
     const state = () => {
+      if(opts.platinum)return SinnohBerries.state(env.player(),opts.initial?opts.initial():{});
       const f = env.player().flags;
       if (f[KEY]) return f[KEY];
       const trees = {};
@@ -54,7 +55,7 @@
     };
     const info = (berry) => D().berries[berry];
     const stageSteps = (berry) => info(berry).hours * ((window.Player && window.Player.STEPS_PER_HOUR) || 100);
-    const rate = () => 1 + (env.farmingLevel() || 1) / 50;
+    const rate = () => opts.platinum ? 1 : 1 + (env.farmingLevel() || 1) / 50;
     const spotOf = (person) => { const m = SPOT_RE.exec(person.script || ""); return m ? +m[1] : -1; };
     // (Its name, and as many: "Cheri Berry", "4 Cheri Berries".)
     const name = (berry, n) => { const s = window.Bag.name(berry); return n > 1 ? s.replace(/y$/, "ies") : s; };
@@ -77,6 +78,7 @@
     }
     function step() {
       if (!D()) return;
+      if(opts.platinum){if(SinnohBerries.step(env.player(),opts.initial?opts.initial():{})&&owns(env.here()))env.refresh();return;}
       const trees = state().trees, r = rate();
       let changed = false;
       for (const spot of Object.keys(trees)) {
@@ -95,7 +97,7 @@
       if (spot < 0) return undefined;
       const t = state().trees[spot];
       if (!t) return { sprite: "berry_soil" };
-      const soil = t.stage >= STAGES ? 0 : t.watered[t.stage - 1] ? WET : DRY;
+      const soil = t.stage >= STAGES ? 0 : (opts.platinum ? t.moisture>50 : t.watered[t.stage-1]) ? WET : DRY;
       return { sprite: "berry_tree_" + info(t.berry).tree, frame: FRAME[t.stage] + soil };
     }
 
@@ -118,12 +120,14 @@
       const trees = state().trees, t = trees[spot];
       if (!t) {
         if (!hasBerries()) { await env.say(T.soil); return; }
+        if(opts.platinum&&!state().soil[spot]&&env.choose){const list=SinnohBerries.mulches.filter(id=>Player.itemCount(env.player(),id));if(list.length&&await env.confirm("Add mulch to this soil?")){const a=await env.choose("Choose mulch",list.map(Bag.name));const id=list.find(id=>Bag.name(id)===a);if(id&&SinnohBerries.apply(env.player(),spot,id))await env.say("The mulch was scattered over the soil.");}}
         if (!(await env.confirm(T.wantToPlant))) return;
         const berry = await env.chooseBerry();
         if (!berry || !info(berry)) return;
         window.Player.removeItem(env.player(), berry, 1);
         if(window.SinnohVilla)SinnohVilla.record(env.player(),"berries");
-        trees[spot] = { berry, stage: 1, left: stageSteps(berry), watered: [false, false, false, false], yield: 0 };
+        trees[spot] = opts.platinum ? SinnohBerries.plant(berry,state().soil[spot]) : { berry, stage: 1, left: stageSteps(berry), watered: [false, false, false, false], yield: 0 };
+        if(opts.platinum)delete state().soil[spot];
         env.refresh();
         await env.say(fill(T.planted, berry));
         await env.addFarmingXp(1);
@@ -131,12 +135,12 @@
       }
       if (t.stage === STAGES) {
         // (More with your farming level: 1 + level / 100 times as many.)
-        const n = Math.max(t.yield, Math.round(t.yield * (1 + (env.farmingLevel() || 1) / 100))), pages = fill([T.found, T.wantToPick], t.berry, n);
+        const n = opts.platinum ? t.yield : Math.max(t.yield, Math.round(t.yield * (1 + (env.farmingLevel() || 1) / 100))), pages = fill([T.found, T.wantToPick], t.berry, n);
         await env.say([pages[0]]);
         if (!(await env.confirm(pages[1]))) { await env.say(fill(T.leftUnpicked, t.berry)); return; }
         // (Or by a game of its own, which brings them home and gives the farming XP itself: env.pickGame(berry, n).)
         if (env.pickGame) { delete trees[spot]; env.refresh(); await env.pickGame(t.berry, n); return; }
-        window.Player.addItem(env.player(), t.berry, n);
+        if(opts.platinum){if(!SinnohOptional.give(env.player(),t.berry,n)){await env.say("Make room for all the Berries in your Bag first.");return;}}else window.Player.addItem(env.player(), t.berry, n);
         delete trees[spot];
         env.refresh();
         const picked = fill(T.picked, t.berry, n);
@@ -148,9 +152,10 @@
       const water = t.watered.filter(Boolean).length;
       await env.say(fill(t.stage === 4 ? T.flowering(water === 0 ? "prettily" : water === WATER_STAGES ? "very beautifully" : "cutely") : T.stage[t.stage], t.berry, 1));
       // (Watering: once a stage, with the Wailmer Pail.)
-      if (!window.Player.itemCount(env.player(), "wailmer-pail") || t.watered[t.stage - 1]) return;
-      if (!(await env.confirm(fill([T.wantToWater], t.berry)[0]))) return;
-      t.watered[t.stage - 1] = true;
+      const spray=opts.platinum&&Player.itemCount(env.player(),"sprayduck");
+      if ((!spray&&!window.Player.itemCount(env.player(), "wailmer-pail")) || (opts.platinum?t.moisture>=100:t.watered[t.stage-1])) return;
+      if (!(await env.confirm(fill([T.wantToWater], t.berry)[0].replace("Wailmer Pail",spray?"Sprayduck":"Wailmer Pail")))) return;
+      if(opts.platinum)SinnohBerries.water(t);else t.watered[t.stage - 1] = true;
       env.refresh();   // (the soil wet now)
       await env.say(fill(T.watered, t.berry));
     }

@@ -1735,7 +1735,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["vs-recorder","poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["white-flute", "black-flute","vs-recorder","poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -1752,6 +1752,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
+    if(item==="white-flute"||item==="black-flute"){if(SinnohCompletion.flute(player,item)){await message("The "+Bag.name(item)+" sounded.\nWild Pokémon will appear "+(item==="white-flute"?"more":"less")+" often here.");}return;}
     if(item==="vs-recorder"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();const rec=player.flags.sinnoh?.frontier?.lastRecord||player.flags.hoennBattleRecord;if(rec)await playRecord(rec);else await say("No local battle has been recorded yet.");};return "escaped";}
     if(item==="poffin-case"){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohPoffinDevice.openCase(scene,player);}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="seal-case"){fieldAction=async()=>{show("scene");clearMenu();try{await SinnohCapsules.open(scene,{player});}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
@@ -1811,7 +1812,9 @@
     const under = hidden.find((h) => h.x === at.x && h.y === at.y);
     if (under) {
       await say(["Oh!\nThe Itemfinder's shaking wildly!", "There's an item buried underfoot!", "‥ ‥ ‥ ‥ ‥ ‥"]);
-      Player.addItem(player, under.item, under.quantity);
+      const before=Player.itemCount(player,under.item),quantity=under.quantity||1;
+      Player.addItem(player, under.item, quantity);
+      if(Player.itemCount(player,under.item)!==before+quantity){if(Player.itemCount(player,under.item)>before)Player.removeItem(player,under.item,Player.itemCount(player,under.item)-before);await say("Your Bag is full.");return;}
       player.flags[under.flag] = true;
       await sayWithJingle(itemJingle(under.item), "{PLAYER} found " + (under.quantity > 1 ? under.quantity + " " : "a ") + Bag.name(under.item) + "!");
       return;
@@ -2120,6 +2123,7 @@
   // the step clock, faster the higher your farming level; planting and
   // picking earn farming XP.
   const berryEnv = {
+    choose: (title,list)=>ask(title,list.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}])),
     player: () => player, say: (pages) => say(pages), confirm: (q) => confirm(q), jingle: (song, pages) => sayWithJingle(song, pages),
     farmingLevel: () => BerryPicking.level(farmingXp()),
     addFarmingXp: async (n) => {
@@ -2150,7 +2154,7 @@
   // Sinnoh's (the Essentials project's: tools/build-sinnoh.js), the same again.
   const isSinnoh = (map) => ((window.WORLD_MAPS[map] || {}).region === "sinnoh");
   const sinnohBerries = BerryFarm.create(berryEnv,
-    { key: "sinnohBerries", owns: isSinnoh, spotRe: /^SinnohBerry_Tree_(\d+)$/, initial: () => window.SINNOH_BERRY_TREES || {} });
+    { key: "sinnohBerries", platinum:true, owns: isSinnoh, spotRe: /^SinnohBerry_Tree_(\d+)$/, initial: () => window.SINNOH_BERRY_TREES || {} });
   // Hoenn's decorations (ui/hoenn-decor.js): the ones you own, and those out in your Secret Base and your room.
   const hoennDecor = HoennDecor.create({
     player: () => player, say: (p) => say(p), confirm: (q) => confirm(q), sfx,
@@ -5962,7 +5966,7 @@
     openPC: async()=>{await pc();show("world");await Overworld.resume();},
     chooseParty: choosePartyFor, learnMove, enterText, tradeFor, daycareLady: () => fourIslandDayCareLady("sinnoh"), daycareMan: () => fourIslandDayCareMan("sinnoh"),
     choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name })).concat([{label:"Cancel",value:null}])),
-    playCasinoSlots: async id=>{Screen.say("");const value=await window.SlotMachine.play({machineId:id,coins:SinnohServices.coins(player),maxCoins:50000,sfx,fanfare});SinnohServices.setCoins(player,value);show("world");await Overworld.resume();},
+    playCasinoSlots: async id=>{Screen.say("");const value=await window.SlotMachine.play({machineId:id,coins:SinnohServices.coins(player),maxCoins:50000,sfx,fanfare,onWin:()=>{SinnohCompletion.state(player).casinoWins++;}});SinnohServices.setCoins(player,value);tick();Save.write(player);show("world");await Overworld.resume();},
     showWorld: () => show("world"), resume: () => Overworld.resume(),
     refreshPeople: () => Overworld.refreshPeople(), teleport: (to) => Overworld.teleport(to),
     refreshMap: () => { applyPatches(player.location.map); Overworld.refreshPeople(); },
@@ -11680,7 +11684,7 @@
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           SinnohLegends.syncForms(player);
           return sinnohStory.step() || orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
-        }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
+        }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()) * SinnohCompletion.rate(player),
         adjustWild: (mon, table) => { SinnohDaily.apply(player); const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !SinnohPark.suppresses(player) && !SinnohRadar.suppresses(player) && !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {

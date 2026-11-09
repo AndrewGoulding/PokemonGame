@@ -104,7 +104,7 @@
       await say("VeilstoneCity_Text_DawnAskForHelp",["Dawn",p.name]);
       const one="PT_TRAINER_GALACTIC_GRUNT_VEILSTONE_CITY_1",two="PT_TRAINER_GALACTIC_GRUNT_VEILSTONE_CITY_2";
       const chosen=p.party.map((m,i)=>Party.canFight(m)?i:-1).filter(i=>i>=0).slice(0,3);
-      if(!await fight(one,{chosen,partner:{name:"Dawn",team:Sinnoh.team("PT_TRAINER_DAWN_VEILSTONE_CITY_"+(s.starter||"Turtwig").toUpperCase()),pic:"pt_dawn_dp"},foe2:{...foe(two),defeatText:PLATINUM_DATA.trainers[two].defeat,prizeClass:"Galactic Grunt"}}))return;
+      if(!await fight(one,{chosen,partner:SinnohCompletion.partner(p,"VEILSTONE_CITY"),foe2:{...foe(two),defeatText:PLATINUM_DATA.trainers[two].defeat,prizeClass:"Galactic Grunt"}}))return;
       p.flags[two]=true;s.veilstoneGalactic=true;refresh();
       await say("VeilstoneCity_Text_DawnThankYouSincerely",["Dawn",p.name]);
       await env.say("The Galactic Grunts fled.\nYou can enter the warehouse\nand collect the Fly HM!");

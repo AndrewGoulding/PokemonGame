@@ -26,7 +26,7 @@
       const starter = state().starter || "Turtwig";
       const second = "PT_TRAINER_GALACTIC_GRUNT_JUBILIFE_CITY_2";
       if (!await fight("PT_TRAINER_GALACTIC_GRUNT_JUBILIFE_CITY_1", {
-        partner: { name: "Dawn", team: Sinnoh.team("PT_TRAINER_DAWN_JUBILIFE_CITY_" + starter.toUpperCase()), pic: "pt_dawn_dp" },
+        partner: SinnohCompletion.partner(player(),"JUBILIFE_CITY"),
         foe2: { ...foe(second), defeatText: PLATINUM_DATA.trainers[second].defeat, prizeClass: "Galactic Grunt" }
       })) return;
       player().flags[second] = true; state().jubilifeGalactic = true; refresh();

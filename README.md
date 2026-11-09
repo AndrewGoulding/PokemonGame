@@ -3612,13 +3612,14 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
   Turnback Cave and the Griseous Orb are playable. Offline event parcels provide access.
   Rotom’s appliances, Gracidea, Plates, Battleground guests, weekend Barry and the stronger
   League teams are supported. See [legendary stories](docs/sinnoh-legends.md) and the
-  [completion checklist](docs/sinnoh-completion.md) for remaining feature groups.
-- **Still unfinished**: the full Twinleaf opening, catching demonstration, Trainer School,
-  Looker and Pokétch introduction, native Pokétch apps, optional interiors and side quests,
-  Contests, the Battle Zone and postgame. The implemented main story reaches Cynthia;
-  the Gyms, Mt. Coronet, Victory Road and Distortion World use explicit 2D adaptations.
-  The remaining town services, regional facilities, minigames and travel audit are tracked
-  in the completion checklist; the implemented postgame is not yet all of Platinum.
+  [completion checklist](docs/sinnoh-completion.md) for the feature inventory.
+- **Offline feature pass complete**: all five Frontier facilities, Super Contests,
+  Poffins, Underground, Pal Park, Pokétch/Radar, optional dungeons and daily
+  challenges, source field items, Berry growth/mulches, collection rewards and
+  regional travel are implemented. The opening is adapted for a visitor from
+  another region, with optional Twinleaf parcel/Trainer School quests. Maps,
+  minigames and unavailable network/device features use documented 2D or local
+  substitutes. See the [final source audit](docs/sinnoh-completion-audit.md).
 
 ### Importing Platinum's campaign data
 
@@ -3652,7 +3653,7 @@ Platinum town services, escorts and optional-route imports are documented in
 [Sinnoh town content](docs/sinnoh-towns.md) and
 [Sinnoh daily activities](docs/sinnoh-daily.md), plus
 [Pokétch, Radar and roamers](docs/sinnoh-gadgets.md) and
-[town services/Game Corner](docs/sinnoh-services.md); remaining systems are tracked in
+[town services/Game Corner](docs/sinnoh-services.md); the complete inventory is tracked in
 [the Sinnoh completion checklist](docs/sinnoh-completion.md).
 
 `tools/build-sinnoh.js` builds them from the project (it needs Ruby, to read RPG Maker's `.rxdata` files through

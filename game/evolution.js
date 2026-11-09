@@ -93,9 +93,9 @@
     if ((record.item === "everstone" || record.item === "eviolite") && ctx.trigger !== "item") return null;
     // Most specific first, so an Eevee that knows a Fairy move becomes Sylveon
     // rather than Espeon.
-    const specificity = (e) => (e.moveType ? 2 : 0) +
+    const specificity = (e) => (e.location ? 4 : 0) + (e.moveType ? 2 : 0) +
       ["partySpecies", "partyType", "item", "move", "time", "stats", "natures"].filter((k) => e[k]).length;
-    const options = (window.EVOLUTIONS[record.species] || []).slice()
+    const options = (window.EVOLUTIONS[record.species] || []).concat(window.SinnohCompletion ? SinnohCompletion.evolutions(record,ctx) : [])
       .sort((a, b) => specificity(b) - specificity(a));
     return options.find((e) => methodMatches(record, e, ctx) && meetsConditions(record, e, ctx)) || null;
   }

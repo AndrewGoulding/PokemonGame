@@ -20,9 +20,9 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [x] Oak's roaming birds
 - [x] Secret Key and Rotom appliances
 - [x] Battleground, Barry and League rematches
-- [ ] Remaining cave trainers, special encounters and access audit (route parties and full mapped encounter tables imported)
+- [x] Cave trainers, special encounters and all source encounter-bank coverage
 - [x] Mira/Wayward Cave and Marley/Victory Road escort stories
-- [ ] Town quests and remaining HM/item rewards (gifts, four trades, shard tutors and reminder implemented)
+- [x] Town quests, source field items/HM rewards, gifts, four trades, shard tutors and reminder
 - [x] Swarm broadcasts, lottery, ribbons, massages and time-based trainers
 - [x] Veilstone Game Corner and Ribbon Syndicate
 - [x] Ball Seals/Capsules and Resort villa
@@ -32,11 +32,14 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [x] Amity Square walking companions, source finds and daily gifts
 - [x] Solaceon Ruins chamber network, all Unown forms and Maniac Tunnel research
 - [x] Pal Park catching show, source scoring and safe offline PC practice
-- [ ] Remaining optional challenges
+- [x] Restaurant, Five-Maid Knockout, Fight Area tag battle and remaining optional challenges
 - [x] Poffin cooking/feeding, source shop and Beauty evolution
 - [x] Super Contests, source dress-up accessories/backdrops, practice, ribbons and contest rewards
 - [x] Battle Tower, Factory, Arcade, Castle and Hall, source sets/Brains, prints/BP and local Tower partners
 - [x] Offline Underground, source mining/fossils, Spheres, Secret Bases and Spiritomb
 - [x] Trainer Card stars, diplomas, Badge Case and cross-feature collection trophies
-- [ ] Optional location access and full-region travel audit
-- [ ] Final save migration, cross-region and browser validation
+- [x] Optional location access, dungeon connections and regional travel audit
+- [x] Final save migration, cross-region and browser validation
+
+Coverage, validation and the scope of the 2D/offline adaptations are documented
+in [the final source audit](sinnoh-completion-audit.md).

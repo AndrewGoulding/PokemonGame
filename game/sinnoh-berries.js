@@ -1,0 +1,18 @@
+// Platinum's Berry patch arithmetic, advanced by the saved walking clock.
+(function(){
+ 'use strict';
+ const mulches=['growth-mulch','damp-mulch','stable-mulch','gooey-mulch'],data=()=>PLATINUM_DATA.completion.berryGrowth;
+ for(const id of mulches){ITEMS[id]={name:id,category:'items',effect:({'growth-mulch':'Speeds growth; soil dries faster.','damp-mulch':'Slows growth; soil dries more slowly.','stable-mulch':'Ripe Berries remain for longer.','gooey-mulch':'Allows more automatic regrowth cycles.'})[id]};if(window.ITEM_SPRITES)ITEM_SPRITES[id]='assets/sinnoh-optional/'+id.replace('-','_')+'.png';}
+ ITEMS.sprayduck={name:'sprayduck',category:'key-items',effect:'Waters growing Sinnoh Berry plants.'};if(window.ITEM_SPRITES)ITEM_SPRITES.sprayduck='assets/sinnoh-optional/sprayduck.png';
+ const info=t=>data()[t.berry]||{hours:3,drain:15,baseYield:1},duration=t=>{const n=info(t).hours*60;return t.mulch==='growth-mulch'?Math.floor(n*3/4):t.mulch==='damp-mulch'?n+Math.floor(n/2):n;},harvest=t=>t.mulch==='stable-mulch'?6:4,cycles=t=>t.mulch==='gooey-mulch'?15:10;
+ function normalize(t){if(t.platinum)return t;t.platinum=true;t.moisture=100;t.rating=5;t.moistureMinutes=0;t.replants=0;t.remainder=0;t.left=duration(t)*(t.stage===5?harvest(t):1);return t;}
+ function state(p,initial={}){let s=p.flags.sinnohBerries;if(!s){s=p.flags.sinnohBerries={pail:false,trees:{},soil:{}};for(const[k,v]of Object.entries(initial))s.trees[k]={...v,watered:[false,false,false,false],yield:v.yield??(data()[v.berry]?.baseYield||1)*3};}s.soil=s.soil||{};if(!s.platinum){for(const t of Object.values(s.trees))normalize(t);s.platinum=true;}return s;}
+ function plant(berry,mulch){const t={berry,mulch:mulches.includes(mulch)?mulch:null,stage:1,yield:0,watered:[false,false,false,false]};return normalize(t);}
+ function drain(t,minutes){if(t.stage===5)return;const b=info(t).drain,n=t.mulch==='growth-mulch'?b+Math.floor(b/2):t.mulch==='damp-mulch'?Math.floor(b/2):b,total=minutes+t.moistureMinutes;let hours=Math.floor(total/60);t.moistureMinutes=total%60;if(!hours)return;if(t.moisture>=n*hours){t.moisture-=n*hours;return;}if(t.moisture>0){hours-=Math.ceil(t.moisture/n);t.moisture=0;}t.rating=Math.max(0,t.rating-hours);}
+ function advance(t,minutes){normalize(t);const total=Math.round(((t.remainder||0)+minutes)*1e9)/1e9;let left=Math.floor(total);t.remainder=total-left;while(left>0&&t.stage){const elapsed=Math.min(left,t.left);drain(t,elapsed);left-=elapsed;t.left-=elapsed;if(t.left>0)break;if(t.stage<4)t.stage++;else if(t.stage===4){t.stage=5;t.yield=Math.max(2,info(t).baseYield*t.rating);}else{t.stage=2;t.yield=0;t.rating=5;t.replants++;if(t.replants>=cycles(t)){t.stage=0;return false;}}t.left=duration(t)*(t.stage===5?harvest(t):1);}return t.stage>0;}
+ function step(p,initial){const s=state(p,initial);let changed=false;for(const[k,t]of Object.entries(s.trees)){const stage=t.stage,moist=t.moisture;const alive=advance(t,60/Player.STEPS_PER_HOUR);if(!alive)delete s.trees[k];if(!alive||stage!==t.stage||(moist>50)!==(t.moisture>50))changed=true;}return changed;}
+ function water(t){normalize(t);t.moisture=100;t.watered[t.stage-1]=true;}
+ function buy(p,id){if(!mulches.includes(id)||p.money<PLATINUM_DATA.completion.mulchCost)return null;if(!SinnohOptional.give(p,id))return{full:true};Player.addMoney(p,-PLATINUM_DATA.completion.mulchCost);return{item:id};}
+ function apply(p,spot,id){const s=state(p);if(s.trees[spot]||s.soil[spot]||!mulches.includes(id)||!Player.itemCount(p,id))return false;Player.removeItem(p,id);s.soil[spot]=id;return true;}
+ window.SinnohBerries={mulches,data,state,normalize,plant,duration,harvest,cycles,advance,step,water,buy,apply};
+})();

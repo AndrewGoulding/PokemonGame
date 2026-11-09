@@ -275,7 +275,12 @@
       if (ev.type === "hidden") {
         const h = ev.hidden;
         if (h.item === "coins") { await env.hiddenCoins(h); return; }
-        Player.addItem(env.player, h.item, h.quantity);
+        const before = Player.itemCount(env.player,h.item), quantity = h.quantity || 1;
+        Player.addItem(env.player, h.item, quantity);
+        if (Player.itemCount(env.player,h.item) !== before + quantity) {
+          if (Player.itemCount(env.player,h.item) > before) Player.removeItem(env.player,h.item,Player.itemCount(env.player,h.item)-before);
+          await env.say("Your Bag is full."); return;
+        }
         env.player.flags[h.flag] = true;
         await env.sayWithJingle(env.itemJingle(h.item), "{PLAYER} found " + (h.quantity > 1 ? h.quantity + " " : "a ") + Bag.name(h.item) + "!");
         return;
@@ -392,7 +397,9 @@
 
       if (ev.person && ev.person.item) {
         const item = ev.person.item;
+        const before = Player.itemCount(env.player,item);
         Player.addItem(env.player, item);
+        if (Player.itemCount(env.player,item) === before) { await env.say("Your Bag is full."); return; }
         f[ev.person.flag] = true;
         Overworld.removePerson(ev.person);   // (just the ball: everyone else stays where they are)
         await env.sayWithJingle(env.itemJingle(item), /^Game_EventScript_MegaStone_/.test(ev.person.script || "") ? "{PLAYER} found " + env.article(Bag.name(item)) + "!"
@@ -2147,7 +2154,7 @@
       if (/^Johto_GoldenrodPanel:\d$/.test(script || "")) return true;   // (Goldenrod Underground's switches: goldenrodPanel())
       if (script === "Johto_MagnetTrain") return true;   // (the Magnet Train's doors: magnetTrainBoard())
       if (script === "Johto_SSAquaBoard") return true;   // (Olivine's port: ssAquaBoard())
-      if (/^(BerryFarm_(Caretaker|Tree_\d+)|HoennBerry_Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
+      if (/^(BerryFarm_(Caretaker|Tree_\d+)|(Hoenn|Sinnoh)Berry_Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
       if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && env.johto.zoneOf(env.player.location.map)) return true;
       if (/^(enter|arrive):/.test(script || "") && env.johto.frameScript(script.replace(/^\w+:/, ""))) return true;
       // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
