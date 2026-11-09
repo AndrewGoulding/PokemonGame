@@ -1,0 +1,16 @@
+"use strict";
+const assert=require('node:assert/strict'),T=require('./lib');
+(async()=>{
+ const s=await T.start(p=>{p.party=[Party.create('Mew',62,{moves:['Surf','Waterfall','Rock Climb','Strength']})];p.badges=['coal','forest','relic','cobble','fen','mine','icicle','beacon'];p.flags.sinnoh={starter:'Turtwig',trioFreed:true,spear:true,giratinaResolved:true,rivalLeague:true,league:{active:true,step:4}};for(const id of Object.keys(PLATINUM_DATA.trainers))p.flags[id]=true;},{map:'MtCoronet_3',x:30,y:13,facing:'up'},{out:'/tmp/pokemon-sinnoh-late-travel',storage:{'pokemon-options':JSON.stringify({textSpeed:2,battleScene:1,battleStyle:1,sound:2,calls:1,follower:1})}});
+ const missing=new Set(),errors=[];s.page.on('response',r=>{if(r.status()>=400)missing.add(new URL(r.url()).pathname);});s.page.on('pageerror',e=>errors.push(e.message));
+ async function go(map,x,y,facing='up'){await s.page.waitForFunction(()=>Overworld.idle());await s.eval(to=>Overworld.teleport(to),{map,x,y,facing});await s.wait(300);}
+ try{await s.boot();await s.walk('up',3);assert((await s.player()).location.y<=10);console.log('ok: restored mountain stairs');
+ await go('MtCoronet_3',31,8);await s.walk('up',2);assert.equal((await s.player()).location.map,'PlatinumCoronet_Junction');await go('PlatinumCoronet_Junction',16,3);await s.walk('up',2);assert.equal((await s.player()).location.map,'PlatinumCoronet_NorthPass');await go('PlatinumCoronet_NorthPass',16,3);await s.walk('up',2);assert.equal((await s.player()).location.map,'Route216');await s.walk('down',1);assert.equal((await s.player()).location.y,25);console.log('ok: mountain passage to Route 216');
+ await go('PlatinumVictoryRoad_1F',16,3);await s.walk('up',2);assert.equal((await s.player()).location.map,'PlatinumVictoryRoad_2F');await go('PlatinumVictoryRoad_2F',16,3);await s.walk('up',2);assert.equal((await s.player()).location.map,'PlatinumVictoryRoad_B1F');await go('PlatinumVictoryRoad_B1F',16,3);await s.walk('up',2);assert.equal((await s.player()).location.map,'PokemonLeague');console.log('ok: Victory Road floors to upper League approach');
+ await go('PokemonLeague',16,13);await s.walk('up',1);assert.equal((await s.player()).location.map,'SinnohLeague_Lobby');await s.shot('league-lobby');
+ // Check the exact imported Cynthia portraits and the shared Hall of Fame
+ // save callback without repeating the separately exercised full battle.
+ await s.eval(()=>{window.__hofDone=false;Game.player.flags.sinnoh.league={active:true,step:4};const entry=Sinnoh.recordChampion(Game.player);HallOfFame.show(document.getElementById('overlay'),entry,{player:{name:Game.player.name,id:Game.player.trainerId,pic:Player.LOOKS[Game.player.look].front},save:async()=>Save.write(Game.player)}).then(()=>window.__hofDone=true);});
+ for(let i=0;i<120&&!await s.eval(()=>window.__hofDone);i++)await s.press('z',90);assert(await s.eval(()=>window.__hofDone));assert(await s.eval(()=>JSON.parse(localStorage.getItem('pokemon-game-save')).flags.sinnohLeagueClear));await s.shot('hall-of-fame');assert.deepEqual(errors,[]);assert.deepEqual([...missing].filter(p=>p!=='/favicon.ico'),[]);console.log('ok: Hall of Fame display and persisted Sinnoh completion; no missing chapter assets');
+ }catch(e){await s.shot('failure');throw e;}finally{await s.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

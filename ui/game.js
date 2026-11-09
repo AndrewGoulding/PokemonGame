@@ -2564,7 +2564,7 @@
       await Screen.printed();
       clearMenu();
       const items = [f.billHelped ? "Bill's PC" : "Someone's PC", player.name + "'s PC"]
-        .concat(f.pokedex ? ["Prof. Oak's PC"] : [], f.gameClear ? ["Hall of Fame"] : [], ["Log off"]);
+        .concat(f.pokedex ? ["Prof. Oak's PC"] : [], (f.gameClear || f.sinnohLeagueClear) ? ["Hall of Fame"] : [], ["Log off"]);
       const { index } = await pcMenu(items, { width: f.pokedex || player.name.length > 6 ? 14 : 13 });
       const v = index < 0 ? "Log off" : items[index];
       if (v === "Log off") { sfx("se_pc_off"); Screen.say(""); return; }
@@ -5909,7 +5909,12 @@
     showWorld: () => show("world"), resume: () => Overworld.resume(),
     refreshPeople: () => Overworld.refreshPeople(), teleport: (to) => Overworld.teleport(to),
     refreshMap: () => { applyPatches(player.location.map); Overworld.refreshPeople(); },
-    onBike: () => Overworld.avatar() === "bike", mountBike: () => Overworld.setAvatar("bike")
+    onBike: () => Overworld.avatar() === "bike", mountBike: () => Overworld.setAvatar("bike"),
+    championScreen: async entry => {
+      tick(); Save.write(player);
+      await HallOfFame.show($("#overlay"), entry, {cry, sfx, music, player:{name:player.name,id:player.trainerId,playTimeMs:player.playTimeMs,pic:Player.LOOKS[player.look].front},save:async()=>{tick();Save.write(player);savePromptAt=player.playTimeMs;}});
+      $("#overlay").classList.add("hidden"); show("world");
+    }
   });
 
   // ---------- Sinnoh: the S.S. Tidal's run (this game's own) ----------
@@ -11432,6 +11437,7 @@
         diveHere: (avatar) => diveHere(avatar),
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
+        iceBlockStopped: def => { if (Sinnoh.snowballStopped(player, def, Overworld.personPosition(def.localId))) { applyPatches(player.location.map); Overworld.removePerson(def); } },
         darkness: (map) => Sinnoh.darkness(map) || (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
         faced: (map, x, y, surfing) => johtoSafari.faced(map, x, y, surfing),
         boulderFell: (def) => {
@@ -11439,7 +11445,7 @@
           if (def.flag === "FLAG_HIDE_VICTORY_ROAD_3F_BOULDER") LeagueRoad.dropBoulder(player.flags);
           else Seafoam.drop(player.flags, def);
         },
-        boulderSwitch: (map, x, y) => tanobySwitch(map, x, y) || victoryRoadSwitch(map, x, y),
+        boulderSwitch: (map, x, y) => Sinnoh.distortionSwitch(player, map, x, y) || tanobySwitch(map, x, y) || victoryRoadSwitch(map, x, y),
         // (The Tanoby Ruins' chambers are dark until the Tanoby Key's solved: EventScript_TryDarkenRuins.)
         weather: (map) => (isHoenn(map) ? hoennWeatherNow() : Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
         // (Off the water: on foot, or back on the Bicycle on Cycling Road, where you can't walk.)

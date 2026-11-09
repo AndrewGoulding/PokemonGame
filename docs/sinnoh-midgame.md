@@ -3,7 +3,7 @@
 The Platinum overlay now covers the opening through the Fen Badge. This pass adds
 Fantina, Maylene and Crasher Wake as a single progression section, using the
 source parties, authored moves, held items and message banks recorded in
-`PLATINUM_DATA.source`. The generated dataset contains 818 messages and 181 teams,
+`PLATINUM_DATA.source`. At this milestone the dataset contained 818 messages and 181 teams,
 including starter-dependent rival and partner variants.
 
 | Section | Playable progression |
@@ -46,10 +46,9 @@ future work.
   defeated Trainers for rematches. Dawn therefore gives the functional
   Itemfinder and explains that system, without awarding an item that save
   migration would delete. Native Pokétch touchscreen apps are not implemented.
-- Contests, optional town houses, the Lost Tower/Day-Care story, the post-Wake
-  Galactic chase, Psyduck/SecretPotion sequence and later Gyms remain separate
-  work. Surf's field permission is granted by the Fen Badge; its Sinnoh HM gift
-  still belongs to the later Celestic story.
+- Contests, optional town houses, the Lost Tower/Day-Care story, optional town stories remain separate
+  work. The post-Wake story and later Gyms are covered by
+  [the finale](sinnoh-finale.md), including the Celestic Surf HM gift.
 
 ## Regeneration and checks
 

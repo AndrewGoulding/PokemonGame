@@ -1,4 +1,4 @@
-// Import Platinum's campaign through Eterna Galactic and Cycling Road from pret/pokeplatinum. No ROM/build
+// Import Platinum's campaign through the Sinnoh Champion from pret/pokeplatinum. No ROM/build
 // required. Existing Essentials geometry is retained; placements are adapted
 // explicitly below, while dialogue, trainer parties and event provenance come
 // from Platinum. Run: node tools/build-platinum.js /path/to/pokeplatinum
@@ -16,6 +16,7 @@ const json = (file) => JSON.parse(read(file));
 const pages = (text) => [].concat(text || []).join("").replace(/[’‘]/g, "'").replace(/[“”]/g, '"').split(/[\r\f]/).map((s) => s.trim()).filter(Boolean);
 const banks = ["route_201", "sandgem_town_pokemon_research_lab", "route_202", "jubilife_city", "route_203", "oreburgh_gate_1f", "oreburgh_city", "oreburgh_mine_b2f", "oreburgh_city_gym", "route_204_south", "route_204_north", "route_205_south", "route_205_north", "floaroma_town", "floaroma_meadow", "valley_windworks_outside", "valley_windworks_building", "eterna_forest", "eterna_city", "eterna_city_gym", "team_galactic_eterna_building_1f", "team_galactic_eterna_building_2f", "team_galactic_eterna_building_3f", "team_galactic_eterna_building_4f", "cycle_shop", "route_206", "route_207", "route_206_cycling_road_north_gate"];
 banks.push("mt_coronet_1f_south", "hearthome_city", "hearthome_city_gym_entrance_room", "hearthome_city_gym_leader_room", "veilstone_city", "veilstone_city_gym", "veilstone_city_galactic_warehouse", "pastoria_city", "pastoria_city_gym", "route_208", "route_209", "route_209_gate_to_hearthome_city", "route_210_south", "route_215", "route_214", "route_213", "route_212_north", "route_212_south");
+banks.push(...require("./lib/platinum-finale").banks.filter(bank => fs.existsSync(path.join(source, "res/text/" + bank + ".json"))));
 const texts = {};
 for (const bank of banks) for (const m of json("res/text/" + bank + ".json").messages) texts[m.id] = pages(m.en_US);
 // Read the existing game's identifiers without loading UI or prior generated output.
@@ -112,15 +113,18 @@ const galactic = require("./lib/platinum-galactic")({ root, source, ctx, person,
 Object.assign(chapter.maps, galactic.maps); chapter.doors.push(...galactic.doors);
 const middle = require("./lib/platinum-midgame")({ root, source, ctx, person, trainer, additions, provenance });
 Object.assign(chapter.maps, middle.maps); chapter.doors.push(...middle.doors);
+const finale = require("./lib/platinum-finale")({ root, source, ctx, person, trainer, additions, provenance, priorMaps: chapter.maps, moveName: m => convert(m, "MOVE_", moves) });
+Object.assign(chapter.maps, finale.maps); chapter.doors.push(...finale.doors);
 for (const people of Object.values(additions)) for (const p of people) if (p.trainer) {
   const t = trainers[p.trainer.id]; Object.assign(p.trainer, { intro: t.intro, defeat: t.defeat, after: t.after }); p.text = t.after;
 }
 for (const name of sprites) {
   const npcFile = path.join(source, "res/graphics/field_sprites/npc/" + name + ".png");
   const pic = readPng(fs.existsSync(npcFile) ? npcFile : path.join(source, "res/graphics/field_sprites/pokemon/" + name + ".png"));
-  const out = new Uint8ClampedArray(96 * 32 * 4);
-  for (let f = 0; f < 3; f++) for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) out.set(rgba(pic, x, y + f * 32), (y * 96 + f * 32 + x) * 4);
-  writePng(path.join(root, "assets/world/sprites/pt_" + name + ".png"), 96, 32, out);
+  const size = pic.width, frames = Math.max(1, Math.floor(pic.height / size));
+  const out = new Uint8ClampedArray(size * 3 * size * 4);
+  for (let f = 0; f < 3; f++) for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) out.set(rgba(pic, x, y + Math.min(f, frames - 1) * size), (y * size * 3 + f * size + x) * 4);
+  writePng(path.join(root, "assets/world/sprites/pt_" + name + ".png"), size * 3, size, out);
 }
 for (const name of portraits) {
   const pic = readPng(path.join(source, "res/trainers/classes/" + name + "/front.png"));
@@ -134,6 +138,11 @@ for (const name of portraits) {
   for (let y = 0; y < pic.height; y++) for (let x = 0; x < pic.width; x++) out.set(rgba(pic, x, y), (y * pic.width + x) * 4);
   writePng(path.join(root, "assets/sprites/items/key-item/works-key.png"), pic.width, pic.height, out);
 }
+for (const [icon,id] of [["secretpotion","secret-potion"],["old_charm","old-charm"],["storage_key","galactic-storage-key"],["galactic_key","galactic-key"]]) {
+  const pic=readPng(path.join(source,"res/items/icons/"+icon+".png")),out=new Uint8ClampedArray(pic.width*pic.height*4);
+  for(let y=0;y<pic.height;y++)for(let x=0;x<pic.width;x++)out.set(rgba(pic,x,y),(y*pic.width+x)*4);
+  writePng(path.join(root,"assets/sprites/items/key-item/"+id+".png"),pic.width,pic.height,out);
+}
 for (const name of ["cheryl", "dawn_dp"]) {
   const pic = readPng(path.join(source, "res/graphics/battle/trainer_backs/" + name + ".png"));
   const out = new Uint8ClampedArray(80 * 80 * 4);
@@ -141,6 +150,6 @@ for (const name of ["cheryl", "dawn_dp"]) {
   writePng(path.join(root, "assets/sprites/trainers/back/pt_" + name + ".png"), 80, 80, out);
 }
 const data = { source: { repository: "https://github.com/pret/pokeplatinum", commit: execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
-  scope: "Adapted campaign through the Fen Badge, including Hearthome, Veilstone and Pastoria; not a complete Platinum script interpreter", events: provenance }, texts, trainers, additions, gym, maps: chapter.maps, doors: chapter.doors };
+  scope: "Adapted Platinum campaign through the Sinnoh Champion fight; not a complete Platinum script interpreter", events: provenance }, texts, trainers, additions, gym, maps: chapter.maps, doors: chapter.doors, legendary: finale.legendary };
 fs.writeFileSync(path.join(root, "data/platinum.js"), "// Generated by tools/build-platinum.js from pret/pokeplatinum.\nwindow.PLATINUM_DATA = " + JSON.stringify(data) + ";\n");
 console.log("Imported " + Object.keys(texts).length + " messages and " + Object.keys(trainers).length + " trainer teams from Platinum");

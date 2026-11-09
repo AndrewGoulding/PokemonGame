@@ -3571,6 +3571,12 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
   Veilstone and Pastoria have functioning Centers and Marts, and Fly offers visited Sinnoh
   towns. See [Sinnoh through Crasher Wake](docs/sinnoh-midgame.md) for coverage, adaptations
   and validation. Regional caps advance to 32, 37 and 41 after these three leaders.
+- **The main campaign continues through Champion Cynthia**: Canalave, Snowpoint and Sunyshore
+  have adapted lift, ice and gear Gyms. The lake missions lead through Galactic HQ, Spear
+  Pillar and a 2D Distortion World with Strength boulders and Giratina. After the Beacon
+  Badge, challenge Barry, the Elite Four and Cynthia in order. A loss or departure resets
+  the League run; victory records a Sinnoh Hall of Fame team and unlocks its level cap.
+  See [Sinnoh through the Champion](docs/sinnoh-finale.md) for coverage and limitations.
 - **Adaptations**: this is a chapter for a player arriving from another region. The starter is
   chosen in Rowan's lab, rather than replaying Platinum's Twinleaf/Route 201 opening. Character
   placements are adapted to the existing Essentials geometry. Roark's room uses FireRed rock-Gym
@@ -3584,17 +3590,17 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
   drawn 2D interiors; the DS room models and exact partition layouts are not imported.
   The existing Cycle Shop map ID is preserved for saves. TMs remain reusable, as elsewhere in this game.
 - **Still unfinished**: the full Twinleaf opening, catching demonstration, Trainer School,
-  Looker and Pokétch introduction, Byron and later Gyms, native Pokétch apps, the post-Wake chase and Celestic story, Distortion World, League
-  and postgame. Most other interiors and later trainers are still absent. Existing later-region
-  maps remain available for exploration; reaching them does not imply their story is implemented.
-  Some story-opened places (the ruins behind Mt. Coronet, drained Lake Valor, Turnback Cave's
-  other rooms, the Secret Key/Rotom room, Pal Park and the event islands) remain inaccessible.
+  Looker and Pokétch introduction, native Pokétch apps, optional interiors and side quests,
+  Contests, the Battle Zone and postgame. The implemented main story reaches Cynthia;
+  the Gyms, Mt. Coronet, Victory Road and Distortion World use explicit 2D adaptations.
+  Some optional places, including Turnback Cave's other rooms, the Secret Key/Rotom
+  room, Pal Park and the event islands, still need dedicated story work.
 
 ### Importing Platinum's campaign data
 
 `tools/build-platinum.js` reads the public `pret/pokeplatinum` decompilation directly; no built ROM
 is needed. `data/platinum.js` records the exact source commit and the source event/script paths.
-It contains 818 imported messages, 181 trainer teams (including partner/starter variants), held
+It contains 1,282 imported messages, 301 trainer teams (including partner/starter variants), held
 items, authored moves and explicit placements. Imported
 character sprites and trainer portraits live under `assets/world/sprites/pt_*` and
 `assets/sprites/trainers/front/pt_*`. Rebuild with:

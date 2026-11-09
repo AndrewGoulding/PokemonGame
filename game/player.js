@@ -488,6 +488,7 @@
     if (regionOf(map || (player.location && player.location.map)) === "orre") return (player.flags && player.flags.orreLevelCap) || ORRE_LEVEL_CAP;
     const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
     const n = REGION_BADGES[region].filter((b) => (player.badges || []).includes(b)).length;
+    if (region === "sinnoh" && n === 8 && !(player.flags && player.flags.sinnohLeagueClear)) return 62;
     return n < LEVEL_CAPS[region].length ? LEVEL_CAPS[region][n] : 100;
   }
 

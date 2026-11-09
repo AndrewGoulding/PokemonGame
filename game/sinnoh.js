@@ -4,6 +4,7 @@
   "use strict";
   const D = window.PLATINUM_DATA;
   window.ITEMS["works-key"] = { name: "works-key", category: "key-items", effect: "Opens the locked door at Valley Windworks." };
+  for (const [id, effect] of Object.entries({"secret-potion":"Cynthia's medicine for Route 210's Psyduck.","old-charm":"Deliver to Cynthia's grandmother in Celestic Town.","galactic-storage-key":"Opens Team Galactic's warehouse basement.","galactic-key":"Opens Team Galactic's headquarters."})) window.ITEMS[id]={name:id,category:"key-items",effect};
   Object.assign(window.WORLD_TRAINERS, D.trainers);
   window.WORLD_MAPS.OreburghCity_Gym = D.gym;
   Object.assign(window.WORLD_MAPS, D.maps || {});
@@ -52,6 +53,13 @@
   const clockTrainers = ["PT_TRAINER_LASS_CAROLINE", "PT_TRAINER_AROMA_LADY_JENNA", "PT_TRAINER_AROMA_LADY_ANGELA"];
   function patches(map, player) {
     const m = WORLD_MAPS[map];
+    if (map === "SnowpointCity_Gym") return ["snow" + (state(player).snowballs | 0)];
+    if (m && m.gear != null) return ["gear" + ((state(player).gears || [])[m.gear] || 0)];
+    if (map === "MtCoronet_3") return ["northStairs"];
+    if (map === "PokemonLeague") return ["cave", "upperCave"];
+    if (map === "AcuityLakefront") return ["climb"];
+    if (map === "SunyshoreCity") return ["solar"];
+    if (map === "SpearPillar") return state(player).spear ? ["portal"] : [];
     if (map === "Route213") return ["shore"];
     if (m && m.haunt) return ["rune" + hauntShape(player, m.haunt.room)];
     if (map === "VeilstoneCity_Gym") return ["bags" + Math.min(3, state(player).mayleneBags | 0)];
@@ -88,9 +96,12 @@
     const m = WORLD_MAPS[map];
     return m && m.haunt ? {radius:4, lights:[{x:m.haunt.rune.x+.5,y:m.haunt.rune.y+.5,r:1}],rects:[]} : null;
   }
-  const flyTowns = ["SandgemTown", "JubilifeCity", "OreburghCity", "FloaromaTown", "EternaCity", "HearthomeCity", "VeilstoneCity", "PastoriaCity", "SolaceonTown"];
+  const flyTowns = ["SandgemTown", "JubilifeCity", "OreburghCity", "FloaromaTown", "EternaCity", "HearthomeCity", "VeilstoneCity", "PastoriaCity", "SolaceonTown", "CelesticTown", "CanalaveCity", "SnowpointCity", "SunyshoreCity", "PokemonLeague"];
   function visit(player, map) {
     if (typeof map !== "string") return;
+    transition(player, map);
+    const s = player.flags.sinnoh;
+    if (s && s.league && s.league.active && (WORLD_MAPS[map] || {}).leagueRoom == null) s.league={active:false,step:0};
     const city = map.replace(/_PokemonCenter_1F$/, "");
     if (!flyTowns.includes(city)) return;
     const list = state(player).visitedCities || (state(player).visitedCities = []);
@@ -103,5 +114,27 @@
       return [{ map: city, x: w.x, y: w.y + 1, center: w.map, name: city.replace(/([a-z])([A-Z])/g, "$1 $2") }];
     });
   }
-  window.Sinnoh = { state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed, hauntShape, darkness, visit, flySpots };
+  function transition(player) {
+    const s = player.flags.sinnoh || {}, front = WORLD_MAPS.ValorLakefront;
+    if (front) for (const index of [0,1]) front.warps[index].map = s.library && !s.trioFreed ? "LakeValor_2" : "LakeValor";
+  }
+  function snowballStopped(player, def, at) {
+    const n = def.sinnohSnowball;
+    if (player.location.map !== "SnowpointCity_Gym" || !Number.isInteger(n) || !at || at.x !== 20 || at.y !== [24,17,10][n]) return false;
+    state(player).snowballs = (state(player).snowballs | 0) | (1 << n); return true;
+  }
+  function distortionSwitch(player, map, x, y) {
+    const match=/^DistortionWorld_([012])$/.exec(map);
+    if (!match || x!==9 || y!==5 || (state(player).distortionStones||[]).includes(+match[1])) return null;
+    return {type:"trigger",map,trigger:{script:"pt:distortion-goal-"+match[1]}};
+  }
+  function recordChampion(player) {
+    const s = state(player), run=s.league;
+    if (!run || !run.active || run.step !== 4) return null;
+    const f=player.flags;
+    const entry={number:(f.hofCount||0)+1,region:"sinnoh",playTimeMs:player.playTimeMs||0,trainer:{name:player.name,id:player.trainerId},team:player.party.filter(r=>!r.egg).slice(0,6).map(r=>({species:r.species,nickname:r.nickname||null,level:r.level,gender:r.gender||"",shiny:!!r.shiny,form:Party.form(r)||undefined,personality:r.personality,ot:r.ot||{name:player.name,id:player.trainerId}}))};
+    f.hofCount=entry.number;(f.hallOfFame||(f.hallOfFame=[])).push(entry);while(f.hallOfFame.length>League.MAX_TEAMS)f.hallOfFame.shift();
+    f.sinnohLeagueClear=true;s.champion=true;s.league={active:false,step:5,completed:true};return entry;
+  }
+  window.Sinnoh = { state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed, hauntShape, darkness, visit, flySpots, transition, snowballStopped, distortionSwitch, recordChampion };
 })();
