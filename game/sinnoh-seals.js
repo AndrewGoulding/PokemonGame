@@ -2,7 +2,7 @@
  'use strict';
  const data=()=>PLATINUM_DATA.seals,info=id=>data().catalog.find(s=>s.id===+id),valid=i=>Number.isInteger(i)&&i>=0&&i<12;
  function state(p){const s=Sinnoh.state(p),b=s.seals||(s.seals={inventory:{},capsules:Array.from({length:12},()=>[])});return b;}
- const records=p=>[...p.party,...p.boxes.flat(),...["dayCare","dayCare2","johtoDayCare","sinnohDayCare"].flatMap(k=>[].concat(p.flags[k]||[]).map(d=>d.mon)),p.flags.orreDayCare?.record,...(p.flags.sinnoh?.park?.reserve||[]).filter(r=>!r.returned).map(r=>r.mon)].filter(Boolean),capsule=(p,i)=>valid(i)?state(p).capsules[i]:null;
+ const records=p=>[...p.party,...p.boxes.flat(),...["dayCare","dayCare2","johtoDayCare","sinnohDayCare"].flatMap(k=>[].concat(p.flags[k]||[]).map(d=>d.mon)),p.flags.orreDayCare?.record,...(p.flags.sinnoh?.frontier?.backup||[]),...(p.flags.sinnoh?.park?.reserve||[]).filter(r=>!r.returned).map(r=>r.mon)].filter(Boolean),capsule=(p,i)=>valid(i)?state(p).capsules[i]:null;
  function total(p,id){return(state(p).inventory[id]||0)+state(p).capsules.flat().filter(s=>s.id===+id).length;}
  function grant(p,id,n){if(!info(id)||!Number.isInteger(n)||n<=0)return 0;const count=Math.min(n,99-total(p,id));if(count>0)state(p).inventory[id]=(state(p).inventory[id]||0)+count;return Math.max(0,count);}
  function buy(p,id,n=1){const s=info(id);if(!s||!Number.isInteger(n)||n<1||!data().shops[Player.gameTime(p).weekday].includes(+id))return false;if(p.money<s.price*n||total(p,id)+n>99)return false;Player.addMoney(p,-s.price*n);grant(p,+id,n);return true;}

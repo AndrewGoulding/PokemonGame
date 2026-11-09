@@ -959,7 +959,7 @@
       return this.field.weather;
     }
     setWeather(name, source, effect, durationOverride) {
-      name = WEATHER_NAMES[toID(name)] || name;
+      name = toID(name) === "fog" ? "Fog" : WEATHER_NAMES[toID(name)] || name;
       const f = this.field;
       if (f.weather === name) return false;
       const wobj = { id: name };
@@ -3548,6 +3548,7 @@
         if (r === true) return true;
       }
       const w = this.getWeather();
+      if (w === "Fog") acc = tr(acc * .6);
       if ((move.id === "thunder" || move.id === "hurricane" || /^(bleakwind|wildbolt|sandsear)storm$/.test(move.id)) && (w === "RainDance" || w === "PrimordialSea")) return true;
       if ((move.id === "thunder" || move.id === "hurricane") && (w === "SunnyDay" || w === "DesolateLand")) acc = 50;
       if (move.id === "blizzard" && (w === "Hail" || w === "Snow")) return true;

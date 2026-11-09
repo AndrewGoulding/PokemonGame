@@ -522,6 +522,7 @@
     "soot-sack", "vs-recorder", "apricorn-box", "wailmer-pail"]);
   const storyItem = (id) => /^hm\d/.test(id) || (window.ITEMS[id] && window.ITEMS[id].category === "key-items" && !KEPT_KEY_ITEMS.has(id));
   function newGamePlus(old, name, look) {
+    if(window.SinnohFrontier&&old.flags?.sinnoh?.frontier?.backup)SinnohFrontier.recover(old);
     if(window.SinnohPoffins&&old.flags?.sinnoh?.cuisine?.pending)SinnohPoffins.recover(old);
     if(window.SinnohPark&&old.flags?.sinnoh?.park?.reserve?.length)SinnohPark.restore(old);
     const p = create(name, look);

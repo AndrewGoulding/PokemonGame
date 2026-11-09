@@ -135,6 +135,7 @@
 
   // ---- Hazards and field ----
   status.defog = (b, user, target) => {
+    if (b.field.weather === "Fog") b.clearWeather();
     b.boost(target, { evasion: -1 }, user, E("Move", "defog", "Defog"));
     for (const s of [user.side, target.side]) {
       for (const id of ["spikes", "toxicspikes", "stealthrock", "stickyweb"]) b.removeSideCondition(s, id);

@@ -2709,7 +2709,7 @@
   // (A recorded battle, Emerald's: every choice taken, in order, with the engine's seed; played
   // back by feeding them to a battle built the same way: run's cfg.record and cfg.replay.)
   let recording = null;
-  const RECORD_KEYS = ["p1", "p2", "format", "partnerTrainer", "foeTrainer2", "defeatText2", "ghost", "noCatch", "snag", "wild", "weather", "levelCap", "arena", "palace",
+  const RECORD_KEYS = ["p1", "p2", "format", "partnerTrainer", "foeTrainer2", "defeatText2", "ghost", "noCatch", "snag", "wild", "weather", "trickRoom", "levelCap", "arena", "palace",
     "trainer", "foeTrainer", "defeatText", "victoryMusic", "terrain"];
   function choose(side, choice) {
     try {
@@ -3560,6 +3560,7 @@
     battle.start();
     // (A legendary's weather, Groudon's and Kyogre's and Rayquaza's: for good, over any its own Ability brought.)
     if (cfg.weather) battle.setWeather(cfg.weather, null, null, Infinity);
+    if (cfg.trickRoom) { battle.field.pseudo.trickroom = { turns: 5 }; battle.add("-fieldstart", "trickroom"); }
     raidAnnounced = -1;
     // A wild Tera Pokémon (this game's own): "The wild … is Terastallizing!",
     // then the Terastallizing, animation and all, before the first turn.

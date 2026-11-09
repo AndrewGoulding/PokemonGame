@@ -1161,7 +1161,7 @@
       teraOrb,
       safari: opts.safari ? Object.assign({ balls: player.flags.safari.balls,park:!!player.flags.safari.park, hgss: !!(player.flags.safari.hgss || player.flags.safari.sinnoh), ...(player.flags.safari.sinnoh ? { fleeRate: PLATINUM_DATA.daily.flee[foe.team[0].species] || 0 } : {}) },
         player.flags.safari.hoenn ? { hoenn: true, pokeblocks: () => hoennPokeblock.blocks().map(HoennPokeblock.name), usePokeblock: (i) => hoennPokeblock.blocks().splice(i, 1)[0] } : {}) : undefined,
-      wild, roamer: !!opts.roamer, weather: opts.weather,
+      wild, roamer: !!opts.roamer, weather: opts.weather, trickRoom: !!opts.trickRoom,
       exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
       arena: !!opts.arena, palace: !!opts.palace,   // (the Battle Frontier's Arena and Palace rules: engine/battle.js)
       record: !!opts.record,   // (the choices and seed kept, to play it back: a Frontier battle's)
@@ -1170,7 +1170,7 @@
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
       victoryMusic: opts.victoryMusic || johtoMusic.win || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
       terrain: battleTerrain(opts),
-      bag: opts.bag || player.bag,
+      bag: opts.noBag ? null : opts.bag || player.bag,
       // (The Bag screen: its pockets, and the bag's colours.)
       // (Another bag: only its Poké Balls pocket, and the others it has anything in.)
       bagPockets: opts.bag ? () => bagPockets(opts.bag).filter((p) => p.items.length || p.name === "Poké Balls") : bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
@@ -1194,6 +1194,7 @@
       }
     });
     const b = result.battle;
+    if(opts.onResult)opts.onResult({turns:b.turn,outcome:result.outcome});
     if(wild&&foe.team.length===1)Sinnoh.finishRoamer(player,b.sides.p2.pokemon[0],result.outcome);
     lastRecord = result.record || null;
     if (opts.raid) opts.raidBall = result.raidBall || null;   // (the Ball its Pokémon was caught in, if it was)
@@ -1734,7 +1735,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["vs-recorder","poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -1751,6 +1752,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
+    if(item==="vs-recorder"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();const rec=player.flags.sinnoh?.frontier?.lastRecord||player.flags.hoennBattleRecord;if(rec)await playRecord(rec);else await say("No local battle has been recorded yet.");};return "escaped";}
     if(item==="poffin-case"){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohPoffinDevice.openCase(scene,player);}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="seal-case"){fieldAction=async()=>{show("scene");clearMenu();try{await SinnohCapsules.open(scene,{player});}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="poke-radar"){fieldAction=async()=>{show("world");await Overworld.resume();const text=SinnohRadar.use(player,Overworld.avatar());sfx("se_m_reflect");await say(text);};return "escaped";}
@@ -5943,6 +5945,10 @@
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
     saveCheckpoint: async()=>{tick();Save.write(player);},
+    frontierBattle: async(spec)=>{const s=SinnohFrontier.state(player),real=player.party;s.backup=real;s.active.phase='battle';tick();Save.write(player);player.party=spec.team;let outcome;try{outcome=await battle('trainer',{foe:spec.foe,defeatText:spec.defeatText,double:spec.double,noExp:true,noPrize:true,noBlackout:true,noGimmicks:true,noBag:true,record:true,weather:spec.weather,trickRoom:spec.trickRoom,onResult:r=>{s.active.lastTurns=r.turns;},partner:spec.partner,foe2:spec.foe2,chosen:spec.partner?[0,1]:undefined});}finally{player.party=real;}if(lastRecord){s.lastRecord=Object.assign({facility:s.active.facility,streak:s.active.streak+1},lastRecord);lastRecord=null;}show('world');await Overworld.resume();return outcome;},
+    frontierReplay: async()=>{const rec=SinnohFrontier.state(player).lastRecord;if(rec)await playRecord(rec);else await say('No Sinnoh Frontier battle has been recorded.');},
+    chooseFrontierTeam: async(list,n,title)=>{Screen.say("");show("scene");clearMenu();try{return await SinnohFrontierDevice.select(scene,list,n,title);}finally{show("world");await Overworld.resume();}},
+    spinFrontier: async()=>{Screen.say("");show("scene");clearMenu();try{return await SinnohFrontierDevice.roulette(scene,player);}finally{show("world");await Overworld.resume();}},
     contestDevice: async(stage,index)=>{Screen.say("");show("scene");clearMenu();try{const fn={visual:'dress',dance:'dance',acting:'acting',results:'results',photo:'photo'}[stage];return await SinnohContestDevice[fn](scene,player,stage==='photo'?index:async()=>{tick();Save.write(player);});}finally{show("world");await Overworld.resume();}},
     choosePoffinBerries: async()=>{Screen.say("");show("scene");clearMenu();try{return await SinnohPoffinDevice.ingredients(scene,player);}finally{show("world");await Overworld.resume();}},
     cookPoffin: async berries=>{Screen.say("");show("scene");clearMenu();try{return await SinnohPoffinDevice.cook(scene,berries);}finally{show("world");await Overworld.resume();}},
@@ -11624,6 +11630,7 @@
   async function explore() {
     SinnohDaily.correctLocation(player);
     SinnohPark.recover(player);
+    SinnohFrontier.recover(player);
     SinnohPoffins.recover(player);
     Orre.correctLocation(player);
     World.setDynamicWarp(player.flags.dynamicWarp);
