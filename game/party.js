@@ -151,7 +151,8 @@
   function friendshipOpts(record, here) {
     const secs = (window.TOWN_MAP || {}).mapSections || {};
     const met = record.met && !record.met.traded && record.met.map;
-    return { item: record.item, ball: record.ball, metHere: !!(met && here && secs[met] && secs[met] === secs[here]) };
+    return { item: record.item, ballSeals: window.SinnohSeals ? SinnohSeals.forMon(record, window.Game && Game.player) : [],
+      ball: record.ball, metHere: !!(met && here && secs[met] && secs[met] === secs[here]) };
   }
   // Changes its friendship for a FireRed event ("walking", "tm", ...) or an
   // item's [low, mid, high] (engine/experience.js adjustFriendship).
@@ -189,6 +190,7 @@
       status: record.status,
       form: form(record),   // display only; the engine ignores it
       shiny: !!record.shiny,   // (display only too)
+      ballSeals: window.SinnohSeals ? SinnohSeals.forMon(record, window.Game && Game.player) : [],
       ball: record.ball,    // the ball it's thrown out in (and a Luxury Ball's friendship)
       metHere: friendshipOpts(record, here).metHere,
       ppUps: record.moves.map((m) => m.ppUps || 0),

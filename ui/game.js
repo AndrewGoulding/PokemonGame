@@ -1733,7 +1733,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -1750,6 +1750,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
+    if(item==="seal-case"){fieldAction=async()=>{show("scene");clearMenu();try{await SinnohCapsules.open(scene,{player});}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="poke-radar"){fieldAction=async()=>{show("world");await Overworld.resume();const text=SinnohRadar.use(player,Overworld.avatar());sfx("se_m_reflect");await say(text);};return "escaped";}
     if(item==="poketch"){fieldAction=async()=>{show("scene");clearMenu();try{await SinnohPoketch.open(scene,{player,sfx});}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="gracidea"){const mon=await choosePartyFor("Use on which {PKMN}?",item);if(mon)await useItemOn(mon,item);return;}
@@ -5931,6 +5932,7 @@
 
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say, confirm, showPicture, hidePicture, canBattle, battle, sfx, forgetMove: chooseMoveToForget,
+    openPC: async()=>{await pc();show("world");await Overworld.resume();},
     chooseParty: choosePartyFor, learnMove, enterText, tradeFor, daycareLady: () => fourIslandDayCareLady("sinnoh"), daycareMan: () => fourIslandDayCareMan("sinnoh"),
     choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name })).concat([{label:"Cancel",value:null}])),
     playCasinoSlots: async id=>{Screen.say("");const value=await window.SlotMachine.play({machineId:id,coins:SinnohServices.coins(player),maxCoins:50000,sfx,fanfare});SinnohServices.setCoins(player,value);show("world");await Overworld.resume();},
@@ -8933,6 +8935,7 @@
     Screen.say("");
     await Overworld.fadeToBlack();
     Breeding.hatch(egg, player.location.map);
+    SinnohVilla.record(player,"eggs");
     Player.markCaught(player, egg.species);   // (AddHatchedMonToParty)
     // (Elm's Mystery Egg: he'll call about it, CALL_TRIGGER_ELM_EGG_HATCHED.)
     if (egg.species === "Togepi" && johto.flag("FLAG_GOT_EGG_FROM_ELMS_ASSISTANT") && !johto.flag("FLAG_SYS_HATCHED_TOGEPI_EGG")) {

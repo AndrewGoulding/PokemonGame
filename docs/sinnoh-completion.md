@@ -25,7 +25,7 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [ ] Town quests and remaining HM/item rewards (gifts, four trades, shard tutors and reminder implemented)
 - [x] Swarm broadcasts, lottery, ribbons, massages and time-based trainers
 - [x] Veilstone Game Corner and Ribbon Syndicate
-- [ ] Ball Seals/Capsules and Resort villa
+- [x] Ball Seals/Capsules and Resort villa
 - [x] Solaceon Day-Care, breeding and Lost Tower
 - [x] Honey trees, Trophy Garden and Great Marsh daily encounters
 - [x] Pokétch, Poké Radar, roaming route tracker/flee AI and Defog/Flash integration

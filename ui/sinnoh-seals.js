@@ -1,0 +1,5 @@
+(function(){
+ 'use strict';
+ function create(env){const p=()=>env.player();return{async run(script){if(!script?.startsWith('pt:seals-'))return false;if(!Player.itemCount(p(),'seal-case')){await env.say('Bring a Seal Case to collect\nand arrange Ball Seals.');return true;}if(script==='pt:seals-shop'){const stock=SinnohSeals.data().shops[Player.gameTime(p()).weekday],labels=stock.map(id=>{const s=SinnohSeals.info(id);return s.name+' · ₽'+s.price;}),pick=await env.choose('Today’s Ball Seals',labels),id=stock[labels.indexOf(pick)];if(id){const n=await env.choose('How many?',['1','10']);if(n&&await env.confirm('Buy '+n+' '+SinnohSeals.info(id).name+'?'))await env.say(SinnohSeals.buy(p(),id,+n)?'The Seals went into your Seal Case!':'You need enough money and\nspace in your Seal Case.');}}else if(script==='pt:seals-unown'){const m=await env.chooseParty('Show the boy an Unown?');env.showWorld();if(env.resume)await env.resume();if(m){const n=SinnohSeals.unownGift(p(),m);await env.say(n?'You received '+n+' matching letter Seals!':'Show me a different Unown form.\nI can give you matching Seals!');}}return true;}};}
+ window.SinnohSealScenes={create};
+})();

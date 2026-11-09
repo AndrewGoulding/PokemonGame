@@ -264,6 +264,7 @@
       this.ivs = Object.assign({ hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 }, set.ivs);
       this.evs = Object.assign({}, set.evs);
       this.happiness = set.happiness != null ? set.happiness : 70;
+      this.ballSeals = set.ballSeals || [];
       this.ball = set.ball;
       this.metHere = !!set.metHere;
       this.isNFE = !!set.isNFE;

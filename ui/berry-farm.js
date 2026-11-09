@@ -122,6 +122,7 @@
         const berry = await env.chooseBerry();
         if (!berry || !info(berry)) return;
         window.Player.removeItem(env.player(), berry, 1);
+        if(window.SinnohVilla)SinnohVilla.record(env.player(),"berries");
         trees[spot] = { berry, stage: 1, left: stageSteps(berry), watered: [false, false, false, false], yield: 0 };
         env.refresh();
         await env.say(fill(T.planted, berry));

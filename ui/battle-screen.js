@@ -3295,7 +3295,8 @@
     sprite.classList.remove("in-ball");
     cry(side);
     sparkle(side);
-    await grow.finished;
+    const seals=setOf(sideOf(side),view[side].teamIndex).ballSeals;
+    await Promise.all([grow.finished,sceneOn() && window.SinnohCapsules ? SinnohCapsules.burst(el.field,seals,sprite) : null]);
     el.sides[side].info.classList.toggle("hidden", view[side].fainted);
   }
 

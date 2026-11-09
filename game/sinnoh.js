@@ -41,7 +41,7 @@
   function team(id) {
     const t = D.trainers[id];
     if (!t) throw new Error("Unknown Platinum trainer: " + id);
-    return t.party.map((m) => Object.assign(Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255), ...(m.moves ? { moves: m.moves } : {}) }), m.item ? { item: m.item } : {}));
+    return t.party.map((m) => Object.assign(Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255), ...(m.moves ? { moves: m.moves } : {}) }), m.item ? { item: m.item } : {}, m.ballSeals ? {ballSeals:m.ballSeals.map(s=>({...s}))} : {}));
   }
   // Explicit buffer substitution: Platinum's rival is Barry, not Kanto's Gary.
   function text(id, player, buffers) {
@@ -74,7 +74,7 @@
     if (map === "EternaCity_Gym") return ["clock" + (player.badges.includes("forest") ? 3 : Math.min(3, s.gardeniaClock | 0))];
     return null;
   }
-  function patches(map, player) {const keys=storyPatches(map,player),extra=(WORLD_MAPS[map]||{}).legendDoorPatches;return extra?[...new Set([...(keys||[]),...extra])]:keys;}
+  function patches(map, player) {const keys=map==="PlatinumVilla"?SinnohVilla.patches(player):storyPatches(map,player),extra=(WORLD_MAPS[map]||{}).legendDoorPatches;return extra?[...new Set([...(keys||[]),...extra])]:keys;}
   function forestPartner(player) {
     const map=player.location.map;
     if(!["PlatinumIronIsland","PlatinumStarkInterior","EternaForest_2","PlatinumExpWayward","PlatinumExpMarley"].includes(map))return null;
