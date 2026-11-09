@@ -28,9 +28,9 @@
     if (!leaders) {
       leaders = [];
       const seen = new Set();
-      // (Kanto's: Johto's trainers, HGSS_*, Hoenn's, EM_*, and Sinnoh's, PT_*, aren't at Kanto's tables.)
+      // (Kanto's: Johto's trainers, HGSS_*, Hoenn's, EM_*, Sinnoh's, PT_*, and Unova's, BW_*, aren't at Kanto's tables.)
       for (const [id, t] of Object.entries(window.WORLD_TRAINERS || {})) {
-        if (!t || !t.name || !t.pic || /^(HGSS_|EM_|PT_)/.test(id) || !/^(Leader|Elite Four)$/.test(t.className) || seen.has(t.name)) continue;
+        if (!t || !t.name || !t.pic || /^(HGSS_|EM_|PT_|BW_)/.test(id) || !/^(Leader|Elite Four)$/.test(t.className) || seen.has(t.name)) continue;
         seen.add(t.name);
         leaders.push({ name: t.className + " " + t.name, className: t.className, first: t.name, pic: t.pic, style: STAR_STYLES[t.name] || "steady",
           sprite: t.name.toLowerCase().replace(/[^a-z]+/g, "_"), star: true });

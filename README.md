@@ -4,6 +4,15 @@ A browser Pokémon game built on a Gen 6 battle engine (single, double and tag
 battles). Plain JavaScript,
 no build step and no dependencies.
 
+## Regional progress
+
+Sinnoh’s Platinum campaign, optional quests and offline postgame feature groups
+are complete as the project’s 2D adaptation; see the [completion audit](docs/sinnoh-completion-audit.md)
+for coverage and limitations. Unova’s Black 2 / White 2 opening is playable
+through Cheren and Roxie. Travel there from the researcher in Sinnoh’s Fight
+Area. See [Unova’s opening](docs/unova-opening.md) for content, rebuilding and
+[remaining work](docs/unova-completion.md).
+
 ## Running it
 
 Open `index.html` in a browser. FireRed's opening plays (the copyright screen,

@@ -5,6 +5,7 @@
 
   function create(env) {
     function visible(person, map) {
+      const bw=env.unovaStory?.visible(person);if(bw!==undefined)return bw;
       const platinum = env.sinnohStory.visible(person);
       if (platinum !== undefined) return platinum;
       if (env.isHoenn(map || env.player.location.map)) { const dv = env.deltaVisible(person); if (dv !== undefined) return dv; const b = env.hoennBerries.visible(person, map || env.player.location.map); return b !== undefined ? b : env.hoennVisible(person, map || env.player.location.map); }
@@ -289,6 +290,7 @@
       const f = env.player.flags;
       // (Orre: an e-mail due as you come in, Colosseum's: special() below found it, game/orre-mail.js.)
       if (ev.trigger && /^(arrive|enter):/.test(script || "") && env.orreMailWaiting) { await env.orreMail(); return; }
+      if (env.unovaStory && await env.unovaStory.run(script)) return;
       if (await env.sinnohStory.run(script)) return;
 
       // (Mom's deliveryman, and the Gym Leaders' numbers and Dojo rematches: ui/pokegear.js.)
@@ -2146,6 +2148,7 @@
       // Hoenn: a step's scene while its var has its value, and its maps' frame tables as you come in.
       if (/^hoenn:/.test(script || "")) return env.hoenn.triggerDue(script);
       // (Anyone or any sign in Hoenn that has an Emerald script, unless this game has its own for it.)
+      if ((script||'').startsWith('bw:')) return true;
       if (env.isHoenn(env.player.location.map) && env.hoenn.hasScript(script) && !env.SPECIAL.has(script) && !env.TRAINER_SCRIPTS.has(script) && !env.ITEM_BALLS.has(script)) return true;
       if (/^(enter|arrive):/.test(script || "") && env.isHoenn(script.replace(/^\w+:/, ""))) return !!env.hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
       if (/^hgss:/.test(script || "")) return env.johto.triggerDue(script);

@@ -471,13 +471,15 @@
     kanto: ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"],
     johto: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"],
     hoenn: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"],
-    sinnoh: ["coal", "forest", "relic", "cobble", "fen", "mine", "icicle", "beacon"]
+    sinnoh: ["coal", "forest", "relic", "cobble", "fen", "mine", "icicle", "beacon"],
+    unova: ["basic", "toxic", "insect", "bolt", "quake", "jet", "legend", "wave"]
   };
   // Each region's caps by its Badges held: the level of the next Gym Leader's ace (their highest-levelled
   // Pokémon, as this game battles them first: FireRed's, HGSS's, Emerald's and Platinum's), never lower than the cap before.
   const LEVEL_CAPS = {
     kanto: [14, 22, 26, 32, 47, 47, 52, 55],   // Brock, Misty, Lt. Surge, Erika, Koga, Sabrina, Blaine, Giovanni (raised: game/kanto-trainer-levels.js)
     johto: [13, 17, 19, 25, 31, 35, 35, 41],   // Falkner, Bugsy, Whitney, Morty, Chuck, Jasmine, Pryce (34), Clair
+    unova: [13, 18, 24, 30, 33, 39, 48, 51],
     sinnoh: [14, 22, 26, 32, 37, 41, 44, 50], // Platinum Gym order
     hoenn: [15, 19, 24, 29, 31, 33, 42, 46]    // Roxanne, Brawly, Wattson, Flannery, Norman, Winona, Tate & Liza, Juan
   };
@@ -489,6 +491,7 @@
     if (regionOf(map || (player.location && player.location.map)) === "orre") return (player.flags && player.flags.orreLevelCap) || ORRE_LEVEL_CAP;
     const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
     const n = REGION_BADGES[region].filter((b) => (player.badges || []).includes(b)).length;
+    if (region === "unova" && n === 8 && !(player.flags && player.flags.unovaLeagueClear)) return 59;
     if (region === "sinnoh" && n === 8 && !(player.flags && player.flags.sinnohLeagueClear)) return 62;
     return n < LEVEL_CAPS[region].length ? LEVEL_CAPS[region][n] : 100;
   }

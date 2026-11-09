@@ -448,6 +448,7 @@
     get silphRival() { return silphRival; },
     get sinnohBerries() { return sinnohBerries; },
     get sinnohStory() { return sinnohStory; },
+    get unovaStory() { return unovaStory; },
     get sinnohFerry() { return sinnohFerry; },
     get sinnohSailor() { return sinnohSailor; },
     get sixIslandRival() { return sixIslandRival; },
@@ -826,7 +827,7 @@
   // Pokémon's Compound Eyes helps). (Not the legendaries waiting on the map.)
   // (Your lead Pokémon: Compound Eyes for what it holds, Synchronize for its nature, Cute Charm for its gender.)
   const leadMon = () => player.party.find((r) => !r.egg && r.hp > 0);
-  const wildMon = (record) => Encounters.leadRecord(Encounters.withHeldItem(record, leadMon()), leadMon());
+  const wildMon = (record) => Unova.sourceWild(player,Encounters.leadRecord(Encounters.withHeldItem(record, leadMon()), leadMon()));
   let continued = false;   // (just continued a saved game: the area's name shows)
   const sfx = (name) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(name); };
 
@@ -1410,7 +1411,8 @@
     const inHoennNow = isHoenn(player.location.map);
     // (In Sinnoh: its last Pokémon Center, or Sandgem Town's.)
     const sinnoh = (map) => (window.WORLD_MAPS[map] || {}).region === "sinnoh", inSinnohNow = sinnoh(player.location.map);
-    const center = inSinnohNow ? centerOf(sinnoh(player.flags.lastCenter) ? player.flags.lastCenter : "SandgemTown_PokemonCenter_1F")
+    const inUnovaNow=Unova.owns(player.location.map);
+    const center = inUnovaNow ? centerOf(Unova.owns(player.flags.lastCenter)?player.flags.lastCenter:"UnovaAspertiaCity_PokemonCenter_1F") : inSinnohNow ? centerOf(sinnoh(player.flags.lastCenter) ? player.flags.lastCenter : "SandgemTown_PokemonCenter_1F")
       : player.flags.lastCenter && (!inHoennNow || isHoenn(player.flags.lastCenter)) && centerOf(player.flags.lastCenter);
     const hoennHome = inHoennNow && !center ? (player.flags.hoennRespawn || hoennBedroom()) : null;
     const to = Object.assign({}, center || hoennHome || Player.HOME);
@@ -1735,7 +1737,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["white-flute", "black-flute","vs-recorder","poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["unova-cgear", "unova-medal-box","white-flute", "black-flute","vs-recorder","poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -1752,6 +1754,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
+    if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();try{await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}};return "escaped";}
     if(item==="white-flute"||item==="black-flute"){if(SinnohCompletion.flute(player,item)){await message("The "+Bag.name(item)+" sounded.\nWild Pokémon will appear "+(item==="white-flute"?"more":"less")+" often here.");}return;}
     if(item==="vs-recorder"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();const rec=player.flags.sinnoh?.frontier?.lastRecord||player.flags.hoennBattleRecord;if(rec)await playRecord(rec);else await say("No local battle has been recorded yet.");};return "escaped";}
     if(item==="poffin-case"){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohPoffinDevice.openCase(scene,player);}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
@@ -1887,6 +1890,11 @@
   // it from Kanto's too; and Hoenn's once you've been there. Fly goes to any
   // of them, the region you're in first.
   async function townMap(opts) {
+    if(opts?.fly&&!opts.otherRegions&&Unova.owns(player.location.map)){
+      Unova.visit(player,player.location.map);
+      const pick=await ask("Fly to which town?",Unova.flySpots(player).map(spot=>({label:spot.name,value:spot})).concat([{label:"Other regions",value:"other"},{label:"Cancel",value:null}]));
+      if(pick!=="other")return pick;
+    }
     if (opts && opts.fly && !opts.otherRegions && Sinnoh.owns(player.location.map)) {
       Sinnoh.visit(player, player.location.map);
       const spots = Sinnoh.flySpots(player);
@@ -3082,6 +3090,7 @@
   }
   async function trainerCard() {
     tick();
+    if(Unova.owns(player.location.map)){Screen.say("");show("scene");clearMenu();try{await UnovaDevice.open(scene,player,"card");}finally{tick();Save.write(player);show("world");await Overworld.resume();}return null;}
     if(WORLD_MAPS[player.location.map]?.region==='sinnoh'){Screen.say("");show('scene');clearMenu();try{await SinnohOptionalDevice.card(scene,player);}finally{tick();Save.write(player);show('world');await Overworld.resume();}return null;}
     const map = player.location && window.WORLD_MAPS[player.location.map];
     const region = map && map.region === "hoenn" ? "hoenn" : "kanto", K = region === "kanto";
@@ -3628,7 +3637,7 @@
   // (Hoenn's nurses and clerks: tools/build-hoenn.js.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "hoenn") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
   // (Sinnoh's: tools/build-sinnoh.js; and Sandgem's beach's sailor, sinnohSailor.)
-  for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
+  for (const m of Object.values(window.WORLD_MAPS)) if (["sinnoh","unova"].includes(m.region)) for (const p of m.people) if (/_PokemonCenter_1F_EventScript_Nurse$|_Mart_EventScript_Clerk$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SandgemTown_EventScript_Sailor");
   // (And its ferries, Canalave's to Iron Island and back, and Oreburgh's fossil scientist: sinnohFerry, fossilScientist.)
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
@@ -3906,6 +3915,7 @@
   // (Their moves: the last four each learns by its level, not FireRed's sets.)
   function trainerTeam(id) {
     const data = window.WORLD_TRAINERS[id];
+    if (data.region === "unova") return Unova.team(id);
     if (data.region === "sinnoh") return Sinnoh.team(id); // Platinum's authored movesets
     return data.party.map((m) => Object.assign(Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255) }),
       m.item ? { item: m.item } : {}));
@@ -5947,6 +5957,7 @@
   // (The debug menu's way there: Prof. Oak's plane, without his briefing.)
   // ---------- Sinnoh: Platinum's opening chapter (ui/sinnoh-story.js) ----------
 
+  const unovaStory = UnovaStory.create({player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),refreshPeople:()=>Overworld.refreshPeople(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:async loc=>{await Overworld.teleport({...loc});},choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}])),wildEncounter:async record=>{await battle("wild",{foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();}});
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
     saveCheckpoint: async()=>{tick();Save.write(player);},
@@ -11634,6 +11645,7 @@
   }
 
   async function explore() {
+    Unova.visit(player,player.location.map);
     SinnohDaily.correctLocation(player);
     SinnohPark.recover(player);
     SinnohOptional.recover(player);
@@ -11662,7 +11674,7 @@
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
         iceBlockStopped: def => { if (Sinnoh.snowballStopped(player, def, Overworld.personPosition(def.localId))) { applyPatches(player.location.map); Overworld.removePerson(def); } },
-        darkness: (map) => Sinnoh.darkness(map) || (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); SinnohRadar.draw(g,map,x,y,player); },
+        darkness: (map) => Sinnoh.darkness(map) || (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); SinnohRadar.draw(g,map,x,y,player); Unova.draw(g,map,x,y,player); },
         faced: (map, x, y, surfing) => johtoSafari.faced(map, x, y, surfing),
         boulderFell: (def) => {
           // (3F's boulder through the hole: it's on 2F now.)
@@ -11683,11 +11695,12 @@
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           SinnohLegends.syncForms(player);
-          return sinnohStory.step() || orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
+          return unovaStory.step() || sinnohStory.step() || orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()) * SinnohCompletion.rate(player),
         adjustWild: (mon, table) => { SinnohDaily.apply(player); const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !SinnohPark.suppresses(player) && !SinnohRadar.suppresses(player) && !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
+          Unova.visit(player,m);
           SinnohRoamers.onMap(player,m); SinnohRadar.onMap(player,m);
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
@@ -11759,6 +11772,7 @@
         // (The Battle Pike's hall of wild Pokémon: your challenge's three fight it, and the room's own scripts see how it went.)
         else if (at.map === "BattleFrontier_BattlePikeRoomWildMons" || at.map === PYRAMID_FLOOR) await pikeWildBattle(ev);
         else if (Sinnoh.isRoamer(player,ev.species) && here.region === "sinnoh") await battle("wild", {foe:{name:"Wild",team:[Party.create(ev.species,ev.level)]},terrain,noGimmicks:true});
+        else if (ev.unovaDark && ableToBattle()>=2 && Math.random()<.4) await wildDoubleBattle(ev,at.map,terrain,Unova.landTable(player,at.map));
         // (A Max Lure on: always a horde, from the map's hordes or its own wild Pokémon (on the water, its water's).)
         else if (lureOn() === "max-lure" && !towerGhost() && wildTable(here) && await hordeBattle(at.map, terrain, wildTable(here))) { /* (fought) */ }
         // (X and Y's hordes: one grass or cave encounter in twenty, where the map has them; never on the water.)
