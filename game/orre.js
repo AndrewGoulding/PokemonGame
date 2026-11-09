@@ -118,7 +118,11 @@
   ];
   const OPEN_AT_FIRST = ["OrreAirStrip", "SnagemHideout"];
   const isOpen = (flags, map) => OPEN_AT_FIRST.includes(map) || (flags.orreMap || []).includes(map) || (map === "OutskirtStand" && (flags.orre | 0) > 0);
-  const openPlaces = (flags) => PLACES.filter((p) => isOpen(flags, p.map));
+  // (Realgam Tower's spot is Colosseum's Construction Lot (its D4_out) from the windmill's gear being stolen, where
+  // Silva dumped it, till the tower opens: the same place, under that name, its way in shut.)
+  const CONSTRUCTION_LOT = "Construction Lot";
+  const openPlaces = (flags) => PLACES.map((p) => (isOpen(flags, p.map) ? p : p.map === "RealgamTower_1F" && (flags.orreGear | 0) >= 1
+    ? Object.assign({}, p, { name: CONSTRUCTION_LOT, lot: true }) : null)).filter(Boolean);
   function unlock(flags, map) {
     if (isOpen(flags, map)) return false;
     (flags.orreMap = flags.orreMap || []).push(map);
@@ -683,20 +687,39 @@
   // Stadium once Evice is beaten (44), and The Under's Deep Colosseum after the game too, its king Agnol waiting for
   // whoever wins it.
   const TOURNAMENTS = {
+    // (Pyrite's: Colosseum's own. Its story challenge, four Trainers in a row, first prize TM06; then, once the story's
+    // moved on, its four tournaments in turn, each four Trainers and its own first prize. WikiDex's "Coliseo Pirita",
+    // their names Colosseum's own (common_rel #4343-#4362, in this order); prize money as Bulbapedia gives it.)
     PyriteTown_Colosseum_EventScript_Receptionist: {
-      key: "pyrite", name: "Pyrite Colosseum", from: 23, min: 30, size: [2, 2, 3, 3], prize: 3000,
-      items: ["rare-candy", "pp-up", "protein", "iron", "calcium", "zinc", "carbos", "hp-up", "nugget", "ultra-ball"], first: "choice-band",
+      key: "pyrite", name: "Pyrite Colosseum", from: 23, prize: 3000,
+      items: ["rare-candy", "pp-up", "protein", "iron", "calcium", "zinc", "carbos", "hp-up", "nugget", "ultra-ball"],
       closed: ["The Colosseum's closed for the\nmoment. Come back later, hon."],
-      pool: [
-        ["Rocker", "rocker", ["Vince", "Jett", "Rudy"], ["Electabuzz", "Magneton", "Manectric", "Voltorb", "Loudred"]],
-        ["Biker", "biker", ["Gav", "Rex", "Zed"], ["Weezing", "Muk", "Mightyena", "Houndour", "Sneasel"]],
-        ["Black Belt", "black_belt", ["Doku", "Kaio", "Ryo"], ["Machoke", "Hitmonchan", "Hitmonlee", "Makuhita", "Breloom"]],
-        ["Burglar", "burglar", ["Vic", "Lenny", "Dash"], ["Murkrow", "Sableye", "Grimer", "Houndour", "Persian"]],
-        ["Psychic", "psychic_f", ["Lumi", "Nessa", "Ora"], ["Kadabra", "Xatu", "Grumpig", "Girafarig", "Kirlia"]],
-        ["Hiker", "hiker", ["Bert", "Grom", "Tor"], ["Graveler", "Onix", "Lairon", "Rhyhorn", "Sandslash"]],
-        ["Cooltrainer", "cooltrainer_m", ["Kale", "Reed", "Soren"], ["Grovyle", "Marshtomp", "Combusken", "Flaaffy", "Quilava"]],
-        ["Cooltrainer", "cooltrainer_f", ["Tia", "Wren", "Ana"], ["Bayleef", "Croconaw", "Kirlia", "Lombre", "Seadra"]],
-        ["Ruin Maniac", "ruin_maniac", ["Dez", "Abu"], ["Baltoy", "Claydol", "Vibrava", "Lunatone", "Solrock"]]
+      story: { first: "tm06", rosters: [
+        ["Hunter", "Hoks", [["Barboach", 30], ["Sandshrew", 31]]],
+        ["Chaser", "Tisler", [["Natu", 30], ["Meditite", 30]]],
+        ["Bandana Guy", "Vilch", [["Electrike", 30], ["Cacnea", 31], ["Vulpix", 32]]],
+        ["Bodybuilder", "Mirez", [["Bagon", 32], ["Goldeen", 32], ["Magnemite", 31], ["Delibird", 34]]]] },
+      tournaments: [
+        { first: "tm01", prize: 6308, rosters: [
+          ["Roller Boy", "Azal", [["Linoone", 51], ["Teddiursa", 50]]],
+          ["Rider", "Trona", [["Jigglypuff", 51], ["Delcatty", 52]]],
+          ["Bodybuilder", "Becher", [["Doduo", 52], ["Loudred", 51], ["Furret", 53]]],
+          ["Chaser", "Zime", [["Vigoroth", 52], ["Koffing", 53], ["Combusken", 55], ["Swellow", 54]]]] },
+        { first: "tm07", prize: 7208, rosters: [
+          ["Hunter", "Muna", [["Shroomish", 51], ["Oddish", 51]], true],
+          ["Chaser", "Kell", [["Spinda", 51], ["Lileep", 52], ["Roselia", 52]]],
+          ["Bodybuilder", "Torf", [["Cacnea", 53], ["Machop", 52], ["Gloom", 52]]],
+          ["Rider", "Ligam", [["Grovyle", 52], ["Lairon", 52], ["Nuzleaf", 53]]]] },
+        { first: "tm05", prize: 5972, rosters: [
+          ["Rider", "Vorem", [["Baltoy", 51], ["Numel", 52], ["Hoothoot", 52]]],
+          ["Bodybuilder", "Seben", [["Rhyhorn", 52], ["Meditite", 53]]],
+          ["Hunter", "Athon", [["Pupitar", 54], ["Graveler", 53]], true],
+          ["Roller Boy", "Arez", [["Gligar", 55], ["Quagsire", 53], ["Pelipper", 53], ["Shelgon", 54]]]] },
+        { first: "tm31", prize: 7020, rosters: [
+          ["Bodybuilder", "Gano", [["Minun", 51], ["Pikachu", 52]]],
+          ["St. Performer", "Balton", [["Voltorb", 53], ["Wailmer", 52]]],
+          ["Hunter", "Argel", [["Magnemite", 53], ["Larvitar", 53], ["Chinchou", 54]]],
+          ["Rider", "Heral", [["Electrode", 54], ["Lunatone", 54], ["Machoke", 54], ["Ampharos", 55]]]] }
       ] },
     TheUnder_DeepColosseum_EventScript_Receptionist: {
       key: "deep", name: "Deep Colosseum", from: 44, min: 52, size: [3, 4, 4, 4], prize: 10000,
@@ -728,6 +751,18 @@
   };
   // The day's four entrants for `t`, the player's strongest Pokémon at `top` and Orre's cap `cap`: [{ name, cls, pic,
   // team: [[species, level]] }], none the same twice. (`rand`: Math.random, or a seeded one in the tests.)
+  // Pyrite's fixed entrants (TOURNAMENTS' rosters) as tournamentDraw gives them: { name, cls, pic, team }; the story's
+  // challenge, or the tournament it's the turn of (by how many it's been won after the story: n).
+  // (Their words on losing: Colosseum's, its battle text's named lines (D2_cloud_1/tool_fight); Hoks's, Azal's and
+  // Athon's lines are both their winning ones, Balton has none: theirs stay plain.)
+  const PYRITE_DEFEAT = {"Tisler":["Oh, wow! You're not half-bad, you!"],"Vilch":["Whoa! Hey, maybe you do have what it\ntakes to handle that awesome Pokémon."],"Mirez":["You're some kind of strong! Good\nthings could be in store for you!"],"Trona":["You know, you're awful. You don't\nhave to get all serious like that!"],"Becher":["Woohoo! You're mighty tough indeed! I\ndidn't stand a chance!"],"Zime":["Urgh! I'm done for! It's not for\nnothing that you beat Miror B.!"],"Muna":["Losing to you is already in the\nuseless past!"],"Kell":["Hey, no fair! You should've told me\nyou're that strong before we battled!"],"Torf":["There! Did you see? I lost, though…"],"Ligam":["When you're that strong, I guess it's\nonly natural that you get all cocky."],"Vorem":["Tch! I really should've taken down\nMiror B. myself!"],"Seben":["You lived up to the word on the\nstreet!"],"Arez":["Oh, yeah, okay. You are strong like\nthey say."],"Gano":["We got pulverized instead!"],"Argel":["I lost to you? I guess my ambition to\nrule Pyrite Town is just a pipe\ndream."],"Heral":["Your fame is well earned! You are\nstrong!"]};
+  function pyriteDraw(t, n, storyRun) {
+    const set = storyRun ? t.story : t.tournaments[(n | 0) % t.tournaments.length];
+    const S = window.Orre;
+    return { first: set.first, prize: set.prize || t.prize, index: storyRun ? -1 : (n | 0) % t.tournaments.length,
+      entrants: set.rosters.map(([cls, name, team, female]) => ({ name: cls + " " + name, cls, team, defeat: PYRITE_DEFEAT[name],
+        pic: (S.picFor && S.picFor(cls, female)) || "cooltrainer_m" })) };
+  }
   function tournamentDraw(t, top, cap, rand) {
     rand = rand || Math.random;
     const pick = (a) => a[Math.floor(rand() * a.length)];
@@ -810,6 +845,6 @@
     throw new Error("No safe position in " + at.map);
   }
 
-  window.Orre = { EXTRA_VISIBLE, correctLocation, SHADOW, TEAMS, team, snaggable, TOURNAMENTS, tournamentDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
+  window.Orre = { EXTRA_VISIBLE, correctLocation, SHADOW, TEAMS, team, snaggable, TOURNAMENTS, tournamentDraw, pyriteDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
   Object.assign(window.Orre, { REALGAM_ADMINS, realgamAdmin, realgamBadges });
 })();

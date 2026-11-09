@@ -356,6 +356,7 @@
     get orreTournament() { return orreTournament; },
     get orreTrainer() { return orreTrainer; },
     get coloTrainer() { return coloTrainer; },
+    get dayCareLady() { return dayCareLady; },
     get pyriteExtra() { return pyriteExtra; },
     get preGymJusty() { return preGymJusty; },
     get orreTravel() { return orreTravel; },
@@ -503,8 +504,8 @@
     get underKloak() { return underKloak; },
     get underVenus() { return underVenus; },
     get junkShopOwner() { return junkShopOwner; }, get junkShopPerr() { return junkShopPerr; }, get underBitt() { return underBitt; },
-    get nettsHideout() { return nettsHideout; }, get nettsHideoutPerson() { return nettsHideoutPerson; }, get subwayShut() { return subwayShut; },
-    get subwayDoorShut() { return subwayDoorShut; }, get subwayStation() { return subwayStation; }, get subwayB1() { return subwayB1; },
+    get nettsHideout() { return nettsHideout; }, get nettsHideoutPerson() { return nettsHideoutPerson; }, get subwayDue() { return subwayDue; },
+    get subwayEnter() { return subwayEnter; }, get subwayElevator() { return subwayElevator; }, get subwayStation() { return subwayStation; }, get subwayB1() { return subwayB1; },
     get subwayFan() { return subwayFan; }, get shadowLiner() { return shadowLiner; }, get nettsDoorShut() { return nettsDoorShut; }, get nettsDoor() { return nettsDoor; },
     get usedMove() { return usedMove; },
     get vendingMachine() { return vendingMachine; },
@@ -1199,13 +1200,17 @@
     const opened = [];
     DoubleBattle.syncBack(player.party, chosen, b.sides.p1.pokemon, (record, mon) => {
       Party.syncFromBattle(record, mon);
-      // (Colosseum's heart gauge: a Shadow Pokémon's heart opens a little for each battle it's sent out in, and for
-      // each time it's called out of Hyper Mode; the Exp. Points it earns are kept for it, record.shadowExp.)
-      if (record.shadow) {
+      // (Colosseum's heart gauge: a Shadow Pokémon's heart opens by its nature's amount once for a battle it's sent out
+      // in, for each time it's called out of Hyper Mode, and for each Scent used on it; Hyper Mode lasts from one battle
+      // to the next (not past fainting); the Exp. Points it earns, once they're kept for it, go to record.shadowExp.)
+      if (record.shadow && record.heart != null) {
+        OrreHeart.migrate(record);
         const was = record.heart | 0;
-        if (mon.wasOut) record.heart = Math.max(0, (record.heart | 0) - SHADOW_HEART_BATTLE);
-        if (mon.calls) record.heart = Math.max(0, (record.heart | 0) - SHADOW_HEART_CALL * mon.calls);
-        if (was > 0 && !record.heart) opened.push(record);
+        if (mon.wasOut) OrreHeart.open(record, "battle");
+        if (mon.calls) OrreHeart.open(record, "call", mon.calls);
+        if (mon.scents) OrreHeart.open(record, "scent", mon.scents);
+        record.hyper = !!mon.hyper && !mon.fainted;
+        if (was > 0 && !(record.heart > 0)) opened.push(record);
         if (mon.storedExp) record.shadowExp = (record.shadowExp || 0) + mon.storedExp;
       }
       if (mon.leveledUp) leveledUp.push(record);
@@ -1260,7 +1265,7 @@
       for (let i = 0; i < b.snagged.length; i++) {
         const m = b.snagged[i], record = Party.caught(foeTeam[m.teamIndex], m, balls[i] || "poke-ball");
         // (A Shadow Pokémon's heart starts shut tight: Orre's heart gauge, heartStep and the Relic Stone.)
-        if (record.shadow) record.heart = SHADOW_HEART;
+        if (record.shadow) OrreHeart.snagged(record);
         delete record.teraAce;
         opts.snagged.push(record.species);
         await addCaught(record, opts.keepCaught);
@@ -2274,18 +2279,22 @@
     const here = E.expForLevel(rate, r.level), next = r.level >= 100 ? here : E.expForLevel(rate, r.level + 1);
     const ot = r.ot || { name: player.name, id: player.trainerId };
     const met = r.met || null, place = met && placeName(met.map);
-    const memo = r.nature + " nature." + (met && met.traded ? "\nMet in a trade." :
+    // (Colosseum's: a Shadow Pokémon's nature isn't known till under three bars of its heart are left.)
+    const natureShown = OrreHeart.natureShown(r);
+    const memo = (natureShown ? r.nature : "?????") + " nature." + (met && met.traded ? "\nMet in a trade." :
       met ? "\nMet in " + (place || "a faraway place") + " at {LV}" + met.level + "." : "");
     const ability = (window.ABILITIES[r.ability] || {}).name || r.ability;
     return {
       name: Party.displayName(r), species: Party.speciesName(r.species), dexNo: (DEX[Party.speciesName(r.species)] || dex).id,
       level: r.level, gender: r.gender, types: dex.types, ot: ot.name, otId: ot.id & 0xffff,
       item: r.item ? Bag.name(r.item) : "", memo, hp: r.hp, maxhp: stats.hp,
-      evs: Object.assign({}, r.evs), ivs: Object.assign({}, Party.trainedIvs(r)), nature: r.nature, happiness: r.happiness,
+      evs: Object.assign({}, r.evs), ivs: Object.assign({}, Party.trainedIvs(r)), nature: natureShown ? r.nature : null, happiness: r.happiness,
       stats: { atk: stats.atk, def: stats.def, spa: stats.spa, spd: stats.spd, spe: stats.spe },
       exp: r.exp, toNext: Math.max(0, next - r.exp), expFrac: next > here ? (r.exp - here) / (next - here) : 0,
-      // (A Shadow Pokémon's heart gauge, Colosseum's, in place of its EXP: how shut its heart still is, of 100.)
-      shadow: !!r.shadow, heart: r.shadow ? Math.max(0, r.heart | 0) : 0,
+      // (A Shadow Pokémon's heart gauge, Colosseum's, in place of its EXP: the bars of its heart left, of five, and
+      // the Summary's words for it.)
+      shadow: !!r.shadow && r.heart != null, heart: r.shadow && r.heart != null ? OrreHeart.bars(r) : 0,
+      heartDoor: r.shadow && r.heart != null ? OrreHeart.door(r) : "",
       ability, abilityText: (window.SUMMARY_SCREEN.abilityText || {})[ability] || "",
       moves: r.moves.map((m) => ({ name: m.name, pp: m.pp, maxpp: Party.maxPp(m) })),
       status: r.status, shiny: !!r.shiny, teraType: Party.teraType(r),
@@ -3557,7 +3566,7 @@
       "arrive:PyriteTown", "enter:PyriteTown", "PyriteTown_DukingsHouse_EventScript_Duking", "PyriteTown_DukingsHouse_EventScript_Marcia",
       "PyriteTown_DukingsHouse_EventScript_Secc", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", "enter:PyriteTown_PyriteBuilding_4F",
       "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS), ...Orre.PYRITE_SCRIPTS, ...Object.keys(Orre.COLO_TRAINERS),
-      "enter:AgateVillage_EaguansHouse", "AgateVillage_EaguansHouse_EventScript_Eagun", "AgateVillage_EaguansHouse_EventScript_Beluh",
+      "enter:AgateVillage_EaguansHouse", "AgateVillage_EaguansHouse_EventScript_Eagun", "AgateVillage_EaguansHouse_EventScript_Beluh", OrreDayCare.SCRIPT,
       "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone", "RelicForest_EventScript_Shrine",
       "AgateVillage_EventScript_CologneGirl", "AgateVillage_EventScript_MartClerk", ...Object.keys(Orre.TOURNAMENTS), "MtBattle_EventScript_Challenge",
       "arrive:MtBattle", "enter:MtBattle", "MtBattle_EventScript_Dakim", "MtBattle_EventScript_SummitSkrub", "MtBattle_EventScript_Vander",
@@ -3567,6 +3576,7 @@
       "TheUnder_EventScript_Bitt", "enter:TheUnder_NettsHideout_1F", "TheUnder_JunkShop_1F_EventScript_Owner", "TheUnder_JunkShop_B1_EventScript_Perr", "enter:TheUnder_NettsHideout_B1",
       "TheUnder_NettsHideout_B1_EventScript_Nett", "TheUnder_NettsHideout_B1_EventScript_Megg", "TheUnder_NettsHideout_B1_EventScript_Bitt",
       "enter:TheUnder_Subway_B1", "enter:TheUnder_Subway_Station", "TheUnder_Subway_B1_EventScript_Fan", "TheUnder_Subway_Station_EventScript_Train",
+      "TheUnder_Studio_EventScript_Elevator", "TheUnder_Subway_B1_EventScript_Elevator",
       "arrive:ShadowLab_1F", "enter:ShadowLab_1F", "enter:ShadowLab_B1F", "ShadowLab_B1F_EventScript_Troop", "enter:ShadowLab_EinsRoom",
       ...Orre.LAB.scripts, ...Object.keys(Orre.LAB.DOORS), "RealgamTower_Colosseum_EventScript_Host",
       "ShadowLab_EinsRoom_EventScript_Ein", "arrive:RealgamTower_1F", "enter:RealgamTower_1F", "RealgamTower_Dome_EventScript_Gonzap",
@@ -7018,42 +7028,85 @@
   }
   // ---------- Orre: Shadow Pokémon's hearts, and the Relic Stone (Colosseum's heart gauge) ----------
   //
-  // A Shadow Pokémon you snag comes with the door to its heart shut tight (record.heart, SHADOW_HEART). As in
-  // Colosseum, the door opens little by little: walking with it (a point every HEART_STEPS steps), battling with it
-  // (SHADOW_HEART_BATTLE for each battle it's sent out in), calling it out of Hyper Mode (SHADOW_HEART_CALL a call:
-  // engine/battle.js's callMon) and massaging it with a Scent from the Cologne Case (SCENT_HEART: Joy a tiny bit,
-  // Excite a little, Vivid a lot, as Colosseum's words say). Colosseum documents no numbers for these: they're this
-  // game's own. The Exp. Points it earns meanwhile are kept for it (record.shadowExp) and given back when it's purified.
-  // Once the door's open, Agate's Relic Stone purifies it (from orreStory 30, when Eagun's family tablet has told you
-  // how): it regains its own first move (Colosseum's: Shadow Rush gives way to it), its Exp. Points, and a Ribbon.
-  const SHADOW_HEART = 100, SHADOW_HEART_BATTLE = 6, SHADOW_HEART_CALL = 8, HEART_STEPS = 8;
-  const SCENT_HEART = { "joy-scent": 4, "excite-scent": 8, "vivid-scent": 16 };
+  // A Shadow Pokémon you snag comes with the door to its heart shut tight: its heart gauge full (record.heart, of
+  // record.heartMax points: each Shadow Pokémon's own size, game/orre-heart.js). As in Colosseum, it opens little by
+  // little, by how much its nature takes to each (Colosseum's own figures, OrreHeart.NATURES): walking with it (every
+  // 256 steps), battling with it (once a battle it's sent out in), calling it out of Hyper Mode (engine/battle.js's
+  // callMon), leaving it with Agate's Day-Care Lady (every 256 steps), and massaging it with a Scent from the Cologne
+  // Case (Joy once over, Excite twice, Vivid three times). As its five bars empty its own moves come back, its nature
+  // shows, and (from under three bars) its Exp. Points start to be kept for it (record.shadowExp), given back when it's
+  // purified. Once the door's open, Agate's Relic Stone purifies it (from orreStory 30, when Eagun's family tablet has
+  // told you how): it regains its own first move in Shadow Rush's place, its Exp. Points, and a Ribbon.
+  const SCENT_HEART = { "joy-scent": 1, "excite-scent": 2, "vivid-scent": 3 };
   const SCENT_SAYS = { "joy-scent": "a JOY SCENT", "excite-scent": "an EXCITE SCENT", "vivid-scent": "a VIVID SCENT" };
+  // (A heart just about to open: Colosseum's words, its Summary's.)
+  const heartOpenText = (r) => "The door to " + Party.displayName(r) + "'s heart is\nabout to open. Undo the final lock!";
+  // A heart opened by `way` (OrreHeart.open), `times` over: its bars, before and after, and whether it's now ready.
+  function openHeart(r, way, times) {
+    OrreHeart.migrate(r);
+    const was = r.heart | 0, opened = OrreHeart.open(r, way, times);
+    return { opened, ready: was > 0 && !(r.heart > 0) };
+  }
   let heartSteps = 0;
   function heartStep() {
-    if (++heartSteps < HEART_STEPS) return null;
+    // (The Day-Care Lady's Pokémon grows a step's worth: game/orre-daycare.js.)
+    OrreDayCare.step(player, Player.levelCap(player));
+    if (++heartSteps < OrreHeart.STEPS) return null;
     heartSteps = 0;
-    for (const r of player.party) if (r.shadow && r.heart > 0) {
-      r.heart--;
-      // (Colosseum's words, its Summary's for a heart about to open.)
-      if (!r.heart) return { type: "heart-open", text: "The door to " + Party.displayName(r) + "'s heart is\nabout to open. Undo the final lock!" };
-    }
-    return null;
+    let ready = null;
+    for (const r of player.party) if (r.shadow && r.heart > 0 && openHeart(r, "walk").ready && !ready) ready = r;
+    // (The Day-Care Lady's Pokémon: game/orre-daycare.js.)
+    const dc = window.OrreDayCare && OrreDayCare.held(player);
+    if (dc && dc.shadow && dc.heart > 0) openHeart(dc, "daycare");
+    return ready ? { type: "heart-open", text: heartOpenText(ready) } : null;
   }
-  // The door to a heart, in Colosseum's Summary's words (pocket_menu #11225-#11231).
-  const heartDoor = (h) => "The door to its heart is" + (h > 80 ? "\ntightly shut." : h > 60 ? "\nstarting to open." : h > 40 ? "\nopening up." : h > 20 ? "\nopening wider."
-    : h > 10 ? "\nnearly open." : h > 0 ? "\nalmost fully open." : " about\nto open. Undo the final lock!");
+  // Agate's Day-Care Lady (Colosseum's words: M3_houseD_1F #15121-#15134; game/orre-daycare.js): one Pokémon at a time.
+  async function dayCareLady() {
+    const lady = (s) => "Day-Care Lady: " + s;
+    const r = OrreDayCare.held(player);
+    if (r) {
+      const name = Party.displayName(r), up = OrreDayCare.grown(player);
+      await say([lady("Ah, good to see you! Your\ndarling Pokémon is doing\nmarvelously well.")].concat(up ? [lady("By level, " + name + " has\ngrown by about " + up + ".")] : []));
+      if (!(await confirm(lady("Are you here to reclaim your\nPokémon?")))) { await say(lady("Come see me when you want\nyour Pokémon back.")); return; }
+      if (player.party.length >= 6) { await say(lady("Your Pokémon party is full. I\ncan't return your little darling if\nthere's no room for it.")); return; }
+      const price = OrreDayCare.fee(player);
+      if (!(await confirm(lady("If you're reclaiming your darling\n" + name + ", you'll have to pay $" + price + ".")))) { await say(lady("Come see me when you want\nyour Pokémon back.")); return; }
+      if (player.money < price) { await say(lady("You don't seem to have enough\nmoney, dear.")); return; }
+      Player.addMoney(player, -price);
+      player.party.push(OrreDayCare.withdraw(player));
+      await say(lady("Fine, thank you! Take your\nlovely Pokémon with you."));
+      await sayWithJingle("mus_obtain_item", player.name + " got " + name + " back\nfrom the Day-Care Lady.");
+      await persist();
+      return;
+    }
+    await say(lady("I'm the Day-Care Lady. I can\nraise a Pokémon for you, if you'd\nlike."));
+    if (!(await confirm(lady("Have you a Pokémon you'd like\nme to raise?")))) { await say(lady("Come see me again if you have a\nPokémon you'd like me to raise.")); return; }
+    if (player.party.filter((q) => !q.egg).length < 2) {
+      await say([lady("Oh? You've got only one\nPokémon with you."), lady("If you leave that one with me,\nwhy, you'll have none with you."),
+        lady("I'll raise a Pokémon for you if you\nhave at least two with you. Come back\nthen.")]);
+      return;
+    }
+    await say(lady("Which darling Pokémon should\nI raise?"));
+    const pick = await choosePartyFor("Leave which {PKMN}?", null, player.party.map((q) => (q.egg ? "NOT ABLE" : "ABLE")));
+    if (!pick || pick.egg) { await say(lady("Come see me again if you have a\nPokémon you'd like me to raise.")); return; }
+    player.party.splice(player.party.indexOf(pick), 1);
+    OrreDayCare.deposit(player, pick, Player.levelCap(player));
+    await say(lady("Fine, I'll take your precious\n" + Party.displayName(pick) + ". Come back for it\nlater."));
+    await persist();
+  }
+  // The door to a heart, in Colosseum's Summary's words (pocket_menu #11225-#11231), by the bars left.
+  const heartDoor = (r) => OrreHeart.door(r).replace("heart is ", "heart is\n").replace(" Undo", "\nUndo");
   // A Scent (Colosseum's Cologne Massage, from the Cologne Case): Colosseum's words (common_rel#1 #15094-#15098, #17013,
-  // #17014, #10856).
+  // #17014, #10856). It also dispels Hyper Mode.
   async function scentOn(record, item) {
     const name = Party.displayName(record);
-    if (!record.shadow || !(record.heart > 0)) { await message("It won't have any effect."); return; }
+    if (!record.shadow || record.heart == null || !(record.heart > 0 || record.hyper)) { await message("It won't have any effect."); return; }
     Player.removeItem(player, item);
     await message(player.name + " massaged " + name + "\nusing " + SCENT_SAYS[item] + ".");
-    const n = SCENT_HEART[item];
-    record.heart = Math.max(0, record.heart - n);
-    await message("The door to " + name + "'s heart\n" + (n <= 4 ? "opened a tiny bit!" : n <= 8 ? "opened up a little!" : "opened up a lot!"));
-    if (!record.heart) await message("The door to " + name + "'s heart is\nabout to open. Undo the final lock!");
+    if (record.hyper) { record.hyper = false; await message(name + " came to its senses!"); }
+    const { opened, ready } = openHeart(record, "scent", SCENT_HEART[item]);
+    if (opened) await message("The door to " + name + "'s heart\n" + (opened < 150 ? "opened a tiny bit!" : opened < 400 ? "opened up a little!" : "opened up a lot!"));
+    if (ready) await message(heartOpenText(record));
   }
   async function relicStone() {
     const f = player.flags, shadows = player.party.filter((r) => r.shadow);
@@ -7062,7 +7115,7 @@
     if ((f.orreStory | 0) < 30 || !shadows.length) return;
     if (shadows.some((r) => !((r.heart | 0) > 0))) await say(["There's a Pokémon that may open the\ndoor to its heart!"]);
     for (const r of shadows) {
-      if ((r.heart | 0) > 0) { await say(["The door to that Pokémon's heart\ncan't be opened yet.", heartDoor(r.heart | 0)]); continue; }
+      if ((r.heart | 0) > 0) { await say(["The door to that Pokémon's heart\ncan't be opened yet.", heartDoor(r)]); continue; }
       await Overworld.flash();
       sfx("se_m_reflect");
       await purifyWithWords(r);
@@ -7088,7 +7141,7 @@
   function purify(r) {
     const got = { move: r.purifyMoves && r.purifyMoves[0], exp: r.shadowExp | 0, level: 0 };
     r.shadow = false;
-    delete r.heart;
+    delete r.heart; delete r.heartMax; delete r.hyper;
     r.moves = r.purifyMoves ? r.purifyMoves.map((name) => ({ name, pp: Party.maxPp ? Party.maxPp(name) : (window.MOVES[name] || {}).pp || 10 })) : Party.create(r.species, r.level).moves;
     delete r.purifyMoves;
     if (got.exp) {
@@ -7532,9 +7585,12 @@
     }
     await say(["Venus: Aiyeeeeh! How dare you! How\ncould I get bested by a mere boy?", "Venus: Remember this! I'll get you\nback for this!"]);
     await say(["Venus: Before that horrible boy can\nmeddle anymore, I'll link up with Ein\nat the Shadow Pokémon Lab!"]);
-    await goAway("VENUS", ["walk_fast_down", "walk_fast_down", "walk_fast_down"]);
-    // (She runs for the Under Subway, and the Shadow Liner to Ein's lab: underSubway*. The lab's on Orre's map only
-    // once you've been there, as in Colosseum: orreTravel.)
+    // (Out of the set and off to the station's elevator, which she takes down to the Under Subway and locks behind
+    // her, as in Colosseum: you follow down the stairway. Then the Shadow Liner to Ein's lab: subway*. The lab's on
+    // Orre's map only once you've been there: orreTravel.)
+    await goAway("VENUS", ["walk_fast_right", "walk_fast_down", "walk_fast_down", "walk_fast_down", "walk_fast_down"].concat(
+      Array(5).fill("walk_fast_right"), Array(6).fill("walk_fast_up")));
+    sfx("se_door");
     player.flags.orreStory = 36;
     await persist();
   }
@@ -7545,9 +7601,11 @@
   // In The Under (34) Perr, in the Junk Shop's basement, asks you to take the Powerup Part to Nett (orreKidsGrid 1);
   // Bitt, waiting outside Nett's house (the one with the big rotating antenna dish), takes you in (2); downstairs Nett
   // gets the Kids Grid back up, and Megg takes your P★DA number (3): then Kloak and Dagur come out to guard Venus's
-  // studio. Beaten (36), Venus runs down the Under Subway (its door by the rails, open from then on) to the Shadow
-  // Liner's station, and gets away with its key (orreSubway 1); Ein comes for her on B1, and there on the ground is
-  // the Subway Key (2). With it, the Shadow Liner takes you to Ein's lab (orreSubwayRidden), any time.
+  // studio. Beaten (36), Venus takes the TV station's elevator down to the Under Subway and locks it behind her; you
+  // follow down its long stairway (open from then on) past the subway's Trainers to the Shadow Liner's station, where
+  // she gets away with its key (orreSubway 1); Ein comes for her on B1, and there on the ground is the Subway Key (2).
+  // With it, the Shadow Liner takes you to Ein's lab (orreSubwayRidden), any time; the elevator works again, and the
+  // door from B1 to The Under's colosseum can be unlocked (orreUnderDoor): subwayEnter, subwayElevator.
   async function junkShopOwner() {
     await say(player.flags.orreSubwayRidden ? ["Oh? You've ridden that Subway?", "Now that brings back memories… I\ndidn't know it was still running.\nWhy, I often drove it in my youth.",
       "Track all clear! All aboard!"] : ["It appears my grandchild\nrecently joined something called the\nKids Grid.", "Since then, I get this feeling\nthat parts have been slowly\ndisappearing from the shop…"]);
@@ -7667,12 +7725,56 @@
     }
     await say(["Nett: {PLAYER}! I'll alert you\nimmediately if I hear anything new."]);
   }
-  // The Under Subway's door by the rails: shut till Venus runs down it (36).
-  const subwayShut = () => (player.flags.orreStory | 0) < 36;
-  async function subwayDoorShut() {
-    await say(["The door is locked."]);
-    const back = window.WORLD_MAPS.TheUnder.warps.find((w) => w.map === "TheUnder_Subway_B1");
-    player.location = { map: "TheUnder", x: back.x, y: back.y + 1, facing: "down" };
+  // The way down to the Under Subway, as in Colosseum: from Venus's TV station, down its long stairway (shut till Venus
+  // runs down it, 36: M4_out #15275) or in its elevator (out of order, #15280, till the Subway Key's been found: then a
+  // short cut between the station and the subway's B1); and the door between B1 and The Under's colosseum, locked from
+  // B1's side till you open it there (M4_subway_B1 #21888, #21889; from the colosseum, #15283: orreUnderDoor).
+  const SUBWAY = { door: { x: 4, y: 4 }, coloDoor: { x: 3, y: 6 }, stairs: { x: 1, y: 3 }, liftB1: { x: 8, y: 24 }, liftStudio: { x: 12, y: 2 } };
+  const standingAt = (map, p) => player.location.map === map && player.location.x === p.x && player.location.y === p.y;
+  const subwayStairsShut = () => (player.flags.orreStory | 0) < 36;
+  // (A story event due on arriving: the stairway shut, the door's either side while locked, Ein on B1.)
+  function subwayDue(script) {
+    const f = player.flags;
+    if (script === "enter:TheUnder_Subway_B1") {
+      if (standingAt("TheUnder_Subway_B1", SUBWAY.door)) return !f.orreUnderDoor;
+      return subwayStairsShut() || (f.orreSubway | 0) === 1;
+    }
+    return script === "enter:TheUnder_DeepColosseum" && standingAt("TheUnder_DeepColosseum", SUBWAY.coloDoor) && !f.orreUnderDoor;
+  }
+  async function subwayEnter(script) {
+    const f = player.flags, go = async (map, p, facing) => { player.location = { map, x: p.x, y: p.y, facing }; await Overworld.teleport(player.location); };
+    if (script === "enter:TheUnder_DeepColosseum") {
+      // (Through the door from B1, the lock on B1's side.)
+      if (!standingAt("TheUnder_DeepColosseum", SUBWAY.coloDoor) || f.orreUnderDoor) return;
+      if (!(await confirm("It's locked from this side.\nUnlock the door?"))) { await go("TheUnder_Subway_B1", { x: SUBWAY.door.x + 1, y: SUBWAY.door.y }, "left"); return; }
+      await say([fill("{PLAYER} unlocked the door.")]);
+      f.orreUnderDoor = true;
+      await persist();
+      return;
+    }
+    if (standingAt("TheUnder_Subway_B1", SUBWAY.door)) {
+      if (f.orreUnderDoor) return;
+      await say(["It doesn't appear to open from this\nside."]);
+      await go("TheUnder_DeepColosseum", { x: SUBWAY.coloDoor.x, y: SUBWAY.coloDoor.y + 1 }, "down");
+      return;
+    }
+    if (subwayStairsShut()) {
+      await say(["The door is locked."]);
+      await go("TheUnder_Studio", SUBWAY.stairs, "down");
+      return;
+    }
+    await subwayB1();
+  }
+  // The TV station's elevator, and its other end on B1.
+  async function subwayElevator(script) {
+    if ((player.flags.orreSubway | 0) < 2) { await say(["It doesn't appear as if it will work\nright now."]); return; }
+    const down = /Studio/.test(script);
+    if (!(await confirm(down ? "Take the elevator down?" : "Take the elevator up?"))) return;
+    Screen.say("");
+    sfx("se_door");
+    await Overworld.fadeToBlack();
+    player.location = down ? { map: "TheUnder_Subway_B1", x: SUBWAY.liftB1.x, y: SUBWAY.liftB1.y, facing: "up" }
+      : { map: "TheUnder_Studio", x: SUBWAY.liftStudio.x, y: SUBWAY.liftStudio.y, facing: "down" };
     await Overworld.teleport(player.location);
   }
   // The station: Venus, with the Shadow Liner's key, the first time.
@@ -7835,6 +7937,14 @@
     await persist();
   }
   async function realgamArrival() {
+    // (Before the tower opens it's Colosseum's Construction Lot: its way in shut (D4_out #21585).)
+    if ((player.flags.orreStory | 0) < 40) {
+      await say(["Worker: Whoa, hold it there. This is a\nconstruction site. It's not a safe\nplace to be."]);
+      Screen.say("");
+      player.location = { map: "RealgamTower_Exterior", x: 19, y: 25, facing: "down" };
+      await Overworld.teleport(player.location);
+      return;
+    }
     // (Silva, in disguise in the tower's lobby.)
     await say(["???: Sssh. {PLAYER}, it's me, Silva.", "Silva: I snuck in here under\ndisguise. I surprised you, huh?", "Silva: That's not important, though.\nThe word is that Cipher's boss is\nwaiting for the both of you at the",
       "top of the Tower.", "Silva: And, he's supposed to have the\nultimate Shadow Pokémon!", "Silva: {PLAYER}, Rui! Good luck, and\nplease be careful always!"]);
@@ -8144,6 +8254,8 @@
   // Miror B.'s gorgeous gift", leads you into the Pyrite Building (4, orreStory 24). After Miror B., Fateen stops you
   // in town and sends you north to Agate (28). Phenac Stadium's first visit comes before Wakin (orreStadium).
   const WINDMILL_GEAR_PLEA = ["Owowowow… That Silva's gone too\nfar this time.", "He ripped out and ripped off one\nof the gears.", "The Colosseum's going to be\nwithout power!"];
+  // (Realgam Tower's grounds are Colosseum's Construction Lot till the tower opens: its name there too.)
+  window.mapNameOverride = (map) => (map === "RealgamTower_Exterior" && player && (player.flags.orreStory | 0) < 40 ? "Construction Lot" : null);
   async function pyriteExtra(script, ev) {
     const f = player.flags, story = f.orreStory | 0, gear = f.orreGear | 0;
     const chief = (pages) => say(pages.map((p, i) => (i ? p : "Chief: " + p)));
@@ -8208,12 +8320,27 @@
       case "PyriteTown_EventScript_WindmillMan":
         await say(["S-Someone… There's trouble… H-Help\nme…", "The Chief's inside! Silva came\nand…"]);
         return;
-      case "PyriteTown_EventScript_Gear":
+      // (The Construction Lot, D4_out: the gear Silva dumped (#16734); the guard at the tower's way in (#21578, then
+      // #23679); the workers (#21582 while the gear's there, then #23680; #21605).)
+      case "ConstructionLot_EventScript_Gear":
         if (gear !== 1) return;
         Overworld.removeObject(ORRE("GEAR_REAL"));
         await sayWithJingle("mus_obtain_key_item", "{PLAYER} found the Gear for the\nWindmill!");
         f.orreGear = 2;
         await persist();
+        return;
+      case "ConstructionLot_EventScript_Guard":
+        await say(f.orreLotGuard ? ["Worker: This is no place for tourists\nto visit. Go on, scram."]
+          : ["Worker: Whoa, hold it there. This is a\nconstruction site. It's not a safe\nplace to be.", "Worker: This is no place for tourists\nto visit. Go on, scram."]);
+        f.orreLotGuard = true;
+        return;
+      case "ConstructionLot_EventScript_Worker1":
+        await say(gear === 1 ? ["Worker: Some guy came wandering by a\nwhile back. He threw out some trash\nand then took off.",
+          "Worker: What's this place look like?\nIt's no garbage dump, that's for\nsure!"] : ["Worker: What's this place look like?\nIt's no garbage dump, that's for\nsure!"]);
+        return;
+      case "ConstructionLot_EventScript_Worker2":
+        await say(["Worker: Aaaaaah… Been working hard, I\nhave.", "Worker: Let me tell you, making this\nhere huge tower's one massive job.\nIt's hard to imagine, even for me.",
+          "Worker: Y'all come back to visit when\nwe're all done here. There'll be a\nColosseum on top of the tower.", "Worker: Amazing stuff!"]);
         return;
       case "PyriteTown_EventScript_JunkGear":
         await say(["A worn gear is on the floor. It\nappears to be junk."]);
@@ -8377,29 +8504,37 @@
     if (w.shadow && f.orreRui && player.party.some((r) => r.shadow)) await say(w.shadow);
     await say(w.go);
     const top = Math.max(...player.party.filter((r) => !r.egg).map((r) => r.level));
-    const draw = Orre.tournamentDraw(t, top, Player.levelCap(player)), heal = () => player.party.forEach(Party.heal);
+    // (Pyrite's entrants are Colosseum's own: the story's four, then its four tournaments in turn, Orre.pyriteDraw;
+    // Phenac's are drawn, Orre.tournamentDraw. orreTourney.pyriteRun: Pyrite's tournaments won since the story.)
+    const pd = pyrite ? Orre.pyriteDraw(t, wins.pyriteRun, storyRun) : null;
+    const draw = pd ? pd.entrants : Orre.tournamentDraw(t, top, Player.levelCap(player)), heal = () => player.party.forEach(Party.heal);
     heal();
     for (let round = 0; round < 4; round++) {
       const e = draw[round];
       await say([round === 3 ? "The final! Your opponent: " + e.name + "!" : "Round " + (round + 1) + "! Your opponent:\n" + e.name + "!"]);
       Screen.say("");
       const outcome = await storyBattle({ foe: { name: e.name, team: teamOf(e.team), pic: e.pic }, prizeClass: e.cls, noBlackout: true,
-        defeatText: [pickOne(["You're as tough as they said!", "Argh! I was so close!", "Well fought. Go win the\nwhole thing!", "Not bad… not bad at all."])] });
+        defeatText: e.defeat || [pickOne(["You're as tough as they said!", "Argh! I was so close!", "Well fought. Go win the\nwhole thing!", "Not bad… not bad at all."])] });
       heal();
       if (outcome !== "won") { await say(w.lost); await persist(); return; }
     }
-    const firstTime = !wins[t.key], item = firstTime ? t.first : pickOne(t.items);
+    // (Pyrite: each challenge's own TM the first time it's won (orreTourney.pyriteTMs), its own prize money.)
+    const got = (wins.pyriteTMs = wins.pyriteTMs || []);
+    const firstTime = pd ? !got.includes(pd.first) : !wins[t.key], item = firstTime ? (pd ? pd.first : t.first) : pickOne(t.items);
+    if (pd && firstTime) got.push(pd.first);
+    if (pd && !storyRun) wins.pyriteRun = (wins.pyriteRun | 0) + 1;
+    const money = pd ? pd.prize : t.prize;
     wins[t.key] = (wins[t.key] | 0) + 1;
-    Player.addMoney(player, t.prize);
+    Player.addMoney(player, money);
     Player.addItem(player, item, 1);
     if (storyRun) {
       // (#20378 and #20727: the story's challenge won.)
-      await say(["{PLAYER}, congratulations! You\nhave won the knockout challenge!", "You have won the ¥" + t.prize + " cash prize and\nthe top " + Bag.name(item) + " prize!"]);
-      await sayWithJingle(itemJingle(item), ["{PLAYER} obtained ¥" + t.prize + "!", "{PLAYER} obtained the " + Bag.name(item) + "!"]);
+      await say(["{PLAYER}, congratulations! You\nhave won the knockout challenge!", "You have won the ¥" + money + " cash prize and\nthe top " + Bag.name(item) + " prize!"]);
+      await sayWithJingle(itemJingle(item), ["{PLAYER} obtained ¥" + money + "!", "{PLAYER} obtained the " + Bag.name(item) + "!"]);
       await pyriteChampion();
       return;
     }
-    await sayWithJingle("mus_obtain_badge", w.won(t.prize));
+    await sayWithJingle("mus_obtain_badge", w.won(money));
     await say(w.prize(Bag.name(item)));
     await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
     await say(w.bye);

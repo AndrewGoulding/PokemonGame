@@ -35,6 +35,9 @@
     "heal-powder": { cure: ALL, confusion: true }, "lava-cookie": { cure: ALL, confusion: true },
     "old-gateau": { cure: ALL, confusion: true }, "casteliacone": { cure: ALL, confusion: true },
     "lumiose-galette": { cure: ALL, confusion: true }, "shalour-sable": { cure: ALL, confusion: true },
+    // Colosseum's Scents (a Cologne Massage): open a Shadow Pokémon's heart (Joy once over, Excite twice, Vivid three
+    // times) and dispel its Hyper Mode, in battle or out (the heart's part: ui/game.js's scentOn, after a battle).
+    "joy-scent": { scent: 1 }, "excite-scent": { scent: 2 }, "vivid-scent": { scent: 3 },
     // Revival
     "revive": { revive: 0.5 }, "max-revive": { revive: 1 }, "revival-herb": { revive: 1 },
     // PP
@@ -98,6 +101,7 @@
     const eff = EFFECTS[item];
     if (!eff) return false;
     if (eff.outOfBattle && opts.inBattle) return false;
+    if (eff.scent) return !!target.shadow && !target.fainted && ((target.heart | 0) > 0 || !!target.hyper);
     if (eff.boost) return !!opts.inBattle && !!target.isActive && !target.fainted && ((target.boosts || {})[eff.boost] || 0) < 6;
     if (eff.battleEffect) return !!opts.inBattle && !!target.isActive && !target.fainted && !(target.effects || {})[eff.battleEffect];
     if (eff.revive) return !!target.fainted;
@@ -128,6 +132,7 @@
     const out = {};
     if (!eff) return out;
     if (FRIENDSHIP[item]) out.friendship = FRIENDSHIP[item];
+    if (eff.scent) { out.scent = eff.scent; return out; }
     if (eff.boost) { out.boost = eff.boost; return out; }
     if (eff.battleEffect) { out.battleEffect = eff.battleEffect; return out; }
     if (eff.revive) {

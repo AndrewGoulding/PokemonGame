@@ -444,6 +444,7 @@
       if (Orre.SHADOW_TRAINERS[script]) { await env.shadowTrainer(script); return; }
       if (Orre.PYRITE_SCRIPTS.includes(script)) { await env.pyriteExtra(script, ev); return; }
       if (Orre.COLO_TRAINERS[script]) { await env.coloTrainer(script); return; }
+      if (script === OrreDayCare.SCRIPT) { await env.dayCareLady(); return; }
       if (Orre.LAB && Orre.LAB.scripts.has(script)) { await env.labObject(script); return; }
       if (script === "PhenacCity_PreGym_EventScript_Justy") { await env.preGymJusty(); return; }
       if (Orre.TOURNAMENTS[script]) { await env.orreTournament(script); return; }
@@ -1525,7 +1526,8 @@
         case "enter:TheUnder_NettsHideout_B1": await env.nettsHideout(); return;
         case "TheUnder_NettsHideout_B1_EventScript_Nett": case "TheUnder_NettsHideout_B1_EventScript_Megg": case "TheUnder_NettsHideout_B1_EventScript_Bitt":
           await env.nettsHideoutPerson(script); return;
-        case "enter:TheUnder_Subway_B1": if (env.subwayShut()) await env.subwayDoorShut(); else await env.subwayB1(); return;
+        case "enter:TheUnder_Subway_B1": case "enter:TheUnder_DeepColosseum": await env.subwayEnter(script); return;
+        case "TheUnder_Studio_EventScript_Elevator": case "TheUnder_Subway_B1_EventScript_Elevator": await env.subwayElevator(script); return;
         case "enter:TheUnder_Subway_Station": await env.subwayStation(); return;
         case "TheUnder_Subway_B1_EventScript_Fan": await env.subwayFan(); return;
         case "TheUnder_Subway_Station_EventScript_Train": await env.shadowLiner(); return;
@@ -2115,13 +2117,14 @@
         // scene at the station and Ein's on B1.)
         if (script === "enter:TheUnder_NettsHideout_1F" && env.nettsDoorShut()) return true;
         if (script === "enter:TheUnder_NettsHideout_B1" && (env.player.flags.orreKidsGrid | 0) === 2) return true;
-        if (script === "enter:TheUnder_Subway_B1" && (story < 36 || (env.player.flags.orreSubway | 0) === 1)) return true;
+        if ((script === "enter:TheUnder_Subway_B1" || script === "enter:TheUnder_DeepColosseum") && env.subwayDue(script)) return true;
         if (script === "enter:TheUnder_Subway_Station" && story === 36 && !env.player.flags.orreSubway) return true;
         if (at("ShadowLab_1F") && story === 36) return true;
         if (script === "enter:ShadowLab_B1F" && story === 37) return true;
         if (script === "enter:ShadowLab_EinsRoom" && story === 38) return true;
         if (Orre.LAB && Orre.LAB.doorShut(script, env.player.flags)) return true;   // (the lab's locked doors, Orre.LAB.DOORS)
         if (at("RealgamTower_1F") && story === 40) return true;
+        if (script === "enter:RealgamTower_1F" && story < 40) return true;   // (the Construction Lot's way in shut)
         if (script === "enter:RealgamTower_Top" && story === 43) return true;
         if (script === "enter:RealgamTower_Colosseum" && env.realgamDoorShut()) return true;   // (without the Admins' four ID Badges)
       }

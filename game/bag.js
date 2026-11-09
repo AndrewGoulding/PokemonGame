@@ -198,6 +198,7 @@
     return {
       hp: record.hp, maxhp: window.Party.maxHp(record), status: record.status, fainted: record.hp <= 0,
       confused: false, evs: record.evs, level: record.level, happiness: record.happiness,
+      shadow: !!record.shadow && record.heart != null, heart: record.heart | 0, hyper: !!record.hyper,   // (Colosseum's Scents)
       moves: record.moves.map((m) => ({ pp: m.pp, maxpp: window.Party.maxPp(m), base: window.MOVES[m.name].pp, ppUps: m.ppUps || 0 }))
     };
   }

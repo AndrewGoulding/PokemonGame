@@ -1,8 +1,11 @@
 // The Under's rooms Colosseum has that the base maps don't (tools/build-orre-layouts.js runs this): the Junk Shop
 // (Perr's, 1F and B1: M4_junk_1F, M4_junk_B1), Nett's hideout (the house with the big rotating antenna dish, 1F and
 // B1: M4_labo_1F, M4_labo_B1), and the Under Subway down to the Shadow Liner's station (M4_subway_B1, M4_subway_B2_1,
-// M4_subway_B3), each an Emerald room; their doors drawn on The Under's east platform and north-west corner.
-// Frena, Liaks, Lonia and Nelis, the Under Subway's Trainers in Colosseum, move down to the subway.
+// M4_subway_B3), each an Emerald room; the Junk Shop's and Nett's doors drawn on The Under's east platform and north-west
+// corner. As in Colosseum the way down to the subway is from Venus's TV station (TheUnder_Studio): a long stairway
+// (Frena, Liaks, Lonia and Nelis, the Under Subway's Trainers in Colosseum, on it) and the elevator Venus takes and
+// locks behind her; and a door between the subway's B1 and The Under's colosseum (TheUnder_DeepColosseum), locked
+// from the subway's side till you open it there (M4_subway_B1 #21888), a short cut from then on.
 "use strict";
 
 module.exports = function ({ maps, changed, clone, room, drawings, block, building, A }) {
@@ -10,17 +13,31 @@ module.exports = function ({ maps, changed, clone, room, drawings, block, buildi
   if (!U) throw new Error("orre-rooms-under: The Under's layout first");
   const { c, z } = drawings.TheUnder, music = U.music;
   const at = (n) => U.warps.length + n;
-  const JUNK = at(0), NETT = at(1), SUBWAY = at(2);
+  const JUNK = at(0), NETT = at(1);
 
-  // The Under's three new doors (their warp indices after the base map's, so saved games keep theirs).
-  const shop = { x: 23, y: 2, w: 4, h: 2 }, hide = { x: 3, y: 2, w: 5, h: 3 }, station = { x: 23, y: 6, w: 3, h: 2 };
-  for (const b of [shop, hide, station]) building(U, c, b);
-  A.door(c, 24 * 16 + 8, 4 * 16 - 1, 12, [126, 92, 60]); A.door(c, 5 * 16 + 8, 5 * 16 - 1, 12, [60, 96, 132]); A.door(c, 24 * 16 + 8, 8 * 16 - 1, 14, A.C.dark);
-  A.text(c, "JUNK", 23 * 16 + 4, 2 * 16 - 8, A.C.cream); A.text(c, "SUBWAY", 23 * 16 - 4, 6 * 16 - 8, A.C.cream);
+  // The Under's two new doors (their warp indices after the base map's, so saved games keep theirs).
+  const shop = { x: 23, y: 2, w: 4, h: 2 }, hide = { x: 3, y: 2, w: 5, h: 3 };
+  for (const b of [shop, hide]) building(U, c, b);
+  A.door(c, 24 * 16 + 8, 4 * 16 - 1, 12, [126, 92, 60]); A.door(c, 5 * 16 + 8, 5 * 16 - 1, 12, [60, 96, 132]);
+  A.text(c, "JUNK", 23 * 16 + 4, 2 * 16 - 8, A.C.cream);
   // (Nett's antenna dish, up on his roof.)
   z.ellipse(5 * 16 + 8, 2 * 16 - 14, 14, 7, [196, 204, 210]); z.ellipse(5 * 16 + 8, 2 * 16 - 15, 10, 4, [140, 150, 160]); z.rect(5 * 16 + 7, 2 * 16 - 10, 3, 12, [96, 100, 108]);
-  U.warps.push({ x: 24, y: 3, map: "TheUnder_JunkShop_1F", warp: 0 }, { x: 5, y: 4, map: "TheUnder_NettsHideout_1F", warp: 0 },
-    { x: 24, y: 7, map: "TheUnder_Subway_B1", warp: 0 });
+  U.warps.push({ x: 24, y: 3, map: "TheUnder_JunkShop_1F", warp: 0 }, { x: 5, y: 4, map: "TheUnder_NettsHideout_1F", warp: 0 });
+
+  // Venus's TV station: the stairway down at its north-west corner (a step-on warp, MB_REGULAR_WARP), and the
+  // elevator at its north-east (TheUnder_Studio_EventScript_Elevator). The Under's colosseum: the door down to the
+  // subway's B1, up its west passage.
+  const REGULAR_WARP = 0x67, tile = (m, x, y, collision, behavior) => { m.collision[y * m.width + x] = collision; if (behavior != null) m.behavior[y * m.width + x] = behavior; };
+  const studio = changed.TheUnder_Studio = changed.TheUnder_Studio || clone(maps.TheUnder_Studio);
+  const STAIRS = studio.warps.length;
+  studio.warps.push({ x: 1, y: 2, map: "TheUnder_Subway_B1", warp: 0 });
+  tile(studio, 1, 2, 0, REGULAR_WARP);
+  tile(studio, 13, 2, 1);
+  studio.signs = (studio.signs || []).concat([{ x: 13, y: 2, script: "TheUnder_Studio_EventScript_Elevator", text: null }]);
+  const colo = changed.TheUnder_DeepColosseum = changed.TheUnder_DeepColosseum || clone(maps.TheUnder_DeepColosseum);
+  const COLO_DOOR = colo.warps.length;
+  colo.warps.push({ x: 3, y: 6, map: "TheUnder_Subway_B1", warp: 3 });
+  tile(colo, 3, 6, 0, REGULAR_WARP);
 
   // Rooms.
   changed.TheUnder_JunkShop_1F = room("SlateportCity_SternsShipyard_1F", "TheUnder_JunkShop_1F", "The Under", music,
@@ -32,7 +49,12 @@ module.exports = function ({ maps, changed, clone, room, drawings, block, buildi
   changed.TheUnder_NettsHideout_B1 = room("MossdeepCity_GameCorner_B1F", "TheUnder_NettsHideout_B1", "The Under", music,
     [{ x: 3, y: 1, map: "TheUnder_NettsHideout_1F", warp: 2 }]);
   changed.TheUnder_Subway_B1 = room("Route114_FossilManiacsTunnel", "TheUnder_Subway_B1", "The Under Subway", music,
-    [{ x: 6, y: 25, map: "TheUnder", warp: SUBWAY }, { x: 7, y: 25, map: "TheUnder", warp: SUBWAY }, { x: 6, y: 2, map: "TheUnder_Subway_B2", warp: 0 }]);
+    [{ x: 6, y: 25, map: "TheUnder_Studio", warp: STAIRS }, { x: 7, y: 25, map: "TheUnder_Studio", warp: STAIRS }, { x: 6, y: 2, map: "TheUnder_Subway_B2", warp: 0 },
+      { x: 4, y: 4, map: "TheUnder_DeepColosseum", warp: COLO_DOOR }]);
+  tile(changed.TheUnder_Subway_B1, 4, 4, 0, REGULAR_WARP);
+  // (The elevator's other end, by B1's foot of the stairway: TheUnder_Subway_B1_EventScript_Elevator.)
+  tile(changed.TheUnder_Subway_B1, 8, 25, 1);
+  changed.TheUnder_Subway_B1.signs = [{ x: 8, y: 25, script: "TheUnder_Subway_B1_EventScript_Elevator", text: null }];
   changed.TheUnder_Subway_B2 = room("RusturfTunnel", "TheUnder_Subway_B2", "The Under Subway", music,
     [{ x: 4, y: 10, map: "TheUnder_Subway_B1", warp: 2 }, { x: 29, y: 16, map: "TheUnder_Subway_Station", warp: 0 }, { x: 18, y: 20, map: "TheUnder_Subway_B1", warp: 2 }]);
   changed.TheUnder_Subway_Station = room("MtChimney_CableCarStation", "TheUnder_Subway_Station", "The Under Subway", music,

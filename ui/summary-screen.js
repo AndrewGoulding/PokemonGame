@@ -217,9 +217,10 @@
       right(hp, 174, 63, 20);
       ["atk", "def", "spa", "spd", "spe"].forEach((k, i) => right(String(v.stats[k]), 210, 27, 38 + i * 13, natCol(k)));
       if (v.shadow) {
-        // (Colosseum's heart gauge, where the EXP is: full while the heart is shut tight, emptying as it opens.)
+        // (Colosseum's heart gauge, where the EXP is: its five bars, full while the heart is shut tight, emptying as
+        // it opens (v.heart: the bars left).)
         dark("HEART GAUGE", 74, 103);
-        right(v.heart <= 0 ? "OPEN" : v.heart <= 25 ? "NEARLY OPEN" : v.heart <= 60 ? "OPENING" : "SHUT TIGHT", 151, 87, 116);
+        right(v.heart <= 0 ? "OPEN" : v.heart < 2 ? "NEARLY OPEN" : v.heart < 4 ? "OPENING" : v.heart < 5 ? "STARTING" : "SHUT TIGHT", 151, 87, 116);
       } else {
         right(String(v.exp), 175, 63, 103);
         right(String(v.toNext), 175, 63, 116);
@@ -314,7 +315,7 @@
     hp.forEach((f, i) => piece("hpBar", f, 168 + 8 * i, 32, hpPal));
     const ex = new Array(11).fill(0);
     if (v.shadow || v.level < 100) {
-      const total = 1000, cur = Math.round((v.shadow ? Math.min(100, v.heart) / 100 : v.expFrac) * total);
+      const total = 1000, cur = Math.round((v.shadow ? Math.min(5, v.heart) / 5 : v.expFrac) * total);
       const per = Math.floor((total * 4) / 8);
       let pts = cur * 4, whole = 0;
       while (pts > per) { pts -= per; whole++; }

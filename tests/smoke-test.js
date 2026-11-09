@@ -3308,6 +3308,43 @@ if (window.JOHTO_TOWN_MAP) {
         calls += b.sides.p1.pokemon[0].calls;
       }
       assert(entered > 0 && calls > 0, "Hyper Mode and CALL");
+      // (Colosseum's numbers, game/orre-heart.js: each Shadow Pokémon's gauge, its nature's amounts, the five bars, and
+      // the Hyper Mode odds by nature and bars.)
+      const H = window.OrreHeart;
+      assert(Orre.SHADOW.every((s) => s.heart >= 3000) && Orre.SHADOW.find((s) => s.species === "Tyranitar").heart === 20000);
+      assert.strictEqual(Orre.SHADOW.find((s) => s.species === "Skarmory").heart, 13000);
+      const old = { species: "Makuhita", shadow: true, heart: 50, nature: "Adamant", moves: [] };
+      H.migrate(old);
+      assert.deepStrictEqual([old.heart, old.heartMax], [1500, 3000], "an older save's heart, as points");
+      const fresh = H.snagged({ species: "Makuhita", shadow: true, nature: "Adamant" });
+      assert(H.bars(fresh) === 5 && H.moves(fresh) === 0 && !H.natureShown(fresh) && !H.banks(fresh) && H.hyperChance(fresh) === 0.3);
+      assert.strictEqual(H.open(fresh, "battle"), 150);
+      assert.strictEqual(H.open(fresh, "scent", 3), 225, "a Vivid Scent: three times the Joy Scent's 75");
+      fresh.heart = 1100;   // (under two bars: two of its own moves back, nature shown, Exp. Points kept)
+      assert(H.moves(fresh) === 2 && H.natureShown(fresh) && H.banks(fresh) && H.hyperChance(fresh) === 0.7);
+      fresh.heart = 0;
+      assert(H.moves(fresh) === 3 && H.hyperChance(fresh) === 0.25 && /Undo the final lock/.test(H.door(fresh)));
+      // (Its own moves sealed till its heart opens: only Shadow Rush at first; Hyper Mode only from Shadow Rush; a
+      // Scent's allowed in Hyper Mode, and dispels it.)
+      const mk = Orre.shadowMon(Orre.shadowOf("Trudly")[0]);
+      H.snagged(mk);
+      const sb = new Battle({ seed: 5, trainer: true, p1: { name: "RED", team: [Party.toBattleSet(mk)] }, p2: { name: "B", team: [{ species: "Snorlax", level: 60, moves: ["Splash"] }] } });
+      sb.start();
+      const slots = sb.getRequest("p1").active.moves;
+      assert(slots.filter((m) => !m.disabled).map((m) => m.name).join() === "Shadow Rush" && slots.filter((m) => m.sealed).length === 3, "only Shadow Rush");
+      sb.sides.p1.active.hyper = true;
+      assert(sb.itemError(sb.sides.p1, { item: "joy-scent", target: 0 }) === null && /HYPER MODE/.test(sb.itemError(sb.sides.p1, { item: "potion", target: 0 })));
+      sb.useItem(sb.sides.p1, "joy-scent", 0);
+      assert(!sb.sides.p1.active.hyper && sb.sides.p1.active.scents === 1, "a Scent dispels Hyper Mode");
+      // (Agate's Day-Care Lady: Exp. Points a step, $100 and $100 a level grown to take it back.)
+      const dp = Player.create("Ash");
+      const pk = Party.create("Pikachu", 10);
+      OrreDayCare.deposit(dp, pk, 100);
+      for (let i = 0; i < 2000; i++) OrreDayCare.step(dp, 100);
+      assert(OrreDayCare.grown(dp) > 0 && OrreDayCare.fee(dp) === 100 + 100 * OrreDayCare.grown(dp));
+      const back = OrreDayCare.withdraw(dp);
+      assert(back.level > 10 && !OrreDayCare.held(dp));
+      assert(WORLD_MAPS.AgateVillage_DayCare.people.some((p) => p.script === OrreDayCare.SCRIPT), "the Day-Care Lady");
     }
     // The Scents, Colosseum's e-mails, the Lab's locked doors.
     for (const id of ["joy-scent", "excite-scent", "vivid-scent", "cologne-case", "lab-card-key", "down-st-key", "dna-sample", "data-rom", "powerup-part", "subway-key"]) assert(ITEMS[id], id);
@@ -3317,6 +3354,18 @@ if (window.JOHTO_TOWN_MAP) {
     assert.deepStrictEqual(Object.keys(Orre.MAIL).filter((k) => !Orre.MAIL_WHEN[k]).sort(), ["EMERGENCY", "TROUBLE_IN_UNDER"]);
     for (const m of Object.values(Orre.MAIL)) for (const page of [].concat(m.body)) for (const line of page.split("\n")) assert(line.length <= 37, line);
     assert(Orre.LAB.doorShut && Orre.LAB.DOORS);
+    // The Under Subway, as in Colosseum: down from Venus's TV station (its stairway, and its elevator's two ends), no
+    // door in the town itself; and the door between the subway's B1 and The Under's colosseum, both ways.
+    {
+      const via = (from, to) => WORLD_MAPS[from].warps.filter((w) => w.map === to);
+      assert(!via("TheUnder", "TheUnder_Subway_B1").length, "no subway door in The Under's streets");
+      for (const [a, b] of [["TheUnder_Studio", "TheUnder_Subway_B1"], ["TheUnder_Subway_B1", "TheUnder_DeepColosseum"]]) {
+        const w = via(a, b)[0], t = w && World.warpTarget(w), back = t && WORLD_MAPS[b].warps.find((v) => v.x === t.x && v.y === t.y);
+        assert(back && World.warpTarget(back).map === a, a + " <-> " + b);
+      }
+      assert(WORLD_MAPS.TheUnder_Studio.signs.some((s) => s.script === "TheUnder_Studio_EventScript_Elevator")
+        && WORLD_MAPS.TheUnder_Subway_B1.signs.some((s) => s.script === "TheUnder_Subway_B1_EventScript_Elevator"), "the elevator");
+    }
     // Colosseum's other Trainers (game/orre-trainers*.js): each on a walkable tile of its map, no two in one place,
     // every party real, every stage with Colosseum's words; and the Shadow Pokémon Trainers' later parties.
     {
@@ -3370,9 +3419,30 @@ if (window.JOHTO_TOWN_MAP) {
     for (const [town, lobby] of [["PyriteTown", "PyriteTown_Colosseum"], ["PhenacCity", "PhenacCity_Stadium"], ["TheUnder", "TheUnder_DeepColosseum"]]) {
       const T0 = WORLD_MAPS[town], L = WORLD_MAPS[lobby];
       for (const w of T0.warps.filter((w) => w.map === lobby)) assert(T0.behavior[w.y * T0.width + w.x] === 0x69 && World.warpTarget(w).map === lobby, town + " -> " + lobby);
-      for (const w of L.warps) { const t = World.warpTarget(w), back = T0.warps[w.warp]; assert(t.map === town && back && back.map === lobby, lobby + " -> " + town); }
+      // (The Under's colosseum also has its door down to the subway's B1: the short cut.)
+      assert(L.warps.some((w) => w.map === town), lobby + "'s way out");
+      for (const w of L.warps.filter((w) => w.map === town)) { const t = World.warpTarget(w), back = T0.warps[w.warp]; assert(t.map === town && back && back.map === lobby, lobby + " -> " + town); }
       const t = Orre.TOURNAMENTS[L.people[0].script];
       assert(t, lobby + "'s receptionist");
+      if (t.story) {
+        // (Pyrite's, Colosseum's own: the story's challenge, then its four tournaments in turn, each with its own TM.)
+        const s = Orre.pyriteDraw(t, 0, true);
+        assert.deepStrictEqual([s.first, s.entrants.map((e) => e.name)], ["tm06", ["Hunter Hoks", "Chaser Tisler", "Bandana Guy Vilch", "Bodybuilder Mirez"]]);
+        assert.deepStrictEqual([0, 1, 2, 3, 4].map((n) => Orre.pyriteDraw(t, n, false).first), ["tm01", "tm07", "tm05", "tm31", "tm01"]);
+        for (const set of [t.story].concat(t.tournaments)) {
+          assert(ITEMS[set.first], set.first);
+          for (const [cls, , team] of set.rosters) assert(team.every(([sp, lv]) => DEX[sp] && lv >= 30 && lv <= 55), cls);
+        }
+        for (const n of [0, 1, 2, 3]) for (const e of Orre.pyriteDraw(t, n, false).entrants) assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + e.pic + ".png")), e.pic);
+        // (The gear Silva stole lies at the Construction Lot, Realgam Tower's spot before it opens, on Orre's map once
+        // it's gone; Realgam Tower in its place once the tower's open.)
+        const lot = (fl) => Orre.openPlaces(fl).find((p) => p.map === "RealgamTower_1F");
+        assert(!lot({}) && lot({ orreGear: 1 }).name === "Construction Lot" && lot({ orreGear: 4, orreMap: ["RealgamTower_1F"] }).name === "Realgam Tower");
+        const ex = WORLD_MAPS.RealgamTower_Exterior, gear = ex.people.find((p) => p.localId === "LOCALID_ORRE_GEAR_REAL");
+        assert(gear && gear.x > ex.width / 2 && !ex.collision[gear.y * ex.width + gear.x] && Orre.visible(gear, { orreGear: 1 }) && !Orre.visible(gear, { orreGear: 2 }), "the gear at the Lot");
+        assert(!WORLD_MAPS.PyriteTown.people.some((p) => p.localId === "LOCALID_ORRE_GEAR_REAL"), "not in Pyrite");
+        continue;
+      }
       for (const top of [5, 40, 100]) {
         const draw = Orre.tournamentDraw(t, top, 55);
         assert.strictEqual(draw.length, 4);

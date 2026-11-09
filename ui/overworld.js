@@ -1933,6 +1933,9 @@
     const sec = (T.mapSections || {})[mapName];
     // (The S.S. Anne: "S.S. Anne Exterior" on the dock, "S.S. Anne" in every room.)
     if (sec === "S_S_ANNE") return mapName === "SSAnne_Exterior" ? "S.S. Anne Exterior" : "S.S. Anne";
+    // (A place known by another name for a while, as the game says: window.mapNameOverride, set by ui/game.js.)
+    const other = typeof window.mapNameOverride === "function" ? window.mapNameOverride(mapName) : null;
+    if (other) return other;
     let name = (sec && T.names && T.names[sec]) || String(m.title || mapName).split(" · ")[0];
     if (m.floor) name += " " + (m.floor === 127 ? "Rooftop" : (m.floor < 0 ? "B" + -m.floor : m.floor) + "F");
     return name;

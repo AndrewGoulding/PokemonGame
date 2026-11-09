@@ -1777,6 +1777,7 @@
         const who = (s) => fill(s, a);
         if (b === "start") return who("{who}'s emotions rose to\na fever pitch!\nIt entered HYPER MODE!");
         if (b === "end") return who("{who} came to its senses\nfrom the trainer's call!");
+        if (b === "calm") return who("{who} came to its senses.");
         if (b === "selfish") return who("{who} selfishly used\n" + c + " without orders!");
         const trainer = battle.sides.p1.name;
         return who({ in: "{who} is in HYPER MODE!", self: "{who} is in HYPER MODE!\nIt attacked itself!", confused: "{who} is in HYPER MODE!\nIt's too confused to do anything!",

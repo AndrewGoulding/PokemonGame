@@ -202,7 +202,13 @@
       teraType: teraType(record), personality: record.personality,
       teraAce: !!record.teraAce,   // (a trainer's ace, which Terastallizes as soon as it can)
       shadow: !!record.shadow,   // (one of Orre's Shadow Pokémon)
-      heart: record.shadow ? (record.heart | 0) : 0   // (how shut its heart still is: Colosseum's Hyper Mode)
+      heart: record.shadow ? (record.heart | 0) : 0,   // (how shut its heart still is)
+      // (Colosseum's heart gauge, for one of your Shadow Pokémon (its heart's being opened: record.heart set): the
+      // chance its Shadow Rush sends it into Hyper Mode, whether it's in it still, how many of its own moves it has
+      // back (the rest sealed), and whether its Exp. Points are kept for it yet: game/orre-heart.js.)
+      ...(record.shadow && record.heart != null && window.OrreHeart ? {
+        hyperChance: window.OrreHeart.hyperChance(record), hyper: !!record.hyper,
+        ownMoves: window.OrreHeart.moves(record), bankExp: window.OrreHeart.banks(record) } : {})
     };
   }
 

@@ -142,10 +142,12 @@
   const tr = Math.trunc;
   // A Tera Raid's Pokémon's extra actions, by stars (Battle.raidCheck): the
   // HP fractions it acts at, and every how many turns it acts as well.
-  // (Colosseum's Hyper Mode, battle.hyperMode: the chance, as it's about to act, that a Shadow Pokémon whose heart is
-  // shut tight goes into it (less as its heart opens); how often it does as it's told in it; and how far it raises
-  // Shadow Rush's critical-hit stage. Colosseum documents no numbers for these: this game's own.)
-  const HYPER_CHANCE = 0.2, HYPER_OBEY = 0.5, HYPER_CRIT = 2;
+  // (Colosseum's Hyper Mode, battle.hyperMode. Going into it: set.hyperChance, by its nature and its heart's bars
+  // (game/orre-heart.js, Bulbapedia's table), as it uses Shadow Rush; HYPER_CHANCE for one without (an older record).
+  // In it, Shadow Rush is a critical hit 7 times in 8 (HYPER_CRIT_RATE, the LP Archive's Colosseum guide), and each
+  // turn it may come back to its senses by itself, 1 in 256 (HYPER_CALM). How often it does as it's told otherwise in
+  // it, HYPER_OBEY, Colosseum doesn't document: this game's own.)
+  const HYPER_CHANCE = 0.15, HYPER_OBEY = 0.5, HYPER_CRIT_RATE = 7 / 8, HYPER_CALM = 1 / 256;
   const RAID_THRESHOLDS = [[], [], [0.5], [0.5], [0.66, 0.33], [0.75, 0.5, 0.25]];
   const RAID_EVERY = [0, 0, 0, 5, 4, 3];
   const RAID_FAINT_TURNS = 2;
@@ -304,6 +306,12 @@
         const maxpp = Math.floor(base * (5 + clamp(ppUpsFor(i), 0, 3)) / 5);
         this.moves.push({ id: toID(key), name: key, pp: maxpp, maxpp });
       }
+      // (Colosseum's: one of your Shadow Pokémon has only Shadow Rush till its heart opens; its own moves come back one
+      // by one, set.ownMoves of them, the rest sealed.)
+      if (set.ownMoves != null) {
+        let own = 0;
+        for (const m of this.moves) if (m.id !== "shadowrush" && ++own > set.ownMoves) m.sealed = true;
+      }
       this.teamIndex = index;
       this.leveledUp = false;
       // Saved state carried in from outside the battle.
@@ -336,8 +344,11 @@
       // (Colosseum's Hyper Mode: one of your Shadow Pokémon may go into it, its heart still shut (set.heart, 0-100);
       // calling its name brings it back, and opens its heart a little: this.calls.)
       this.heart = set.heart | 0;
-      this.hyper = false;
+      this.hyperChance = set.hyperChance != null ? set.hyperChance : HYPER_CHANCE;
+      this.hyper = !!set.hyper;   // (Hyper Mode lasts from one battle to the next, till it's dispelled)
       this.calls = 0;
+      this.scents = 0;   // (Scents used on it in battle: Joy 1, Excite 2, Vivid 3)
+      this.bankExp = set.bankExp !== false;   // (its Exp. Points kept for it yet: under three bars of its heart left)
       this.teraType = /^(Ogerpon|Terapagos)/.test(speciesKey) ? Battle.defaultTeraType(speciesKey) : set.teraType || Battle.defaultTeraType(speciesKey, set.personality);
       this.terastallized = null;
       this.teraAce = !!set.teraAce;
@@ -1075,6 +1086,7 @@
         return;
       }
       mon.hp = 0; mon.fainted = true; mon.side.faintedThisTurn = true;
+      mon.hyper = false;   // (fainting ends Colosseum's Hyper Mode)
       // Fainting upsets it: more so against a foe 30 levels higher (FireRed's
       // battle_util2.c: the opposing Pokémon's level).
       const foe = this.doubles ? this.foesOf(mon)[0] : mon.side.foe.active;
@@ -1749,7 +1761,7 @@
     getMoveSlots(mon) {
       const slots = mon.moves.map((m, i) => {
         const data = window.MOVES[m.name];
-        let disabled = m.pp <= 0;
+        let disabled = m.pp <= 0 || !!m.sealed;
         if (!disabled && mon.volatiles.disable && mon.volatiles.disable.moveId === m.id) disabled = true;
         if (!disabled && mon.volatiles.taunt && data.cat === "Status") disabled = true;
         if (!disabled && mon.volatiles.throatchop && data.flags && data.flags.sound) disabled = true;
@@ -1760,6 +1772,7 @@
         if (!disabled && (mon.item.indexOf("choice-") === 0 || mon.hasAbility("Gorilla Tactics")) && mon.volatiles.choicelock && mon.volatiles.choicelock.moveId !== m.id && !mon.dynamaxed) disabled = true;
         if (!disabled && mon.item === "assault-vest" && data.cat === "Status") disabled = true;
         if (!disabled && mon.volatiles.healblock && data.flags && data.flags.heal) disabled = true;
+        if (m.sealed) return { index: i, id: m.id, name: "????", pp: 0, maxpp: 0, disabled: true, sealed: true, type: "???", category: "", power: 0, target: data.target };
         return { index: i, id: m.id, name: m.name, pp: m.pp, maxpp: m.maxpp, disabled, type: data.type, category: data.cat, power: data.power, target: data.target };
       });
       return slots;
@@ -2047,8 +2060,8 @@
     itemError(side, choice) {
       const target = side.pokemon[choice.target];
       if (!target || !window.ItemUse || !window.ItemUse.effect(choice.item)) return "You can't use that here.";
-      // (Colosseum's: a Pokémon in Hyper Mode takes no item.)
-      if (target.hyper) return target.name + " is in HYPER MODE!\nIt won't accept an item!";
+      // (Colosseum's: a Pokémon in Hyper Mode takes no item but a Scent.)
+      if (target.hyper && !window.ItemUse.effect(choice.item).scent) return target.name + " is in HYPER MODE!\nIt won't accept an item!";
       if (!window.ItemUse.canUse(this.itemView(target), choice.item, { inBattle: true, move: choice.move })) return "It won't have any effect.";
       return null;
     }
@@ -2656,7 +2669,7 @@
           participants: divisor, luckyEgg: mon.item === "lucky-egg" });
         if (mon.level >= E.MAX_LEVEL) { unused += amount; return; }
         // (Colosseum's: a Shadow Pokémon's Exp. Points are kept for it, mon.storedExp, and given back when it's purified.)
-        if (mon.shadow && mon.side.id === "p1") { mon.storedExp = (mon.storedExp || 0) + amount; return; }
+        if (mon.shadow && mon.side.id === "p1") { if (mon.bankExp) mon.storedExp = (mon.storedExp || 0) + amount; return; }
         // (At the level cap: no Exp. Points, and it's said once a battle.)
         if (mon.level >= this.levelCap) {
           if (!this.capNoted.has(mon)) { this.capNoted.add(mon); this.add("-expcap", mon, this.levelCap, mon.teamIndex); }
@@ -2754,7 +2767,7 @@
     itemView(mon) {
       return { hp: mon.hp, maxhp: mon.maxhp, status: mon.status, fainted: mon.fainted,
         confused: !!(mon.isActive && mon.volatiles.confusion), moves: this.ownMoves(mon), evs: mon.evs, level: mon.level,
-        isActive: !!mon.isActive, boosts: mon.boosts,
+        isActive: !!mon.isActive, boosts: mon.boosts, shadow: mon.shadow && mon.side.id === "p1", heart: mon.heart, hyper: mon.hyper,
         effects: { focusenergy: !!mon.volatiles.focusenergy, mist: !!mon.side.conditions.mist } };
     }
 
@@ -2773,6 +2786,8 @@
       if (r.battleEffect === "focusenergy") this.addVolatile(mon, "focusenergy", mon);
       if (r.battleEffect === "mist") this.addSideCondition(mon.side, "mist", mon);
       if (r.friendship) this.friendship(mon, r.friendship);
+      // (A Scent: it opens its heart (after the battle: mon.scents), and dispels Hyper Mode.)
+      if (r.scent) { mon.scents += r.scent; if (mon.hyper) { mon.hyper = false; this.add("-hyper", mon, "calm"); } }
     }
 
     // ---------- Wild battles ----------
@@ -3015,14 +3030,17 @@
     // uses instead, false for none this turn, or null to use its own.
     hyperMode(mon, move, o) {
       if (!mon.hyper) {
-        if (this.random() >= HYPER_CHANCE * Math.max(0, Math.min(100, mon.heart)) / 100) return null;
+        // (Only Shadow Rush sends it into Hyper Mode, and going into it is its turn.)
+        if (move.id !== "shadowrush" || this.random() >= mon.hyperChance) return null;
         mon.hyper = true;
         this.add("-hyper", mon, "start");
-      } else this.add("-hyper", mon, "in");
-      if (this.random() < HYPER_OBEY) return null;
+        return false;
+      }
+      this.add("-hyper", mon, "in");
+      if (move.id === "shadowrush" || this.random() < HYPER_OBEY) return null;
       const r = this.randInt(0, 8);
       if (r === 0) {
-        const usable = mon.moves.map((m, i) => ({ m, i })).filter(({ m }) => m.pp > 0 && !m.disabled);
+        const usable = mon.moves.map((m, i) => ({ m, i })).filter(({ m }) => m.pp > 0 && !m.disabled && !m.sealed);
         if (!usable.length) { this.add("-hyper", mon, "ignore"); return false; }
         const pick = usable[this.randInt(0, usable.length - 1)];
         this.add("-hyper", mon, "selfish", pick.m.name);
@@ -3054,7 +3072,7 @@
       const roll = () => ((lv + cap) * this.randInt(0, 255)) >> 8;
       if (roll() < cap) return null;
       if (roll() < cap) {
-        const others = mon.moves.map((m, i) => ({ m, i })).filter(({ m }) => m.name !== move.name && m.pp > 0 && !m.disabled);
+        const others = mon.moves.map((m, i) => ({ m, i })).filter(({ m }) => m.name !== move.name && m.pp > 0 && !m.disabled && !m.sealed);
         if (!others.length) { this.add("-disobey", mon, "loaf"); return false; }
         const pick = others[this.randInt(0, others.length - 1)];
         this.add("-disobey", mon, "ignored");
@@ -3677,10 +3695,10 @@
         if (!luckyChant && !(move.id === "counter")) {
           const chance = window.Damage.critChance(user, move.name, { focusEnergy: !!user.volatiles.focusenergy,
             critBoost: ((user.volatiles.gmaxchistrike || {}).layers || 0) + ((user.volatiles.dragoncheer || {}).stages || 0)
-              + (user.hyper && move.id === "shadowrush" ? HYPER_CRIT : 0) });
+            });
           // (Gen 7: Laser Focus, and Merciless against a poisoned target.)
           const sure = !!user.volatiles.laserfocus || (user.hasAbility("Merciless") && (target.status === "psn" || target.status === "tox"));
-          crit = sure || chance >= 1 || this.random() < chance;
+          crit = sure || chance >= 1 || this.random() < (user.hyper && move.id === "shadowrush" ? HYPER_CRIT_RATE : chance);
         }
         const field = {
           weather: this.getWeather(), terrain: this.field.terrain, gravity: !!this.field.pseudo.gravity, isDoubles: this.doubles,
@@ -3973,6 +3991,8 @@
         }
       }
       const actives = this.sortBySpeed(this.getActives());
+      // (Colosseum's Hyper Mode: each turn a Pokémon in it may come back to its senses by itself, 1 in 256.)
+      for (const mon of actives) if (mon.hyper && !mon.fainted && this.random() < HYPER_CALM) { mon.hyper = false; this.add("-hyper", mon, "calm"); }
       const w2 = this.getWeather();
       if (w2) {
         this.add("-weather", w2, "[upkeep]");

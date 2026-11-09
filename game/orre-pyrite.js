@@ -16,7 +16,12 @@
   // (map, key, x, y, facing, script, sprite, frames, visible)
   const PEOPLE = [
     ["PyriteTown", "WINDMILL_MAN", 12, 11, "face_left", "PyriteTown_EventScript_WindmillMan", "em_man_3", 9, (f) => gear(f) === 1],
-    ["PyriteTown", "GEAR_REAL", 32, 20, "face_down", "PyriteTown_EventScript_Gear", "item_ball", 1, (f) => gear(f) === 1],
+    // (The gear itself, where Silva dumped it: the Construction Lot's upper-right corner, Realgam Tower's spot before the
+    // tower opens (D4_out), with its guard at the tower's way in and two workers.)
+    ["RealgamTower_Exterior", "GEAR_REAL", 32, 23, "face_down", "ConstructionLot_EventScript_Gear", "item_ball", 1, (f) => gear(f) === 1],
+    ["RealgamTower_Exterior", "LOT_GUARD", 19, 24, "face_down", "ConstructionLot_EventScript_Guard", "worker_m", 10, (f) => story(f) < 40],
+    ["RealgamTower_Exterior", "LOT_WORKER_1", 14, 26, "face_right", "ConstructionLot_EventScript_Worker1", "hiker", 10, (f) => story(f) < 40],
+    ["RealgamTower_Exterior", "LOT_WORKER_2", 26, 27, "face_left", "ConstructionLot_EventScript_Worker2", "worker_m", 10, (f) => story(f) < 40],
     ["PyriteTown", "GEAR_JUNK_1", 3, 9, "face_down", "PyriteTown_EventScript_JunkGear", "item_ball", 1, (f) => gear(f) >= 1 && gear(f) <= 2],
     ["PyriteTown", "GEAR_JUNK_2", 26, 3, "face_down", "PyriteTown_EventScript_JunkGear", "item_ball", 1, (f) => gear(f) >= 1 && gear(f) <= 2],
     ["PyriteTown", "FATEEN_OUT", 17, 25, "face_down", "PyriteTown_EventScript_FateenOut", "em_hex_maniac", 9, () => false],
