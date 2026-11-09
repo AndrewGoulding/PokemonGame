@@ -117,8 +117,8 @@
     return out;
   };
 
-  function pickTreasure(rng, lv, map) {
-    const pool = available(lv, map);
+  function pickTreasure(rng, lv, map, customPool) {
+    const pool = customPool || available(lv, map);
     const total = pool.reduce((t, [, w]) => t + w, 0);
     let r = rng() * total;
     for (const t of pool) if ((r -= t[1]) < 0) return t;
@@ -139,7 +139,8 @@
   }
 
   // A wall to dig at mining level `lv` (1 if left out), in map `map`.
-  function create(rng, lv, map) {
+  function create(rng, lv, map, opts) {
+    opts = opts || {};
     rng = rng || Math.random;
     lv = lv || 1;
     // Rock: 2-4 layers, with a few deeper mounds.
@@ -152,20 +153,20 @@
     }
     const taken = [];
     const treasures = [];
-    const count = (lv || 1) <= 10 ? 2 : (lv || 1) <= 20 ? 3 : 4;   // more to find as you level up
+    const count = opts.count != null ? opts.count : (lv || 1) <= 10 ? 2 : (lv || 1) <= 20 ? 3 : 4;   // more to find as you level up
     for (let i = 0; i < count; i++) {
-      const [item, , shape] = pickTreasure(rng, lv, map);
+      const [item, , shape] = pickTreasure(rng, lv, map, opts.pool);
       const at = place(shape, taken, rng);
       if (at) treasures.push(Object.assign({ item, found: false }, at));
     }
     const bedrock = new Array(WIDTH * HEIGHT).fill(false);
-    const rocks = 0;   // (this game's: no bedrock, every tile can be dug)
+    const rocks = opts.rocks || 0;   // (this game's: no bedrock, every tile can be dug)
     for (let i = 0; i < rocks; i++) {
       const at = place(BEDROCK[Math.floor(rng() * BEDROCK.length)], taken, rng);
       if (at) for (const [x, y] of at.cells) bedrock[y * WIDTH + x] = true;
     }
-    const energy = maxEnergy(lv);
-    return { width: WIDTH, height: HEIGHT, level: lv, rock, bedrock, treasures, energy, maxEnergy: energy, xp: 0, over: false, tired: false, rng };
+    const energy = opts.energy || maxEnergy(lv);
+    return { width: WIDTH, height: HEIGHT, level: lv, rock, bedrock, treasures, energy, maxEnergy: energy, xp: 0, over: false, tired: false, rng, tools: opts.tools || null };
   }
 
   // One hit with "pick" or "hammer" at (x, y), or the "bomb" (somewhere at

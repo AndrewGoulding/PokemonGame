@@ -34,6 +34,7 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [ ] Pal Park catching show and remaining optional challenges
 - [ ] Super Contests, accessories, Poffins and contest rewards
 - [ ] Battle Tower, Factory, Arcade, Castle and Hall
-- [ ] Underground, fossils and collection rewards
+- [x] Offline Underground, source mining/fossils, Spheres, Secret Bases and Spiritomb
+- [ ] Remaining cross-feature collection rewards and trophies
 - [ ] Optional location access and full-region travel audit
 - [ ] Final save migration, cross-region and browser validation

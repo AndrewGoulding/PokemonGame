@@ -127,7 +127,7 @@
 
   const titleCase = (id) => id.split("-").filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-  const name = (item) => SPECIAL_NAMES[item] || (isMachine(item) ? machineName(item) : titleCase(item));
+  const name = (item) => SPECIAL_NAMES[item] || window.ITEMS[item]?.displayName || (isMachine(item) ? machineName(item) : titleCase(item));
   // Evolution stones and items all say the same; otherwise FireRed's own text
   // where it has the item (data/item-descriptions.js, its lines broken as
   // FireRed breaks them), else data/items.js's.

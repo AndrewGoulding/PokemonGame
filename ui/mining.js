@@ -121,7 +121,7 @@
       // (SELECT, or B: the next tool you can use.)
       function switchTool(e) {
         if (e) e.preventDefault();
-        const ids = window.Mining.tools(dig.level).map((t) => t.id);
+        const ids = (dig.tools || window.Mining.tools(dig.level)).map((t) => t.id);
         tool = ids[(ids.indexOf(tool) + 1) % ids.length];
         draw();
       }

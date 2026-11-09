@@ -2039,6 +2039,8 @@
   const fishingXp = () => player.flags.fishingXp | 0;
   async function explorerKit() {
     const here = player.location && window.WORLD_MAPS[player.location.map];
+    if(SinnohUnderground.owns(player.location.map)){fieldAction=async()=>{show("world");await Overworld.resume();await sinnohStory.run("pt:ug-menu");await persist();};return true;}
+    if(Sinnoh.owns(player.location.map)&&here&&["city","town","route"].includes(here.type)){fieldAction=async()=>{show("world");await Overworld.resume();const to=SinnohUnderground.enter(player);if(to){Overworld.setAvatar("walk");await Overworld.teleport(to);}else await say("You can’t use the Explorer Kit here.");await persist();};return true;}
     if (!here || here.type !== "underground") { await message("Oak: " + player.name + "! This isn't the time to use that!"); return false; }
     show("scene");
     clearMenu();
@@ -5937,7 +5939,10 @@
   // ---------- Sinnoh: Platinum's opening chapter (ui/sinnoh-story.js) ----------
 
   const sinnohStory = SinnohStory.create({
-    player: () => player, avatar:()=>Overworld.avatar(), wildMon, say, confirm, showPicture, hidePicture, canBattle, battle, sfx, forgetMove: chooseMoveToForget,
+    player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
+    mineUnderground: async()=>{Screen.say("");show("scene");clearMenu();const xp=miningXp(),dig=Mining.create(Math.random,Mining.level(xp),player.location.map,{pool:SinnohUnderground.pool(player),count:2+Math.floor(Math.random()*3),rocks:3,energy:50,tools:Mining.TOOLS.slice(0,2)}),found=await MiningScreen.run(scene,dig,xp);player.flags.miningXp=xp+dig.xp;for(const id of found){const ok=SinnohUnderground.found(player,id,dig.energy/dig.maxEnergy);await MiningScreen.message(ok?"You dug up "+Bag.name(id)+"!":"Your Underground inventory is full.");}if(!found.length)await MiningScreen.message("Nothing was dug up…");MiningScreen.clear();show("world");await Overworld.resume();await persist();},
+    decorateUnderground: async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohUndergroundDevice.decorate(scene,player);}finally{show("world");await Overworld.resume();}},
+    escapeUndergroundTrap: async id=>{Screen.say("");show("scene");clearMenu();try{await SinnohUndergroundDevice.escapeTrap(scene,id);}finally{show("world");await Overworld.resume();}}, confirm, showPicture, hidePicture, canBattle, battle, sfx, forgetMove: chooseMoveToForget,
     openPC: async()=>{await pc();show("world");await Overworld.resume();},
     chooseParty: choosePartyFor, learnMove, enterText, tradeFor, daycareLady: () => fourIslandDayCareLady("sinnoh"), daycareMan: () => fourIslandDayCareMan("sinnoh"),
     choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name })).concat([{label:"Cancel",value:null}])),
@@ -9820,6 +9825,7 @@
   const baseCollision = {}, baseBehavior = {};
   function applyPatches(map) {
     const m = window.WORLD_MAPS[map];
+    if(m&&map===SinnohUnderground.data().base){const base=baseCollision[map]||(baseCollision[map]=m.collision.slice());m.collision=base.slice();for(const[x,y]of SinnohUnderground.overlay(player,map).solid)m.collision[y*m.width+x]=1;}
     if (!m || !m.patches) return;
     const base = baseCollision[map] || (baseCollision[map] = m.collision.slice());
     const baseB = baseBehavior[map] || (baseBehavior[map] = m.behavior.slice());
@@ -11625,7 +11631,7 @@
         // (A double battle's trainers don't see you without two Pokémon that
         // can fight: FireRed's CheckTrainer.)
         trainerWaiting: (person) => trainerWaiting(person) && !(person.trainer.double && !canDouble()),
-        hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, metatiles: hoennOverlay, decor: (map) => hoennDecor.overlay(map).tiles, extraPeople,
+        hiddenItem: (h) => !player.flags[h.flag], patches: mapPatches, metatiles: hoennOverlay, decor: (map) => SinnohUnderground.owns(map)?SinnohUnderground.overlay(player,map).tiles:hoennDecor.overlay(map).tiles, extraPeople,
         // (HGSS's: the Pokémon walking behind you, and Johto's Headbutt trees.)
         follower: (map) => follower.look(map), headbuttTree: (map, x, y) => johtoField.headbuttTree(map, x, y),
         diveHere: (avatar) => diveHere(avatar),
