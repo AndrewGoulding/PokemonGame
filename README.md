@@ -3133,6 +3133,10 @@ does. (Script warps now name their maps, so every script's warp works.)
 
 ## Orre (in progress)
 
+Orre's story is played through in a real browser by `tests/browser/orre-story-early.js`, `-pyrite.js`, `-agate.js`
+(with `-agate-2.js`), `-under.js`, `-realgam.js` and `orre-shadow-mechanics.js` (Playwright: real input, battles won,
+snags, Hyper Mode and CALL, the heart gauge, the lab's keys, the e-mail; no page errors or missing files).
+
 Orre's main exteriors now use [reference-based 2D projections of Colosseum's locations](docs/orre-maps.md),
 including circular Phenac, Pyrite's chasm and windmill, Agate's root-built terraces, The Under,
 Mt. Battle's caldera, the Outskirt Stand and Realgam's exterior. See the linked preview and
