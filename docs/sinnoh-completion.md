@@ -37,6 +37,6 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [x] Super Contests, source dress-up accessories/backdrops, practice, ribbons and contest rewards
 - [x] Battle Tower, Factory, Arcade, Castle and Hall, source sets/Brains, prints/BP and local Tower partners
 - [x] Offline Underground, source mining/fossils, Spheres, Secret Bases and Spiritomb
-- [ ] Remaining cross-feature collection rewards and trophies
+- [x] Trainer Card stars, diplomas, Badge Case and cross-feature collection trophies
 - [ ] Optional location access and full-region travel audit
 - [ ] Final save migration, cross-region and browser validation

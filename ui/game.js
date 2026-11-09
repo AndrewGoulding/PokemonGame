@@ -3078,6 +3078,7 @@
   }
   async function trainerCard() {
     tick();
+    if(WORLD_MAPS[player.location.map]?.region==='sinnoh'){Screen.say("");show('scene');clearMenu();try{await SinnohOptionalDevice.card(scene,player);}finally{tick();Save.write(player);show('world');await Overworld.resume();}return null;}
     const map = player.location && window.WORLD_MAPS[player.location.map];
     const region = map && map.region === "hoenn" ? "hoenn" : "kanto", K = region === "kanto";
     const stars = cardStars(region);
@@ -5945,6 +5946,7 @@
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
     saveCheckpoint: async()=>{tick();Save.write(player);},
+    sinnohDiploma: async kind=>{Screen.say("");show('scene');clearMenu();try{await SinnohOptionalDevice.diploma(scene,player,kind);}finally{show('world');await Overworld.resume();}},
     frontierBattle: async(spec)=>{const s=SinnohFrontier.state(player),real=player.party;s.backup=real;s.active.phase='battle';tick();Save.write(player);player.party=spec.team;let outcome;try{outcome=await battle('trainer',{foe:spec.foe,defeatText:spec.defeatText,double:spec.double,noExp:true,noPrize:true,noBlackout:true,noGimmicks:true,noBag:true,record:true,weather:spec.weather,trickRoom:spec.trickRoom,onResult:r=>{s.active.lastTurns=r.turns;},partner:spec.partner,foe2:spec.foe2,chosen:spec.partner?[0,1]:undefined});}finally{player.party=real;}if(lastRecord){s.lastRecord=Object.assign({facility:s.active.facility,streak:s.active.streak+1},lastRecord);lastRecord=null;}show('world');await Overworld.resume();return outcome;},
     frontierReplay: async()=>{const rec=SinnohFrontier.state(player).lastRecord;if(rec)await playRecord(rec);else await say('No Sinnoh Frontier battle has been recorded.');},
     chooseFrontierTeam: async(list,n,title)=>{Screen.say("");show("scene");clearMenu();try{return await SinnohFrontierDevice.select(scene,list,n,title);}finally{show("world");await Overworld.resume();}},
@@ -11630,6 +11632,7 @@
   async function explore() {
     SinnohDaily.correctLocation(player);
     SinnohPark.recover(player);
+    SinnohOptional.recover(player);
     SinnohFrontier.recover(player);
     SinnohPoffins.recover(player);
     Orre.correctLocation(player);

@@ -3826,7 +3826,7 @@
 
       // Move-specific after-effects
       const after = window.BATTLE_MOVE_EFFECTS && window.BATTLE_MOVE_EFFECTS.afterHit[move.id];
-      if (after && !target.fainted) after(this, user, target, move, totalDealt);
+      if (after && (!target.fainted || move.id === "thief" || move.id === "covet")) after(this, user, target, move, totalDealt);
       const afterSelf = window.BATTLE_MOVE_EFFECTS && window.BATTLE_MOVE_EFFECTS.afterHitSelf && window.BATTLE_MOVE_EFFECTS.afterHitSelf[move.id];
       if (afterSelf && !user.fainted) afterSelf(this, user, target, move, totalDealt);
 

@@ -3,7 +3,7 @@
 (function () {
   "use strict";
   function create(env) {
-    const quests = SinnohSidequests.create(env), legends = SinnohLegendScenes.create(env), towns = SinnohTownScenes.create(env), expeditions = SinnohExpeditionScenes.create(env), daily = SinnohDailyScenes.create(env), gadgets = SinnohGadgetScenes.create(env), services = SinnohServiceScenes.create(env), seals = SinnohSealScenes.create(env), villa = SinnohVillaScenes.create(env), leisure = SinnohLeisureScenes.create(env), underground = SinnohUndergroundScenes.create(env), park = SinnohParkScenes.create(env), poffins = SinnohPoffinScenes.create(env), contests = SinnohContestScenes.create(env), frontier = SinnohFrontierScenes.create(env);
+    const quests = SinnohSidequests.create(env), legends = SinnohLegendScenes.create(env), towns = SinnohTownScenes.create(env), expeditions = SinnohExpeditionScenes.create(env), daily = SinnohDailyScenes.create(env), gadgets = SinnohGadgetScenes.create(env), services = SinnohServiceScenes.create(env), seals = SinnohSealScenes.create(env), villa = SinnohVillaScenes.create(env), leisure = SinnohLeisureScenes.create(env), underground = SinnohUndergroundScenes.create(env), park = SinnohParkScenes.create(env), poffins = SinnohPoffinScenes.create(env), contests = SinnohContestScenes.create(env), frontier = SinnohFrontierScenes.create(env), extras = SinnohOptionalScenes.create(env);
     const next = SinnohEterna.create(env), galactic = SinnohGalactic.create(env), middle = SinnohMidgame.create(env), finale = SinnohFinale.create(env);
     const player = () => env.player();
     const state = () => Sinnoh.state(player());
@@ -117,6 +117,7 @@
       await env.say(player().badges.includes("coal") ? "The Coal Badge lets you use\nRock Smash here in Sinnoh." : "You can teach Rock Smash now.\nEarn the Coal Badge to use it\noutside battle here in Sinnoh.");
     }
     function visible(person) {
+      const extra=extras.visible(person);if(extra!==undefined)return extra;
       const stroll=leisure.visible(person); if(stroll!==undefined)return stroll;
       const home=villa.visible(person); if(home!==undefined)return home;
       const activity = daily.visible(person); if(activity !== undefined)return activity;
@@ -134,6 +135,7 @@
       return undefined;
     }
     function step() {
+      const extra=extras.step();if(extra)return extra;
       const catching=park.step(); if(catching)return catching;
       const under=underground.step(); if(under)return under;
       const stroll=leisure.step(); if(stroll)return stroll;
@@ -156,7 +158,7 @@
     }
     async function run(script) {
       if (!script || !script.startsWith("pt:") || script.startsWith("pt:PT_TRAINER_")) return false;
-      if (await frontier.run(script) || await contests.run(script) || await poffins.run(script) || await park.run(script) || await underground.run(script) || await leisure.run(script) || await villa.run(script) || await seals.run(script) || await services.run(script) || await gadgets.run(script) || await daily.run(script) || await expeditions.run(script) || await towns.run(script) || await legends.run(script) || await quests.run(script) || await finale.run(script) || await middle.run(script) || await galactic.run(script) || await next.run(script)) return true;
+      if (await extras.run(script) || await frontier.run(script) || await contests.run(script) || await poffins.run(script) || await park.run(script) || await underground.run(script) || await leisure.run(script) || await villa.run(script) || await seals.run(script) || await services.run(script) || await gadgets.run(script) || await daily.run(script) || await expeditions.run(script) || await towns.run(script) || await legends.run(script) || await quests.run(script) || await finale.run(script) || await middle.run(script) || await galactic.run(script) || await next.run(script)) return true;
       switch (script.slice(3)) {
         case "rowan": await rowan(); break;
         case "aide": await aide(); break;
