@@ -92,13 +92,19 @@
     return moves;
   }
 
+  // Gen 6 shiny odds, matching this game: six rolls for foreign-language
+  // parents (Masuda Method), plus two with the Shiny Charm. Old records are English.
+  const shinyRolls = (a, b, charm) => ((a.language || "en") !== (b.language || "en") ? 6 : 1) + (charm ? 2 : 0);
   function makeEgg(a, b, opts) {
     opts = opts || {};
     const rng = opts.rng || Math.random;
     const mother = motherOf(a, b), father = mother === a ? b : a;
     const species = eggSpecies(mother, father, rng);
     const level = 1;
-    const egg = window.Party.create(species, level, { rng, moves: eggMoves(species, level, mother, father) });
+    const egg = window.Party.create(species, level, { rng, moves: eggMoves(species, level, mother, father), shiny: false });
+    const shinyRng = opts.shinyRng || Math.random;
+    for (let i = 0; i < shinyRolls(a, b, opts.shinyCharm); i++) if (shinyRng() < 1 / 4096) { egg.shiny = true; break; }
+    egg.language = opts.language || "en";
     // Nature: an Everstone passes its holder's on (either's, if both hold one).
     const stones = [a, b].filter((r) => r.item === "everstone");
     if (stones.length) egg.nature = pick(stones, rng).nature;
@@ -207,5 +213,5 @@
     return "An odd Pokémon Egg found by the\nDAY-CARE couple.";
   }
 
-  window.Breeding = { compatibility, compatibilityText, motherOf, eggSpecies, eggMoves, makeEgg, giftEgg, dayCareStep, hatchStep, hatch, eggWatch, eggOrigin, CYCLE_STEPS };
+  window.Breeding = { shinyRolls, compatibility, compatibilityText, motherOf, eggSpecies, eggMoves, makeEgg, giftEgg, dayCareStep, hatchStep, hatch, eggWatch, eggOrigin, CYCLE_STEPS };
 })();

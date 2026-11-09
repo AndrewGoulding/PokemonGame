@@ -304,7 +304,9 @@
   // (the water's, the rocks').
   // (A table can have its own slot weights: Johto's Rock Smash, 90 and 10.)
   function pickWild(m, rng, table) {
-    const t = table || m.wild, weights = t.weights || (table ? WATER_SLOT_WEIGHTS : LAND_SLOT_WEIGHTS);
+    const at = window.Game && window.Game.player && window.Game.player.location;
+    const zone = !table && m.platinumWildZones && at && at.map === m.name && m.platinumWildZones.find(z => at.x <= z.maxX);
+    const t = table || (zone && zone.wild) || m.wild, weights = t.weights || (table ? WATER_SLOT_WEIGHTS : LAND_SLOT_WEIGHTS);
     let roll = Math.floor(rng() * 100), slot = 0;
     while (slot < weights.length - 1 && roll >= weights[slot]) roll -= weights[slot++];
     const s = t.slots[slot];
@@ -315,7 +317,8 @@
     // day's and night's Pokémon, this game having no clock for encounters.)
     const alt = s.alt && rng() < 0.5;
     const kinds = (alt ? [s.alt, s.altMorning, s.altNight] : [s.species, s.morning, s.night]).filter((k, i, all) => k && all.indexOf(k) === i);
-    const species = kinds.length > 1 ? kinds[Math.floor(rng() * kinds.length)] : kinds[0];
+    const time = m.region === "sinnoh" && window.Player ? Player.gameTime().timeOfDay : null;
+    const species = time ? (time === "morning" ? s.morning : time === "night" ? s.night : s.species) || s.species : kinds.length > 1 ? kinds[Math.floor(rng() * kinds.length)] : kinds[0];
     // (`slot`: which one, for Tanoby's Unown, whose letter goes by it.)
     return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot };
   }

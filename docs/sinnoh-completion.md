@@ -21,10 +21,10 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [x] Secret Key and Rotom appliances
 - [x] Battleground, Barry and League rematches
 - [ ] Remaining route/cave trainers and source wild encounters
-- [ ] Mira/Wayward Cave and Marley/Victory Road escort stories
-- [ ] Town quests, gifts, trades, tutors and HM/item rewards
+- [x] Mira/Wayward Cave and Marley/Victory Road escort stories
+- [ ] Town quests and remaining HM/item rewards (gifts, four trades, shard tutors and reminder implemented)
 - [ ] Veilstone Game Corner, Ball Seals and Resort/Ribbon services
-- [ ] Solaceon Day-Care, breeding and Lost Tower
+- [x] Solaceon Day-Care, breeding and Lost Tower
 - [ ] Honey trees, Trophy Garden and Great Marsh daily encounters
 - [ ] Pokétch, roaming route tracker/flee AI and regional field conveniences
 - [ ] Super Contests, accessories, Poffins and contest rewards

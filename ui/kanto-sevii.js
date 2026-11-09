@@ -986,7 +986,7 @@
         await env.sayWithJingle("mus_level_up", env.DC("ReceivedEgg"));
         await env.say(env.DC("TakeGoodCareOfIt"));
         // (GiveEggFromDaycare: what's in it is decided now.)
-        env.player.party.push(Breeding.makeEgg(list[0].mon, list[1].mon, { map: env.player.location.map }));
+        env.player.party.push(Breeding.makeEgg(list[0].mon, list[1].mon, { map: env.player.location.map, shinyCharm: Player.itemCount(env.player, "shiny-charm") > 0 }));
         eggs.eggWaiting = false;
         return;
       }

@@ -3644,6 +3644,10 @@ chapter checks with `node tests/browser/sinnoh-story.js`,
 (all support `PLAYWRIGHT_PATH` and `CHROMIUM`).
 
 
+Platinum town services, escorts and optional-route imports are documented in
+[Sinnoh town content](docs/sinnoh-towns.md); remaining systems are tracked in
+[the Sinnoh completion checklist](docs/sinnoh-completion.md).
+
 `tools/build-sinnoh.js` builds them from the project (it needs Ruby, to read RPG Maker's `.rxdata` files through
 `tools/lib/rmxp-dump.rb`, and uses ffmpeg, where it's installed, to make the songs smaller):
 

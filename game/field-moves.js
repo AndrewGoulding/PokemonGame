@@ -22,6 +22,7 @@
   // Glacier, Waterfall and Rock Climb the Rising; Fly none, this game's own, so
   // Kanto's Champion can get about Johto from the start.)
   const FIELD_MOVES = [
+    { move: "Defog", badge: null, johto: null, hoenn: null, desc: "Clear thick fog." },
     { move: "Flash", badge: "boulder", johto: "zephyr", hoenn: "knuckle", desc: "Light up darkness." },
     { move: "Cut", badge: "cascade", johto: "hive", hoenn: "stone", desc: "Cut a tree or grass." },
     { move: "Fly", badge: "thunder", johto: null, hoenn: null, desc: "Fly to a known town." },
@@ -45,7 +46,7 @@
   ];
   const inJohto = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "johto");
   const inHoenn = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "hoenn");
-  const SINNOH_BADGES = { "Cut": "forest", "Fly": "cobble", "Strength": "mine", "Surf": "fen",
+  const SINNOH_BADGES = { "Defog": "relic", "Cut": "forest", "Fly": "cobble", "Strength": "mine", "Surf": "fen",
     "Rock Smash": "coal", "Waterfall": "beacon", "Rock Climb": "icicle", "Whirlpool": "beacon" };
   const inSinnoh = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "sinnoh");
   const info = (move) => FIELD_MOVES.find((f) => f.move === move) || null;

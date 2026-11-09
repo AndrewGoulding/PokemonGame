@@ -1093,7 +1093,7 @@
     const cheryl = Sinnoh.forestPartner(player);
     if (cheryl) {
       if (wild && !opts.foe) opts = { ...opts, foe: { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } };
-      opts = Sinnoh.forestBattle(player, kind, opts, () => wildMon(Encounters.wild(partyLevel())));
+      opts = Sinnoh.forestBattle(player, kind, opts, () => { const m = WORLD_MAPS[player.location.map], e = m && m.wild ? World.pickWild(m, Math.random) : null; return wildMon(e ? Party.create(e.species, e.level) : Encounters.wild(partyLevel())); });
     }
     const foe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
     if(wild&&foe.team.length===1)foe.team[0]=Sinnoh.roamerRecord(player,foe.team[0]);
@@ -4578,6 +4578,9 @@
   function fieldMoveHere(move, mon) {
     const here = window.WORLD_MAPS[player.location.map] || {}, a = Overworld.ahead(), surfing = Overworld.avatar() === "surf";
     switch (move) {
+      case "Defog":
+        if (!Sinnoh.fog(player.location.map, player)) return "Can’t use that here.";
+        return async () => { await say(usedMove(mon, "Defog")); sfx("se_m_reflect"); Sinnoh.defog(player); await say("The fog cleared!"); };
       case "Flash": {
         // (In the middle of the Ancient Tomb: Registeel's doorway opens.)
         const tomb = braillePuzzle("Flash");
@@ -5922,6 +5925,7 @@
 
   const sinnohStory = SinnohStory.create({
     player: () => player, say, confirm, showPicture, hidePicture, canBattle, battle, sfx, forgetMove: chooseMoveToForget,
+    chooseParty: choosePartyFor, learnMove, tradeFor, daycareLady: () => fourIslandDayCareLady("sinnoh"), daycareMan: () => fourIslandDayCareMan("sinnoh"),
     choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name }))),
     showWorld: () => show("world"), resume: () => Overworld.resume(),
     refreshPeople: () => Overworld.refreshPeople(), teleport: (to) => Overworld.teleport(to),
@@ -8876,7 +8880,7 @@
   // (game/breeding.js).
   const DC = (k) => T("DayCare_Text_" + k);
   // (Route 34's in Johto is the same Day-Care, its own: player.flags.johtoDayCare and johtoDayCareEggs.)
-  const DAY_CARES = { four: { list: "dayCare2", eggs: "dayCareEggs", lady: "LOCALID_FOUR_ISLAND_DAYCARE_WOMAN" }, johto: { list: "johtoDayCare", eggs: "johtoDayCareEggs", lady: null } };
+  const DAY_CARES = { four: { list: "dayCare2", eggs: "dayCareEggs", lady: "LOCALID_FOUR_ISLAND_DAYCARE_WOMAN" }, johto: { list: "johtoDayCare", eggs: "johtoDayCareEggs", lady: null }, sinnoh: { list: "sinnohDayCare", eggs: "sinnohDayCareEggs", lady: null } };
 
   // Icefall Cave 1F's thin ice (IcefallCaveIcePerStepCallback): a step on it
   // cracks it, the next breaks it and you fall through to B1F. Whole again
@@ -8908,6 +8912,7 @@
     // (And the steps Gen 9's walkers count: Pawmo, Bramblin and Rellor, up to the 1,000 they need.)
     for (const r of player.party) if (!r.egg && STEP_EVOLVERS().has(r.species) && (r.steps | 0) < 1000) r.steps = (r.steps | 0) + 1;
     if (f.dayCare2 && f.dayCare2.length === 2) Breeding.dayCareStep(f.dayCareEggs || (f.dayCareEggs = {}), f.dayCare2);
+    if (f.sinnohDayCare && f.sinnohDayCare.length === 2) Breeding.dayCareStep(f.sinnohDayCareEggs || (f.sinnohDayCareEggs = {}), f.sinnohDayCare);
     if (f.johtoDayCare && f.johtoDayCare.length === 2) Breeding.dayCareStep(f.johtoDayCareEggs || (f.johtoDayCareEggs = {}), f.johtoDayCare);
     const egg = Breeding.hatchStep(f.eggHatch || (f.eggHatch = {}), player.party);
     return egg ? { type: "egg-hatch", record: egg } : null;
@@ -11589,13 +11594,13 @@
         },
         boulderSwitch: (map, x, y) => Sinnoh.distortionSwitch(player, map, x, y) || tanobySwitch(map, x, y) || victoryRoadSwitch(map, x, y),
         // (The Tanoby Ruins' chambers are dark until the Tanoby Key's solved: EventScript_TryDarkenRuins.)
-        weather: (map) => (isHoenn(map) ? hoennWeatherNow() : Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
+        weather: (map) => (Sinnoh.fog(map, player) ? "fog_horizontal" : isHoenn(map) ? hoennWeatherNow() : Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
         // (Off the water: on foot, or back on the Bicycle on Cycling Road, where you can't walk.)
         landAvatar: () => (onCyclingRoad() ? "bike" : "walk"),
         onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
         onStep: () => {
           Player.advanceClock(player);   // (the game's clock: Player.gameTime)
-          leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); DayCare.step(player.flags.johtoDayCare); friendshipStep();
+          leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); DayCare.step(player.flags.johtoDayCare); DayCare.step(player.flags.sinnohDayCare); friendshipStep();
           Sevii.resortStep(player.flags.resortRequest);   // (Selphy waiting to see a Pokémon)
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)

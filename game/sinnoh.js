@@ -77,8 +77,11 @@
   }
   function forestPartner(player) {
     const map=player.location.map;
-    if(!["PlatinumIronIsland","PlatinumStarkInterior","EternaForest_2"].includes(map))return null;
+    if(!["PlatinumIronIsland","PlatinumStarkInterior","EternaForest_2","PlatinumExpWayward","PlatinumExpMarley"].includes(map))return null;
     const q=(player.flags.sinnoh||{}).sidequests||{};
+    const l=(player.flags.sinnoh||{}).legends||{};
+    if(map==="PlatinumExpWayward"&&l.miraJoined&&!l.miraEscorted)return{name:"Mira",team:team("PT_TRAINER_MIRA_WAYWARD_CAVE"),pic:"pt_mira"};
+    if(map==="PlatinumExpMarley"&&l.marleyJoined&&!l.marleyEscorted)return{name:"Marley",team:team("PT_TRAINER_MARLEY_VICTORY_ROAD"),pic:"pt_marley"};
     if(map==="PlatinumIronIsland"&&q.rileyJoined&&!q.ironCleared)return{name:"Riley",team:team("PT_TRAINER_RILEY_IRON_ISLAND"),pic:"pt_riley"};
     if(map==="PlatinumStarkInterior"&&q.buckJoined&&!q.charonArrested)return{name:"Buck",team:team("PT_TRAINER_BUCK_STARK_MOUNTAIN"),pic:"pt_buck"};
     if (map !== "EternaForest_2") return null;
@@ -106,6 +109,8 @@
     const m = WORLD_MAPS[map];
     return m && m.haunt ? {radius:4, lights:[{x:m.haunt.rune.x+.5,y:m.haunt.rune.y+.5,r:1}],rects:[]} : null;
   }
+  const fog = (map, player) => !!(WORLD_MAPS[map]||{}).sinnohFog && !(((player.flags.sinnoh||{}).legends||{}).defogMaps||{})[map];
+  function defog(player) {const map=player.location.map;if(!fog(map,player))return false;const s=SinnohLegends.state(player);(s.defogMaps||(s.defogMaps={}))[map]=true;return true;}
   const flyTowns = ["SandgemTown", "JubilifeCity", "OreburghCity", "FloaromaTown", "EternaCity", "HearthomeCity", "VeilstoneCity", "PastoriaCity", "SolaceonTown", "CelesticTown", "CanalaveCity", "SnowpointCity", "SunyshoreCity", "PokemonLeague", "FightArea", "SurvivalArea", "ResortArea"];
   function visit(player, map) {
     if (typeof map !== "string") return;
@@ -149,7 +154,10 @@
     if(window.SinnohLegends)SinnohLegends.revive(player);
     f.sinnohLeagueClear=true;s.champion=true;s.league={active:false,step:5,completed:true};return entry;
   }
-  function isRoamer(player,species){const q=(player.flags.sinnoh||{}).sidequests||{};return species==="Mesprit"&&q.mespritRoaming||!!(window.SinnohLegends&&SinnohLegends.activeSpecies(player).includes(species));}
+  function isRoamer(player,species){const q=(player.flags.sinnoh||{}).sidequests||{};
+    const l=(player.flags.sinnoh||{}).legends||{};
+    if(map==="PlatinumExpWayward"&&l.miraJoined&&!l.miraEscorted)return{name:"Mira",team:team("PT_TRAINER_MIRA_WAYWARD_CAVE"),pic:"pt_mira"};
+    if(map==="PlatinumExpMarley"&&l.marleyJoined&&!l.marleyEscorted)return{name:"Marley",team:team("PT_TRAINER_MARLEY_VICTORY_ROAD"),pic:"pt_marley"};return species==="Mesprit"&&q.mespritRoaming||!!(window.SinnohLegends&&SinnohLegends.activeSpecies(player).includes(species));}
   function roamerWild(player,mon,table,rng=Math.random){
     const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map],active=q.mespritRoaming&&!q.mespritCaught?["Mesprit"]:[];
     if(window.SinnohLegends)active.push(...SinnohLegends.activeSpecies(player));
@@ -169,5 +177,5 @@
     if(outcome==="caught"){q.mespritCaught=true;q.mespritRoaming=false;delete q.mespritRecord;}
     else if(mon.fainted||mon.hp<=0){q.mespritDefeated=true;q.mespritRoaming=false;}
   }
-  window.Sinnoh = { isRoamer, quests, roamerWild, roamerRecord, finishRoamer, state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed, hauntShape, darkness, visit, flySpots, transition, snowballStopped, distortionSwitch, recordChampion };
+  window.Sinnoh = { fog, defog, isRoamer, quests, roamerWild, roamerRecord, finishRoamer, state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed, hauntShape, darkness, visit, flySpots, transition, snowballStopped, distortionSwitch, recordChampion };
 })();
