@@ -4,7 +4,7 @@ const root = path.join(__dirname, "..");
 global.window = global;
 global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g)) {
-  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna|galactic)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
+  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna|galactic|midgame)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
 }
 function fixture(choice = "Turtwig") {
   let p = Player.create("TEST"); p.location = { map: "SandgemTown_RowansLab", x: 6, y: 4, facing: "up" };
@@ -20,7 +20,7 @@ function fixture(choice = "Turtwig") {
 }
 async function main() {
   assert(/^[a-f0-9]{40}$/.test(PLATINUM_DATA.source.commit));
-  assert.equal(Object.keys(PLATINUM_DATA.trainers).length, 81);
+  assert.equal(Object.keys(PLATINUM_DATA.trainers).length, 181);
   for (const [id, t] of Object.entries(PLATINUM_DATA.trainers)) {
     assert(t.party.length > 0, id);
     for (const m of t.party) { assert(DEX[m.species], id); for (const move of m.moves || []) assert(MOVES[move], move); }
@@ -29,7 +29,7 @@ async function main() {
   for (const [map, people] of Object.entries(PLATINUM_DATA.additions)) for (const person of people) {
     assert.equal(World.blockAt(map, person.x, person.y).collision, 0, map + " " + person.script + " is on solid terrain");
     assert(fs.existsSync(path.join(root, "assets/world/sprites/" + person.sprite + ".png")));
-    assert(["up", "down", "left", "right"].some((d) => World.step({ map, x: person.x, y: person.y }, d).ok), "NPC must have an adjacent tile: " + person.script);
+    assert(["up", "down", "left", "right"].some((d) => World.step({ map, x: person.x, y: person.y }, d, null, person.water ? { surf: true } : undefined).ok), "NPC must have an adjacent tile: " + person.script);
   }
   const entrance = WORLD_MAPS.OreburghCity.warps.find((w) => w.map === "OreburghCity_Gym");
   assert.deepEqual(Object.assign({}, World.warpTarget(entrance), { facing: undefined }), { map: "OreburghCity_Gym", x: 5, y: 24, door: false, facing: undefined });
@@ -181,7 +181,7 @@ async function main() {
     for (const d of PLATINUM_DATA.doors) {
       const w = WORLD_MAPS[d.outside].warps.find(w => w.map === d.inside);
       assert.equal(World.warpTarget(w).map, d.inside);
-      assert.deepEqual([World.warpTarget(WORLD_MAPS[d.inside].warps[0]).x, World.warpTarget(WORLD_MAPS[d.inside].warps[0]).y], [d.x, d.y]);
+      assert.deepEqual([World.warpTarget(WORLD_MAPS[d.inside].warps[d.insideWarp || 0]).x, World.warpTarget(WORLD_MAPS[d.inside].warps[d.insideWarp || 0]).y], [d.x, d.y]);
     }
     assert.deepEqual(Sinnoh.team("PT_TRAINER_LEADER_GARDENIA").map(r => [r.species, r.level]), [["Turtwig", 20], ["Cherrim", 20], ["Roserade", 22]]);
   }

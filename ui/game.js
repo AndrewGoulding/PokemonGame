@@ -1839,6 +1839,12 @@
   // it from Kanto's too; and Hoenn's once you've been there. Fly goes to any
   // of them, the region you're in first.
   async function townMap(opts) {
+    if (opts && opts.fly && !opts.otherRegions && Sinnoh.owns(player.location.map)) {
+      Sinnoh.visit(player, player.location.map);
+      const spots = Sinnoh.flySpots(player);
+      const pick = await ask("Fly to which town?", spots.map(spot => ({label: spot.name, value: spot})).concat([{label: "Other regions", value: "other"}, {label: "Cancel", value: null}]));
+      if (pick !== "other") return pick;
+    }
     const T = window.TOWN_MAP, flying = !!(opts && opts.fly), f = player.flags;
     const pct = (n, of) => (n / of * 100) + "%";
     const map = player.location && player.location.map, johtoHere = !!JOHTO_MAP && inJohto(map);
@@ -8942,6 +8948,7 @@
   // The Town Map's sections you've been to (for its dungeon icons and the
   // Pokédex's AREA MODE).
   function visitSection(map) {
+    Sinnoh.visit(player, map);
     const sec = window.TOWN_MAP && window.TOWN_MAP.mapSections[map];
     if (!sec) return;
     const list = player.flags.visitedSections || (player.flags.visitedSections = []);
@@ -10655,7 +10662,7 @@
         diveHere: (avatar) => diveHere(avatar),
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
-        darkness: (map) => (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
+        darkness: (map) => Sinnoh.darkness(map) || (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
         faced: (map, x, y, surfing) => johtoSafari.faced(map, x, y, surfing),
         boulderFell: (def) => {
           // (3F's boulder through the hole: it's on 2F now.)

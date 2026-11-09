@@ -477,7 +477,7 @@
   const LEVEL_CAPS = {
     kanto: [14, 22, 26, 32, 47, 47, 52, 55],   // Brock, Misty, Lt. Surge, Erika, Koga, Sabrina, Blaine, Giovanni (raised: game/kanto-trainer-levels.js)
     johto: [13, 17, 19, 25, 31, 35, 35, 41],   // Falkner, Bugsy, Whitney, Morty, Chuck, Jasmine, Pryce (34), Clair
-    sinnoh: [14, 22, 26, 32, 37, 41, 44, 50], // Platinum Gym order; early campaign currently reaches Roark
+    sinnoh: [14, 22, 26, 32, 37, 41, 44, 50], // Platinum Gym order
     hoenn: [15, 19, 24, 29, 31, 33, 42, 46]    // Roxanne, Brawly, Wattson, Flannery, Norman, Winona, Tate & Liza, Juan
   };
   const regionOf = (map) => ((window.WORLD_MAPS && window.WORLD_MAPS[map]) || {}).region || "kanto";

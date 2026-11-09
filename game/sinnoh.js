@@ -21,11 +21,12 @@
   gym.warps[0].warp = door;
   for (const d of D.doors || []) {
     const outside = window.WORLD_MAPS[d.outside], inside = window.WORLD_MAPS[d.inside];
-    inside.warps[0].warp = d.existing == null ? outside.warps.length : d.existing;
-    const warp = { x: d.x, y: d.y, map: d.inside, warp: 0 };
+    const insideWarp = d.insideWarp || 0;
+    inside.warps[insideWarp].warp = d.existing == null ? outside.warps.length : d.existing;
+    const warp = { x: d.x, y: d.y, map: d.inside, warp: insideWarp };
     if (d.existing == null) outside.warps.push(warp); else outside.warps[d.existing] = warp;
     outside.collision[d.y * outside.width + d.x] = 0;
-    outside.behavior[d.y * outside.width + d.x] = 0x69;
+    outside.behavior[d.y * outside.width + d.x] = d.behavior == null ? 0x69 : d.behavior;
   }
   // The Works Key locks the entrance until the meadow rescue. A floor patch
   // uses the same collision/behaviour mechanism as the other regions.
@@ -50,6 +51,11 @@
   }
   const clockTrainers = ["PT_TRAINER_LASS_CAROLINE", "PT_TRAINER_AROMA_LADY_JENNA", "PT_TRAINER_AROMA_LADY_ANGELA"];
   function patches(map, player) {
+    const m = WORLD_MAPS[map];
+    if (map === "Route213") return ["shore"];
+    if (m && m.haunt) return ["rune" + hauntShape(player, m.haunt.room)];
+    if (map === "VeilstoneCity_Gym") return ["bags" + Math.min(3, state(player).mayleneBags | 0)];
+    if (map === "PastoriaCity_Gym") return ["water" + Math.min(3, state(player).wakeWater | 0)];
     if (map !== "ValleyWindworks" && map !== "EternaCity_Gym") return null;
     const s = state(player);
     if (map === "ValleyWindworks") return s.worksOpen ? [] : ["locked"];
@@ -77,5 +83,25 @@
   // the deck remains walkable; these maps must not share the same rule.
   const cyclingRequired = at => at.map === "CyclingRoad" || at.map === "CyclingRoadNorth_Gate" && at.y >= 10 || at.map === "CyclingRoadSouth_Gate" && at.y <= 5;
   const cyclingAllowed = player => player.badges.includes("forest") && !!state(player).jupiter && Player.itemCount(player, "bicycle") > 0;
-  window.Sinnoh = { state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed };
+  function hauntShape(player, room) { return Math.floor((player.trainerId >>> 0) / (room === 1 ? 1 : 3)) % (room === 1 ? 3 : 5); }
+  function darkness(map) {
+    const m = WORLD_MAPS[map];
+    return m && m.haunt ? {radius:4, lights:[{x:m.haunt.rune.x+.5,y:m.haunt.rune.y+.5,r:1}],rects:[]} : null;
+  }
+  const flyTowns = ["SandgemTown", "JubilifeCity", "OreburghCity", "FloaromaTown", "EternaCity", "HearthomeCity", "VeilstoneCity", "PastoriaCity", "SolaceonTown"];
+  function visit(player, map) {
+    if (typeof map !== "string") return;
+    const city = map.replace(/_PokemonCenter_1F$/, "");
+    if (!flyTowns.includes(city)) return;
+    const list = state(player).visitedCities || (state(player).visitedCities = []);
+    if (!list.includes(city)) list.push(city);
+  }
+  function flySpots(player) {
+    return (state(player).visitedCities || []).flatMap(city => {
+      const m = WORLD_MAPS[city], w = m && m.warps.find(w => w.map === city + "_PokemonCenter_1F");
+      if (!w || m.collision[(w.y + 1) * m.width + w.x]) return [];
+      return [{ map: city, x: w.x, y: w.y + 1, center: w.map, name: city.replace(/([a-z])([A-Z])/g, "$1 $2") }];
+    });
+  }
+  window.Sinnoh = { state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed, hauntShape, darkness, visit, flySpots };
 })();
