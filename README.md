@@ -3837,6 +3837,32 @@ node tools/build-sinnoh.js <path to the Essentials project>
 
 ## Layout
 
+Kanto and Sevii story scenes are organized under `ui/`:
+
+| Module | Responsibility |
+|---|---|
+| `kanto-story.js` | Rival encounters and Jessie & James ambushes |
+| `kanto-towns.js` | Oak, Leaf, Bill, town events, gifts and the S.S. Anne |
+| `kanto-gyms.js` | Gym Leaders, badges, TMs, rematches and Gym puzzles |
+| `kanto-rocket.js` | Rocket Hideout, Silph Co. and the Fighting Dojo |
+| `kanto-field.js` | Field encounters, Safari Zone and Seafoam events |
+| `kanto-league.js` | Late rivals, badge guards, Victory Road and the League |
+| `kanto-sevii.js` | Ferries, Bill and Celio, island quests and Trainer Tower |
+| `kanto-activities.js` | Berry Crush, Game Corner and casino activities |
+| `story-events.js` | Shared event dispatch, NPC visibility and trigger eligibility |
+
+`ui/game.js` supplies shared services and live state through `storyEnv`. Its
+getters and setters preserve the original shared bindings when a save is loaded
+or transient scene state changes. Modules defer reading these bindings until
+scenes run. Shared battle, menu, save, field-move and regional interpreter
+coordination remains in `ui/game.js`, along with shared story metadata.
+Existing save flags and formats are unchanged.
+
+`npm test` includes focused checks for story triggers, win/loss progression,
+Gym rewards, Oak's parcel, badge guards and Sevii unlocks. For representative
+browser paths, run `node tests/browser/kanto-story.js` (the helper accepts
+`PLAYWRIGHT_PATH` and `CHROMIUM` overrides).
+
 | Path | Contents |
 |---|---|
 | `data/` | Pokédex, moves, abilities, items, item sprite paths, learnsets, evolutions, overworld maps, natures, type chart, plus the battle hooks for conditions and moves |

@@ -9,6 +9,18 @@ const vm = require("vm");
 const assert = require("assert");
 
 const root = path.join(__dirname, "..");
+
+// Source-level content checks span the scene modules as well as the coordinator.
+// Strip the live-service qualifier so these assertions describe game content,
+// independently of which module owns a scene.
+function readGameSource() {
+  const files = ["ui/game.js", ...[...html.matchAll(/<script src="(ui\/(?:kanto-[^"]+|story-events)\.js)"><\/script>/g)].map((m) => m[1])];
+  return files.map((file) => {
+    const source = fs.readFileSync(path.join(root, file), "utf8").replace(/\benv\./g, "");
+    return file === "ui/game.js" ? source : source.replace(/^  /gm, "");
+  }).join("\n");
+}
+
 global.window = global;
 // A stand-in for the browser's localStorage, for game/save.js.
 const storage = {};
@@ -539,7 +551,7 @@ for (const share of [false, true]) {
   assert.strictEqual(evo("Charmander", 20, (r) => { r.item = "everstone"; }), null);
   assert.strictEqual(evo("Charmander", 20, (r) => { r.item = "eviolite"; }), null, "an Eviolite held: no evolving");
   {
-    const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const gj = readGameSource();
     assert(/\.concat\(canEvolve\(player\.party\[slot\]\) \? \[\{ label: "Evolve", value: "evolve" \}\] : \[\]\)/.test(gj), "the party screen's EVOLVE, under SUMMARY");
   }
   assert.strictEqual(evo("Charmander", 20, (r) => { r.hp = 0; }), null, "fainted Pokémon don't evolve");
@@ -710,7 +722,7 @@ for (const share of [false, true]) {
   // Its turn limit, more for more stars; the battle screen blows you out after it (raidTurns).
   assert.deepStrictEqual(RaidDens.TURNS.slice(1), [10, 12, 15, 20, 25]);
   assert.deepStrictEqual([RaidDens.LEVELS.slice(1), RaidDens.HP.slice(1)], [[12, 20, 35, 45, 75], [2, 3, 4, 6, 8]], "Scarlet and Violet's levels, bigger HP");
-  assert(/raidTurns: opts\.raid \? RaidDens\.TURNS\[opts\.raid\]/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+  assert(/raidTurns: opts\.raid \? RaidDens\.TURNS\[opts\.raid\]/.test(readGameSource()));
   assert(/battle\.raidTimedOut = true/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")));
   let seed = 7;
   const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -725,7 +737,7 @@ for (const share of [false, true]) {
   // (Move tutors: ₽10,000 a time. Gary at Victory Road's end: a step out of the cave first.
   // Kanto's Gym Leaders' rematches once you're Champion, but Giovanni's.)
   {
-    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const gameJs = readGameSource();
     assert(/const TUTOR_PRICE = 10000;/.test(gameJs));
     assert(/LOCALID_VICTORY_ROAD_RIVAL";\n.*\n    await Overworld\.act\(\[\{ who: "player", moves: \["walk_down"\] \}\]\);/.test(gameJs), "a step out first");
     assert(/FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f\.giovanniLeft;/.test(gameJs) && !/ViridianCity_Gym_EventScript_Giovanni: \{ id:/.test(gameJs), "no rematch for Giovanni");
@@ -736,7 +748,7 @@ for (const share of [false, true]) {
   // (No Master Ball for a raid's catch; Lostelle's dad stays where he is until your next visit;
   // a shop's long names in the small font; move descriptions wrapped to the summary's window.)
   {
-    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const gameJs = readGameSource();
     assert(/id !== "master-ball" && Player\.itemCount/.test(gameJs) && /LostellesDaddy" && \(f\.gameCornerScene \|\| 0\) >= 4/.test(gameJs));
     assert(/textWidth\(name\) > room \? "small"/.test(fs.readFileSync(path.join(root, "ui/shop-screen.js"), "utf8")));
     assert(/mv\.shortDesc \|\| "", 108\)/.test(fs.readFileSync(path.join(root, "ui/summary-screen.js"), "utf8")));
@@ -775,7 +787,7 @@ for (const share of [false, true]) {
     // all in the small font; selling as many as you have (not 99 at most);
     // a vitamin says which base stat rose.
     const bagJs0 = fs.readFileSync(path.join(root, "ui/bag-screen.js"), "utf8"), shopJs0 = fs.readFileSync(path.join(root, "ui/shop-screen.js"), "utf8");
-    const gJs0 = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const gJs0 = readGameSource();
     const vit = gJs0.slice(gJs0.indexOf('case "CeladonCity_DepartmentStore_5F_EventScript_ClerkVitamins"'));
     assert(!/exp-candy/.test(vit.slice(0, vit.indexOf("return;"))) && /"swift-wing"\]\)\);/.test(vit), "no Exp. Candies at Celadon's vitamin counter");
     assert(/smallNames: stock\.length > 0 && stock\.every\(\(id\) => \/\^\(tm\|hm\)\\d\/\.test\(id\)\)/.test(gJs0) && /\(it && st\.opts\.smallNames\) \|\| s\.textWidth\(name\) > room/.test(shopJs0), "TM counter: small names");
@@ -839,7 +851,7 @@ for (const share of [false, true]) {
     const hgss = { 82: "Sleep Talk", 87: "Swagger", 72: "Avalanche", 60: "Drain Punch", 88: "Pluck" };
     for (const p of jb) { const n = +/_TM(\d+)$/.exec(p.flag)[1]; if (hgss[n]) assert.strictEqual(Bag.machineMove(p.item), hgss[n], p.flag); }
     // Inviting: A invites, B takes back the last one invited.
-    const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const gJs = readGameSource();
     assert(/if \(v < 0\) \{\n\s*if \(!picked\.length\) return \[\];\n\s*cursor = can\.indexOf\(picked\.pop\(\)\);/.test(gJs) && /RaidDens\.joinedText\(allies\.map/.test(gJs), "raid invite keys");
   }
   // In battle: its HP times the stars' multiplier, at full; it Terastallizes when it moves.
@@ -890,7 +902,7 @@ for (const share of [false, true]) {
       const ally = ab.raidAllies[0];
       ab.damage(ally, ally.hp);
       assert(!ally.fainted && ally.hp === ally.maxhp && ab.events.some((e) => e[0] === "-text" && /Blaine's \w+ got back up/.test(e[2])), "an ally gets back up too");
-      const bsJs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8"), gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+      const bsJs = fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8"), gJs = readGameSource();
       assert(/raidAlliesPanel\(battle\.raidAllies\)/.test(bsJs) && /RaidDens\.allies\(den, raid, await inviteLeaders\(\)\)/.test(gJs) && /RaidDens\.ALLY_HP/.test(gJs));
     }
     // Fainting, as in Scarlet and Violet: back up at full HP, two turns off the limit.
@@ -937,7 +949,7 @@ for (const share of [false, true]) {
   const pdoor = house.warps.find((w) => w.map === "SaffronCity_MrPsychicsHouse_DenRoom");
   assert(pdoor && house.patches.denroom && proom.warps.every((w) => w.map === "SaffronCity_MrPsychicsHouse" && house.warps[w.warp] === pdoor));
   assert(house.collision[pdoor.y * house.width + pdoor.x] && proom.warps.every((w) => !proom.collision[w.y * proom.width + w.x]));
-  assert(/MrPsychicsHouse"\) return f\.gotTM29 \? \["denroom"\]/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+  assert(/MrPsychicsHouse"\) return f\.gotTM29 \? \["denroom"\]/.test(readGameSource()));
   // Celadon's Berry Farm (tools/build-berry-farm.js): its own map, through a gap in the trees
   // south of Celadon's Gym (the "farmpath" patch, always on), no sign; four beds of 17 in its garden;
   // the Grass den on its lawn.
@@ -945,7 +957,7 @@ for (const share of [false, true]) {
     const city = WORLD_MAPS.CeladonCity, farm = WORLD_MAPS.CeladonCity_BerryFarm, gd = RaidDens.DENS.find((d) => d.type === "Grass");
     assert(farm && city.connections.some((c) => c.map === farm.name && c.direction === "down") && farm.connections.some((c) => c.map === "CeladonCity" && c.direction === "up"));
     assert(city.patches.farmpath && city.patches.farmpath.collision.every(([, , c]) => c === 0) && !city.patches.berryfarm && !city.signs.some((sg) => /BerryFarm/.test(sg.script)));
-    assert(/CeladonCity"\) return \["farmpath"\]/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+    assert(/CeladonCity"\) return \["farmpath"\]/.test(readGameSource()));
     // (The way through: open from Celadon's lawn down into the farm.)
     assert([10, 11].every((x) => !farm.collision[x] && !farm.collision[farm.width + x]));
     assert(gd.map === farm.name && !farm.collision[gd.y * farm.width + gd.x]);
@@ -1033,7 +1045,7 @@ for (const share of [false, true]) {
   // (the last one planted) mustn't trip over its CLOSE BAG row.
   assert.deepStrictEqual(["fire-tera-shard", "water-tera-shard"].map((id) => Bag.sellPrice(id)), [500, 500]);
   // Faraway Island's Mew: Psychic, Nasty Plot, Aura Sphere, Ice Beam.
-  assert(/const FARAWAY_MEW_MOVES = \["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"\];/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "Mew's moves");
+  assert(/const FARAWAY_MEW_MOVES = \["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"\];/.test(readGameSource()), "Mew's moves");
   assert.deepStrictEqual(Party.create("Mew", 50, { moves: ["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"] }).moves.map((m) => m.name), ["Psychic", "Nasty Plot", "Aura Sphere", "Ice Beam"]);
   // Tall grass: its sprite in data/field-effects.js, drawn over whoever's in it.
   assert(FIELD_EFFECTS.tallGrass && FIELD_EFFECTS.tallGrass.px.length === 16 * 16 * 5 && FIELD_EFFECTS.tallGrass.palette.length >= 16);
@@ -1047,7 +1059,7 @@ for (const share of [false, true]) {
     assert(!r.hyper.includes("spe") && !Bag.canUseOn(r, "tin-bottle-cap", { stat: "spe" }));
   }
   {
-    const g = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const g = readGameSource();
     // Trainer Tower's BP shop in place of its Poké Mart, and the Egg move tutor beside the tutor.
     assert(/case "TrainerTower_Lobby_EventScript_MartClerk": await bpShop\(\); return;/.test(g) && /const BP_SHOP = \[\["bottle-cap", 25\], \["gold-bottle-cap", 75\], \["tin-bottle-cap", 10\]\]/.test(g), "the BP shop");
     assert(/\.concat\(\["hp-up", "protein", "iron", "calcium", "zinc", "carbos"\]\.map\(\(id\) => \[id, 2\]\)\)/.test(g) && /filter\(\(id\) => Bag\.mintNature\(id\)\)\.sort\(\)\.map\(\(id\) => \[id, 25\]\)/.test(g));
@@ -1075,7 +1087,7 @@ for (const share of [false, true]) {
   const mon = Object.assign(Party.create("Pikachu", 20), { teraType: "Electric" });
   assert(Bag.canUseOn(mon, "fire-tera-shard") && !Bag.canUseOn(mon, "electric-tera-shard") && !Bag.canUseOn(Party.create("Ogerpon", 70), "fire-tera-shard"));
   assert.strictEqual(Bag.TERA_SHARDS_NEEDED, 50);
-  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const gameJs = readGameSource();
   assert(/WILD_TERA_CHANCE = 0\.1/.test(gameJs) && /Object\.assign\(foe\.team\[0\], \{ teraType: wildTera, teraAce: true \}\)/.test(gameJs), "wild Tera Pokémon");
 }
 
@@ -1606,7 +1618,7 @@ for (const share of [false, true]) {
   for (const id of ["LOCALID_OAKS_LAB_PROF_OAK", "LOCALID_OAKS_LAB_RIVAL"]) assert(WORLD_MAPS.PalletTown_ProfessorOaksLab.people.some((p) => p.localId === id));
   assert(fs.existsSync(path.join(root, "assets/world/sprites/player_custom_run.png")), "running sprite sheet");
 
-  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const gameJs = readGameSource();
   for (const [, label] of gameJs.matchAll(/M\("(\w+)"\)/g)) assert(WORLD_MOVEMENTS[label], "missing movement " + label);
   for (const [, label] of gameJs.matchAll(/T\("(\w+)"\)/g)) assert(WORLD_TEXT[label], "missing story text " + label);
   // Walls, people and water block.
@@ -1875,7 +1887,7 @@ for (const share of [false, true]) {
 // Battle backgrounds: every terrain ui/game.js can pick is built, at 512x112
 // (the 240x112 scene, then plain ground for the slide-in).
 {
-  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const gameJs = readGameSource();
   const terrains = new Set(["plain", "grass", "building", "cave"]);
   for (const [, t] of gameJs.matchAll(/terrain: "(\w+)"/g)) terrains.add(t);
   for (const t of terrains) {
@@ -2072,7 +2084,7 @@ if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto")
 // The GS Ball (Crystal's): Prof. Oak's once you're through the Hall of Fame; Ilex Forest's shrine takes it, and Celebi comes (ui/game.js).
 {
   assert(ITEMS["gs-ball"] && ITEMS["gs-ball"].category === "key-items" && Bag.name("gs-ball") === "GS Ball" && Bag.sprite("gs-ball"), "the GS Ball, a Key Item with its picture");
-  const gJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const gJs = readGameSource();
   assert(/else if \(f\.gameClear && !f\.gotGsBall\) await oakGsBall\(\);/.test(gJs), "Oak gives it after the Hall of Fame");
   assert(/script === "hgss:D36R0101:scr_seq_D36R0101_012" && Player\.itemCount\(player, "gs-ball"\) > 0/.test(gJs) && /Party\.create\("Celebi", 50\)/.test(gJs), "the shrine: a Lv. 50 Celebi");
   assert(Object.keys(WORLD_MAPS).filter((n) => /PokemonCenter/.test(n)).every((n) => !WORLD_MAPS[n].cycling), "no cycling in Pokémon Centers");
@@ -2090,7 +2102,7 @@ if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto")
     "MossdeepCity_SpaceCenter_ObservationDeck-patch-stars.png", "MossdeepCity_SpaceCenter_2F-patch-sealed.png", "MossdeepCity_SpaceCenter_2F-patch-open.png"])
     assert(fs.existsSync(path.join(root, "assets/world/maps", f)), f);
   assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/zinnia.png")) && fs.existsSync(path.join(root, "assets/world/sprites/em_zinnia.png")), "Zinnia's pictures");
-  const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const gj = readGameSource();
   assert(/hoenn\.setFlag\("FLAG_SYS_GAME_CLEAR", true\)/.test(gj), "Hoenn's Hall of Fame sets FLAG_SYS_GAME_CLEAR");
   assert(/Party\.create\("Deoxys-Normal", 80\)/.test(gj) && /Party\.create\("Jirachi", 50\)/.test(gj) && /RayquazaScene\.play\(\$\("#overlay"\), 2,/.test(gj), "Deoxys, Jirachi, Rayquaza's flight");
   assert(DEX["Deoxys-Normal"] && DEX.Jirachi && DEX.Zinnia === undefined);
@@ -2105,7 +2117,7 @@ if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto")
   // (League.reset clears the League's trainers' flags: beaten once, they stay invited; the Hall of Fame counts for all.)
   assert.deepStrictEqual(names({ leagueEverBeaten: { TRAINER_ELITE_FOUR_BRUNO: true } }), ["Bruno"]);
   assert.deepStrictEqual(names({ gameClear: true }), ["Lorelei", "Bruno", "Agatha", "Lance", "Blue"], "the Elite Four and your rival, once you're Champion");
-  assert(/leagueEverBeaten \|\| \(player\.flags\.leagueEverBeaten = \{\}\)\)\[opts\.trainerId\] = true/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+  assert(/leagueEverBeaten \|\| \(player\.flags\.leagueEverBeaten = \{\}\)\)\[opts\.trainerId\] = true/.test(readGameSource()));
   // (Each brings one of their highest-levelled team: Lance's Champion team in Johto, Red's at Mt. Silver.)
   const lanceTop = RaidDens.teamOf(RaidDens.OTHERS.find((o) => o.name === "Lance"));
   assert(lanceTop.length && lanceTop.every((sp) => DEX[sp]), "Lance's team: " + lanceTop);
@@ -2257,7 +2269,7 @@ if (window.JOHTO_TOWN_MAP) {
   };
   const none = tries(1), march = tries(2), lullaby = tries(0.5);
   assert(march > none * 1.7 && lullaby < none * 0.65, "radio " + lullaby + " / " + none + " / " + march);
-  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
+  const gameJs = readGameSource(), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
   assert(/<script src="ui\/pokegear\.js"><\/script>/.test(html) && /key: "gear", label: hasPokenav\(\) \? "PokéNav" : "Pokégear"/.test(gameJs) && /gear\.step\(\)/.test(gameJs));
   assert(["PhoneCall", "RegisterPokegearCard", "GetPhoneBookRematch", "UnsetPhoneCallTrigger"].every((c) => scriptJs.includes('case "' + c + '"')));
   // Mom: not on the Pokégear, and saving nothing (she's Ethan's mother here, not yours); an older save's
@@ -2395,7 +2407,7 @@ if (window.JOHTO_TOWN_MAP) {
   assert.deepStrictEqual(saved.hyper.slice().sort(), Party.STAT_KEYS.slice().sort(), "saves keep Hyper Training");
   // (Fly to Victory Road, once you've been inside: outside its entrance, open ground by the cave's door.)
   {
-    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), r23 = WORLD_MAPS.Route23;
+    const gameJs = readGameSource(), r23 = WORLD_MAPS.Route23;
     assert(/TOWN_MAP\.fly\.KANTO_VICTORY_ROAD = \{ map: "Route23", x: 5, y: 29 \}/.test(gameJs) && /const flySec = /.test(gameJs));
     assert(!r23.collision[29 * r23.width + 5] && r23.warps.some((w) => w.map === "VictoryRoad_1F" && w.x === 5 && w.y === 28));
   }
@@ -2433,7 +2445,7 @@ if (window.JOHTO_TOWN_MAP) {
   const kurts = WORLD_MAPS.SlowpokeWell_B1F.people.filter((p) => p.sprite === "hgss_gantetsu");
   assert(kurts.length === 2 && kurts.some((p) => p.x === 27 && p.y === 26) && kurts.some((p) => p.x === 0 && p.y === 0), "one Kurt in Slowpoke Well, by the ladder");
   assert(/who === "obj_partner_poke" \? \(followerShown\(\) \? pal : null\)/.test(fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8"))
-    && /function followerWalk\(map, t\)/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "your walking Pokémon walks in a scene (Ilex Forest's Kimono Girl)");
+    && /function followerWalk\(map, t\)/.test(readGameSource()), "your walking Pokémon walks in a scene (Ilex Forest's Kimono Girl)");
   // (Scenes walked Heart & Soul's way, sceneMoves: Lyra to her grandpa and into the Day-Care by its side door, the
   // Day-Care Man over to you with his number, Lyra up the stairs of whichever Underground room you came in by.)
   assert(WORLD_MAPS.Route34.sceneMoves["obj_R34_var_1 _049C"][0] === "to:30,34" && WORLD_MAPS.Route34.sceneMoves["obj_R34_gsoldman1 _0130"]
@@ -2442,7 +2454,7 @@ if (window.JOHTO_TOWN_MAP) {
     && WORLD_MAPS.GoldenrodCity_Tunnel_1F.sceneMoves["obj_D37R0101_var_1 _01C4 @x<14"][0] === "at:4,3", "the Underground's Lyra, in either room");
   assert(WORLD_MAPS.Route34.people.some((p) => p.script === "Johto_DaycareMan") && WORLD_MAPS.Route34_Daycare.people.some((p) => p.script === "Johto_DaycareLady"),
     "Route 34's Day-Care couple at work");
-  assert(/johto: \{ list: "johtoDayCare", eggs: "johtoDayCareEggs"/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "its own Day-Care, not Four Island's");
+  assert(/johto: \{ list: "johtoDayCare", eggs: "johtoDayCareEggs"/.test(readGameSource()), "its own Day-Care, not Four Island's");
   // (This game's changes: the Ruins of Alph's grass at Lv. 7-11; Houndour, Slugma and Larvitar on Johto's routes.)
   assert(WORLD_MAPS.RuinsOfAlph.wild.slots.every((s) => s.min >= 7 && s.max <= 11), "the Ruins of Alph at Lv. 7-11");
   assert(WORLD_MAPS.Route37.wild.slots.some((s) => s.species === "Houndour") && WORLD_MAPS.Route42.wild.slots.some((s) => s.species === "Slugma")
@@ -2542,7 +2554,7 @@ if (window.JOHTO_TOWN_MAP) {
     for (const z of Object.values(JOHTO_SCRIPTS.zones)) for (const c of z.cmds) for (const a of c.slice(1)) if (/^hm\d+$/.test(a)) gives.add(a);
     assert(gives.has("hm06") && gives.has("hm08"), "HGSS's HMs as this game's: " + [...gives]);
     // (HM08 Rock Climb is Prof. Oak's, in Kanto, in HGSS: here he calls with it as you get the Rising Badge.)
-    assert(/if \(b === "rising"\) player\.flags\.rockClimbDue = true;/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+    assert(/if \(b === "rising"\) player\.flags\.rockClimbDue = true;/.test(readGameSource()));
   }
   // Scripts' warps by HGSS's map numbers lead to their maps (Ecruteak's Gym's pit back to its entrance).
   assert.strictEqual(JOHTO_SCRIPTS.mapConsts[80], "EcruteakCity_Gym");
@@ -2563,7 +2575,7 @@ if (window.JOHTO_TOWN_MAP) {
   }
   assert.deepStrictEqual(JOHTO_LEAGUE.map((r) => WORLD_TRAINERS[r.trainer].name), ["Will", "Koga", "Bruno", "Karen", "Lance"]);
   // The S.S. Aqua: off at Vermilion's dock once it's arrived there, and its sailor back to Olivine.
-  assert(/function ssAquaExit\(\)/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")) && /^SSAqua_OlivinePort/.test(WORLD_MAPS.SSAqua_1F.warps[0].map));
+  assert(/function ssAquaExit\(\)/.test(readGameSource()) && /^SSAqua_OlivinePort/.test(WORLD_MAPS.SSAqua_1F.warps[0].map));
   // The Magnet Train (tools/build-magnet-train.js, ui/magnet-train.js): Saffron's station, Kanto's, and
   // its new door in FireRed's Saffron; no Pass at the gates; Goldenrod's always runs, Saffron's once
   // you're Champion; the ride off to the other station's platform.
@@ -2659,7 +2671,7 @@ if (window.JOHTO_TOWN_MAP) {
       G.enter("CianwoodCity_Gym");
       assert(!G.winch(), "the falls run again each time you come in");
     }
-    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
+    const gameJs = readGameSource(), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
     assert(/case "VioletGymElevator"/.test(scriptJs) && /case "CianwoodGymTurnWinch"/.test(scriptJs), "the Gyms' script commands run");
     assert(/darkness: \(map\) => .*gymmicks\.darkness\(map\)/.test(gameJs) && /gymmicks\.enter\(m\)/.test(gameJs));
     // (Found playing the story: Falkner was away on Mondays from the start, HGSS's
@@ -2815,7 +2827,7 @@ if (window.JOHTO_TOWN_MAP) {
       assert(MC[w[1]] === "RuinsOfAlph_" + to && !m.collision[w[4] * m.width + w[3]], z + " falls into " + to + ", onto its floor");
     }
     assert(/if \(\/\^MAP_\/\.test\(tok\)\) return tok;/.test(fs.readFileSync(path.join(root, "tools/lib/hgss-script.js"), "utf8")), "scripts' maps by name, for Warp");
-    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const gameJs = readGameSource();
     assert(/alphReaction\("escape-rope"\)/.test(gameJs) && /alphReaction\("water-stone"\)/.test(gameJs) && /chamberReaction\(player\.location\.map, Overworld\.position\(\), "flash"\)/.test(gameJs));
     assert(/JohtoAlph\.locked\(player\.location\.map, alphSolved\(\)\)/.test(gameJs) && /JohtoAlph\.unownLetter\(at\.map, alphSolved\(\)\)/.test(gameJs) && /JohtoAlph\.recordCaught/.test(gameJs));
     // The Unown Report (overlay 113): a book, the cover's two pages, the Unown 7 to a page (14 to a
@@ -2875,7 +2887,7 @@ if (window.JOHTO_TOWN_MAP) {
     assert(h.fleeStage === 0 && h.catchStage <= 2, "Bait, down to stage 0");
     assert.strictEqual(Safari.odds(Object.assign({}, h, { catchStage: 6 }), { hp: 100, maxhp: 100, status: "" }), Math.floor(Math.floor(window.DEX.Geodude.captureRate * 15 / 10) * 100 / 300));
     assert.strictEqual(Safari.watch(h), "watching");
-    const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
+    const gameJs = readGameSource(), scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8");
     assert(/case "SafariZoneAction"/.test(scriptJs) && /case "ScrCmd_716"/.test(scriptJs) && /johtoSafari\.patches\(map\)/.test(gameJs), "the Safari Zone's script commands and patches");
   }
   // Object Arrangement (ui/johto-safari.js, ui/johto-safari-objects.js): HGSS's
@@ -2999,7 +3011,7 @@ if (window.JOHTO_TOWN_MAP) {
   const ge = gate.warps.findIndex((w) => w.map === "Route28");
   assert(ge >= 0 && WORLD_MAPS.Route28.warps.filter((w) => w.map === "Route22_NorthEntrance").every((w) => w.warp === ge) && gate.patches["johto-east"]);
   assert(gate.people.some((p) => p.script === guard.script && p.x === gate.warps[ge].x - 1 && p.y === gate.warps[ge].y), "a guard before the way east");
-  assert(/JohtoGuard"\) return !f\.gameClear;/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "he's there until you're Champion");
+  assert(/JohtoGuard"\) return !f\.gameClear;/.test(readGameSource()), "he's there until you're Champion");
 }
 
 // The Pokéathlon (tools/build-pokeathlon.js's tools/lib/johto-pokeathlon.generated.js,
@@ -3062,7 +3074,7 @@ if (window.JOHTO_TOWN_MAP) {
   assert(PK.FRIENDSHIP.hurdle === 3000 && PK.FRIENDSHIP.relay === 12288, "the Friendship room's marks");
   // (The Dome's own commands, from ui/johto-script.js; the Athlete Shop paid in points.)
   assert(/window\.Pokeathlon\.handles\(op\)/.test(fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8")));
-  assert(/Pokeathlon\.attach\(/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")));
+  assert(/Pokeathlon\.attach\(/.test(readGameSource()));
   assert(/st\.opts\.currency/.test(fs.readFileSync(path.join(root, "ui/shop-screen.js"), "utf8")));
 }
 
@@ -3524,7 +3536,7 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
 // No VS Seeker (this game's own): a Trainer you've beaten offers "Rematch?" when you talk to them; an old save's
 // VS Seeker is taken out of the Bag. The S.S. Anne's resting woman's lines are there.
 {
-  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const gameJs = readGameSource();
   assert(!/fieldAction = vsSeeker/.test(gameJs) && /async function trainerRematch\(person\)/.test(gameJs) && /\["Rematch\?", "Never mind"\]/.test(gameJs));
   assert(/const REMATCH_TARGET = \[0, 20, 25, 30, 50, 55\], REMATCH_BUMP = \[0, 2, 4, 6, 10, 14\];/.test(gameJs) && /team: rematchTeam\(foeId\)/.test(gameJs), "Kanto's rematches grow with the story");
   // Johto's and Hoenn's "Rematch?": their own games' teams (the Pokégear's tiers; Emerald's rematch table, its later
@@ -3790,7 +3802,7 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   assert(Mining.ENERGY_COST.bomb > Mining.ENERGY_COST.hammer);
   assert.strictEqual(Mining.ENERGY_COST.bomb, 6, "the bomb costs 6 energy");
   {
-    const g = fs.readFileSync(path.join(root, "ui/game.js"), "utf8"), o = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8");
+    const g = readGameSource(), o = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8");
     // (The fossil doctors revive any fossil in your Bag: those dug up mining too.)
     assert(/const can = FOSSILS\.filter\(\(fo\) => Player\.itemCount\(player, fo\.item\)\)/.test(g));
     for (const t of Mining.TREASURES.filter((t) => /fossil|amber/.test(t[0]))) assert(new RegExp('item: "' + t[0] + '"').test(g), t[0] + " can be revived");
@@ -5226,7 +5238,7 @@ for (let seed = 1; seed <= GEN8; seed++) {
     b.choose("p1", mv(0)); b.choose("p2", OpponentAI.choose(b, "p2", mulberry32(1)));
     const o = b.sides.p2.pokemon[0];
     assert.deepStrictEqual([o.terastallized, o.types], ["Dragon", ["Dragon"]], "Brock's Onix: Tera Dragon, first turn");
-    const gameSrc = fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8");
+    const gameSrc = readGameSource();
     assert(/Object\.assign\(onix, \{ teraType: "Dragon", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_brock", tera: true/.test(gameSrc), "Brock's Onix");
     assert(/Object\.assign\(starmie, \{ teraType: "Psychic", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_misty", tera: true/.test(gameSrc), "Misty's Starmie");
     assert(/r\.species === "Raichu"\), \{ teraType: "Water", teraAce: true \}\)/.test(gameSrc) && /pic: "leader_lt_surge", tera: true/.test(gameSrc), "Lt. Surge's Raichu");
@@ -5254,7 +5266,8 @@ for (let seed = 1; seed <= GEN8; seed++) {
     // Leaf on Route 22 before the League (Mega Dragonite, Tera Flying), Gary at the end of
     // Victory Road (his Growlithe an Arcanine, about level 50), and Red the Champion (Mega Charizard Y).
     // Gary's second battle (Cerulean): his Eevee knows Shadow Ball and Terastallizes into a Ghost type.
-    assert(/concat\(\["Shadow Ball"\]\);\n\s*const eevee = Object\.assign\(Party\.create\("Eevee"[^\n]*teraType: "Ghost", teraAce: true \}\);\n\s*const team = base[^\n]*\n[^\n]*pic: "rival_early", tera: true/.test(gameSrc), "Gary's Cerulean Eevee");
+    const kantoSrc = fs.readFileSync(path.join(__dirname, "../ui/kanto-story.js"), "utf8");
+    assert(/concat\(\["Shadow Ball"\]\);\n\s*const eevee = Object\.assign\(Party\.create\("Eevee"[^\n]*teraType: "Ghost", teraAce: true \}\);\n\s*const team = base[^\n]*\n[^\n]*pic: "rival_early", tera: true/.test(kantoSrc), "Gary's Cerulean Eevee");
     assert(/Party\.create\("Politoed", 53[^\n]*\n[^\n]*Object\.assign\(Party\.create\("Dragonite", 58, \{ ivs: 31 \}\), \{ item: "dragoninite", teraType: "Flying", teraAce: true \}\)/.test(gameSrc), "Leaf's Route 22 team");
     assert(/const VICTORY_ROAD_RIVAL_TEAM = \[\["Pidgeot", 55\], \["Arcanine", 55\], \["Gyarados", 55, "gyaradosite"\]/.test(gameSrc) && /at\.map === "Route23" && at\.x === 18 && at\.y === 28/.test(gameSrc), "Gary at the end of Victory Road");
     assert(/const CHAMPION_TEAM = \[\["Pikachu", 58, 72\], \["Espeon", 59, 72\], \["Blastoise", 60, 73\], \["Venusaur", 60, 73\], \["Snorlax", 61, 74\], \["Charizard", 63, 75, "charizardite-y"\]\]/.test(gameSrc)
@@ -5320,7 +5333,7 @@ for (let seed = 1; seed <= GEN8; seed++) {
     old.flags.bp = 42; old.flags.hoennFrontier = { bp: 17, team: [] };
     const plus = Player.newGamePlus(old, "RED", 0);
     assert.deepStrictEqual([plus.flags.bp, plus.flags.hoennFrontier], [42, { bp: 17 }], "Battle Points through New Game +");
-    assert(/name: "DEBUG", action: "debug"/.test(fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8")), "save, load and debug on the Option screen"); }
+    assert(/name: "DEBUG", action: "debug"/.test(readGameSource()), "save, load and debug on the Option screen"); }
   // Sinnoh's first maps (tools/build-sinnoh.js): Twinleaf Town up into Route 201, the lake's entrance, the grass's Pokémon.
   { const tw = World.blockAt("TwinleafTown", 17, -1), lake = World.step({ map: "VerityLakefront", x: 10, y: 3 }, "up");
     assert.deepStrictEqual([tw.map, tw.x, tw.y, lake.warp && lake.warp.map, lake.warp && lake.warp.y], ["Route201", 15, 29, "LakeVerity", 42], "Sinnoh's maps join");
@@ -5337,7 +5350,7 @@ for (let seed = 1; seed <= GEN8; seed++) {
     assert.deepStrictEqual([sinnohMaps.length >= 160, pc.warp && pc.warp.map, gate.warp && gate.warp.map,
       WORLD_MAPS.CanalaveCity.people.some((p) => p.ferry && p.ferry.map === "IronIsland"), Object.keys(window.SINNOH_BERRY_TREES).length > 100],
       [true, "OreburghCity_PokemonCenter_1F", "Oreburgh_Gate", true, true], "all of Sinnoh");
-    assert(/afterScript = sailToSinnoh/.test(fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8")), "the S.S. Tidal sails to Sinnoh"); }
+    assert(/afterScript = sailToSinnoh/.test(readGameSource()), "the S.S. Tidal sails to Sinnoh"); }
   // Tera STAB: 2x for a Tera Type it already had, 1.5x for its own types or a new one; the 60-power floor.
   { const tera = (sp, t) => Object.assign(Damage.makePokemon(sp, { level: 50 }), { terastallized: t, teraBaseTypes: window.DEX[sp].types.slice(), types: t === "Stellar" ? window.DEX[sp].types.slice() : [t] });
     const d = Damage.makePokemon("Snorlax", { level: 50 }), plain = Damage.makePokemon("Pikachu", { level: 50 });
@@ -6353,7 +6366,7 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
 // ---------- Cerulean Cave, the League's door, Lorelei's dolls (and no Navel Rock or Birth Island) ----------
 {
   const W = (m) => { assert(WORLD_MAPS[m], m + " is built"); return WORLD_MAPS[m]; };
-  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const gameJs = readGameSource();
   // Cerulean Cave's guard stands in the way (just below the way in) until
   // Celio has the Sapphire (FLAG_SYS_CAN_LINK_WITH_RS), Champion or not.
   assert(!Sevii.ceruleanCaveOpen({}) && !Sevii.ceruleanCaveOpen({ gameClear: true }));
@@ -6469,7 +6482,7 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
 
 // ---------- The National Pokédex, from the start ----------
 {
-  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const gameJs = readGameSource();
   const dexJs = fs.readFileSync(path.join(root, "ui/pokedex-screen.js"), "utf8");
   const p = Player.create("Red");
   assert(!Player.nationalDex(p));
@@ -6544,7 +6557,7 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
 // rematch once you're Champion; the in-battle Summary of a Mega; the Mega
 // Stones (item balls on reachable tiles, and the gifts).
 {
-  const gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const gameJs = readGameSource();
   assert(/moveTutor\("Thunder Wave", "tutorThunderWave", "Text_ThunderWave"\)/.test(gameJs) && /if \(price === undefined\) price = TUTOR_PRICE;/.test(gameJs));
   assert.deepStrictEqual([...gameJs.matchAll(/moveTutor\("([^"]+)"[^;]*null/g)].map((m) => m[1]), ["Mimic"]);
   assert(!/MoveCanOnlyBeLearnedOnce/.test(gameJs), "no tutor teaches only once");
@@ -6842,7 +6855,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   for (const s of ["Game_EventScript_PokerTable", "Game_EventScript_BlackjackTable"]) assert(room.signs.some((g) => g.script === s), s);
   for (const s of ["Game_EventScript_PokerDealer", "Game_EventScript_BlackjackDealer"]) assert(room.people.some((p) => p.script === s), s);
   assert(!room.people.some((p) => /Mahjong/.test(p.script || "")), "no mahjong dealer: its players ask you to sit in");
-  const gameSrc = fs.readFileSync(path.join(__dirname, "../ui/game.js"), "utf8");
+  const gameSrc = readGameSource();
   assert(/"Want to play with us\?\\nIt costs " \+ MAHJONG_BUY_IN \+ " Coins for the buy-in\."/.test(gameSrc) && !/gives\\nyou their seat/.test(gameSrc), "the mahjong players' invitation");
   assert(/mahjongCrowd = null;/.test(gameSrc), "new mahjong players after every game");
   assert.strictEqual(SUMMARY_SCREEN.abilityText["Embody Aspect (Teal)"], "Terastal raises Speed.");
@@ -6992,7 +7005,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert.deepStrictEqual(Array.from(AB.counts({ "red-apricorn": 3, "black-apricorn": 120 })), [3, 0, 0, 0, 0, 0, 99]);
     assert(AB.SPOTS.length === 7 && AB.spotAt(27, 17) === 0 && AB.spotAt(75, 33) === 1 && AB.spotAt(50, 145) === 7 && AB.spotAt(200, 20) === -1, "the box's holes, top to bottom in turn, and its plate");
     assert(fs.existsSync(path.join(root, "assets/apricorn-box/box.png")));
-    const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const gj = readGameSource();
     assert(/"unown-report", "apricorn-box", "pokeblock-case"\]\.concat\(RODS\)/.test(gj) && /item === "apricorn-box"\) await apricornBox\("view"\)/.test(gj) && /apricornBox: \(\) => apricornBox\("give"\)/.test(gj), "the Bag and Kurt open the Apricorn Box");
   }
   const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"), owJs = fs.readFileSync(path.join(root, "ui/overworld.js"), "utf8");
@@ -7030,7 +7043,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     ["Marowak", "Necrozma", "Mr. Mime", "Venusaur", "Porygon-Z", "Ho-Oh", "Nidoran♀"]);
   assert.strictEqual(Party.displayName(Party.create("Marowak-Alola", 30)), "Marowak");
   // The Bug-Catching Contest: once each time you beat the Elite Four, not by the weekday.
-  const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"), gameJs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+  const scriptJs = fs.readFileSync(path.join(root, "ui/johto-script.js"), "utf8"), gameJs = readGameSource();
   assert(/const contestWeekday = /.test(scriptJs) && /s\.contestRound = \(s\.contestRound \|\| 0\) \+ 1; johto\.setFlag\("FLAG_DAILY_DID_BUG_CONTEST", false\)/.test(gameJs));
 }
 
@@ -7153,7 +7166,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     }
     assert(DC.furnish("LittlerootTown", rng, 3).length === 0, "nowhere to furnish but a base");
     assert(DC.contextOf("SecretBase_RedCave1") === null, "no base, no context");
-    const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const gj = readGameSource();
     assert(/const NPC_BASE_LOOKS = \["OBJ_EVENT_GFX_YOUNGSTER", "OBJ_EVENT_GFX_BUG_CATCHER", "OBJ_EVENT_GFX_RICH_BOY", "OBJ_EVENT_GFX_CAMPER", "OBJ_EVENT_GFX_MAN_3",/.test(gj) && /"OBJ_EVENT_GFX_LASS", "OBJ_EVENT_GFX_GIRL_3", "OBJ_EVENT_GFX_WOMAN_2", "OBJ_EVENT_GFX_PICNICKER", "OBJ_EVENT_GFX_WOMAN_5"\]/.test(gj), "sSecretBaseOwnerGfxIds");
     assert(/const NPC_BASE_CLASSES = \["youngster", "bug_catcher", "rich_boy", "camper", "cooltrainer_m", "lass", "school_kid_f", "lady", "picnicker", "cooltrainer_f"\]/.test(gj), "sSecretBaseFacilityClasses");
     assert(/if \(npc\) \{ player\.flags\.hoennVisit = npc\.id; return hoenn\.scriptOf\(\{ script: "SecretBase_EventScript_Enter" \}\); \}/.test(gj) && /case "GetSecretBaseOwnerAndState": \{ const v = hoennVisiting\(\); api\.setVar\("VAR_0x8004", v \? v\.type : 0\); api\.set\(v && v\.battledDay === dayKey\(\) \? 1 : 0\);/.test(gj)
@@ -7274,7 +7287,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       assert(window.HoennFrontier.create && s.bp >= 1, "Battle Points for the Pyramid");
       assert(spoken.some((x) => /here is your prize/.test(String(x))) && spoken.some((x) => /received an? (HP Up|Protein|Iron|Calcium|Carbos|Zinc|hp-up|protein|iron|calcium|carbos|zinc)/i.test(String(x))), "and a prize, a vitamin for a short streak: " + spoken.slice(-4).join("|"));
       // (RETIRE on the Start menu in the Pyramid: BattlePyramid_Retire, the challenge lost and back to the lobby.)
-      const gjs = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+      const gjs = readGameSource();
       assert(window.HOENN_SCRIPTS.s.BattlePyramid_Retire && /key: "retirePyramid", label: "Retire"/.test(gjs) && /runHoenn\("BattlePyramid_Retire"\)/.test(gjs), "Retire in the Pyramid");
       // (Hoenn's berry picking: the Berry Pouch in Petalburg Woods, and a tree's berries picked as the Berry Farm's, for farming XP.)
       assert(/"PetalburgWoods"\]/.test(gjs) && /const hoennBerries = BerryFarm\.create\(berryEnv,/.test(gjs) && !/pickGame: \(berry, n\) => pickingGame/.test(gjs), "Hoenn's berries are picked as the Berry Farm's");
@@ -7359,7 +7372,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
       return pb.special("GetFirstFreePokeblockSlot", api);
     }).then(() => assert.strictEqual(vars.VAR_RESULT, 1));
     assert(scripts.indexOf("ui/hoenn-pokeblock.js") > scripts.indexOf("ui/hoenn-contest.js") && scripts.indexOf("ui/berry-blender.js") < scripts.indexOf("ui/game.js"), "the Pokéblock modules load");
-    const gj = fs.readFileSync(path.join(root, "ui/game.js"), "utf8");
+    const gj = readGameSource();
     assert(/if \(await hoennPokeblock\.special\(name, api\)\) return true;/.test(gj) && /item === "pokeblock-case"/.test(gj), "the game asks it");
     assert(/const c = r\.contest \|\| \{\};/.test(fs.readFileSync(path.join(root, "ui/hoenn-contest.js"), "utf8")), "contests count what Pokéblocks gave");
     // Hoenn's Safari Zone: Emerald's areas (named apart from Kanto's), rules (engine/safari.js's hoenn mode) and scripts.
@@ -7473,7 +7486,7 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     const hf = fs.readFileSync(path.join(root, "ui/hoenn-frontier.js"), "utf8");
     assert(/if \(ref\.kind === "apprentice"\) return apprenticeTrainer\(ref\.idx\);/.test(hf) && /else if \(t\.apprentice\) foe = t\.party\.map\(\(p\) => apprenticeMon\(t, p, level\)\);/.test(hf), "they battle with what you taught");
     assert(/case "ShowEasyChatScreen": \{\s*if \(v\("VAR_0x8004"\) !== 19\) return false;/.test(hf), "the win speech in place of the Easy Chat screen");
-    assert(/chooseItem: async \(\) => \{/.test(fs.readFileSync(path.join(root, "ui/game.js"), "utf8")), "the Bag opens to suggest an item");
+    assert(/chooseItem: async \(\) => \{/.test(readGameSource()), "the Bag opens to suggest an item");
     assert(F.state().A && spoken.length >= 0, "the Apprentice as a trainer");
     const at = F.state(); at.A = { kind: "apprentice", idx: 0 };
     H.setVar("VAR_0x8004", 0); battles = 0;

@@ -3,11 +3,715 @@
 // happens after battles (prize money, catching, blacking out, evolution).
 // Depends on: game/*.js, ui/screen.js, ui/battle-screen.js
 //
-// The game saves to this browser after every battle and every change made from
-// the party screen, and can download / load a save file as a backup.
+// The player saves manually to this browser, with reminders during exploration,
+// and can download / load a save file as a backup.
 
 (function () {
   "use strict";
+
+  // Scene modules share live bindings, including replacement saves and transient state.
+  // Getters defer access until a scene runs, after game initialization is complete.
+  const storyEnv = {
+    get $() { return $; },
+    get BIG_MON_SIZES() { return BIG_MON_SIZES; },
+    get BRAILLE_SIGNS() { return BRAILLE_SIGNS; },
+    get BT_ENTRY() { return BT_ENTRY; },
+    get BT_NURSE() { return BT_NURSE; },
+    get BT_RECEPTION() { return BT_RECEPTION; },
+    get BT_SIGN() { return BT_SIGN; },
+    get CELADON_TMS() { return CELADON_TMS; },
+    get CELIO() { return CELIO; },
+    get CHAMPION_TEAM() { return CHAMPION_TEAM; },
+    get CHANSEY_DANCE() { return CHANSEY_DANCE; },
+    get CINNABAR_BILL() { return CINNABAR_BILL; },
+    get CINNABAR_QUIZ() { return CINNABAR_QUIZ; },
+    get CINNABAR_SEAGALLOP() { return CINNABAR_SEAGALLOP; },
+    get CROWD_FACING() { return CROWD_FACING; },
+    get CROWD_SAYS() { return CROWD_SAYS; },
+    get CROWD_SPRITES() { return CROWD_SPRITES; },
+    get CRUSH_NAMES() { return CRUSH_NAMES; },
+    get DAY_CARES() { return DAY_CARES; },
+    get DC() { return DC; },
+    get DOJO_MASTER() { return DOJO_MASTER; },
+    get DOJO_REMATCH() { return DOJO_REMATCH; },
+    get DOJO_SECOND_LEVEL() { return DOJO_SECOND_LEVEL; },
+    get DRINKS() { return DRINKS; },
+    get ELEVATOR_SHAKES() { return ELEVATOR_SHAKES; },
+    get ELITE_FOUR_SCRIPTS() { return ELITE_FOUR_SCRIPTS; },
+    get EMBER_GRUNTS() { return EMBER_GRUNTS; },
+    get FISHING_LEVELS_EXPLAINED() { return FISHING_LEVELS_EXPLAINED; },
+    get FOSSILS() { return FOSSILS; },
+    get FUCHSIA_SIGN_MONS() { return FUCHSIA_SIGN_MONS; },
+    get G() { return G; },
+    get GC_BIKER() { return GC_BIKER; },
+    get GC_DADDY() { return GC_DADDY; },
+    get GC_LOSTELLE() { return GC_LOSTELLE; },
+    get HIDEOUT_GIOVANNI_EXTRA() { return HIDEOUT_GIOVANNI_EXTRA; },
+    get HIDEOUT_LEAF() { return HIDEOUT_LEAF; },
+    get ICEFALL_GRUNT2() { return ICEFALL_GRUNT2; },
+    get ICEFALL_LORELEI() { return ICEFALL_LORELEI; },
+    get ITEM_BALLS() { return ITEM_BALLS; },
+    get KANTO_REMATCH() { return KANTO_REMATCH; },
+    get LAB_OAK() { return LAB_OAK; },
+    get LAB_RIVAL() { return LAB_RIVAL; },
+    get LAB_RIVAL_NAME() { return LAB_RIVAL_NAME; },
+    get LEAF() { return LEAF; },
+    get LEAGUE_IDS() { return LEAGUE_IDS; },
+    get LEAGUE_TEXT() { return LEAGUE_TEXT; },
+    get M() { return M; },
+    get MAHJONG_BUY_IN() { return MAHJONG_BUY_IN; },
+    get MAHJONG_CHAIRS() { return MAHJONG_CHAIRS; },
+    get MAX_COINS() { return MAX_COINS; },
+    get MEGA_AIDE() { return MEGA_AIDE; },
+    get MEGA_ARENA() { return MEGA_ARENA; },
+    get MEGA_CAST() { return MEGA_CAST; },
+    get MEGA_PLACES() { return MEGA_PLACES; },
+    get MEGA_RIVALS() { return MEGA_RIVALS; },
+    get MEGA_SPOT() { return MEGA_SPOT; },
+    get MEMORIAL_MAN() { return MEMORIAL_MAN; },
+    get OAK() { return OAK; },
+    get ONE_BILL() { return ONE_BILL; },
+    get OUTDOORS() { return OUTDOORS; },
+    get P5() { return P5; },
+    get PC_BILL() { return PC_BILL; },
+    get PEWTER_FOSSIL_SCIENTIST() { return PEWTER_FOSSIL_SCIENTIST; },
+    get POWDER_PRIZES() { return POWDER_PRIZES; },
+    get PRIZES() { return PRIZES; },
+    get PRIZE_MENU() { return PRIZE_MENU; },
+    get RED_SILPH_PICK() { return RED_SILPH_PICK; },
+    get RED_SILPH_ROSTER() { return RED_SILPH_ROSTER; },
+    get RIVAL_PICK() { return RIVAL_PICK; },
+    get ROUTE23_BADGES() { return ROUTE23_BADGES; },
+    get SAFARI_EXIT() { return SAFARI_EXIT; },
+    get SAFARI_GATE() { return SAFARI_GATE; },
+    get SIGN_LADY() { return SIGN_LADY; },
+    get SILPH_DOORS() { return SILPH_DOORS; },
+    get SILPH_FLOORS() { return SILPH_FLOORS; },
+    get SILPH_GIOVANNI_EXTRA() { return SILPH_GIOVANNI_EXTRA; },
+    get SILPH_RED() { return SILPH_RED; },
+    get SILPH_RIVAL_TEAM() { return SILPH_RIVAL_TEAM; },
+    get SILPH_WORKERS() { return SILPH_WORKERS; },
+    get SPECIAL() { return SPECIAL; },
+    get STAGE_TWO() { return STAGE_TWO; },
+    get STARTER_BALLS() { return STARTER_BALLS; },
+    get STARTER_LEVEL() { return STARTER_LEVEL; },
+    get ST_CASTLE() { return ST_CASTLE; },
+    get ST_CUPS() { return ST_CUPS; },
+    get ST_NURSE() { return ST_NURSE; },
+    get ST_SIGN() { return ST_SIGN; },
+    get T() { return T; },
+    get TANOBY_KEY() { return TANOBY_KEY; },
+    get TB() { return TB; },
+    get TEAM_SWAPS() { return TEAM_SWAPS; },
+    get TERA_AIDE() { return TERA_AIDE; },
+    get TERA_GATE_DOORS() { return TERA_GATE_DOORS; },
+    get TOWER() { return TOWER; },
+    get TRADES() { return TRADES; },
+    get TRAINER_SCRIPTS() { return TRAINER_SCRIPTS; },
+    get TUTOR_PRICE() { return TUTOR_PRICE; },
+    get TWO_ISLAND_STOCK() { return TWO_ISLAND_STOCK; },
+    get VICTORY_ROAD_RIVAL_TEAM() { return VICTORY_ROAD_RIVAL_TEAM; },
+    get addCaught() { return addCaught; },
+    get addCoins() { return addCoins; },
+    get afterRocket() { return afterRocket; },
+    get agateShrine() { return agateShrine; },
+    get aideGift() { return aideGift; },
+    get antiBiker() { return antiBiker; },
+    get applyPatches() { return applyPatches; },
+    get apricornTree() { return apricornTree; },
+    get article() { return article; },
+    get ask() { return ask; },
+    get avatarMusic() { return avatarMusic; },
+    get azaleaRide() { return azaleaRide; },
+    get back() { return back; },
+    get badgeGuard() { return badgeGuard; },
+    get bagPockets() { return bagPockets; },
+    get ballOf() { return ballOf; },
+    get battle() { return battle; },
+    get battleCount() { return battleCount; },
+    set battleCount(value) { battleCount = value; },
+    get battleTerrain() { return battleTerrain; },
+    get battleTowerEntry() { return battleTowerEntry; },
+    get battleTowerReception() { return battleTowerReception; },
+    get battleTowerSign() { return battleTowerSign; },
+    get berryCrushRankings() { return berryCrushRankings; },
+    get berryFarm() { return berryFarm; },
+    get berryForestLostelle() { return berryForestLostelle; },
+    get berryPowderMan() { return berryPowderMan; },
+    get berryPowderOf() { return berryPowderOf; },
+    get bigGuy() { return bigGuy; },
+    get bikerArgument() { return bikerArgument; },
+    get bikerBattles() { return bikerBattles; },
+    get bikerBossIntro() { return bikerBossIntro; },
+    get bill() { return bill; },
+    get billInTeleporter() { return billInTeleporter; },
+    set billInTeleporter(value) { billInTeleporter = value; },
+    get billJustOut() { return billJustOut; },
+    set billJustOut(value) { billJustOut = value; },
+    get billToCelio() { return billToCelio; },
+    get billsComputer() { return billsComputer; },
+    get blackjackTable() { return blackjackTable; },
+    get blaine() { return blaine; },
+    get bpEggTutor() { return bpEggTutor; },
+    get bpShop() { return bpShop; },
+    get bpTutor() { return bpTutor; },
+    get braille() { return braille; },
+    get brock() { return brock; },
+    get canBattle() { return canBattle; },
+    get canDouble() { return canDouble; },
+    get capeBrinkJustTaught() { return capeBrinkJustTaught; },
+    set capeBrinkJustTaught(value) { capeBrinkJustTaught = value; },
+    get capeBrinkTutor() { return capeBrinkTutor; },
+    get catchTutorial() { return catchTutorial; },
+    get celio() { return celio; },
+    get ceruleanGrunt() { return ceruleanGrunt; },
+    get ceruleanRival() { return ceruleanRival; },
+    get chanseyDance() { return chanseyDance; },
+    get chooseMoveToForget() { return chooseMoveToForget; },
+    get choosePartyFor() { return choosePartyFor; },
+    get chooseQuantity() { return chooseQuantity; },
+    get cinnabarBill() { return cinnabarBill; },
+    get cinnabarCenterBill() { return cinnabarCenterBill; },
+    get cinnabarQuiz() { return cinnabarQuiz; },
+    get clearMenu() { return clearMenu; },
+    get coins() { return coins; },
+    get coinsBox() { return coinsBox; },
+    get coinsClerk() { return coinsClerk; },
+    get confirm() { return confirm; },
+    get crowdCache() { return crowdCache; },
+    set crowdCache(value) { crowdCache = value; },
+    get cry() { return cry; },
+    get cutTree() { return cutTree; },
+    get dayCareMan() { return dayCareMan; },
+    get deltaDue() { return deltaDue; },
+    get deltaScene() { return deltaScene; },
+    get deltaTalk() { return deltaTalk; },
+    get deltaVisible() { return deltaVisible; },
+    get dinerWillie() { return dinerWillie; },
+    get directCorner() { return directCorner; },
+    get dojoAfter() { return dojoAfter; },
+    get dojoBall() { return dojoBall; },
+    get dojoDenDoor() { return dojoDenDoor; },
+    get dojoMaster() { return dojoMaster; },
+    get dojoMasterRematchWon() { return dojoMasterRematchWon; },
+    get dojoRematch() { return dojoRematch; },
+    get dottedHoleDoor() { return dottedHoleDoor; },
+    get dottedHoleSapphire() { return dottedHoleSapphire; },
+    get dukingsHouse() { return dukingsHouse; },
+    get eagunsHouse() { return eagunsHouse; },
+    get eagunsHouseScene() { return eagunsHouseScene; },
+    get eggGentleman() { return eggGentleman; },
+    get elevator() { return elevator; },
+    get eliteFour() { return eliteFour; },
+    get emberGrunt() { return emberGrunt; },
+    get emberPassword() { return emberPassword; },
+    get emberSpa() { return emberSpa; },
+    get enterText() { return enterText; },
+    get erika() { return erika; },
+    get esCade() { return esCade; },
+    get evolve() { return evolve; },
+    get faceBack() { return faceBack; },
+    get faceEachOther() { return faceEachOther; },
+    get fanfare() { return fanfare; },
+    get farawaySailor() { return farawaySailor; },
+    get fill() { return fill; },
+    get findMew() { return findMew; },
+    get fishingLevelTalk() { return fishingLevelTalk; },
+    get fishingXp() { return fishingXp; },
+    get floorNumber() { return floorNumber; },
+    get follower() { return follower; },
+    get fossilScientist() { return fossilScientist; },
+    get fourIslandDayCareLady() { return fourIslandDayCareLady; },
+    get fourIslandDayCareMan() { return fourIslandDayCareMan; },
+    get fourIslandRival() { return fourIslandRival; },
+    get fuchsiaMoveDeleter() { return fuchsiaMoveDeleter; },
+    get gambler() { return gambler; },
+    get gameCornerHelp() { return gameCornerHelp; },
+    get gear() { return gear; },
+    get gideon() { return gideon; },
+    get giftMon() { return giftMon; },
+    get giovanniGym() { return giovanniGym; },
+    get giovanniHideout() { return giovanniHideout; },
+    get giovanniKangaskhanite() { return giovanniKangaskhanite; },
+    get giovanniSilph() { return giovanniSilph; },
+    get giveFishingRod() { return giveFishingRod; },
+    get giveHoennTicket() { return giveHoennTicket; },
+    get goldenrodPanel() { return goldenrodPanel; },
+    get gymCans() { return gymCans; },
+    set gymCans(value) { gymCans = value; },
+    get gymGuide() { return gymGuide; },
+    get harborSailor() { return harborSailor; },
+    get hasBadge() { return hasBadge; },
+    get hasBerry() { return hasBerry; },
+    get hasFishingRod() { return hasFishingRod; },
+    get heracrossChart() { return heracrossChart; },
+    get heracrossFan() { return heracrossFan; },
+    get hiddenCoins() { return hiddenCoins; },
+    get hidePicture() { return hidePicture; },
+    get hideoutLeafFrom() { return hideoutLeafFrom; },
+    set hideoutLeafFrom(value) { hideoutLeafFrom = value; },
+    get hoenn() { return hoenn; },
+    get hoennBerries() { return hoennBerries; },
+    get hoennSafari() { return hoennSafari; },
+    get hoennScriptFor() { return hoennScriptFor; },
+    get hoennVisible() { return hoennVisible; },
+    get icefallFall() { return icefallFall; },
+    get icefallIce() { return icefallIce; },
+    set icefallIce(value) { icefallIce = value; },
+    get icefallLorelei() { return icefallLorelei; },
+    get ilexShrineCelebi() { return ilexShrineCelebi; },
+    get inGameTrade() { return inGameTrade; },
+    get inPurifiedZone() { return inPurifiedZone; },
+    set inPurifiedZone(value) { inPurifiedZone = value; },
+    get isGirl() { return isGirl; },
+    get isHoenn() { return isHoenn; },
+    get isSinnoh() { return isSinnoh; },
+    get itemJingle() { return itemJingle; },
+    get johto() { return johto; },
+    get johtoField() { return johtoField; },
+    get johtoLeague() { return johtoLeague; },
+    get johtoSafari() { return johtoSafari; },
+    get koga() { return koga; },
+    get kogaTeam() { return kogaTeam; },
+    get labArrival() { return labArrival; },
+    get labEin() { return labEin; },
+    get labTroop() { return labTroop; },
+    get leaderRematch() { return leaderRematch; },
+    get leafMegaTeam() { return leafMegaTeam; },
+    get leafPewter() { return leafPewter; },
+    get leafPewterDue() { return leafPewterDue; },
+    get leafT() { return leafT; },
+    get leafVermilion() { return leafVermilion; },
+    get leagueEnter() { return leagueEnter; },
+    get learnMove() { return learnMove; },
+    get leaveOneIsland() { return leaveOneIsland; },
+    get legendaryBird() { return legendaryBird; },
+    get lobbyText() { return lobbyText; },
+    get lookOf() { return lookOf; },
+    get lostSelphy() { return lostSelphy; },
+    get lostellesDaddy() { return lostellesDaddy; },
+    get ltSurge() { return ltSurge; },
+    get machineFor() { return machineFor; },
+    get magikarpInches() { return magikarpInches; },
+    get magikarpRecord() { return magikarpRecord; },
+    get magikarpSize() { return magikarpSize; },
+    get magikarpSizeHash() { return magikarpSizeHash; },
+    get magnetTrainBoard() { return magnetTrainBoard; },
+    get mahjongCrowd() { return mahjongCrowd; },
+    set mahjongCrowd(value) { mahjongCrowd = value; },
+    get mahjongTable() { return mahjongTable; },
+    get mansionSwitch() { return mansionSwitch; },
+    get marowakGhost() { return marowakGhost; },
+    get mart() { return mart; },
+    get mayorScene() { return mayorScene; },
+    get meetCelio() { return meetCelio; },
+    get megaAide() { return megaAide; },
+    get megaAideDue() { return megaAideDue; },
+    get megaReady() { return megaReady; },
+    get megaStoneGift() { return megaStoneGift; },
+    get megaTower() { return megaTower; },
+    get megaTowerDue() { return megaTowerDue; },
+    get memorial() { return memorial; },
+    get memorialMan() { return memorialMan; },
+    get mewFound() { return mewFound; },
+    get miguelBattle() { return miguelBattle; },
+    get mirorBHideout() { return mirorBHideout; },
+    get misty() { return misty; },
+    get monInches() { return monInches; },
+    get monSign() { return monSign; },
+    get monSize() { return monSize; },
+    get monSizeHash() { return monSizeHash; },
+    get money() { return money; },
+    get moneyBox() { return moneyBox; },
+    get moveDeleter() { return moveDeleter; },
+    get moveManiac() { return moveManiac; },
+    get moveManiacMet() { return moveManiacMet; },
+    set moveManiacMet(value) { moveManiacMet = value; },
+    get moveRelearner() { return moveRelearner; },
+    get moveTutor() { return moveTutor; },
+    get mtBattleArrival() { return mtBattleArrival; },
+    get mtBattleChallenge() { return mtBattleChallenge; },
+    get mtBattleSummit() { return mtBattleSummit; },
+    get multichoice() { return multichoice; },
+    get music() { return music; },
+    get nameRater() { return nameRater; },
+    get needBike() { return needBike; },
+    get networkMachine() { return networkMachine; },
+    get nuggetBridgeRocket() { return nuggetBridgeRocket; },
+    get nurse() { return nurse; },
+    get oakGsBall() { return oakGsBall; },
+    get oakOrre() { return oakOrre; },
+    get oakWalksYouToTheLab() { return oakWalksYouToTheLab; },
+    get oneIslandCenterBill() { return oneIslandCenterBill; },
+    get openQuizDoor() { return openQuizDoor; },
+    get orreArrival() { return orreArrival; },
+    get orreBartender() { return orreBartender; },
+    get orreJukebox() { return orreJukebox; },
+    get orrePilot() { return orrePilot; },
+    get orreStandStory() { return orreStandStory; },
+    get orreTournament() { return orreTournament; },
+    get orreTrainer() { return orreTrainer; },
+    get orreTravel() { return orreTravel; },
+    get outOfCenterHeal() { return outOfCenterHeal; },
+    get outOfDoorway() { return outOfDoorway; },
+    get outskirtLena() { return outskirtLena; },
+    get overlayCanvas() { return overlayCanvas; },
+    get pairBattle() { return pairBattle; },
+    get pathTo() { return pathTo; },
+    get pc() { return pc; },
+    get persist() { return persist; },
+    get phenacFT() { return phenacFT; },
+    get phenacFTBattle() { return phenacFTBattle; },
+    get phenacKodo() { return phenacKodo; },
+    get phenacTruck() { return phenacTruck; },
+    get plainCoins() { return plainCoins; },
+    get player() { return player; },
+    set player(value) { player = value; },
+    get playersPc() { return playersPc; },
+    get pokedexScene() { return pokedexScene; },
+    get pokerTable() { return pokerTable; },
+    get powerPlantElectrode() { return powerPlantElectrode; },
+    get prizeClerk() { return prizeClerk; },
+    get pyriteArrival() { return pyriteArrival; },
+    get pyriteNore() { return pyriteNore; },
+    get pyriteTopFloor() { return pyriteTopFloor; },
+    get quizDoorOpen() { return quizDoorOpen; },
+    get raidDen() { return raidDen; },
+    get realgamArrival() { return realgamArrival; },
+    get realgamEvice() { return realgamEvice; },
+    get realgamGonzap() { return realgamGonzap; },
+    get realgamNascour() { return realgamNascour; },
+    get rejuvenator() { return rejuvenator; },
+    get relearnable() { return relearnable; },
+    get relicForestShrine() { return relicForestShrine; },
+    get relicStone() { return relicStone; },
+    get rivalLabBattle() { return rivalLabBattle; },
+    get rockSmash() { return rockSmash; },
+    get rodGift() { return rodGift; },
+    get route22LateRival() { return route22LateRival; },
+    get route22LateRivalDue() { return route22LateRivalDue; },
+    get route22LeafTeam() { return route22LeafTeam; },
+    get route22Rival() { return route22Rival; },
+    get route23Scene() { return route23Scene; },
+    get ruinValleyScientist() { return ruinValleyScientist; },
+    get runHoenn() { return runHoenn; },
+    get runJohto() { return runJohto; },
+    get sabrina() { return sabrina; },
+    get sabrinaAlakazite() { return sabrinaAlakazite; },
+    get safariEntry() { return safariEntry; },
+    get safariGateArrival() { return safariGateArrival; },
+    get safariOn() { return safariOn; },
+    get sailToHoenn() { return sailToHoenn; },
+    get savePromptAt() { return savePromptAt; },
+    set savePromptAt(value) { savePromptAt = value; },
+    get say() { return say; },
+    get sayWithJingle() { return sayWithJingle; },
+    get scene() { return scene; },
+    get seaCottageReturn() { return seaCottageReturn; },
+    set seaCottageReturn(value) { seaCottageReturn = value; },
+    get seafoamFall() { return seafoamFall; },
+    get seafoamFell() { return seafoamFell; },
+    set seafoamFell(value) { seafoamFell = value; },
+    get selphy() { return selphy; },
+    get selphyHome() { return selphyHome; },
+    get sfx() { return sfx; },
+    get shadowTrainer() { return shadowTrainer; },
+    get show() { return show; },
+    get showPicture() { return showPicture; },
+    get signLady() { return signLady; },
+    get signLadyAside() { return signLadyAside; },
+    set signLadyAside(value) { signLadyAside = value; },
+    get signLadyPlace() { return signLadyPlace; },
+    get signLadyShowSign() { return signLadyShowSign; },
+    get signLadyVisit() { return signLadyVisit; },
+    set signLadyVisit(value) { signLadyVisit = value; },
+    get silphDoor() { return silphDoor; },
+    get silphDoorFlag() { return silphDoorFlag; },
+    get silphFreed() { return silphFreed; },
+    get silphRival() { return silphRival; },
+    get sinnohBerries() { return sinnohBerries; },
+    get sinnohFerry() { return sinnohFerry; },
+    get sinnohSailor() { return sinnohSailor; },
+    get sixIslandRival() { return sixIslandRival; },
+    get slateportSailor() { return slateportSailor; },
+    get sleep() { return sleep; },
+    get slotMachine() { return slotMachine; },
+    get snagemGuard() { return snagemGuard; },
+    get snagemTarget() { return snagemTarget; },
+    get snorlax() { return snorlax; },
+    get southernIsland() { return southernIsland; },
+    get ssAnneCaptain() { return ssAnneCaptain; },
+    get ssAnneDeparting() { return ssAnneDeparting; },
+    get ssAnneDeparts() { return ssAnneDeparts; },
+    get ssAnneRed() { return ssAnneRed; },
+    get ssAquaBoard() { return ssAquaBoard; },
+    get ssAquaToOlivine() { return ssAquaToOlivine; },
+    get stadiumCastle() { return stadiumCastle; },
+    get stadiumCups() { return stadiumCups; },
+    get stadiumSailor() { return stadiumSailor; },
+    get stadiumSign() { return stadiumSign; },
+    get stadiumSpectator() { return stadiumSpectator; },
+    get stickerMan() { return stickerMan; },
+    get strengthBoulder() { return strengthBoulder; },
+    get swappedTeam() { return swappedTeam; },
+    get tanobyKeySwitch() { return tanobyKeySwitch; },
+    get tempFlags() { return tempFlags; },
+    get teraAide() { return teraAide; },
+    get teraAideDue() { return teraAideDue; },
+    get thirstyGirl() { return thirstyGirl; },
+    get tick() { return tick; },
+    get ticketChecked() { return ticketChecked; },
+    set ticketChecked(value) { ticketChecked = value; },
+    get tmText() { return tmText; },
+    get toward() { return toward; },
+    get towerBP() { return towerBP; },
+    get towerBattle() { return towerBattle; },
+    get towerElevator() { return towerElevator; },
+    get towerEntry() { return towerEntry; },
+    get towerFloor() { return towerFloor; },
+    get towerFloorNo() { return towerFloorNo; },
+    get towerLook() { return towerLook; },
+    get towerLost() { return towerLost; },
+    get towerOwner() { return towerOwner; },
+    get towerPerson() { return towerPerson; },
+    get towerRival() { return towerRival; },
+    get towerTimeBoard() { return towerTimeBoard; },
+    get towerTrainerTalk() { return towerTrainerTalk; },
+    get tradeScene() { return tradeScene; },
+    get trainerBattle() { return trainerBattle; },
+    get trainerRematch() { return trainerRematch; },
+    get trainerTeam() { return trainerTeam; },
+    get trainerWaiting() { return trainerWaiting; },
+    get trashCan() { return trashCan; },
+    get twoIslandClerk() { return twoIslandClerk; },
+    get underArrival() { return underArrival; },
+    get underKloak() { return underKloak; },
+    get underVenus() { return underVenus; },
+    get usedMove() { return usedMove; },
+    get vendingMachine() { return vendingMachine; },
+    get vermilionSeagallop() { return vermilionSeagallop; },
+    get victoryRoadRival() { return victoryRoadRival; },
+    get victoryRoadRivalDue() { return victoryRoadRivalDue; },
+    get viridianGymOpen() { return viridianGymOpen; },
+    get walkIn() { return walkIn; },
+    get walkOut() { return walkOut; },
+    get walkTo() { return walkTo; },
+    get warden() { return warden; },
+    get warehouseAdmin() { return warehouseAdmin; },
+    get warehouseDoor() { return warehouseDoor; },
+    get wildMon() { return wildMon; },
+  };
+  const {
+    berryPowderMan,
+    directCorner,
+    chooseCrushBerry,
+    berryCrush,
+    berryCrushRankings,
+    coinsClerk,
+    gambler,
+    hiddenCoins,
+    slotMachine,
+    voltorbFlip,
+    tableStars,
+    starNotice,
+    pokerTable,
+    blackjackTable,
+    crowdLooks,
+    cardRoomCrowd,
+    mahjongPlayers,
+    mahjongTable,
+    prizeClerk
+  } = KantoActivities.create(storyEnv);
+  const {
+    visible,
+    story,
+    special
+  } = StoryEvents.create(storyEnv);
+  const {
+    oakWalksYouToTheLab,
+    rivalLabBattle,
+    pokedexScene,
+    catchTutorial,
+    rateDex,
+    aideGift,
+    leafWaiting,
+    leafPewterDue,
+    leafVermilionStep,
+    leafComesOver,
+    leafPewter,
+    leafLeaves,
+    leafVermilion,
+    signLadyPlace,
+    signLadyShowSign,
+    signLady,
+    megaAideDue,
+    megaAideRoute,
+    stepOutOfDoor,
+    megaAide,
+    teraAide,
+    megaTowerPeople,
+    megaLeaves,
+    megaTower,
+    marowakGhost,
+    nuggetBridgeRocket,
+    ceruleanGrunt,
+    dayCareMan,
+    bill,
+    billsComputer,
+    miguelBattle,
+    elevator,
+    setDynamicWarp,
+    giftMon,
+    faceBack,
+    thirstyGirl,
+    vendingMachine,
+    surfingPikachu,
+    ssAnneRed,
+    ssAnneCaptain,
+    ssAnneDeparting,
+    ssAnneDeparts
+  } = KantoTowns.create(storyEnv);
+  const {
+    gymGuide,
+    brockTeam,
+    mistyTeam,
+    brock,
+    misty,
+    surgeTeam,
+    ltSurge,
+    erikaTeam,
+    erika,
+    sabrina,
+    koga,
+    giovanniGym,
+    leaderTeam,
+    leaderRematch,
+    blaineTeam,
+    blaine,
+    openQuizDoor,
+    cinnabarQuiz,
+    fossilScientist,
+    mansionSwitch,
+    hideVermilionSwitches,
+    trashCan
+  } = KantoGyms.create(storyEnv);
+  const {
+    besideYou,
+    giovanniHideout,
+    afterRocket,
+    dojoBall,
+    dojoRematch,
+    dojoMaster,
+    dojoDenDoor,
+    silphDoor,
+    silphRival,
+    giovanniSilph
+  } = KantoRocket.create(storyEnv);
+  const {
+    monSign,
+    snorlax,
+    rodGift,
+    giveFishingRod,
+    fishingLevelTalk,
+    monSizeHash,
+    monSize,
+    magikarpRecord,
+    fuchsiaMoveDeleter,
+    warden,
+    kogaTeam,
+    seafoamFall,
+    powerPlantElectrode,
+    safariStep,
+    safariEntry,
+    safariGateArrival,
+    safariOver,
+    safariBattle
+  } = KantoField.create(storyEnv);
+  const {
+    route22LateRival,
+    victoryRoadRival,
+    badgeGuard,
+    victoryRoadSwitch,
+    leagueEnter,
+    swappedTeam,
+    johtoEliteFour,
+    eliteFour,
+    championTeam,
+    championsRoom,
+    johtoChampion,
+    hallOfFame,
+    creditsRoll
+  } = KantoLeague.create(storyEnv);
+  const {
+    setSail,
+    seagallopMenu,
+    harborSailor,
+    vermilionSeagallop,
+    ferry,
+    cinnabarBill,
+    cinnabarSailWithBill,
+    cinnabarCenterBill,
+    cinnabarBillReturns,
+    oneIslandArrival,
+    billToCelio,
+    meetCelio,
+    celio,
+    celioRuby,
+    celioSapphire,
+    giveOldSeaMap,
+    oneIslandCenterBill,
+    leaveOneIsland,
+    networkMachine,
+    twoIslandShop,
+    twoIslandClerk,
+    gameCornerHelp,
+    gameCornerLostelleHome,
+    lostellesDaddy,
+    capeBrinkTutor,
+    moveManiac,
+    bikerArgument,
+    antiBiker,
+    bikerBossIntro,
+    bikerBattles,
+    berryForestLostelle,
+    emberPassword,
+    emberGrunt,
+    emberSpa,
+    seviiTransition,
+    cinnabarBillStep,
+    fourIslandRival,
+    yesNo,
+    fourIslandDayCareLady,
+    fourIslandDayCareMan,
+    stickerMan,
+    icefallStep,
+    icefallFall,
+    icefallLorelei,
+    warehouseDoor,
+    warehouseAdmin,
+    gideon,
+    memorialMan,
+    memorialTM,
+    memorial,
+    sixIslandRival,
+    ruinValleyScientist,
+    dottedHoleDoor,
+    cutDottedHoleDoor,
+    dottedHoleSapphire,
+    heracrossFan,
+    heracrossChart,
+    chanseyDance,
+    tanobySwitch,
+    tanobyKeySwitch,
+    towerPerson,
+    towerEntry,
+    towerLost,
+    towerTimeBoard,
+    towerBattle,
+    towerTrainerTalk,
+    towerOwner
+  } = KantoSevii.create(storyEnv);
+
 
   const STARTER_LEVEL = 5;
 
@@ -1706,55 +2410,6 @@
   // FireRed's exchange list (LISTMENU_BERRY_POWDER) and prices.
   const POWDER_PRIZES = [["energy-powder", 50], ["energy-root", 80], ["heal-powder", 50], ["revival-herb", 300], ["protein", 1000],
     ["iron", 1000], ["carbos", 1000], ["calcium", 1000], ["zinc", 1000], ["hp-up", 1000], ["pp-up", 3000]];
-  async function berryPowderMan() {
-    const f = player.flags, X = (k) => T("CeruleanCity_House1_Text_" + k);
-    const berries = () => Object.keys(player.bag).filter((id) => /-berry$/.test(id) && player.bag[id] > 0);
-    if (!f.gotPowderJar) {
-      const q = X("AnyInterestInBerries");
-      await say(q.slice(0, -1));
-      if (!(await confirm(fill(q[q.length - 1])))) { await say(X("TakeInterestInAllSortsOfThings")); return; }
-      if (!berries().length) { await say(X("WhyMustYouLieNoBerries")); return; }
-      await say(X("HaveJustTheThing"));
-      Player.addItem(player, "powder-jar");
-      f.gotPowderJar = true;
-      await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the " + Bag.name("powder-jar") + "!");
-      // (FireRed's lines: the Berry Crush at the Direct Corner, ui/berry-crush.js.)
-      await say(X("GoCrushBerriesAtDirectCorner").slice(0, -1));
-      await say(["If you'd rather, bring your Berries\nto me and I'll crush them myself."]);
-    }
-    // Crushing Berries (this game's): a kind, and how many.
-    for (;;) {
-      const have = berries();
-      if (!have.length || !(await confirm("Shall I crush some of your Berries\ninto Berry Powder?"))) break;
-      const i = await ask("Which Berries shall I crush?", have.map((id) => ({ label: Bag.name(id) + "  ×" + player.bag[id] + "  (" + berryPowderOf(id) + " each)", value: id }))
-        .concat([back()]));
-      if (i === "back") break;
-      const n = await chooseQuantity("How many shall I crush?", player.bag[i]);
-      Screen.say("");
-      if (!n) continue;
-      Player.removeItem(player, i, n);
-      const gained = n * berryPowderOf(i);
-      f.berryPowder = Math.min(99999, (f.berryPowder | 0) + gained);
-      sfx("se_m_bonemerang");
-      await say(gained.toLocaleString("en-US") + " units of Berry Powder\nwent into the Powder Jar.");
-    }
-    // FireRed's exchange (CeruleanCity_House5_EventScript_AskToExchangePowder).
-    await say(X("HaveYouBroughtBerryPowder"));
-    for (;;) {
-      const v = await ask(T("CeruleanCity_House5_Text_ExchangeWithWhat")[0] + "\n(Berry Powder: " + (f.berryPowder | 0).toLocaleString("en-US") + ")",
-        POWDER_PRIZES.map(([id, cost]) => ({ label: Bag.name(id) + "  " + cost, value: id })).concat([back("Exit")]));
-      if (v === "back") { await say(X("SeeMeIfYoudLikeToTradePowder")); return; }
-      const cost = POWDER_PRIZES.find(([id]) => id === v)[1];
-      if (!(await confirm(fill(X("YoullExchangeBerryPowderForItem")[0], [Bag.name(v)])))) continue;
-      if ((f.berryPowder | 0) < cost) { await say(X("DontHaveEnoughBerryPowder")); continue; }
-      f.berryPowder -= cost;
-      Player.addItem(player, v);
-      await sayWithJingle(itemJingle(v), "{PLAYER} received the " + Bag.name(v) + "!");
-      const more = X("TradeMoreBerryPowder");
-      await say(more.slice(0, -1));
-      if (!(await confirm(more[more.length - 1]))) { await say(X("HopeToSeeYouAgain")); return; }
-    }
-  }
 
   // ---------- The Berry Crush (game/berry-crush.js, ui/berry-crush.js) ----------
   //
@@ -1768,106 +2423,6 @@
   // Berry Powder man's house).
   const CRUSH_NAMES = ["Lucas", "Kim", "Chris", "Jody", "Max", "Erin", "Toby", "Mia", "Seth", "Ivy"];
   const hasBerry = () => Object.keys(player.bag).some((id) => /-berry$/.test(id) && player.bag[id] > 0);
-  async function directCorner() {
-    const f = player.flags;
-    if (!f.pokedex || !f.gotPowderJar) { await say(T("Text_WirelessClubUndergoingAdjustments")); return; }
-    await say(["Welcome to the Pokémon Wireless\nClub Direct Corner.", "You may interact directly with\nyour friends here."]);
-    for (;;) {
-      const v = await multichoice("Which room would you like to\nenter?", 0, 0, ["Berry Crush", "Cancel"]);
-      if (v !== 0) { Screen.say(""); await say("Please come again!"); return; }
-      if (!(await confirm("Would you like to use the\nBerry Crush System?"))) continue;
-      if (!hasBerry()) { await say("To use the Berry Crush service,\nyou must have at least one Berry."); continue; }
-      const k = await multichoice("How many will play?", 0, 0, ["2 players", "3 players", "4 players", "5 players", "Cancel"]);
-      if (k < 0 || k > 3) continue;
-      Screen.say("");
-      await berryCrush(k + 2);
-      return;
-    }
-  }
-  async function chooseCrushBerry() {
-    const r = await BagScreen.open({
-      pockets: () => bagPockets().filter((p) => p.name === "Berries"), pocketName: "Berries",
-      female: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl), frame: GameOptions.get().frame,
-      actions: () => [{ label: "Choose", value: "choose" }]
-    });
-    BagScreen.close();
-    return r ? r.id : null;
-  }
-  async function berryCrush(count) {
-    const f = player.flags;
-    const names = CRUSH_NAMES.slice().sort(() => Math.random() - 0.5);
-    const players = [{ name: player.name, you: true }].concat(names.slice(0, count - 1).map((name) => ({ name, cpu: BerryCrush.cpu() })));
-    const kinds = Object.keys(BerryCrush.BERRIES).slice(0, 25);   // (what the others bring: the commoner ones)
-    await Overworld.fadeToBlack();
-    show("scene");
-    clearMenu();
-    music("mus_game_corner");
-    const bc = await BerryCrushScreen.open(scene, { players, sfx });
-    try {
-      await bc.fadeIn();
-      for (;;) {
-        await say(["Are you ready to Berry-Crush?\nPlease pick a Berry for use."]);
-        Screen.say("");
-        const mine = await chooseCrushBerry();
-        if (!mine) break;
-        Player.removeItem(player, mine, 1);
-        const ids = [mine].concat(players.slice(1).map(() => kinds[Math.floor(Math.random() * kinds.length)] + "-berry"));
-        Screen.say("Please wait while each member\nchooses a Berry.");
-        await sleep(1000);
-        Screen.say("");
-        await bc.drop(ids.map((id) => ({ id, icon: Bag.sprite(id), box: (window.ITEM_SPRITE_BOXES || {})[id] })));
-        await bc.countdown();
-        const { game, timeUp } = await bc.play(ids);
-        await bc.finish(timeUp);
-        if (timeUp) await say(["Time's up.", "Good Berry Powder could not be\nmade…"]);
-        else {
-          const res = BerryCrush.results(game);
-          // (SaveResults: the pressing speed, a record for this many players.)
-          const records = f.berryCrushSpeeds || (f.berryCrushSpeeds = [0, 0, 0, 0]);
-          const newRecord = res.pressingSpeed > records[count - 2];
-          if (newRecord) records[count - 2] = res.pressingSpeed;
-          await bc.results(res, newRecord, (id) => Bag.name(id));
-          f.berryPowder = Math.min(99999, (f.berryPowder | 0) + res.powder);
-          await sayWithJingle("mus_level_up", "You ended up with " + res.powder + " units of\nsilky-smooth Berry Powder.");
-          await say("Your total amount of Berry Powder\nis " + f.berryPowder + ".");
-        }
-        Screen.say("Recording your game results in the\nsave file.\nPlease wait.");
-        await persist();
-        await sleep(500);
-        if (!(await confirm("Want to play Berry Crush again?"))) break;
-        if (!hasBerry()) { await say("You have no Berries.\nThe game will be canceled."); break; }
-        bc.reset();
-      }
-      Screen.say("");
-      await bc.fadeOut();
-    } finally {
-      bc.close();
-    }
-    show("world");
-    music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music);
-    await Overworld.resume();
-    await Overworld.fadeFromBlack();
-  }
-  // The rankings in the Berry Powder man's house (Task_ShowBerryCrushRankings):
-  // the best pressing speed for 2 to 5 players, A or B to close.
-  async function berryCrushRankings() {
-    const speeds = player.flags.berryCrushSpeeds || [0, 0, 0, 0];
-    const pal = window.GBA_MENUS.palettes.std3, s = GbaMenus.Surface(), c = overlayCanvas();
-    s.frame("std", pal, 3, 4, 24, 13);
-    s.fill(24, 32, 192, 104, pal[1]);
-    const centre = (t, y) => s.text(t, 24 + 96 - (s.textWidth(t) >> 1), 32 + y, pal[8], pal[9]);
-    centre("Berry Crush", 2);
-    centre("Pressing-Speed Rankings", 18);
-    speeds.forEach((q, i) => {
-      s.text((i + 2) + " players", 24 + 4, 32 + 42 + 14 * i, pal[2], pal[3]);
-      const t = BerryCrush.speedText(q) + " Times/sec.";
-      s.text(t, 24 + 192 - s.textWidth(t), 32 + 42 + 14 * i, pal[2], pal[3]);
-    });
-    c.classList.remove("hidden");
-    s.show(c);
-    await GbaMenus.keys((k) => (k === "a" || k === "b" ? true : undefined));
-    c.classList.add("hidden");
-  }
 
   // ---------- Poké Mart ----------
 
@@ -2991,254 +3546,6 @@
   const trainerWaiting = (person) => !!(person.trainer && person.trainer.id &&
     (!player.flags[person.trainer.id] || dojoRematch(person.trainer.id)));
 
-  function visible(person, map) {
-    if (isHoenn(map || player.location.map)) { const dv = deltaVisible(person); if (dv !== undefined) return dv; const b = hoennBerries.visible(person, map || player.location.map); return b !== undefined ? b : hoennVisible(person, map || player.location.map); }
-    const f = player.flags;
-    // (A Tera Raid den: glowing while its raid is on.)
-    { const den = RaidDens.byScript(person.script); if (den) return RaidDens.active(f, den.id) ? { sprite: "raid_den_active" } : true; }
-    // (Johto's people: hidden while HGSS's flag for them is set, and where
-    // the map's own script puts them this visit.)
-    if ((person.hgssFlag && johto.flag(person.hgssFlag)) || person.offstage) return false;
-    // (The National Park's Bug-Catching Contest people, HGSS's out of sight at its edge, here outside the fence where
-    // they'd stand in the way: there only once the judging lines them up.)
-    if ((map || player.location.map) === "NationalPark" && /^hgss:BUG_CONTEST:/.test(person.script || "") && !johto.placed(person.localId)) return false;
-    { const g = gear.visible(person); if (g !== undefined) return g; }   // (a Gym Leader at the Dojo: ui/pokegear.js)
-    { const b = berryFarm.visible(person, map || player.location.map); if (b !== undefined) return b; }   // (a berry tree: ui/berry-farm.js)
-    { const b = sinnohBerries.visible(person, map || player.location.map); if (b !== undefined) return b; }   // (Sinnoh's)
-    {
-      // (Lyra, or Ethan for a girl: HGSS's friend.)
-      const look = person.girlLook && isGirl() ? person.girlLook : null;
-      const at = person.localId && !person.trainer && johto.placed(person.localId);
-      if (at || look) return Object.assign({}, look, at ? { x: at.x, y: at.y, movement: "face_" + at.facing } : {});
-    }
-    // (The League gate's guard on the way to Johto: there until you're Champion. data/johto-maps.js)
-    if (person.script === "Route22_NorthEntrance_EventScript_JohtoGuard") return !f.gameClear;
-    // (The Champion here is Red.)
-    // (Johto's League, once you've its eight Badges: HGSS's Elite Four and Lance in their places.)
-    if (johtoLeague() && ELITE_FOUR_SCRIPTS.includes(person.script)) return Object.assign({}, window.JOHTO_LEAGUE[ELITE_FOUR_SCRIPTS.indexOf(person.script)].look);
-    if (person.localId === "LOCALID_CHAMPIONS_ROOM_RIVAL") return Object.assign({}, johtoLeague() ? window.JOHTO_LEAGUE[4].look : lookOf("red"));
-    if (person.item) return !f[person.flag];
-    { const o = Orre.visible(person, f); if (o !== undefined) return o; }   // (Orre's people)
-    if (person.flag && tempFlags.has((map || player.location.map) + ":" + person.flag)) return false;   // (a tree you've cut)
-    const spot = person.trainer && f.trainerSpots && f.trainerSpots[person.trainer.id];
-    if (spot) return { x: spot.x, y: spot.y, movement: "face_" + spot.facing };
-    // Miguel stays by the fossil he took (FireRed's copyobjectxytoperm).
-    if (person.script === "MtMoon_B2F_EventScript_Miguel" && f.mtMoonFossil) return { x: f.mtMoonFossil === "dome-fossil" ? 14 : 13, y: 8, movement: "face_up" };
-    // Daisy sits at the table, before and after giving you the Town Map.
-    if (person.script === "PalletTown_RivalsHouse_EventScript_Daisy") return { x: 5, y: 4, movement: "face_right" };
-    if (person.flag === "FLAG_HIDE_TOWN_MAP") return !f.townMap;
-    // Lying across the road north until Oak gets his parcel, then up and about.
-    if (person.script === "ViridianCity_EventScript_TutorialOldMan") {
-      return f.parcelDelivered ? { x: 21, y: 8, movement: "look_around" }
-        : Object.assign({}, person.alt, { x: 21, y: 11, movement: "face_down" });
-    }
-    if (person.script === "PalletTown_EventScript_SignLady") return signLadyPlace();
-    // Fuchsia's fossil Pokémon statue: a Kabuto, or an Omanyte once you've
-    // taken the Dome Fossil (FuchsiaCity_OnTransition).
-    if (person.alt && person.sprite === "kabuto") return f.mtMoonFossil === "dome-fossil" ? Object.assign({}, person.alt) : true;
-    // (Silph 7F's pacing worker stands still once Team Rocket's gone.)
-    if (person.script === "SilphCo_7F_EventScript_WorkerM2" && silphFreed()) return { movement: "face_up" };
-    // Until Bill gives you the S.S. Ticket, the policeman stands in the
-    // robbed house's doorway and Slowbro and the Lass are in the way south
-    // (FireRed's CeruleanCity_EventScript_BlockExits).
-    if (!f.gotSSTicket) {
-      if (person.script === "CeruleanCity_EventScript_Policeman") return { x: 30, y: 12 };
-      if (person.script === "CeruleanCity_EventScript_Slowbro") return { x: 26, y: 31 };
-      if (person.script === "CeruleanCity_EventScript_Lass") return { x: 27, y: 31 };
-    }
-    // The Seafoam Islands' boulders: where they are now (game/seafoam.js).
-    if (Seafoam.isBoulderFlag(person.flag)) return !Seafoam.hidden(f, person.flag);
-    // Lostelle's dad stands by the counter once he's thanked you (TwoIsland_JoyfulGameCorner_OnTransition);
-    // the Dunsparce Tunnel's prospector digs at the wall until it's dug out
-    // (ThreeIsland_DunsparceTunnel_OnTransition: FireRed's with the National
-    // Pokédex; here, once you're Champion, it's dug out).
-    // (Only from the next visit on: right after the Moon Stone he stays where he is.)
-    if (person.script === "TwoIsland_JoyfulGameCorner_EventScript_LostellesDaddy" && (f.gameCornerScene || 0) >= 4) return { x: 6, y: 2, movement: "face_down" };
-    if (person.script === "ThreeIsland_DunsparceTunnel_EventScript_Prospector" && !player.flags.gameClear) return { x: 6, y: 3, movement: "face_right" };
-    // Trainer Tower's floors: the challenge's trainers, where and as whom (towerPerson).
-    { const tv = towerPerson(person, map || player.location.map); if (tv !== undefined) return tv; }
-    // The Tanoby Key's boulders on their switches, once it's solved.
-    const solved = Sevii.TANOBY_BOULDERS_SOLVED[person.localId];
-    if (solved && f.unlockedTanobyRuins) return { x: solved[0], y: solved[1] };
-    // Indigo Plateau's door guard stands in the doorway while Lorelei's away
-    // (IndigoPlateau_PokemonCenter_1F_EventScript_CheckBlockDoor: setobjectxyperm 4, 2).
-    if (person.localId === "LOCALID_LEAGUE_DOOR_GUARD" && Sevii.leagueClosed(f)) return { x: 4, y: 2 };
-    // (Seven Island's house: FireRed's e-Reader trainer, who never visits here.)
-    if ((map || player.location.map) === "SevenIsland_House_Room2") return false;
-    switch (person.flag) {
-      case "FLAG_HIDE_OAK_IN_PALLET_TOWN": return false;   // only appears for his walk to the lab
-      case "FLAG_HIDE_OAK_IN_HIS_LAB": return !!(f.oakInLab || f.starter);
-      case "FLAG_HIDE_POKEDEX": return !f.pokedex;         // on the desk until Oak hands them out
-      case "FLAG_HIDE_MG_DELIVERYMEN": return false;       // no Mystery Gift
-      case "FLAG_HIDE_ROUTE_22_RIVAL": return false;       // only for his scene
-      case "FLAG_HIDE_PEWTER_CITY_GYM_GUIDE": return !f.TRAINER_LEADER_BROCK;
-      // (No Running Shoes delivery: you can run from the start.)
-      case "FLAG_HIDE_PEWTER_CITY_RUNNING_SHOES_GUY": return false;
-      case "FLAG_HIDE_OLD_AMBER": return !f.gotOldAmber;
-      case "FLAG_HIDE_CERULEAN_RIVAL": return false;        // only for his scene
-      case "FLAG_HIDE_CERULEAN_ROCKET": return !f.gotTM28;
-      case "FLAG_HIDE_SS_ANNE_RIVAL": return false;          // only for his scene (Red, here)
-      case "FLAG_HIDE_SS_ANNE": return !f.ssAnneDeparted;
-      // Prof. Oak's aide comes to Vermilion after Lt. Surge, to send you to his
-      // colleague on Route 2 (unless you've had HM05 Flash from him already).
-      // (FireRed has him gone once you've talked to him; here he stays.)
-      case "FLAG_HIDE_VERMILION_CITY_OAKS_AIDE": return !!f.TRAINER_LEADER_LT_SURGE;
-      case "FLAG_HIDE_NUGGET_BRIDGE_ROCKET": return !f.gotSSTicket;
-      // Bill: a Clefairy until you run his Cell Separator, then himself.
-      case "FLAG_HIDE_BILL_CLEFAIRY": return !f.billHelped && !billInTeleporter;
-      // (Where his walk out of the Teleporter ended, until you leave.)
-      case "FLAG_HIDE_BILL_HUMAN_SEA_COTTAGE": return f.billHelped ? (billJustOut ? { x: 7, y: 6 } : true) : false;
-      case "FLAG_HIDE_POSTGAME_GOSSIPERS": return false;
-      case "FLAG_HIDE_POKEHOUSE_FUJI": return !!f.rescuedMrFuji;   // (in Pokémon Tower until you rescue him)
-      case "FLAG_HIDE_TOWER_FUJI": return !f.rescuedMrFuji;
-      case "FLAG_HIDE_TOWER_RIVAL": return !f.towerRival;
-      // The Rockets on 7F leave once beaten.
-      case "FLAG_HIDE_TOWER_ROCKET_1": case "FLAG_HIDE_TOWER_ROCKET_2": case "FLAG_HIDE_TOWER_ROCKET_3":
-        return !(person.trainer && f[person.trainer.id]) && !f.rescuedMrFuji;
-      case "FLAG_HIDE_DOME_FOSSIL": case "FLAG_HIDE_HELIX_FOSSIL": return !f.mtMoonFossil;
-      // Celadon: the Rockets (and the Silph scientist) until Giovanni's beaten
-      // in the Hideout, where he leaves the Silph Scope behind; the Lift Key's
-      // dropped by the Rocket on B4F; Eevee in its Poké Ball on the roof.
-      case "FLAG_HIDE_CELADON_ROCKETS": return !f.TRAINER_BOSS_GIOVANNI;
-      case "FLAG_HIDE_GAME_CORNER_ROCKET": return !f.TRAINER_TEAM_ROCKET_GRUNT_7;
-      case "FLAG_HIDE_HIDEOUT_GIOVANNI": return !f.TRAINER_BOSS_GIOVANNI;
-      case "FLAG_HIDE_SILPH_SCOPE": return !!f.TRAINER_BOSS_GIOVANNI && !f.gotSilphScope;
-      case "FLAG_HIDE_LIFT_KEY": return !!f.TRAINER_TEAM_ROCKET_GRUNT_18 && !f.gotLiftKey;
-      case "FLAG_HIDE_EEVEE_BALL": return !f.gotEevee;
-      // Saffron: Team Rocket in the streets (and in Silph Co.) until Giovanni's
-      // beaten on Silph's 11F; then the townsfolk come back out. The guard at
-      // Silph's door stands in it until Mr. Fuji's rescued, then dozes off
-      // beside it (SaffronCity_OnTransition).
-      case "FLAG_HIDE_SAFFRON_ROCKETS":
-        if (silphFreed()) return false;
-        return person.script === "SaffronCity_EventScript_DoorGuardGrunt" && !f.rescuedMrFuji ? { x: 33, y: 31 } : true;
-      case "FLAG_HIDE_SAFFRON_CIVILIANS": return silphFreed();
-      case "FLAG_HIDE_SILPH_ROCKETS": return !silphFreed();
-      case "FLAG_HIDE_SILPH_RIVAL": return !f.silphRival;
-      // (The Fan Club's other members turn up once you're Champion.)
-      case "FLAG_HIDE_SAFFRON_FAN_CLUB_BLACK_BELT": case "FLAG_HIDE_SAFFRON_FAN_CLUB_ROCKER":
-      case "FLAG_HIDE_SAFFRON_FAN_CLUB_WOMAN": case "FLAG_HIDE_SAFFRON_FAN_CLUB_BEAUTY": return false;
-      // The Dojo's prized Pokémon: the one you take goes; the other stays.
-      case "FLAG_HIDE_DOJO_HITMONLEE_BALL": return f.dojoHitmon !== "Hitmonlee" && f.dojoHitmon2 !== "Hitmonlee";
-      case "FLAG_HIDE_DOJO_HITMONCHAN_BALL": return f.dojoHitmon !== "Hitmonchan" && f.dojoHitmon2 !== "Hitmonchan";
-      // The Snorlax asleep across Route 12, until you wake it with the Poké Flute.
-      case "FLAG_HIDE_ROUTE_12_SNORLAX": return !f.wokeRoute12Snorlax;
-      // And the one on Route 16.
-      case "FLAG_HIDE_ROUTE_16_SNORLAX": return !f.wokeRoute16Snorlax;
-      // Articuno, deep in the Seafoam Islands, until you've fought it
-      // (SeafoamIslands_B4F_OnTransition); if you ran, it flew away until you come back.
-      case "FLAG_HIDE_ARTICUNO": return !f.foughtArticuno;
-      // In the Power Plant: Zapdos, and the two Electrode that look like item
-      // balls, until you've fought them (PowerPlant_OnTransition).
-      case "FLAG_HIDE_ZAPDOS": return !f.foughtZapdos;
-      case "FLAG_HIDE_POWER_PLANT_ELECTRODE_1": return !f.foughtPowerPlantElectrode1;
-      case "FLAG_HIDE_POWER_PLANT_ELECTRODE_2": return !f.foughtPowerPlantElectrode2;
-      // Giovanni in Viridian Gym, until he's gone after telling you Team
-      // Rocket's finished; then the Rockets left around Kanto are gone too
-      // (FLAG_HIDE_MISC_KANTO_ROCKETS, set on beating him).
-      case "FLAG_HIDE_VIRIDIAN_GIOVANNI": return !f.giovanniLeft;
-      case "FLAG_HIDE_MISC_KANTO_ROCKETS": return !f.TRAINER_LEADER_GIOVANNI;
-      // Victory Road: the boulder on 3F until it drops through the hole, and
-      // then the one it becomes on 2F (Route23_OnTransition puts them back).
-      case "FLAG_HIDE_VICTORY_ROAD_3F_BOULDER": return !LeagueRoad.dropped(f);
-      case "FLAG_HIDE_VICTORY_ROAD_2F_BOULDER": return LeagueRoad.dropped(f);
-      // (Only for the credits, once you're Champion.)
-      case "FLAG_HIDE_CREDITS_RIVAL": case "FLAG_HIDE_CREDITS_OAK": return false;
-      // Prof. Oak, until he comes into the Champion's room after the battle.
-      case "FLAG_HIDE_OAK_IN_CHAMP_ROOM": return false;
-      // Bill waits on Cinnabar after the Volcano Badge to take you to the Sevii
-      // Islands (flags.cinnabarScene, FireRed's VAR_MAP_SCENE_CINNABAR_ISLAND:
-      // game/sevii.js), or in its Pokémon Center if you weren't ready; the
-      // Seagallop comes in only to take you. (Once you're Champion
-      // player.flags.gameClear is set (FLAG_SYS_GAME_CLEAR), and
-      // FLAG_SYS_CAN_LINK_WITH_RS, set at the end of the islands' story (the
-      // Sapphire: celioSapphire()), is player.flags.canLinkWithRS: the
-      // League's rematch teams.)
-      case "FLAG_HIDE_CINNABAR_BILL": return f.cinnabarScene === 1;
-      case "FLAG_HIDE_CINNABAR_SEAGALLOP": return false;
-      case "FLAG_HIDE_CINNABAR_POKECENTER_BILL": return !!f.cinnabarBillInCenter;
-      // One Island: Bill at the harbor to take you to Celio; in the Pokémon
-      // Center, where the scenes put him and Celio, until he goes home.
-      case "FLAG_HIDE_ONE_ISLAND_BILL": return f.oneHarborScene === 2;
-      case "FLAG_HIDE_ONE_ISLAND_POKECENTER_BILL":
-        if ((f.celioScene || 0) >= 3) return false;
-        return !f.celioScene ? { x: 9, y: 8, movement: "face_up" } : f.celioScene === 2 ? { x: 14, y: 7, movement: "face_left" } : true;
-      case "FLAG_HIDE_ONE_ISLAND_POKECENTER_CELIO": return f.celioScene === 2 ? { x: 14, y: 8, movement: "face_left" } : true;
-      // Two Island: more people about as its shop grows (TwoIsland_EventScript_SetShopExpanded*);
-      // Lostelle at the Joyful Game Corner once you've found her, at home on
-      // Three Island once Bill's gone home; the biker only for his scene.
-      case "FLAG_HIDE_TWO_ISLAND_WOMAN": return (f.twoIslandShopMax || 1) >= 2;
-      case "FLAG_HIDE_TWO_ISLAND_BEAUTY": return (f.twoIslandShopMax || 1) >= 3;
-      case "FLAG_HIDE_TWO_ISLAND_POKE_MANIAC": return (f.twoIslandShopMax || 1) >= 4;
-      case "FLAG_HIDE_TWO_ISLAND_GAME_CORNER_BIKER": return false;
-      case "FLAG_HIDE_TWO_ISLAND_GAME_CORNER_LOSTELLE":
-        if (!f.rescuedLostelle || (f.cinnabarScene || 0) >= 4) return false;
-        return f.gotMoonStoneFromDaddy ? { movement: "look_around" } : true;
-      case "FLAG_HIDE_LOSTELLE_IN_HER_HOME": return !!f.rescuedLostelle && (f.cinnabarScene || 0) >= 4;
-      case "FLAG_HIDE_LOSTELLE_IN_BERRY_FOREST": return !f.rescuedLostelle;
-      // Three Island: the bikers until they're beaten (Paxton once a biker's
-      // been to Two Island); the islanders standing up to them until Lostelle's found.
-      case "FLAG_HIDE_THREE_ISLAND_ANTIBIKERS": return f.rescuedLostelle ? false : f.threeIslandScene === 4 ? { movement: "look_around" } : true;
-      case "FLAG_HIDE_THREE_ISLAND_LONE_BIKER": return f.threeIslandScene === 2 || f.threeIslandScene === 3;
-      case "FLAG_HIDE_THREE_ISLAND_BIKERS": return (f.threeIslandScene || 0) < 4;
-      // Mt. Ember: Team Rocket outside the Ruby Path until both are beaten;
-      // Moltres at the summit until you've fought it; the Ruby until you take it.
-      case "FLAG_HIDE_MT_EMBER_EXTERIOR_ROCKETS":
-        if (EMBER_GRUNTS.every((t) => f[t])) return false;
-        return f.mtEmberScene === 2 ? { movement: "face_down" } : true;
-      case "FLAG_HIDE_MOLTRES": return !f.foughtMoltres;
-      // After the islands: Cerulean Cave's guard steps aside; Mewtwo waits
-      // deep inside until caught or beaten (CeruleanCave_B1F_OnTransition).
-      case "FLAG_HIDE_CERULEAN_CAVE_GUARD": return !Sevii.ceruleanCaveOpen(f);
-      case "FLAG_HIDE_MEWTWO": return !f.foughtMewtwo;
-      // Faraway Island's Mew, till it's caught or beaten (FLAG_CAUGHT_MEW, FLAG_DEFEATED_MEW).
-      case "FLAG_HIDE_MEW": return !f.foughtMew;
-      case "FLAG_HIDE_RUBY": return !f.gotRuby;
-      // Four Island: Gary, for his scene the first time you come; the
-      // poachers and Lorelei in Icefall Cave until you've run them off, and
-      // then Lorelei at home until the Sapphire's in Celio's machine; her
-      // dolls, more of them the more often you've entered the Hall of Fame
-      // (UpdateLoreleiDollCollection).
-      case "FLAG_HIDE_FOUR_ISLAND_RIVAL": return !f.fourIslandScene;
-      case "FLAG_HIDE_ICEFALL_CAVE_ROCKETS": return !f.icefallScene;
-      // (She stays by you until you leave: FourIsland_IcefallCave_Back_OnTransition.)
-      case "FLAG_HIDE_ICEFALL_CAVE_LORELEI": return !f.icefallScene || (tempFlags.has("icefallLorelei") && { x: 12, y: 15, movement: "face_right" });
-      case "FLAG_HIDE_LORELEI_IN_HER_HOUSE": return !!f.icefallScene && !f.canLinkWithRS;
-      // (The Wigglytuff, Seel, Pikachu, Slowpoke, Slowbro and Psyduck dolls have
-      // no flag: always there, as in FireRed. The other eight come one per 25
-      // entries: Sevii.loreleiDolls.)
-      case "FLAG_HIDE_LORELEI_HOUSE_MEOWTH_DOLL": case "FLAG_HIDE_LORELEI_HOUSE_CHANSEY_DOLL": case "FLAG_HIDE_LORELEIS_HOUSE_NIDORAN_F_DOLL":
-      case "FLAG_HIDE_LORELEI_HOUSE_JIGGLYPUFF_DOLL": case "FLAG_HIDE_LORELEIS_HOUSE_NIDORAN_M_DOLL": case "FLAG_HIDE_LORELEIS_HOUSE_FEAROW_DOLL":
-      case "FLAG_HIDE_LORELEIS_HOUSE_PIDGEOT_DOLL": case "FLAG_HIDE_LORELEIS_HOUSE_LAPRAS_DOLL":
-        return Sevii.loreleiDollShown(person.flag, f.hofCount);
-      // Five Island: Team Rocket in the Meadow and the Warehouse until its
-      // Admin's beaten; Selphy lost in the Lost Cave, then outside her house
-      // as you bring her home, then inside; her butler only comes in to thank you.
-      case "FLAG_HIDE_FIVE_ISLAND_ROCKETS": return !f.defeatedRocketsInWarehouse;
-      case "FLAG_HIDE_LOST_CAVE_SELPHY": return !f.lostCaveScene;
-      case "FLAG_HIDE_RESORT_GORGEOUS_SELPHY": return f.resortScene === 1;
-      case "FLAG_HIDE_RESORT_GORGEOUS_INSIDE_SELPHY": return (f.resortScene || 0) >= 2;
-      case "FLAG_HIDE_SELPHYS_BUTLER": return false;
-      // Six Island: Gary in the Pokémon Center the first time you come; the
-      // scientist outside the Dotted Hole until you've been to Icefall Cave
-      // (FireRed sets FLAG_HIDE_RUIN_VALLEY_SCIENTIST there); the Sapphire
-      // until the thief has it; the thief only for his scene.
-      case "FLAG_HIDE_SIX_ISLAND_POKECENTER_RIVAL": return !f.sixCenterScene;
-      case "FLAG_HIDE_RUIN_VALLEY_SCIENTIST": return !f.icefallScene;
-      case "FLAG_HIDE_SAPPHIRE": return !f.learnedYesNahChansey;
-      case "FLAG_HIDE_DOTTED_HOLE_SCIENTIST": return false;
-      // After you choose, your rival stands below the Poké Ball he took.
-      // Leaf (the lab rival's other look) until she leaves after your battle;
-      // after you choose, she stands below the Poké Ball she took.
-      case "FLAG_HIDE_RIVAL_IN_LAB":
-        if (f.rivalLabBattle) return false;
-        return Object.assign({}, person.alt, f.starter ? { x: ballOf(RIVAL_PICK[f.starter]).x, y: 5, movement: "face_up" } : {});
-      case "FLAG_HIDE_BULBASAUR_BALL": case "FLAG_HIDE_SQUIRTLE_BALL": case "FLAG_HIDE_CHARMANDER_BALL":
-        return !(f.starter && (ballOf(f.starter).flag === person.flag || ballOf(RIVAL_PICK[f.starter]).flag === person.flag));
-      default: return true;
-    }
-  }
-
   const T = (label) => window.WORLD_TEXT[label];
   // {PLAYER}, {RIVAL}, and {STR_VAR_1..3} from `vars` (["Abra", "Mr. Mime"]).
   // (Once Mr. Stone has made your Pokégear a PokéNav, it's that in everyone's words: "registered in your PokéNav".)
@@ -3259,1807 +3566,6 @@
     const at = Overworld.position(), b = World.blockAt(at.map, at.x, at.y);
     if (b.behavior !== World.MB.WARP_DOOR && b.behavior !== World.MB.CAVE_DOOR) return;
     if (World.step({ map: at.map, x: at.x, y: at.y }, "down", null).ok) await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
-  }
-  async function story(ev) {
-    if (ev.type === "pc") {
-      // (While Bill's helping Celio on One Island, the PCs can't reach his storage: FLAG_SYS_PC_STORAGE_DISABLED.)
-      if (player.flags.pcStorageDisabled) { await say(T("OneIsland_PokemonCenter_1F_Text_UsualPCServicesUnavailable")); return; }
-      sfx("se_pc_on");
-      await say("{PLAYER} booted up the PC.");
-      await pc();
-      return;
-    }
-    if (ev.type === "trainer") {
-      if (ev.second && await pairBattle(ev, ev.second)) return;
-      const beaten = !!player.flags[ev.person.trainer.id];
-      await trainerBattle(ev.person, ev.approach, ev.facing);
-      if (!beaten) await afterRocket(ev.person);
-      // (Their number, asked on the map once the battle screen's gone, as HGSS does: ui/pokegear.js.)
-      if (!beaten && player.flags[ev.person.trainer.id] && gear.wantsNumber(ev.person)) { show("world"); await Overworld.resume(); await gear.beatTrainer(ev.person); }
-      return;
-    }
-    if (ev.type === "hidden") {
-      const h = ev.hidden;
-      if (h.item === "coins") { await hiddenCoins(h); return; }
-      Player.addItem(player, h.item, h.quantity);
-      player.flags[h.flag] = true;
-      await sayWithJingle(itemJingle(h.item), "{PLAYER} found " + (h.quantity > 1 ? h.quantity + " " : "a ") + Bag.name(h.item) + "!");
-      return;
-    }
-    const script = (ev.person || ev.sign || ev.trigger).script;
-    const f = player.flags;
-
-    // (Mom's deliveryman, and the Gym Leaders' numbers and Dojo rematches: ui/pokegear.js.)
-    if (ev.person && await gear.talkPerson(ev.person, ev.map)) return;
-    if (ev.person && await berryFarm.talk(ev.person)) return;   // (Celadon's Berry Farm: ui/berry-farm.js)
-    if (ev.person && await hoennBerries.talk(ev.person)) return;   // (Hoenn's trees)
-    if (ev.person && await sinnohBerries.talk(ev.person)) return;   // (Sinnoh's)
-    // (Hoenn's own: a sailor, the bedroom PCs, the Day Care.)
-    if (script === "SlateportCity_Harbor_EventScript_Sailor") { await slateportSailor(); return; }
-    if (isHoenn(ev.map || player.location.map) && /_EventScript_PC$/.test(script)) { await pc(); return; }
-    if (script === "Route117_PokemonDayCare_EventScript_DaycareWoman") { await dayCareMan(); return; }
-    if (script === "LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter") { await moveDeleter(); return; }
-    if (script === "FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner") { await moveRelearner(); return; }
-    // (The Delta Episode's scenes and people, and Jirachi's deck: this game's own.)
-    if (deltaDue(script)) { await deltaScene(script); return; }
-    if (isHoenn(ev.map || player.location.map) && await deltaTalk(script, ev)) return;
-    if (await southernIsland(script)) return;
-    // Hoenn's: Emerald's scripts (ui/hoenn-script.js), and its maps' scenes as you come in.
-    if (/^(enter|arrive):/.test(script) && isHoenn(script.replace(/^\w+:/, ""))) {
-      const due = hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
-      if (due) { await outOfDoorway(); await runHoenn(due, null); }
-      return;
-    }
-    { const hs = hoennScriptFor(ev); if (hs) {
-      // (A Hoenn Trainer you'd beaten: after what their script says, if it battled nothing (Emerald's own rematches
-      // do), the rematch offer.)
-      const t = ev.person && ev.person.trainer, was = t && !!player.flags[t.id], n = battleCount;
-      await runHoenn(hs, ev.person);
-      if (was && battleCount === n && TRAINER_SCRIPTS.has(script)) await trainerRematch(ev.person);
-      return;
-    } }
-
-    // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
-    if (/^(enter|arrive):/.test(script)) { const due = johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await outOfDoorway(); await runJohto(due, null); return; } }
-    // (Ilex Forest's shrine, with the GS Ball: Crystal's Celebi.)
-    if (script === "hgss:D36R0101:scr_seq_D36R0101_012" && Player.itemCount(player, "gs-ball") > 0 && !player.flags.gsBallCelebi) { await ilexShrineCelebi(); return; }
-    // (Ilex Forest's Headbutt tutor: ui/johto-field.js.)
-    if (script === "hgss:D36R0101:scr_seq_D36R0101_002") { await johtoField.headbuttTutor(); return; }
-    { const js = johto.scriptOf(ev.person || ev.sign || ev.trigger); if (js) { await runJohto(js, ev.person); return; } }
-    { const ap = /^hgss_apricorn:(\d+):(\w+)$/.exec(script || ""); if (ap) { await apricornTree(+ap[1], ap[2]); return; } }
-    { const ar = /^Johto_AzaleaRide:(\d+)$/.exec(script || ""); if (ar) { await azaleaRide(+ar[1]); return; } }
-    { const gp = /^Johto_GoldenrodPanel:(\d)$/.exec(script || ""); if (gp) { await goldenrodPanel(+gp[1]); return; } }
-    if (script === "Johto_MagnetTrain") { await magnetTrainBoard(); return; }
-    if (script === "Johto_SSAquaBoard") { await ssAquaBoard(); return; }
-    // (Hoenn's Poké Mart clerks: their stock, from Emerald's scripts.)
-    if (ev.person && ev.person.mart && /_Mart_EventScript_Clerk$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).region === "hoenn") { await mart(ev.person.mart); return; }
-    // (Sinnoh's, from the Essentials project: more for more Badges, any region's.)
-    if (ev.person && ev.person.mart && /_Mart_EventScript_Clerk$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).region === "sinnoh") {
-      const tier = (ev.person.martTiers || []).find(([n]) => player.badges.length >= n);
-      await mart(tier ? tier[1] : ev.person.mart);
-      return;
-    }
-    if (script === "SandgemTown_EventScript_Sailor") { await sinnohSailor(); return; }
-    if (ev.person && ev.person.ferry && isSinnoh(ev.map)) { await sinnohFerry(ev.person); return; }
-    if (/_EventScript_FossilScientist$/.test(script || "") && isSinnoh(ev.map)) { await fossilScientist(); return; }
-    // (Johto's Pokémon Centers' nurses heal as Kanto's do.)
-    if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && (window.WORLD_MAPS[ev.map] || {}).pokemonCenter) { await nurse(ev.map, ev.person); return; }
-
-    // (Kanto's Gym Leaders' rematches, once you're Champion: leaderRematch.)
-    if (KANTO_REMATCH[script] && await leaderRematch(KANTO_REMATCH[script])) return;
-    if (script === "PewterCity_Gym_EventScript_Brock") { await brock(ev.person); return; }
-    if (script === "CeruleanCity_Gym_EventScript_Misty") { await misty(ev.person); return; }
-    if (script === "VermilionCity_Gym_EventScript_LtSurge") { await ltSurge(ev.person); return; }
-    if (script === "CeladonCity_Gym_EventScript_Erika") { await erika(ev.person); return; }
-    if (script === "SaffronCity_Gym_EventScript_Sabrina") { await sabrina(ev.person); return; }
-    if (script === "FuchsiaCity_Gym_EventScript_Koga") { await koga(ev.person); return; }
-    if (script === "CinnabarIsland_Gym_EventScript_Blaine") { await blaine(ev.person); return; }
-    if (script === "ViridianCity_Gym_EventScript_Giovanni") { await giovanniGym(ev.person); return; }
-    if (ELITE_FOUR_SCRIPTS.includes(script)) { await eliteFour(ELITE_FOUR_SCRIPTS.indexOf(script)); return; }
-    if (/^enter:PokemonLeague_/.test(script)) { await leagueEnter(script.slice(6)); return; }
-    { const g = /^Route23_EventScript_(\w+)BadgeGuard(Trigger)?$/.exec(script); if (g) { await badgeGuard(ROUTE23_BADGES.indexOf(g[1]) + 1, !!g[2], "LOCALID_" + g[1].toUpperCase() + "_BADGE_GUARD"); return; } }
-    { const q = /^CinnabarIsland_Gym_EventScript_Quiz(\d)(Left|Right)$/.exec(script); if (q) { await cinnabarQuiz(+q[1], q[2]); return; } }
-    if (FUCHSIA_SIGN_MONS[script]) { await monSign(FUCHSIA_SIGN_MONS[script], ev.sign.text); return; }
-    if (BRAILLE_SIGNS[script]) { await say(BRAILLE_SIGNS[script].map(braille)); return; }
-    if (/^SevenIsland_SevaultCanyon_TanobyKey_EventScript_Switch\d$/.test(script)) { await tanobyKeySwitch(script); return; }
-    if (script === "Game_EventScript_Leaf") {
-      if (!canBattle()) return;
-      if (ev.map === "PewterCity") await leafPewter(true); else await leafVermilion();
-      return;
-    }
-    // The Karate Master, beaten: choose a prized Pokémon (or train with them).
-    if (script === "SaffronCity_Dojo_EventScript_MasterKoichi" && !trainerWaiting(ev.person)) {
-      await dojoMaster();
-      return;
-    }
-    // Gideon has the Sapphire (his battle's own ending: FiveIsland_RocketWarehouse_EventScript_DefeatedGideon).
-    if (script === "FiveIsland_RocketWarehouse_EventScript_Gideon") { await gideon(ev.person); return; }
-    if (TRAINER_SCRIPTS.has(script)) {
-      if (trainerWaiting(ev.person)) {
-        const beaten = !!f[ev.person.trainer.id];
-        await trainerBattle(ev.person, null);
-        if (!beaten) await afterRocket(ev.person);
-        if (!beaten && f[ev.person.trainer.id] && gear.wantsNumber(ev.person)) { show("world"); await Overworld.resume(); await gear.beatTrainer(ev.person); }
-        if (ev.person.trainer.id === DOJO_MASTER) await dojoDenDoor();
-      } else {
-        // (A Johto trainer with a phone: a rematch they called for, a gift, or asking for your number, then
-        // "Rematch?" as anyone's.)
-        const phone = await gear.talkTrainer(ev.person);
-        if (phone === "asked") { await trainerRematch(ev.person); return; }
-        if (phone) return;
-        await say(dojoAfter(ev.person.trainer.id) || ev.person.trainer.after || ev.person.text || []);
-        await trainerRematch(ev.person);
-      }
-      return;
-    }
-
-    if (ev.person && ev.person.item) {
-      const item = ev.person.item;
-      Player.addItem(player, item);
-      f[ev.person.flag] = true;
-      Overworld.removePerson(ev.person);   // (just the ball: everyone else stays where they are)
-      await sayWithJingle(itemJingle(item), /^Game_EventScript_MegaStone_/.test(ev.person.script || "") ? "{PLAYER} found " + article(Bag.name(item)) + "!"
-        : "{PLAYER} found " + article(Bag.name(item)) + "!");
-      return;
-    }
-
-    if (STARTER_BALLS[script]) {
-      const ball = STARTER_BALLS[script];
-      if (f.starter) { await say("That's Prof. Oak's last Pokémon."); return; }
-      if (!f.oakInLab) { await say(T("PalletTown_ProfessorOaksLab_Text_ThoseArePokeBalls")); return; }
-      showPicture(ball.species);
-      cry(ball.species);
-      const yes = await confirm("So! You want the " + ball.kind + " Pokémon, " + ball.species + "?");
-      hidePicture();
-      if (!yes) return;
-      Player.receive(player, Party.create(ball.species, STARTER_LEVEL));
-      Overworld.removeObject(ball.id);
-      await say("{PLAYER} received the " + ball.species + " from Prof. Oak!");
-      // Leaf walks over to the Poké Ball that's weak against yours and takes it.
-      // (FireRed's walk to Squirtle runs along the row you stand in, past
-      // Bulbasaur's ball: with you there, she goes round, a row lower.)
-      const theirs = RIVAL_PICK[ball.species];
-      await say(["Leaf: Then I'll take this one!\nI think we'll get along great."]);
-      const walk = theirs === "Squirtle" && ball.species === "Bulbasaur"
-        ? ["walk_down", "walk_down", "walk_right", "walk_right", "walk_right", "walk_right", "walk_up"]
-        : M("PalletTown_ProfessorOaksLab_Movement_RivalWalksTo" + theirs);
-      await Overworld.act([{ who: LAB_RIVAL, moves: walk }]);
-      Overworld.removeObject(ballOf(theirs).id);
-      f.starter = ball.species;
-      await say(LAB_RIVAL_NAME + " received the " + theirs + " from Prof. Oak!");
-      return;
-    }
-
-    { const den = RaidDens.byScript(script); if (den) { await raidDen(den); return; } }
-    if (SILPH_WORKERS[script]) { await say(T(SILPH_WORKERS[script][silphFreed() ? 1 : 0])); return; }
-    if (SILPH_DOORS.includes(script)) { await silphDoor(script); return; }
-    // (Out of Viridian Forest's north gate with the Tera Orb still to get: the aide comes out after you.)
-    if (teraAideDue(script)) { await teraAide(); return; }
-    if (script === "enter:Route23" && victoryRoadRivalDue()) { await victoryRoadRival(); return; }
-    if (/^enter:/.test(script) && megaAideDue(script.slice(6))) { await megaAide(); return; }
-    if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) { await megaTower(); return; }
-    const can = /^VermilionCity_Gym_EventScript_TrashCan(\d+)$/.exec(script);
-    if (can) { await trashCan(+can[1]); return; }
-    const slots = /^CeladonCity_GameCorner_EventScript_SlotMachine(\d+)$/.exec(script);
-    if (slots) { await slotMachine(+slots[1]); return; }
-
-    if (Orre.FILLERS[script]) { await orreTrainer(script); return; }
-    if (Orre.SHADOW_TRAINERS[script]) { await shadowTrainer(script); return; }
-    if (Orre.TOURNAMENTS[script]) { await orreTournament(script); return; }
-    switch (script) {
-      case "PalletTown_EventScript_SignLady":
-        await signLady(ev.person);
-        return;
-      case "CenterUpstairs_EventScript_MoveRelearner": await moveRelearner(); return;
-      case "CenterUpstairs_EventScript_MoveDeleter": await moveDeleter(); return;
-      case "PalletTown_EventScript_SignLadyTrigger":
-        // Walking past her by the north exit, she shows you what she copied.
-        if (!f.starter || f.signLady) return;
-        await Overworld.act([{ who: SIGN_LADY, moves: M("Common_Movement_WalkInPlaceFasterRight") },
-          { who: "player", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-        await signLadyShowSign();
-        return;
-      case "PalletTown_EventScript_TrainerTips":
-        await say(ev.sign.text);
-        if (!f.signLady) f.signLady = 1;
-        return;
-
-      case "PalletTown_PlayersHouse_1F_EventScript_Mom":
-        if (!player.party.length) {
-          // She's Red's mom: he's already on his way. After the first time,
-          // just the last part.
-          if (f.metRedsMom) await say(["Red's Mom: If you want a Pokémon of\nyour own, go see Prof. Oak."]);
-          else await say(["Red's Mom: …Right.\nAll boys leave home someday.\nIt said so on TV.",
-            "My son Red has already begun his\njourney. He should be in Viridian\nForest by now.",
-            "If you want a Pokémon of your own,\ngo see Prof. Oak."]);
-          f.metRedsMom = true;
-          return;
-        }
-        // (This game's own: home as the new Champion, she's heard. FireRed's
-        // Mom has nothing new to say after the Hall of Fame.)
-        if (f.gameClear && !f.momHeardChampion) {
-          f.momHeardChampion = true;
-          await say(["Red's Mom: {PLAYER}! Welcome home!\nI saw it on TV!",
-            "You're the new Pokémon League\nChampion! I'm so proud of you!"]);
-        }
-        // (Once she's on the Pokégear, your savings with her: HGSS's Mom's bank, ui/pokegear.js.)
-        if (await gear.momHome()) return;
-        await say("Red's Mom: Oh, {PLAYER}! You look worn out.\nYou and your Pokémon should take a\nquick rest.");
-        await outOfCenterHeal();
-        await say("Red's Mom: There! You and your Pokémon\nare looking great. Take care now!");
-        return;
-
-      // The woman on the S.S. Anne who lets you rest.
-      case "SSAnne_1F_Room6_EventScript_Woman":
-        if (!(await confirm(T("SSAnne_1F_Room6_Text_TakeAShortRest")[0]))) {
-          await say(T(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl
-            ? "SSAnne_1F_Room6_Text_SorryYouLookLikeMySister" : "SSAnne_1F_Room6_Text_SorryYouLookLikeMyBrother"));
-          return;
-        }
-        await outOfCenterHeal();
-        await say(T("SSAnne_1F_Room6_Text_GladEveryoneIsRefreshed"));
-        return;
-
-      // The woman in Vermilion's Pokémon Center who gave you FireRed's VS Seeker: there's none in this game, a
-      // Trainer you've beaten offers a rematch when you talk to them (trainerRematch).
-      case "VermilionCity_PokemonCenter_1F_EventScript_VSSeekerWoman":
-        await say(["Do you ever get the urge to battle a\nTrainer you've beaten before?", "Just go and talk to them! Trainers love\na rematch. They'll battle you again\nany time you ask."]);
-        return;
-
-      case "PalletTown_PlayersHouse_2F_EventScript_PC":
-        // Your own PC at home holds items, as in FireRed (BedroomPC).
-        sfx("se_pc_on");
-        await say("{PLAYER} booted up the PC.");
-        await playersPc();
-        sfx("se_pc_off");
-        return;
-
-      case "PalletTown_EventScript_OakTriggerLeft":
-      case "PalletTown_EventScript_OakTriggerRight":
-        if (player.party.length || f.oakInLab) return;
-        await oakWalksYouToTheLab(script.endsWith("Left") ? "Left" : "Right");
-        return;
-
-      // Leaving the lab before choosing a Pokémon.
-      case "PalletTown_ProfessorOaksLab_EventScript_LeaveStarterSceneTrigger":
-        if (f.oakInLab && !f.starter) {
-          await say(T("PalletTown_ProfessorOaksLab_Text_OakHeyDontGoAwayYet"));
-          Overworld.forceStep("up");
-          return;
-        }
-        // with a Pokémon, the rival battle trigger on the same tile takes over
-      // falls through
-      case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerLeft":
-      case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerMid":
-      case "PalletTown_ProfessorOaksLab_EventScript_RivalBattleTriggerRight": {
-        if (!f.starter || f.rivalLabBattle || !player.party.length) return;
-        await rivalLabBattle(ev.trigger.x);
-        return;
-      }
-
-      // Leaf, waiting in the lab before Oak walks you there: she introduces
-      // herself, then wonders where he is.
-      case "PalletTown_ProfessorOaksLab_EventScript_Rival":
-        if (!f.oakInLab && !f.starter && !f.metLeaf) {
-          await say(["Leaf: Oh, hey! What's your name?\n{PLAYER}?",
-            "Leaf: My name's Leaf! I'm here to get my\nstarter Pokémon, but Prof. Oak is not\naround."]);
-          f.metLeaf = true;
-        } else if (!f.oakInLab && !f.starter) await say(["Leaf: I wonder where he is?"]);
-        else if (!f.starter) await say(["Leaf: You go ahead and choose first,\n{PLAYER}! I don't mind waiting."]);
-        else await say(["Leaf: Your Pokémon looks really\ncute! Mine's pretty great, too."]);
-        return;
-
-      case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
-        if (!f.starter) await say(ev.person.text);
-        else if (f.orreStory >= 1) await oakOrre();
-        else if (f.gameClear && !f.gotGsBall) await oakGsBall();
-        else if (f.oaksParcel && !f.parcelDelivered) await pokedexScene();
-        else if (f.parcelDelivered) await say(T("PalletTown_ProfessorOaksLab_Text_OakMonsAroundWorldWait"));
-        else if (!f.rivalLabBattle) await say(T("PalletTown_ProfessorOaksLab_Text_OakCanReachNextTownWithMon"));
-        else await say(T("PalletTown_ProfessorOaksLab_Text_OakBattleMonForItToGrow"));
-        return;
-
-      case "PalletTown_RivalsHouse_EventScript_Daisy":
-        // The first time you talk, she introduces herself and gives you the
-        // Town Map off the wall.
-        if (f.townMap) await say(T("PalletTown_RivalsHouse_Text_ExplainTownMap"));
-        else {
-          await say(["Daisy: Oh, hi! I don't think we've\nmet. I'm Daisy, {RIVAL}'s older\nsister.",
-            "Our grandpa is Prof. Oak. His lab\nis just down the road.",
-            "Here, take this.\nIt'll help you find your way around."]);
-          await Overworld.act([{ who: "LOCALID_DAISY", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-          Overworld.removeObject("LOCALID_TOWN_MAP");
-          await Overworld.act([{ who: "LOCALID_DAISY", moves: M("Common_Movement_FacePlayer") }]);
-          Player.addItem(player, "town-map");
-          f.townMap = true;
-          await say(T("PalletTown_RivalsHouse_Text_ReceivedTownMapFromDaisy"));
-        }
-        return;
-
-      // ---------- Viridian City ----------
-
-      case "ViridianCity_EventScript_RoadBlocked":
-        if (f.parcelDelivered) return;
-        await say(T("ViridianCity_Text_ThisIsPrivateProperty"));
-        Overworld.forceStep("down");
-        return;
-
-      // He turns to you and you to him (FireRed's TutorialTriggerLeft/Right).
-      case "ViridianCity_EventScript_TutorialTriggerLeft":
-      case "ViridianCity_EventScript_TutorialTriggerRight": {
-        if (!f.parcelDelivered || f.catchTutorial) return;
-        const left = script.endsWith("Left");
-        await Overworld.act([{ who: "LOCALID_TUTORIAL_MAN", moves: M(left ? "Common_Movement_WalkInPlaceFasterLeft" : "Common_Movement_WalkInPlaceFasterRight") }]);
-        await Overworld.act([{ who: "player", moves: M(left ? "Common_Movement_WalkInPlaceFasterRight" : "Common_Movement_WalkInPlaceFasterLeft") }]);
-        await catchTutorial();
-        return;
-      }
-
-      case "ViridianCity_EventScript_TutorialOldMan":
-        if (!f.parcelDelivered) await say(T("ViridianCity_Text_ThisIsPrivateProperty"));
-        else if (!f.catchTutorial) await catchTutorial();
-        else await say(T("ViridianCity_Text_WeakenMonsFirstToCatch"));
-        return;
-
-      case "ViridianCity_EventScript_Woman":
-        await say(f.parcelDelivered ? ev.person.text : T("ViridianCity_Text_GrandpaHasntHadCoffeeYet"));
-        return;
-
-      case "ViridianCity_EventScript_Youngster":
-        await say(T(await confirm(fill(T("ViridianCity_Text_WantToKnowAboutCaterpillarMons").join(" ")))
-          ? "ViridianCity_Text_ExplainCaterpieWeedle" : "ViridianCity_Text_OhOkayThen"));
-        return;
-
-      case "ViridianCity_EventScript_DreamEaterTutor":
-        await moveTutor("Dream Eater", "tutorDreamEater", "Text_DreamEater");
-        return;
-      // Lavender Town: the girl asking whether you believe in ghosts.
-      case "LavenderTown_EventScript_LittleGirl":
-        await say(T(await confirm(T("LavenderTown_Text_DoYouBelieveInGhosts")[0])
-          ? "LavenderTown_Text_SoThereAreBelievers" : "LavenderTown_Text_JustImaginingWhiteHand"));
-        return;
-      case "LavenderTown_House2_EventScript_NameRater":
-        await nameRater();
-        return;
-      // Rock Tunnel B1F's Rock Slide tutor.
-      case "RockTunnel_B1F_EventScript_RockSlideTutor":
-        await moveTutor("Rock Slide", "tutorRockSlide", "Text_RockSlide");
-        return;
-      // Prof. Oak's Aide in Route 10's Pokémon Center: the Everstone for twenty kinds caught.
-      case "Route10_PokemonCenter_1F_EventScript_Aide":
-        await aideGift({ needed: 20, item: "everstone", flag: "gotEverstone", text: "Route10_PokemonCenter_1F_Text_",
-          ask: "GiveEverstoneIfCaught20Mons", received: "ReceivedEverstoneFromAide", explain: "ExplainEverstone" });
-        return;
-
-      // FireRed's parcel scene: the clerk calls out, you walk up to the counter.
-      case "enter:PewterCity":
-        await leafPewter();
-        return;
-
-      case "enter:ViridianCity_Mart": {
-        if (f.oaksParcel) return;
-        const CLERK = "LOCALID_VIRIDIAN_MART_CLERK";
-        await Overworld.act([{ who: CLERK, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-        await say(T("ViridianCity_Mart_Text_YouCameFromPallet"));
-        await Overworld.act([
-          { who: CLERK, moves: M("ViridianCity_Mart_Movement_FacePlayer") },
-          { who: "player", moves: M("ViridianCity_Mart_Movement_ApproachCounter") }]);
-        await say(T("ViridianCity_Mart_Text_TakeThisToProfOak"));
-        f.oaksParcel = true;
-        Player.addItem(player, "oaks-parcel");
-        await say(T("ViridianCity_Mart_Text_ReceivedOaksParcelFromClerk"));
-        return;
-      }
-
-      case "ViridianCity_Mart_EventScript_Clerk":
-        if (!f.parcelDelivered) { await say(T("ViridianCity_Mart_Text_SayHiToOakForMe")); return; }
-        await mart(ev.person.mart);
-        return;
-
-      case "ViridianCity_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-
-      case "Common_EventScript_UnionRoomAttendant":
-      case "Common_EventScript_WirelessClubAttendant":
-        await say(T("Text_WirelessClubUndergoingAdjustments"));
-        return;
-      case "Common_EventScript_DirectCornerAttendant":
-        await directCorner();
-        return;
-
-      // ---------- Route 22 ----------
-
-      // Your rival is waiting on Route 22 once you have the Pokédex.
-      case "Route22_EventScript_EarlyRivalTriggerTop":
-      case "Route22_EventScript_EarlyRivalTriggerMid":
-      case "Route22_EventScript_EarlyRivalTriggerBottom":
-        if (f.pokedex && !f.route22Rival) await route22Rival(script.replace("Route22_EventScript_EarlyRivalTrigger", ""));
-        return;
-
-      // The League gate: the guard checks for the Boulder Badge (FireRed's
-      // Route22_NorthEntrance_EventScript_BadgeGuard, as Route 23's guards).
-      case "Route22_NorthEntrance_EventScript_BoulderBadgeGuardTrigger":
-      case "Route22_NorthEntrance_EventScript_BoulderBadgeGuard":
-        await badgeGuard(1, script.endsWith("Trigger"), "#0");
-        return;
-
-      // Gary again, on your way to the League with all eight Badges.
-      case "Route22_EventScript_LateRivalTriggerTop":
-      case "Route22_EventScript_LateRivalTriggerMid":
-      case "Route22_EventScript_LateRivalTriggerBottom":
-        await route22LateRival(script.replace("Route22_EventScript_LateRivalTrigger", ""));
-        return;
-
-      // ---------- Viridian City's Gym ----------
-      // Locked until you have the other Badges (ViridianCity_OnTransition's
-      // TryUnlockGym: the Cascade to the Volcano Badge).
-      case "ViridianCity_EventScript_GymDoorLocked":
-        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-        await sleep(333);
-        await say(T("ViridianCity_Text_GymDoorsAreLocked"));
-        Screen.say("");
-        await Overworld.act([{ who: "player", moves: M("ViridianCity_Movement_JumpDownLedge") }]);
-        return;
-      case "ViridianCity_EventScript_OldMan":
-        if (viridianGymOpen()) { await say(T("ViridianCity_Text_ViridiansGymLeaderReturned")); return; }
-        await say(T("ViridianCity_Text_GymClosedWonderWhoLeaderIs"));
-        Screen.say("");
-        await faceBack(ev.person);
-        return;
-      case "ViridianCity_Gym_EventScript_GymGuy":
-        await say(T(f.TRAINER_LEADER_GIOVANNI ? "ViridianCity_Gym_Text_GymGuyPostVictory" : "ViridianCity_Gym_Text_GymGuyAdvice"));
-        return;
-      case "ViridianCity_Gym_EventScript_GymStatue":
-        await say(T(hasBadge("earth") ? "ViridianCity_Gym_Text_GymStatuePlayerWon" : "ViridianCity_Gym_Text_GymStatue"));
-        return;
-
-      // ---------- The Power Plant ----------
-      case "PowerPlant_EventScript_Zapdos":
-        await legendaryBird(ev.person, "Zapdos", "foughtZapdos");
-        return;
-      case "PowerPlant_EventScript_Electrode1":
-      case "PowerPlant_EventScript_Electrode2":
-        await powerPlantElectrode(ev.person, script.slice(-1));
-        return;
-
-      // ---------- Victory Road and Indigo Plateau ----------
-      case "VictoryRoad_2F_EventScript_DoubleEdgeTutor":
-        await moveTutor("Double-Edge", "tutorDoubleEdge", "Text_DoubleEdge");
-        return;
-      case "IndigoPlateau_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      case "IndigoPlateau_PokemonCenter_1F_EventScript_Clerk":
-        await mart(ev.person.mart);
-        return;
-      // The Elite Four's door: once you're Champion, it's closed until the
-      // Sapphire's in Celio's machine (Sevii.leagueClosed).
-      case "IndigoPlateau_PokemonCenter_1F_EventScript_DoorGuard":
-        await say(T(Sevii.leagueClosed(f) ? "IndigoPlateau_PokemonCenter_1F_Text_LoreleiIsAbsentClosedForTimeBeing"
-          : "IndigoPlateau_PokemonCenter_1F_Text_FaceEliteFourGoodLuck"));
-        return;
-
-      // ---------- Pewter City ----------
-
-      // Before you have Brock's badge, a boy marches you to the Gym if you
-      // head for the east exit, or if you talk to him.
-      case "PewterCity_EventScript_GymGuideTriggerTop":
-      case "PewterCity_EventScript_GymGuideTriggerMid":
-      case "PewterCity_EventScript_GymGuideTriggerBottom":
-        if (!f.TRAINER_LEADER_BROCK) await gymGuide(script.replace("PewterCity_EventScript_GymGuideTrigger", ""));
-        return;
-      case "PewterCity_EventScript_GymGuide":
-        await gymGuide(Overworld.position().facing === "right" ? "East" : "Top", true);
-        return;
-
-      case "PewterCity_EventScript_MuseumGuide": {
-        if (await confirm(fill(T("PewterCity_Text_DidYouCheckOutMuseum")[0]))) { await say(T("PewterCity_Text_WerentThoseFossilsAmazing")); return; }
-        await say(T("PewterCity_Text_ReallyYouHaveToGo"));
-        const side = { up: "North", down: "South", left: "West", right: "East" }[Overworld.position().facing];
-        const GUIDE = "LOCALID_PEWTER_MUSEUM_GUIDE";
-        await Overworld.act([{ who: GUIDE, moves: ["delay_10"].concat(M("PewterCity_Movement_GuideWalkToMuseum" + side)) },
-          { who: "player", moves: ["delay_10"].concat(M("PewterCity_Movement_PlayerWalkToMuseum" + side)) }]);
-        await say(T("PewterCity_Text_ThisIsTheMuseum"));
-        await Overworld.act([{ who: GUIDE, moves: ["delay_10"].concat(M("PewterCity_Movement_MuseumGuideExit")) }]);
-        Overworld.removeObject(GUIDE);
-        return;
-      }
-
-      case "PewterCity_EventScript_BugCatcher":
-        await say(T((await confirm(fill(T("PewterCity_Text_DoYouKnowWhatImDoing").join(" "))))
-          ? "PewterCity_Text_ThatsRightItsHardWork" : "PewterCity_Text_SprayingRepelToKeepWildMonsOut"));
-        return;
-
-      // The Museum: ₽50 a visit, paid at the counter as you walk in.
-      case "PewterCity_Museum_1F_EventScript_EntranceTriggerLeft":
-      case "PewterCity_Museum_1F_EventScript_EntranceTriggerMid":
-      case "PewterCity_Museum_1F_EventScript_EntranceTriggerRight": {
-        if (f.museumTicket) return;
-        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-        const ask_ = T("PewterCity_Museum_1F_Text_Its50YForChildsTicket");
-        await say(ask_.slice(0, -1));
-        const yes = await confirm(fill(ask_[ask_.length - 1]) + "\n(You have " + money(player.money) + ".)");
-        if (yes && player.money >= 50) {
-          const side = script.replace("PewterCity_Museum_1F_EventScript_EntranceTrigger", "");
-          await Overworld.act([{ who: "player", moves: M("PewterCity_Museum_1F_Movement_ApproachCounter" + side) }]);
-          Player.addMoney(player, -50);
-          f.museumTicket = true;
-          await say(T("PewterCity_Museum_1F_Text_Right50YThankYou"));
-        } else {
-          await say(T(yes ? "PewterCity_Museum_1F_Text_DontHaveEnoughMoney" : "PewterCity_Museum_1F_Text_ComeAgain"));
-          await Overworld.act([{ who: "player", moves: M("PewterCity_Museum_1F_Movement_ForcePlayerExit") }]);
-        }
-        return;
-      }
-
-      // Behind the counter he tells you about Amber; at the counter, enjoy yourself.
-      case "PewterCity_Museum_1F_EventScript_Scientist1":
-        if (Overworld.position().facing === "right") { await say(T("PewterCity_Museum_1F_Text_PleaseEnjoyYourself")); return; }
-        await say(T("PewterCity_Museum_1F_Text_DoYouKnowWhatAmberIs").slice(0, -1));
-        await say(T((await confirm(fill(T("PewterCity_Museum_1F_Text_DoYouKnowWhatAmberIs").slice(-1)[0])))
-          ? "PewterCity_Museum_1F_Text_AmberContainsGeneticMatter" : "PewterCity_Museum_1F_Text_AmberIsFossilizedSap"));
-        await Overworld.act([{ who: "LOCALID_MUSEUM_SCIENTIST1", moves: ["face_left"] }]);
-        return;
-
-      case "PewterCity_Museum_1F_EventScript_OldAmberScientist":
-        if (f.gotOldAmber) { await say(T("PewterCity_Museum_1F_Text_GetOldAmberChecked")); return; }
-        await say(T("PewterCity_Museum_1F_Text_WantYouToGetAmberExamined"));
-        f.gotOldAmber = true;
-        Overworld.removeObject("LOCALID_OLD_AMBER");
-        Player.addItem(player, "old-amber");
-        await say(T("PewterCity_Museum_1F_Text_ReceivedOldAmberFromMan"));
-        return;
-
-      case "PewterCity_Museum_1F_EventScript_SeismicTossTutor":
-        await moveTutor("Seismic Toss", "tutorSeismicToss", "Text_SeismicToss");
-        return;
-
-      // The fossils, shown as FireRed does (OpenMuseumFossilPic).
-      case "PewterCity_Museum_1F_EventScript_AerodactylFossil":
-      case "PewterCity_Museum_1F_EventScript_KabutopsFossil": {
-        const species = script.endsWith("AerodactylFossil") ? "Aerodactyl" : "Kabutops";
-        showPicture(species);
-        await say(ev.sign.text);
-        hidePicture();
-        return;
-      }
-
-      case "PewterCity_Gym_EventScript_GymGuy":
-        if (f.TRAINER_LEADER_BROCK) { await say(T("PewterCity_Gym_Text_YoureChampMaterial")); return; }
-        await say(T("PewterCity_Gym_Text_LetMeTakeYouToTheTop").slice(0, -1));
-        await say(T((await confirm(fill(T("PewterCity_Gym_Text_LetMeTakeYouToTheTop").slice(-1)[0])))
-          ? "PewterCity_Gym_Text_LetsGetHappening" : "PewterCity_Gym_Text_ItsFreeLetsGetHappening"));
-        await say(T("PewterCity_Gym_Text_TryDifferentPartyOrders"));
-        return;
-
-      case "PewterCity_Gym_EventScript_GymStatue":
-        await say(T(hasBadge("boulder") ? "PewterCity_Gym_Text_GymStatuePlayerWon" : "PewterCity_Gym_Text_GymStatue"));
-        return;
-
-      case "PewterCity_Mart_EventScript_Clerk":
-        await mart(ev.person.mart);
-        return;
-
-      // ---------- Cerulean City ----------
-
-      case "CeruleanCity_Gym_EventScript_GymGuy":
-        await say(T(f.TRAINER_LEADER_MISTY ? "CeruleanCity_Gym_Text_WeMakePrettyGoodTeam" : "CeruleanCity_Gym_Text_GymGuyAdvice"));
-        return;
-      case "CeruleanCity_Gym_EventScript_GymStatue":
-        await say(T(hasBadge("cascade") ? "CeruleanCity_Gym_Text_GymStatuePlayerWon" : "CeruleanCity_Gym_Text_GymStatue"));
-        return;
-      case "CeruleanCity_Mart_EventScript_Clerk":
-        await mart(ev.person.mart);
-        return;
-      // The Badge guy: which of the eight Badges should he describe?
-      case "CeruleanCity_House1_EventScript_BadgeGuy": {
-        await say(T("CeruleanCity_House1_Text_BadgesHaveAmazingSecrets"));
-        const BADGES = [["Boulder", "AttackStatFlash"], ["Cascade", "ObeyLv30Cut"], ["Thunder", "SpeedStatFly"],
-          ["Rainbow", "ObeyLv50Strength"], ["Soul", "DefenseStatSurf"], ["Marsh", "ObeyLv70RockSmash"],
-          ["Volcano", "SpStatsWaterfall"], ["Earth", "AllMonsWillObeyYou"]];
-        const which = T("CeruleanCity_House1_Text_DescribeWhichBadge");
-        await say(which.slice(0, -1));
-        for (;;) {
-          const v = await ask(which[which.length - 1], BADGES.map(([b], i) => ({ label: b + " Badge", value: i }))
-            .concat([{ label: "Cancel", value: "back", className: "action", wide: true }]));
-          if (v === "back") break;
-          await say(T("CeruleanCity_House1_Text_" + BADGES[v][1]));
-        }
-        await say(T("CeruleanCity_House1_Text_ComeVisitAnytime"));
-        return;
-      }
-      case "CeruleanCity_House3_EventScript_Dontae":
-        await inGameTrade(TRADES.zynx);
-        return;
-      // The Bike Shop: a Bicycle is ¥1,000,000 (and FireRed never sells you one).
-      case "CeruleanCity_BikeShop_EventScript_Clerk": {
-        if (f.gotBicycle) { await say(T("CeruleanCity_BikeShop_Text_HowDoYouLikeNewBicycle")); return; }
-        // With the Fan Club Chairman's Bike Voucher, it's free.
-        if (Player.itemCount(player, "bike-voucher")) {
-          await say(T("CeruleanCity_BikeShop_Text_OhBikeVoucherHereYouGo"));
-          Player.removeItem(player, "bike-voucher");
-          Player.addItem(player, "bicycle");
-          f.gotBicycle = true;
-          await sayWithJingle("mus_obtain_key_item", T("CeruleanCity_BikeShop_Text_ExchangedVoucherForBicycle"));
-          await say(T("CeruleanCity_BikeShop_Text_ThankYouComeAgain"));
-          return;
-        }
-        await say(T("CeruleanCity_BikeShop_Text_WelcomeToBikeShop"));
-        const v = await ask("", [{ label: "Bicycle  ¥1,000,000", value: "bike", className: "action", wide: true },
-          { label: "Cancel", value: "back", className: "action", wide: true }]);
-        if (v === "bike") await say(T("CeruleanCity_BikeShop_Text_SorryYouCantAffordIt"));
-        await say(T("CeruleanCity_BikeShop_Text_ThankYouComeAgain"));
-        return;
-      }
-      case "CeruleanCity_House5_EventScript_BerryPowderMan": await berryPowderMan(); return;
-      case "CeruleanCity_House5_EventScript_BerryCrushRankings":
-        await berryCrushRankings();
-        return;
-
-      case "PewterCity_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-
-      case "MysteryEventClub_EventScript_Woman":   // no Mystery Events here
-        await say(T("Text_WirelessClubUndergoingAdjustments"));
-        return;
-
-      // ---------- Route 4 and Mt. Moon ----------
-
-      case "Route4_EventScript_MegaPunchTutor":
-        await moveTutor("Mega Punch", "tutorMegaPunch", "Text_MegaPunch");
-        return;
-      case "Route4_EventScript_MegaKickTutor":
-        await moveTutor("Mega Kick", "tutorMegaKick", "Text_MegaKick");
-        return;
-
-      case "Route4_PokemonCenter_1F_EventScript_Nurse":
-      case "Route10_PokemonCenter_1F_EventScript_Nurse":
-      case "LavenderTown_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-
-      // ₽500 for a Magikarp, once.
-      case "Route4_PokemonCenter_1F_EventScript_MagikarpSalesman": {
-        if (f.boughtMagikarp) { await say(T("Route4_PokemonCenter_1F_Text_IDontGiveRefunds")); return; }
-        const pitch = T(Player.LOOKS[player.look].girl ? "Route4_PokemonCenter_1F_Text_SweetieBuyMagikarpForJust500" : "Route4_PokemonCenter_1F_Text_LaddieBuyMagikarpForJust500");
-        await say(pitch.slice(0, -1));
-        if (!(await confirm(fill(pitch[pitch.length - 1]) + "\n(You have " + money(player.money) + ".)"))) { await say(T("Route4_PokemonCenter_1F_Text_OnlyDoingThisAsFavorToYou")); return; }
-        if (player.money < 500) { await say(T("Route4_PokemonCenter_1F_Text_YoullNeedMoreMoney")); return; }
-        if (player.party.length >= Player.PARTY_SIZE && !player.boxes.some((b) => Player.firstEmpty(b) >= 0)) { await say(T("Route4_PokemonCenter_1F_Text_NoRoomForMorePokemon")); return; }
-        Player.addMoney(player, -500);
-        f.boughtMagikarp = true;
-        await say(T("Route4_PokemonCenter_1F_Text_PaidOutrageouslyForMagikarp"));
-        await addCaught(Party.create("Magikarp", 5));
-        return;
-      }
-
-      // ---------- Cerulean City, Routes 24 and 25 ----------
-      case "CeruleanCity_EventScript_RivalTriggerLeft":
-      case "CeruleanCity_EventScript_RivalTriggerMid":
-      case "CeruleanCity_EventScript_RivalTriggerRight":
-        if (!f.ceruleanRival && canBattle()) await ceruleanRival(script.replace("CeruleanCity_EventScript_RivalTrigger", ""));
-        return;
-      case "CeruleanCity_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      case "Route24_EventScript_Rocket":
-        if (f.nuggetBridgeRocket) await say(T("Route24_Text_YoudBecomeTopRocketLeader"));
-        else await nuggetBridgeRocket(null);
-        return;
-      case "Route24_EventScript_RocketTriggerLeft":
-      case "Route24_EventScript_RocketTriggerRight":
-        if (!f.nuggetBridgeRocket && canBattle()) await nuggetBridgeRocket(/Left$/.test(script) ? "left" : "right");
-        return;
-      case "Route25_SeaCottage_EventScript_Bill":
-        await bill(ev.person);
-        return;
-      case "Route25_SeaCottage_EventScript_Computer":
-        await billsComputer();
-        return;
-
-      // ---------- Cerulean's robbed house, Routes 5 and 9 ----------
-      case "CeruleanCity_EventScript_Grunt":
-        await ceruleanGrunt(null);
-        return;
-      case "CeruleanCity_EventScript_GruntTriggerTop":
-      case "CeruleanCity_EventScript_GruntTriggerBottom":
-        if (!f.gotTM28 && canBattle()) await ceruleanGrunt(/Top$/.test(script) ? "top" : "bottom");
-        return;
-      case "EventScript_CutTree":
-        await cutTree(ev.person);
-        return;
-      case "EventScript_RockSmash":
-        await rockSmash(ev.person);
-        return;
-      case "EventScript_StrengthBoulder":
-        await strengthBoulder();
-        return;
-      case "Route5_PokemonDayCare_EventScript_DaycareMan":
-        await dayCareMan();
-        return;
-      case "UndergroundPath_NorthEntrance_EventScript_Saige":
-        await inGameTrade(TRADES.msNido);
-        return;
-      // ---------- Pokémon Tower ----------
-      case "PokemonTower_2F_EventScript_RivalTriggerRight":
-      case "PokemonTower_2F_EventScript_RivalTriggerDown":
-        await towerRival(script.endsWith("Right"));
-        return;
-      // 5F: the purified zone heals your party (each time you step back in).
-      case "PokemonTower_5F_EventScript_PurifiedZone":
-        inPurifiedZone = true;
-        Screen.say("");
-        await Overworld.fadeToBlack();
-        player.party.forEach(Party.heal);
-        await Overworld.fadeFromBlack();
-        await say(T("PokemonTower_5F_Text_PurifiedZoneMonsFullyHealed"));
-        return;
-      case "PokemonTower_6F_EventScript_MarowakGhost":
-        await marowakGhost();
-        return;
-      case "PokemonTower_7F_EventScript_MrFuji":
-        await say(T("PokemonTower_7F_Text_MrFujiThankYouFollowMe"));
-        f.rescuedMrFuji = true;
-        await Overworld.teleport({ map: "LavenderTown_VolunteerPokemonHouse", x: 4, y: 7, facing: "up" });
-        return;
-      // Back home, Mr. Fuji gives you the Poké Flute.
-      case "LavenderTown_VolunteerPokemonHouse_EventScript_MrFuji": {
-        const V = (k) => T("LavenderTown_VolunteerPokemonHouse_Text_" + k);
-        if (f.gotPokeFlute) { await say(V("HasPokeFluteHelpedYou")); return; }
-        await say(V("IdLikeYouToHaveThis"));
-        Player.addItem(player, "poke-flute");
-        f.gotPokeFlute = true;
-        await sayWithJingle("mus_obtain_key_item", V("ReceivedPokeFluteFromMrFuji"));
-        await say(V("ExplainPokeFlute"));
-        return;
-      }
-
-
-      // ---------- Route 7 and the Saffron gates ----------
-      // The guards are thirsty: give one the Tea and all four let you through
-      // (FireRed's VAR_MAP_SCENE_ROUTE5_ROUTE6_ROUTE7_ROUTE8_GATES).
-      case "Route5_SouthEntrance_EventScript_GuardTriggerLeft":
-      case "Route5_SouthEntrance_EventScript_GuardTriggerMid":
-      case "Route5_SouthEntrance_EventScript_GuardTriggerRight":
-      case "Route6_NorthEntrance_EventScript_GuardTriggerLeft":
-      case "Route6_NorthEntrance_EventScript_GuardTriggerMid":
-      case "Route6_NorthEntrance_EventScript_GuardTriggerRight":
-      case "Route7_EastEntrance_EventScript_GuardTriggerTop":
-      case "Route7_EastEntrance_EventScript_GuardTriggerMid":
-      case "Route7_EastEntrance_EventScript_GuardTriggerBottom":
-      case "Route8_WestEntrance_EventScript_GuardTriggerTop":
-      case "Route8_WestEntrance_EventScript_GuardTriggerMid":
-      case "Route8_WestEntrance_EventScript_GuardTriggerBottom": {
-        const [, gate, side] = /^(\w+?)_EventScript_GuardTrigger(\w+)$/.exec(script);
-        const face = { Route5_SouthEntrance: "Left", Route6_NorthEntrance: "Right", Route7_EastEntrance: "Up", Route8_WestEntrance: "Up" }[gate];
-        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFaster" + face) }]);
-        if (f.gotTea && Player.itemCount(player, "tea")) {
-          Player.removeItem(player, "tea");
-          await say(T(gate + "_Text_ThatTeaLooksTasty"));
-          await Overworld.act([{ who: "player", moves: M(gate + "_Movement_WalkToGuard" + side) }]);
-          await say(T(gate + "_Text_ThanksIllShareTeaWithGuards"));
-          f.gatesOpen = true;
-          return;
-        }
-        await say(T(gate + "_Text_ThirstyOnGuardDuty"));
-        await Overworld.act([{ who: "player", moves: M(gate + "_Movement_BlockPlayerEntry") }]);
-        return;
-      }
-
-      // ---------- Celadon City ----------
-      case "CeladonCity_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      // (This game's own TM counter: FireRed's Hyper Beam, and Dark Pulse, Flash Cannon, Stone Edge and Dazzling Gleam; its other
-      // TMs, Roar, Dig, Brick Break, Secret Power and Attract, are found elsewhere in Kanto.)
-      case "CeladonCity_DepartmentStore_2F_EventScript_ClerkTMs":
-        await mart(CELADON_TMS);
-        return;
-      case "CeladonCity_DepartmentStore_2F_EventScript_ClerkItems":
-      case "CeladonCity_DepartmentStore_4F_EventScript_Clerk":
-      case "CeladonCity_DepartmentStore_5F_EventScript_ClerkXItems":
-        await mart(ev.person.mart);
-        return;
-      // (Beside the vitamins, this game's Wings.)
-      case "CeladonCity_DepartmentStore_5F_EventScript_ClerkVitamins":
-        await mart(ev.person.mart.concat(["health-wing", "muscle-wing", "resist-wing", "genius-wing", "clever-wing", "swift-wing"]));
-        return;
-      case "CeladonCity_EventScript_SoftboiledTutor":
-        await moveTutor("Soft-Boiled", "tutorSoftboiled", "Text_Softboiled");
-        return;
-      case "CeladonCity_DepartmentStore_3F_EventScript_CounterTutor":
-        await moveTutor("Counter", "tutorCounter", "Text_Counter");
-        return;
-      case "CeladonCity_EventScript_Poliwrath":
-      case "CeladonCity_Condominiums_1F_EventScript_Meowth":
-      case "CeladonCity_Condominiums_1F_EventScript_Clefairy":
-        cry(/_EventScript_(\w+)$/.exec(script)[1]);
-        await say(ev.person.text || []);
-        return;
-      case "CeladonCity_Condominiums_1F_EventScript_Nidoran":
-        cry("Nidoran-F");
-        await say(ev.person.text || []);
-        return;
-      case "CeladonCity_DepartmentStore_Elevator_EventScript_FloorSelect":
-        await elevator(["5F", "4F", "3F", "2F", "1F"].map((n) => ({ label: n, map: "CeladonCity_DepartmentStore_" + n, x: 6, y: 1 })));
-        return;
-      // The little girl on the roof swaps a TM for a drink she hasn't had.
-      case "CeladonCity_DepartmentStore_Roof_EventScript_ThirstyGirl":
-        await thirstyGirl();
-        return;
-      case "CeladonCity_DepartmentStore_Roof_EventScript_VendingMachine":
-        await vendingMachine();
-        return;
-      case "CeladonCity_Condominiums_1F_EventScript_TeaWoman":
-        if (f.gotTea) { await say(T("CeladonCity_Condominiums_1F_Text_MyDearMonsKeepMeCompany")); return; }
-        await say(T("CeladonCity_Condominiums_1F_Text_TryThisDrinkInstead"));
-        Player.addItem(player, "tea");
-        f.gotTea = true;
-        await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Tea.");
-        await say(T("CeladonCity_Condominiums_1F_Text_NothingBeatsThirstLikeTea"));
-        return;
-      // The game designer: a diploma for a complete Kanto Pokédex (Mew aside).
-      case "CeladonCity_Condominiums_3F_EventScript_Designer": {
-        const caught = new Set(player.pokedex.caught.map((s) => (window.DEX[s] || {}).id));
-        if (!Array.from({ length: 150 }, (_, i) => i + 1).every((id) => caught.has(id))) {
-          await say(T("CeladonCity_Condominiums_3F_Text_ImGameDesignerShowMeFinishedPokedex"));
-          return;
-        }
-        await say(T("CeladonCity_Condominiums_3F_Text_CompletedPokedexCongratulations"));
-        await say(["Diploma", "{PLAYER}\nCongratulations! This diploma\ncertifies that you have completed\nyour Pokédex.", "Game Freak"]);
-        return;
-      }
-      case "CeladonCity_Condominiums_RoofRoom_EventScript_EeveeBall":
-        await giftMon("Eevee", 25, T("CeladonCity_Condominiums_RoofRoom_Text_ObtainedAnEevee"), null, () => {
-          Overworld.removePerson(ev.person);
-          f.gotEevee = true;
-        });
-        return;
-      case "CeladonCity_Condominiums_RoofRoom_EventScript_Blackboard": {
-        const R = (k) => T("CeladonCity_Condominiums_RoofRoom_Text_" + k);
-        await say(R("WirelessAdapterLecture"));
-        // (MULTICHOICE_LINKED_DIRECT_UNION: LINKED GAME PLAY / DIRECT CORNER / UNION ROOM / QUIT.)
-        for (;;) {
-          const v = await multichoice(R("ReadWhichHeading")[0], 0, 0, ["Linked Game Play", "Direct Corner", "Union Room", "Quit"]);
-          if (v < 0 || v > 2) break;
-          await say(R(["ExplainWirelessClub", "ExplainDirectCorner", "ExplainUnionRoom"][v]));
-        }
-        Screen.say("");
-        return;
-      }
-      case "CeladonCity_Restaurant_EventScript_CoinCaseMan":
-        if (f.gotCoinCase) { await say(T("CeladonCity_Restaurant_Text_ThoughtIdWinItBack")); return; }
-        await say(T("CeladonCity_Restaurant_Text_TakeThisImBusted"));
-        Player.addItem(player, "coin-case");
-        f.gotCoinCase = true;
-        await sayWithJingle("mus_obtain_key_item", T("CeladonCity_Restaurant_Text_ReceivedCoinCaseFromMan"));
-        return;
-      case "CeladonCity_Gym_EventScript_GymStatue":
-        await say(T(hasBadge("rainbow") ? "CeladonCity_Gym_Text_GymStatuePlayerWon" : "CeladonCity_Gym_Text_GymStatue"));
-        return;
-
-      // ---------- Celadon Game Corner ----------
-      case "CeladonCity_GameCorner_EventScript_CoinsClerk":
-        await coinsClerk();
-        return;
-      // Three gamblers give you a few Coins, once each.
-      case "CeladonCity_GameCorner_EventScript_Fisher":
-        await gambler(ev.person, { flag: "got10CoinsFromGambler", coins: 10, ask: "DoYouWantToPlay", got: "Received10CoinsFromMan",
-          full: "DontNeedMyCoins", after: "WinsComeAndGo" });
-        return;
-      case "CeladonCity_GameCorner_EventScript_Scientist":
-        await gambler(ev.person, { flag: "got20CoinsFromGambler", coins: 20, ask: "WantSomeCoins", got: "Received20CoinsFromNiceGuy",
-          full: "YouHaveLotsOfCoins", after: "NeedMoreCoinsForMonIWant" });
-        return;
-      case "CeladonCity_GameCorner_EventScript_Gentleman":
-        await gambler(ev.person, { flag: "got20CoinsFromGambler2", coins: 20, ask: "HereAreSomeCoinsShoo", got: "Received20CoinsFromMan",
-          full: "YouveGotPlentyCoins", after: "WatchReelsClosely" });
-        return;
-      case "CeladonCity_GameCorner_EventScript_GymGuy":
-        await say(T(f.TRAINER_LEADER_ERIKA ? "CeladonCity_GameCorner_Text_RareMonsForCoins" : "CeladonCity_GameCorner_Text_GymGuyAdvice"));
-        await faceBack(ev.person);
-        return;
-      case "CeladonCity_GameCorner_EventScript_BaldingMan":
-      case "CeladonCity_GameCorner_EventScript_Woman1":
-      case "CeladonCity_GameCorner_EventScript_Woman2":
-      case "CeladonCity_GameCorner_EventScript_OldMan":
-        await say(ev.person.text || []);
-        await faceBack(ev.person);
-        return;
-      case "CeladonCity_GameCorner_EventScript_Poster":
-        await say(T("CeladonCity_GameCorner_Text_SwitchBehindPosterPushIt"));
-        if (!f.openedRocketHideout) {
-          sfx("se_unlock");
-          f.openedRocketHideout = true;
-          applyPatches("CeladonCity_GameCorner");
-        }
-        return;
-      case "CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerkMons":
-      case "CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerkTMs":
-      case "CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerkItems":
-        await prizeClerk(script.replace("CeladonCity_GameCorner_PrizeRoom_EventScript_PrizeClerk", ""));
-        return;
-
-      // ---------- Rocket Hideout ----------
-      case "RocketHideout_Elevator_EventScript_FloorSelect":
-        if (!Player.itemCount(player, "lift-key")) { await say(T("RocketHideout_Elevator_Text_AppearsToNeedAKey")); return; }
-        await elevator([{ label: "B1F", map: "RocketHideout_B1F", x: 24, y: 25 }, { label: "B2F", map: "RocketHideout_B2F", x: 28, y: 16 },
-          { label: "B4F", map: "RocketHideout_B4F", x: 20, y: 23 }]);
-        return;
-      case "RocketHideout_B4F_EventScript_Giovanni":
-        await giovanniHideout(ev.person);
-        return;
-      case "RocketHideout_B4F_EventScript_LiftKey":
-      case "RocketHideout_B4F_EventScript_SilphScope": {
-        const item = script.endsWith("LiftKey") ? "lift-key" : "silph-scope";
-        Overworld.removePerson(ev.person);
-        Player.addItem(player, item);
-        f[item === "lift-key" ? "gotLiftKey" : "gotSilphScope"] = true;
-        await sayWithJingle("mus_obtain_key_item", "{PLAYER} found " + article(Bag.name(item)) + "!");
-        return;
-      }
-
-      // ---------- Saffron City ----------
-      case "SaffronCity_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      case "SaffronCity_Mart_EventScript_Clerk":
-        await mart(ev.person.mart);
-        return;
-      case "SaffronCity_EventScript_Pidgeot":
-      case "SaffronCity_House_EventScript_Pidgey":
-      case "SaffronCity_CopycatsHouse_1F_EventScript_Chansey":
-      case "SaffronCity_CopycatsHouse_2F_EventScript_Doduo":
-        cry(/_EventScript_(\w+)$/.exec(script)[1]);
-        await say(ev.person.text || []);
-        return;
-      // Silph Co.'s "security guard": asleep once Mr. Fuji's safe.
-      case "SaffronCity_EventScript_DoorGuardGrunt":
-        if (!f.rescuedMrFuji) { await say(T("SaffronCity_Text_ImASecurityGuard")); return; }
-        await faceBack(ev.person);
-        await say(T("SaffronCity_Text_HesTakingASnooze"));
-        return;
-      // The Copycat mimics you, unless you've a Poké Doll for her: then she
-      // teaches Mimic (FireRed's EventScript_MimicTutor); after that, again
-      // and again for money.
-      case "SaffronCity_CopycatsHouse_2F_EventScript_Copycat": {
-        const girl = !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl);
-        if (!f.tutorMimic && !Player.itemCount(player, "poke-doll")) {
-          await say(T(girl ? "SaffronCity_CopycatsHouse_2F_Text_MimickingFavoriteHobbyFemale" : "SaffronCity_CopycatsHouse_2F_Text_MimickingFavoriteHobbyMale"));
-          return;
-        }
-        // (The first time for a Poké Doll; after that, for money, as the other tutors.)
-        const doll = !f.tutorMimic;
-        if (await moveTutor("Mimic", "tutorMimic", "Text_Mimic", doll ? null : undefined, girl ? "Text_MimicTaughtFemale" : "Text_MimicTaughtMale") && doll) {
-          Player.removeItem(player, "poke-doll");
-        }
-        return;
-      }
-      // Mr. Psychic: FireRed's TM29, Psychic (the TM with that move here).
-      case "SaffronCity_MrPsychicsHouse_EventScript_MrPsychic": {
-        const tm = machineFor("Psychic");
-        if (!f.gotTM29) {
-          await say(T("SaffronCity_MrPsychicsHouse_Text_YouWantedThis"));
-          Player.addItem(player, tm);
-          f.gotTM29 = true;
-          await sayWithJingle(itemJingle(tm), tmText(T("SaffronCity_MrPsychicsHouse_Text_ReceivedTM29FromMrPsychic"), 29, tm));
-          await say(tmText(T("SaffronCity_MrPsychicsHouse_Text_ExplainTM29"), 29, tm));
-          // (This game's own: his back room, and the Tera Raid den in it.)
-          await say(["And I sensed you'd want this, too…", "The door behind me leads to my back\nroom. A Tera Raid den sleeps there.",
-            "Use a Lure on it, and a Tera\nPsychic-type Pokémon will rise.", "Go on in, as often as you like."]);
-          Screen.say("");
-          sfx("se_rs_door");
-          applyPatches("SaffronCity_MrPsychicsHouse");
-          await persist();
-          return;
-        }
-        await say(tmText(T("SaffronCity_MrPsychicsHouse_Text_ExplainTM29"), 29, tm));
-        await say(["My back room's Tera Raid den…\nI sense it awaits your Lure."]);
-        return;
-      }
-      case "SaffronCity_Gym_EventScript_GymGuy":
-        await say(T(f.TRAINER_LEADER_SABRINA ? "SaffronCity_Gym_Text_GymGuyPostVictory" : "SaffronCity_Gym_Text_GymGuyAdvice"));
-        return;
-      case "SaffronCity_Gym_EventScript_GymStatue":
-        await say(T(hasBadge("marsh") ? "SaffronCity_Gym_Text_GymStatuePlayerWon" : "SaffronCity_Gym_Text_GymStatue"));
-        return;
-      // The Fighting Dojo: walk up beside the Karate Master and he turns to
-      // face you, and fights; beaten, he lets you take one of his two prized
-      // Pokémon.
-      case "SaffronCity_Dojo_EventScript_TriggerMasterBattleLeft":
-      case "SaffronCity_Dojo_EventScript_TriggerMasterBattleRight": {
-        const master = window.WORLD_MAPS.SaffronCity_Dojo.people.find((p) => p.localId === "LOCALID_KARATE_MASTER");
-        await Overworld.act([{ who: "LOCALID_KARATE_MASTER", moves: M(script.endsWith("Left") ? "Common_Movement_WalkInPlaceFasterLeft" : "Common_Movement_WalkInPlaceFasterRight") }]);
-        await Overworld.act([{ who: "player", moves: [script.endsWith("Left") ? "face_right" : "face_left"] }]);
-        await trainerBattle(master, null);
-        await dojoDenDoor();
-        return;
-      }
-      case "SaffronCity_Dojo_EventScript_HitmonleeBall":
-      case "SaffronCity_Dojo_EventScript_HitmonchanBall":
-        await dojoBall(ev.person, script.includes("Hitmonlee") ? "Hitmonlee" : "Hitmonchan");
-        return;
-      // The Fan Club, before you're Champion: everyone's a fan of someone else.
-      case "SaffronCity_PokemonTrainerFanClub_EventScript_CrushGirl":
-        await say(T("SaffronCity_PokemonTrainerFanClub_Text_TrainersCoolWhenBattling"));
-        return;
-      case "SaffronCity_PokemonTrainerFanClub_EventScript_LittleGirl":
-        await say(T("SaffronCity_PokemonTrainerFanClub_Text_CanIBecomeCoolTrainerOneDay"));
-        return;
-      case "SaffronCity_PokemonTrainerFanClub_EventScript_Youngster":
-        await say(T("SaffronCity_PokemonTrainerFanClub_Text_BrocksLastWordOnCool"));
-        return;
-      case "SaffronCity_PokemonTrainerFanClub_EventScript_Gentleman":
-        await say(T("SaffronCity_PokemonTrainerFanClub_Text_YoullBeTalkedAboutIfYouKeepWinning"));
-        return;
-
-      // ---------- Silph Co. ----------
-      case "SilphCo_Elevator_EventScript_FloorSelect":
-        await elevator(SILPH_FLOORS.map(([label, x]) => ({ label, map: "SilphCo_" + label, x, y: 3 })), true);
-        return;
-      case "SilphCo_2F_EventScript_ThunderWaveTutor":
-        await moveTutor("Thunder Wave", "tutorThunderWave", "Text_ThunderWave");
-        return;
-      case "SilphCo_7F_EventScript_RivalTriggerTop":
-      case "SilphCo_7F_EventScript_RivalTriggerBottom":
-        await silphRival(script.endsWith("Top"));
-        return;
-      // A Lapras, from the worker you rescue on 7F.
-      case "SilphCo_7F_EventScript_LaprasGuy":
-        if (f.gotLapras) { await say(T("SilphCo_7F_Text_RocketBossWentToBoardroom")); return; }
-        await say(T("SilphCo_7F_Text_HaveMonForSavingUs"));
-        if (await giftMon("Lapras", 25, T("SilphCo_7F_Text_ObtainedLaprasFromEmployee"), null, () => { f.gotLapras = true; })) {
-          await say(T("SilphCo_7F_Text_ExplainLapras"));
-        }
-        return;
-      // 9F: a nap on the bed while Team Rocket's about.
-      case "SilphCo_9F_EventScript_HealWoman":
-        if (silphFreed()) { await say(T("SilphCo_9F_Text_ThankYouSoMuch")); return; }
-        await say(T("SilphCo_9F_Text_YouShouldTakeQuickNap"));
-        await outOfCenterHeal();
-        await say(T("SilphCo_9F_Text_DontGiveUp"));
-        return;
-      case "SilphCo_11F_EventScript_GiovanniTriggerLeft":
-      case "SilphCo_11F_EventScript_GiovanniTriggerRight":
-        await giovanniSilph(script.endsWith("Left"));
-        return;
-      // The President's thanks: the Master Ball.
-      case "SilphCo_11F_EventScript_President": {
-        if (f.gotMasterBall) { await say(T("SilphCo_11F_Text_ThatsOurSecretPrototype")); return; }
-        const girl = !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl);
-        await say(T(girl ? "SilphCo_11F_Text_ThanksForSavingMeDearGirl" : "SilphCo_11F_Text_ThanksForSavingMeDearBoy"));
-        Player.addItem(player, "master-ball");
-        f.gotMasterBall = true;
-        await sayWithJingle("mus_obtain_key_item", T("SilphCo_11F_Text_ObtainedMasterBallFromPresident"));
-        await say(T("SilphCo_11F_Text_ThatsOurSecretPrototype"));
-        return;
-      }
-
-      // ---------- Route 12 to Route 15 ----------
-      case "Route12_EventScript_Snorlax":
-        await snorlax(ev.person, 12);
-        return;
-      // The girl upstairs in the gate: FireRed's TM27 (Return).
-      case "Route12_NorthEntrance_2F_EventScript_Lass": {
-        const tm = machineFor("Return"), L = (k) => T("Route12_NorthEntrance_2F_Text_" + k);
-        if (!f.gotTM27) {
-          await say(L(isGirl() ? "TakeTMDontNeedAnymoreFemale" : "TakeTMDontNeedAnymoreMale"));
-          Player.addItem(player, tm);
-          f.gotTM27 = true;
-          await sayWithJingle(itemJingle(tm), tmText(L("ReceivedTM27FromLittleGirl"), 27, tm));
-        }
-        await say(tmText(L("ExplainTM27"), 27, tm));
-        return;
-      }
-      // The Fishing Guru's brother: (FireRed's Super Rod) the Fishing Rod if you
-      // haven't one, and his request; then the Magikarp record.
-      case "Route12_FishingHouse_EventScript_FishingGuruBrother":
-        if (f.gotSuperRod) { await magikarpRecord(); return; }
-        if (!hasFishingRod()) {
-          if (await rodGift("Route12_FishingHouse_Text_", "TakeThisAndFish", "IfYouCatchBigMagikarpShowMe")) f.gotSuperRod = true;
-          return;
-        }
-        await say(fishingLevelTalk("Route12"));
-        await say(T("Route12_FishingHouse_Text_IfYouCatchBigMagikarpShowMe").slice(2));
-        f.gotSuperRod = true;
-        return;
-      case "Route12_FishingHouse_EventScript_MagikarpRecordSign":
-        await say(f.magikarpRecord != null ? T("Route12_FishingHouse_Text_MostGiganticMagikarpXInches")
-          : T("Route12_FishingHouse_Text_BlankChartOfSomeSort"), [null, null, f.magikarpRecord != null ? magikarpInches(f.magikarpRecord) : ""]);
-        return;
-      // Prof. Oak's Aide in Route 15's gate: the Exp. Share for fifty kinds caught.
-      case "Route15_WestEntrance_2F_EventScript_Aide":
-        await aideGift({ needed: 50, item: "exp-share", flag: "gotExpShareFromAide", text: "Route15_WestEntrance_2F_Text_",
-          ask: "GiveItemIfCaughtEnough", received: "ReceivedItemFromAide", explain: "ExplainExpShare" });
-        return;
-      // The binoculars: a large, shining bird (Articuno, seen in the Pokédex).
-      case "Route15_WestEntrance_2F_EventScript_LeftBinoculars":
-        await monSign("Articuno", T("Route15_WestEntrance_2F_Text_LargeShiningBird"));
-        return;
-
-      // ---------- Routes 16, 17 and 18: Cycling Road ----------
-      case "Route16_EventScript_Snorlax":
-        await snorlax(ev.person, 16);
-        return;
-      // Prof. Oak's Aide upstairs in Route 16's gate: the Amulet Coin for forty kinds caught.
-      case "Route16_NorthEntrance_2F_EventScript_Aide":
-        await aideGift({ needed: 40, item: "amulet-coin", flag: "gotAmuletCoinFromAide", text: "Route16_NorthEntrance_2F_Text_",
-          ask: "GiveAmuletCoinIfCaught40", received: "ReceivedAmuletCoinFromAide", explain: "ExplainAmuletCoin" });
-        return;
-      // The girl in her secret retreat behind the tree: HM02 Fly.
-      case "Route16_House_EventScript_Woman":
-        if (!f.gotHM02) {
-          await say(T("Route16_House_Text_FoundMySecretRetreat"));
-          Player.addItem(player, "hm02");
-          f.gotHM02 = true;
-          await sayWithJingle(itemJingle("hm02"), T("Route16_House_Text_ReceivedHM02FromGirl"));
-        }
-        await say(T("Route16_House_Text_ExplainHM02"));
-        return;
-      case "Route16_House_EventScript_Fearow":
-        cry("Fearow");
-        await say(T("Route16_House_Text_Fearow"));
-        return;
-      // The Cycling Road gates: without a Bicycle, the guard calls you back
-      // to the counter and turns you away.
-      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerTop":
-      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerMidTop":
-      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerMid":
-      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerMidBottom":
-      case "Route16_NorthEntrance_1F_EventScript_NeedBikeTriggerBottom":
-      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerTop":
-      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerMidTop":
-      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerMid":
-      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerMidBottom":
-      case "Route18_EastEntrance_1F_EventScript_NeedBikeTriggerBottom":
-        await needBike(script);
-        return;
-      // Upstairs in Route 18's gate, Haden trades his Lickitung, Marc, for a Golduck.
-      case "Route18_EastEntrance_2F_EventScript_Haden":
-        await inGameTrade(TRADES.marc);
-        return;
-
-      // ---------- The Seafoam Islands ----------
-      // Fallen through a hole onto B3F's or B4F's water: the current may carry you off.
-      case "enter:SeafoamIslands_B3F":
-      case "enter:SeafoamIslands_B4F":
-        await seafoamFall(ev.map);
-        return;
-      case "SeafoamIslands_B4F_EventScript_Articuno":
-        await legendaryBird(ev.person, "Articuno", "foughtArticuno");
-        return;
-
-      // ---------- The Sevii Islands ----------
-      case "enter:CinnabarIsland": case "arrive:CinnabarIsland":
-        if (f.cinnabarScene === 1) await cinnabarBill();
-        return;
-      case "CinnabarIsland_PokemonCenter_1F_EventScript_Bill": await cinnabarCenterBill(ev.person); return;
-      // The Seagallop: Vermilion's dock and the islands' harbors.
-      case "VermilionCity_EventScript_FerrySailor":
-        if (!f.ssAnneDeparted) { await say(T("VermilionCity_Text_WelcomeToTheSSAnne")); return; }
-        await vermilionSeagallop(Overworld.position().x < 24);
-        return;
-      case "OneIsland_Harbor_EventScript_Sailor": await harborSailor("ONE_ISLAND"); return;
-      case "TwoIsland_Harbor_EventScript_Sailor": await harborSailor("TWO_ISLAND"); return;
-      case "ThreeIsland_Harbor_EventScript_Sailor": await harborSailor("THREE_ISLAND"); return;
-      case "OneIsland_PokemonCenter_1F_EventScript_Nurse": case "TwoIsland_PokemonCenter_1F_EventScript_Nurse":
-      case "ThreeIsland_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      case "enter:OneIsland_PokemonCenter_1F": await meetCelio(); return;
-      case "enter:OneIsland": await billToCelio(); return;
-      case "OneIsland_PokemonCenter_1F_EventScript_Celio": await celio(); return;
-      case "OneIsland_PokemonCenter_1F_EventScript_Bill": await oneIslandCenterBill(); return;
-      case "OneIsland_PokemonCenter_1F_EventScript_NetworkMachine": await networkMachine(); return;
-      case "OneIsland_PokemonCenter_1F_EventScript_CrushGirl":
-        await say(T(f.canLinkWithRS ? "OneIsland_PokemonCenter_1F_Text_TradedWithFarAwayBoyfriend" : "OneIsland_PokemonCenter_1F_Text_WishICouldTradeWithBoyfriend"));
-        return;
-      case "OneIsland_EventScript_OldMan":
-        await say(T(f.canLinkWithRS ? "OneIsland_Text_HavePCLinkageWithHoenn" : f.seviiDetourDone ? "OneIsland_Text_HavePCLinkageWithKanto" : "OneIsland_Text_LuckyToHaveCelioHere"));
-        return;
-      case "OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTriggerTop": await leaveOneIsland(1); return;
-      case "OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTriggerMidTop": await leaveOneIsland(2); return;
-      case "OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTriggerMidBottom": await leaveOneIsland(3); return;
-      case "OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTriggerBottom": await leaveOneIsland(4); return;
-      // The Ember Spa: the man who made it with Rock Smash gives you the HM
-      // (FireRed's HM06; HM08 here); the hot spring heals.
-      case "OneIsland_KindleRoad_EmberSpa_EventScript_RockSmashMan": {
-        const E = (k) => T("OneIsland_KindleRoad_EmberSpa_Text_" + k), hm = FieldMoves.hmFor("Rock Smash");
-        if (!f.gotHM06) {
-          await say(E("UsedThisToMakeEmberSpa"));
-          Player.addItem(player, hm);
-          f.gotHM06 = true;
-          await sayWithJingle(itemJingle(hm), "{PLAYER} received " + Bag.name(hm) + "!");
-        }
-        await say(E("ExplainHM06").map((p) => p.replace(/HM06/g, Bag.name(hm).split(" ")[0])));
-        return;
-      }
-      case "OneIsland_KindleRoad_EmberSpa_EventScript_SpaHeal": await emberSpa(); return;
-      case "MtEmber_Exterior_EventScript_ExplosionTutor": await moveTutor("Explosion", "tutorExplosion", "Text_Explosion"); return;
-      case "MtEmber_Exterior_EventScript_RocketPasswordScene": await emberPassword(); return;
-      case "MtEmber_Exterior_EventScript_Grunt1": await emberGrunt(1); return;
-      case "MtEmber_Exterior_EventScript_Grunt2": await emberGrunt(2); return;
-      case "MtEmber_Summit_EventScript_Moltres": await legendaryBird(ev.person, "Moltres", "foughtMoltres"); return;
-      // ---------- Cerulean Cave ----------
-      // ---------- Faraway Island ----------
-      // ---------- Orre ----------
-      case "OutskirtStand_Diner_EventScript_Bartender": await orreBartender(); return;
-      case "arrive:OutskirtStand": case "enter:OutskirtStand":
-        if ((f.orreStory | 0) === 18 && !f.orreStandFT) await orreStandStory(); else if (!(f.orre | 0)) await orreArrival();
-        return;
-      case "arrive:PhenacCity": case "enter:PhenacCity": await phenacFT(); return;
-      case "enter:PhenacCity_MayorsHouse": await mayorScene(); return;
-      case "PhenacCity_EventScript_Truck": await phenacTruck(ev.person); return;
-      case "PhenacCity_EventScript_Folly": case "PhenacCity_EventScript_Trudly": await say(["Folly: Back for more, rookie?"]); await phenacFTBattle(); return;
-      case "PhenacCity_MayorsHouse_EventScript_EsCade": await esCade(); return;
-      case "arrive:PyriteTown": case "enter:PyriteTown": await pyriteArrival(); return;
-      case "PyriteTown_DukingsHouse_EventScript_Duking": case "PyriteTown_DukingsHouse_EventScript_Marcia":
-      case "PyriteTown_DukingsHouse_EventScript_Secc": await dukingsHouse(script); return;
-      case "PyriteTown_PyriteBuilding_1F_EventScript_Nore": await pyriteNore(); return;
-      case "enter:PyriteTown_PyriteBuilding_4F": await pyriteTopFloor(); return;
-      case "enter:PyriteCave_MirorBHideout": await mirorBHideout(); return;
-      case "enter:AgateVillage_EaguansHouse": await eagunsHouseScene(); return;
-      case "AgateVillage_EaguansHouse_EventScript_Eagun": case "AgateVillage_EaguansHouse_EventScript_Beluh": await eagunsHouse(script); return;
-      case "AgateVillage_EventScript_Skrub": case "AgateVillage_EventScript_Peon": await agateShrine(); return;
-      case "AgateVillage_EventScript_RelicStone": await relicStone(); return;
-      case "RelicForest_EventScript_Shrine": await relicForestShrine(); return;
-      case "MtBattle_EventScript_Challenge": await mtBattleChallenge(); return;
-      case "arrive:MtBattle": case "enter:MtBattle": await mtBattleArrival(); return;
-      case "MtBattle_EventScript_Dakim": case "MtBattle_EventScript_SummitSkrub": case "MtBattle_EventScript_Vander": await mtBattleSummit(script); return;
-      case "arrive:TheUnder": case "enter:TheUnder": await underArrival(); return;
-      case "TheUnder_EventScript_Kloak": await underKloak(); return;
-      case "enter:TheUnder_Studio": case "TheUnder_Studio_EventScript_Venus": await underVenus(); return;
-      case "arrive:ShadowLab_1F": case "enter:ShadowLab_1F": await labArrival(); return;
-      case "enter:ShadowLab_B1F": case "ShadowLab_B1F_EventScript_Troop": await labTroop(); return;
-      case "enter:ShadowLab_EinsRoom": case "ShadowLab_EinsRoom_EventScript_Ein": await labEin(); return;
-      case "arrive:RealgamTower_1F": case "enter:RealgamTower_1F": await realgamArrival(); return;
-      case "RealgamTower_Dome_EventScript_Gonzap": await realgamGonzap(); return;
-      case "RealgamTower_Colosseum_EventScript_Nascour": await realgamNascour(); return;
-      case "enter:RealgamTower_Top": case "RealgamTower_Top_EventScript_Evice": await realgamEvice(); return;
-      case "MtBattle_EventScript_Trainer1": case "MtBattle_EventScript_Trainer2": case "MtBattle_EventScript_Turo": case "MtBattle_EventScript_Berin":
-        await orreTrainer(script); return;
-      case "OrreAirStrip_EventScript_Pilot": await orrePilot(); return;
-      case "Orre_WorldMap": await orreTravel(); return;
-      case "SnagemHideout_EventScript_Guard1": case "SnagemHideout_EventScript_Guard2": await snagemGuard(ev.person); return;
-      case "PhenacCity_EventScript_Kodo": await phenacKodo(); return;
-      case "OutskirtStand_Diner_EventScript_Traveller3": await outskirtLena(ev.person); return;
-      case "PyriteTown_EventScript_Rook": case "AgateVillage_EventScript_Fay": case "PyriteCave_EventScript_Rowe": await snagemTarget(script, ev.person); return;
-      case "PyriteTown_EventScript_Zeke": case "PyriteTown_EventScript_Rina": case "AgateVillage_EventScript_Ted": case "AgateVillage_EventScript_Sue":
-      case "PyriteCave_EventScript_Dex": case "PyriteCave_EventScript_Taro": await orreTrainer(script); return;
-      case "OutskirtStand_Diner_EventScript_Willie": await dinerWillie(); return;
-      case "OutskirtStand_Diner_EventScript_TV":
-        if ((f.orreStory | 0) >= 18) await say(["It's the news.", "\"Authorities have made a stunning\nannouncement on the mysterious building\nthat exploded in Eclo Canyon.",
-          "It was Team Snagem's hideout. Team\nSnagem is a gang of Pokémon thieves…\"", "The picture fizzles into static."]);
-        else await say(["It's the news.", "\"…and the Colosseums of Orre are packed\nas ever this week…\"", "The picture fizzles into static."]);
-        return;
-      case "OutskirtStand_Diner_EventScript_Jukebox": await orreJukebox(); return;
-      case "FarawayIsland_Entrance_EventScript_Sailor": await farawaySailor(ev.person); return;
-      case "enter:FarawayIsland_Interior": await findMew(); return;
-      case "FarawayIsland_Interior_EventScript_Mew": await mewFound(ev.person); return;
-      case "CeruleanCave_B1F_EventScript_Mewtwo":
-        await legendaryBird(ev.person, "Mewtwo", "foughtMewtwo", { level: 70, text: T("CeruleanCave_B1F_Text_Mew"), music: "mus_vs_mewtwo" });
-        return;
-      case "MtEmber_RubyPath_B5F_EventScript_Ruby":
-        f.gotRuby = true;
-        Overworld.removePerson(ev.person);
-        Player.addItem(player, "ruby");
-        await sayWithJingle("mus_obtain_key_item", T("MtEmber_RubyPath_B3F_Text_FoundARuby"));
-        return;
-      // Two Island.
-      case "TwoIsland_EventScript_Clerk": await twoIslandClerk(); return;
-      case "enter:TwoIsland_JoyfulGameCorner": await gameCornerHelp(); return;
-      case "TwoIsland_JoyfulGameCorner_EventScript_LostellesDaddy": await lostellesDaddy(); return;
-      case "TwoIsland_JoyfulGameCorner_EventScript_InfoMan":
-        if ((f.gameCornerScene || 0) >= 4) { await say(T("Text_WelcomeCanYouWait")); await say(T("Text_AdapterNotConnectedMinigame")); return; }
-        await say(T(f.rescuedLostelle ? "TwoIsland_JoyfulGameCorner_Text_GetGamesGoingSoon" : "TwoIsland_JoyfulGameCorner_Text_NotRunningAnyGamesToday"));
-        return;
-      case "TwoIsland_JoyfulGameCorner_EventScript_Lostelle": await say(T("TwoIsland_JoyfulGameCorner_Text_PleaseShowMeYouBeingCool")); return;
-      case "TwoIsland_CapeBrink_House_EventScript_StarterTutor": await capeBrinkTutor(); return;
-      case "TwoIsland_House_EventScript_MoveManiac": await moveManiac(); return;
-      // Three Island.
-      case "ThreeIsland_EventScript_Biker": await bikerArgument(2); return;
-      case "ThreeIsland_EventScript_AntiBiker1": await antiBiker(1); return;
-      case "ThreeIsland_EventScript_AntiBiker2": await antiBiker(2); return;
-      case "ThreeIsland_EventScript_BikerBossIntroTrigger": await bikerBossIntro(); return;
-      case "ThreeIsland_EventScript_BattleBikersTriggerLeft": await bikerBattles(0); return;
-      case "ThreeIsland_EventScript_BattleBikersTriggerMidLeft": await bikerBattles(1); return;
-      case "ThreeIsland_EventScript_BattleBikersTriggerMid": await bikerBattles(2); return;
-      case "ThreeIsland_EventScript_BattleBikersTriggerMidRight": await bikerBattles(3); return;
-      case "ThreeIsland_EventScript_BattleBikersTriggerRight": await bikerBattles(4); return;
-      case "ThreeIsland_EventScript_Doduo": cry("Doduo"); await say(T("ThreeIsland_Text_Doduo")); return;
-      case "ThreeIsland_Port_EventScript_Woman":
-        await say(T((f.gameCornerScene || 0) >= 2 ? "ThreeIsland_Port_Text_EverythingTurnedOutForBest"
-          : f.threeIslandScene === 4 ? "ThreeIsland_Port_Text_ThankGoodnessBikersGone" : "ThreeIsland_Port_Text_IllCallThePolice"));
-        return;
-      case "ThreeIsland_House1_EventScript_Lostelle": await say(T("ThreeIsland_House1_Text_YoureAlwaysSoCool"), bigGuy()); return;
-      case "ThreeIsland_House5_EventScript_LittleGirl":
-        await say(T(f.rescuedLostelle ? "ThreeIsland_House5_Text_IllGoPlayWithLostelle" : "ThreeIsland_House5_Text_ImNotLostelle"));
-        return;
-      case "ThreeIsland_Mart_EventScript_Clerk": await mart(ev.person.mart); return;
-      case "ThreeIsland_BerryForest_EventScript_Lostelle": await berryForestLostelle(ev.person); return;
-      // The Dunsparce Tunnel's prospector strikes gold once it's dug out
-      // (once you're Champion, FLAG_SYS_GAME_CLEAR: FireRed's goes by the National Pokédex).
-      case "ThreeIsland_DunsparceTunnel_EventScript_Prospector": {
-        const D = (k) => T("ThreeIsland_DunsparceTunnel_Text_" + k);
-        if (f.gotNuggetFromProspector) { await say(D("ThatsANugget")); return; }
-        if (!f.gameClear) {
-          await say(D("ProspectingForGold"));
-          Screen.say("");
-          await Overworld.act([{ who: "LOCALID_PROSPECTOR", moves: ["face_right"] }]);
-          return;
-        }
-        await say(D("StruckGoldThisIsForYou"));
-        Player.addItem(player, "nugget");
-        f.gotNuggetFromProspector = true;
-        await sayWithJingle("mus_obtain_item", "{PLAYER} received a " + Bag.name("nugget") + "!");
-        await say(D("ThatsANugget"));
-        return;
-      }
-
-      // ---------- The Sevii Islands: Four Island ----------
-      case "FourIsland_Harbor_EventScript_Sailor": await harborSailor("FOUR_ISLAND"); return;
-      case "FiveIsland_Harbor_EventScript_Sailor": await harborSailor("FIVE_ISLAND"); return;
-      case "FourIsland_PokemonCenter_1F_EventScript_Nurse": case "FiveIsland_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      case "FourIsland_Mart_EventScript_Clerk": await mart(ev.person.mart); return;
-      case "enter:FourIsland": await fourIslandRival(); return;
-      case "FourIsland_EventScript_DaycareMan": await fourIslandDayCareMan(); return;
-      // (Route 34's Day-Care, HGSS's std_daycare_man and std_daycare_lady: tools/build-johto.js.)
-      case "Johto_DaycareMan": await fourIslandDayCareMan("johto"); return;
-      case "Johto_DaycareLady": await fourIslandDayCareLady("johto"); return;
-      case "FourIsland_PokemonDayCare_EventScript_DaycareWoman": await fourIslandDayCareLady(); return;
-      case "FourIsland_EventScript_OldWoman":
-        await say(T(f.canLinkWithRS ? "FourIsland_Text_LoreleiMetLaprasAsChild" : "FourIsland_Text_LoreleiHasReturned"));
-        return;
-      case "FourIsland_House1_EventScript_BodySlamTutor": await moveTutor("Body Slam", "tutorBodySlam", "Text_BodySlam"); return;
-      case "FourIsland_House2_EventScript_StickerMan": await stickerMan(); return;
-      case "FourIsland_LoreleisHouse_EventScript_Lorelei": {
-        const L = (k) => T("FourIsland_LoreleisHouse_Text_" + k);
-        if (f.talkedToLoreleiAfterWarehouse) await say(L("WillDoWhatICanHereAndNow"));
-        else if (f.defeatedRocketsInWarehouse) { f.talkedToLoreleiAfterWarehouse = true; await say(L("IllReturnToLeagueInShortWhile")); }
-        else await say(L("IfAnythingWereToHappenToIsland"));
-        return;
-      }
-      case "FourIsland_IcefallCave_Back_EventScript_LoreleiRocketsScene": await icefallLorelei(); return;
-      case "FourIsland_IcefallCave_1F_EventScript_FallDownHole": await icefallFall(); return;
-      // ---------- Five Island ----------
-      case "FiveIsland_Meadow_EventScript_WarehouseDoor": await warehouseDoor(); return;
-      case "FiveIsland_RocketWarehouse_EventScript_Cage":
-        await say(T(f.defeatedRocketsInWarehouse ? "FiveIsland_RocketWarehouse_Text_PenUnlockedMonsFled" : "FiveIsland_RocketWarehouse_Text_ManyMonsLockedInPen"));
-        return;
-      case "FiveIsland_RocketWarehouse_EventScript_Admin2Trigger": {
-        await Overworld.act([{ who: "LOCALID_WAREHOUSE_ADMIN2", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-        f.warehouseScene = 1;
-        // (Turned your way, he sees you at once: FireRed checks trainers' sight every frame.)
-        const admin = window.WORLD_MAPS[ev.map].people.find((q) => q.localId === "LOCALID_WAREHOUSE_ADMIN2"), at = Overworld.position();
-        const a = Overworld.personPosition("LOCALID_WAREHOUSE_ADMIN2");
-        if (admin && a && trainerWaiting(admin) && at.y === a.y && a.x - at.x >= 1 && a.x - at.x <= admin.trainer.sight) {
-          await trainerBattle(admin, a.x - at.x - 1, "left");
-          await afterRocket(admin);
-        }
-        return;
-      }
-      case "FiveIsland_MemorialPillar_EventScript_MemorialMan": await memorialMan(); return;
-      case "FiveIsland_MemorialPillar_EventScript_Memorial": await memorial(); return;
-      case "FiveIsland_WaterLabyrinth_EventScript_EggGentleman": await eggGentleman(); return;
-      case "FiveIsland_ResortGorgeous_House_EventScript_Selphy": await selphy(); return;
-      case "enter:FiveIsland_LostCave_Room10": await lostSelphy(); return;
-      case "enter:FiveIsland_ResortGorgeous": await selphyHome(); return;
-      // ---------- Six Island ----------
-      case "SixIsland_Harbor_EventScript_Sailor": await harborSailor("SIX_ISLAND"); return;
-      case "SevenIsland_Harbor_EventScript_Sailor": await harborSailor("SEVEN_ISLAND"); return;
-      case "SixIsland_PokemonCenter_1F_EventScript_Nurse": case "SevenIsland_PokemonCenter_1F_EventScript_Nurse":
-      case "TrainerTower_Lobby_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      case "SixIsland_Mart_EventScript_Clerk": case "SevenIsland_Mart_EventScript_Clerk":
-        await mart(ev.person.mart);
-        return;
-      case "TrainerTower_Lobby_EventScript_MartClerk": await bpShop(); return;
-      case "enter:SixIsland_PokemonCenter_1F": await sixIslandRival(); return;
-      case "SixIsland_RuinValley_EventScript_Scientist": await ruinValleyScientist(); return;
-      case "SixIsland_RuinValley_EventScript_DottedHoleDoor": await dottedHoleDoor(); return;
-      case "SixIsland_DottedHole_B1F_EventScript_BrailleUp": await say(braille("UP")); return;
-      case "SixIsland_DottedHole_B2F_EventScript_BrailleLeft": await say(braille("LEFT")); return;
-      case "SixIsland_DottedHole_B3F_EventScript_BrailleRight": await say(braille("RIGHT")); return;
-      case "SixIsland_DottedHole_B4F_EventScript_BrailleDown": await say(braille("DOWN")); return;
-      case "SixIsland_DottedHole_SapphireRoom_EventScript_BrailleMessage":
-        await say(["LET THE TWO", "GLITTERING", "STONES", "ONE IN RED", "ONE IN BLUE", "CONNECT THE", "PAST.", "TWO FRIENDS", "SHARING",
-          "POWER OPEN", "A WINDOW TO", "A NEW WORLD", "THAT GLOWS.", "THE NEXT", "WORLD WAITS", "FOR YOU."].map(braille));
-        return;
-      case "SixIsland_DottedHole_SapphireRoom_EventScript_Sapphire": await dottedHoleSapphire(); return;
-      case "SixIsland_WaterPath_House1_EventScript_Beauty": await heracrossFan(); return;
-      case "SixIsland_WaterPath_House1_EventScript_SizeRecord": await heracrossChart(); return;
-      // ---------- Seven Island ----------
-      case "SevenIsland_EventScript_SwordsDanceTutor": await moveTutor("Swords Dance", "tutorSwordsDance", "Text_SwordsDance"); return;
-      case "SevenIsland_SevaultCanyon_House_EventScript_ChanseyDanceMan": await chanseyDance(); return;
-      case "SevenIsland_SevaultCanyon_House_EventScript_Chansey":
-        cry("Chansey");
-        await say(T("SevenIsland_SevaultCanyon_House_Text_Chansey"));
-        return;
-      // (FireRed's e-Reader trainer, the old woman's visitor, never comes here.)
-      case "SevenIsland_House_Room1_EventScript_OldWoman": await say(T("SevenIsland_House_Room1_Text_OnlyEnjoymentWatchingBattles")); return;
-      // ---------- Trainer Tower ----------
-      case "TrainerTower_Lobby_EventScript_EntryTrigger": await towerEntry(); return;
-      case "enter:TrainerTower_Lobby": await towerLost(); return;
-      case "TrainerTower_Lobby_EventScript_Receptionist":
-        await say(lobbyText(f.tower && f.tower.spokeToOwner ? "ThanksForCompeting" : "GiveItYourBest"));
-        return;
-      case "TrainerTower_Lobby_EventScript_ShowRecords": await towerTimeBoard(); return;
-      case "TrainerTower_Elevator_EventScript_FloorSelect": await towerElevator(); return;
-      case "TrainerTower_EventScript_Owner": await towerOwner(); return;
-      case "TrainerTower_Lobby_EventScript_BPTutor": await bpTutor(); return;
-      case BT_ENTRY: await battleTowerEntry(); return;
-      case BT_RECEPTION: await battleTowerReception(); return;
-      case BT_NURSE: await nurse(ev.map, ev.person); return;
-      case BT_SIGN: await battleTowerSign(); return;
-      case ST_CUPS: await stadiumCups(); return;
-      case ST_CASTLE: await stadiumCastle(); return;
-      case ST_NURSE: await nurse(ev.map, ev.person); return;
-      case ST_SIGN: await stadiumSign(); return;
-      case "StadiumIsland_EventScript_Sailor": await stadiumSailor(); return;
-      case "StadiumIsland_EventScript_StadiumSign": await say(["Pokémon Stadium", "Cups and the Gym Leader Castle!\nOpen to all Trainers."]); return;
-      case "StadiumIsland_EventScript_PierSign": await say("Stadium Island\nThe Seagallop sails for Vermilion."); return;
-      case "StadiumIsland_EventScript_Spectator": await stadiumSpectator(ev.person); return;
-      case "TrainerTower_Lobby_EventScript_BPEggTutor": await bpEggTutor(); return;
-      case "TrainerTower_EventScript_SingleBattleTrigger": await towerBattle(ev.map, 0); return;
-      case "TrainerTower_EventScript_DoubleBattleTriggerTop": await towerBattle(ev.map, 0); return;
-      case "TrainerTower_EventScript_DoubleBattleTriggerBottom": await towerBattle(ev.map, 1); return;
-      case "TrainerTower_EventScript_DoublesTrainer1": case "TrainerTower_EventScript_SinglesTrainer":
-      case "TrainerTower_EventScript_KnockoutTrainer": case "TrainerTower_EventScript_DoublesTrainer2":
-        await towerTrainerTalk(ev.map, ev.person.localId);
-        return;
-
-      // ---------- Cinnabar Island ----------
-      // The Gym's door, locked until you have the Secret Key (VAR_TEMP_1, from
-      // FLAG_HIDE_POKEMON_MANSION_B1F_SECRET_KEY: CinnabarIsland_EventScript_CheckUnlockGym).
-      case "CinnabarIsland_EventScript_GymDoorLocked":
-        await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-        await sleep(333);
-        await say(T("CinnabarIsland_Text_DoorIsLocked"));
-        Screen.say("");
-        await Overworld.act([{ who: "player", moves: M("CinnabarIsland_Movement_ForcePlayerFromDoor") }]);
-        return;
-      case "CinnabarIsland_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      case "CinnabarIsland_Mart_EventScript_Clerk":
-        await mart(ev.person.mart);
-        return;
-      case "CinnabarIsland_Gym_EventScript_GymGuy":
-        await say(T(f.TRAINER_LEADER_BLAINE ? "CinnabarIsland_Gym_Text_GymGuyPostVictory" : "CinnabarIsland_Gym_Text_GymGuyAdvice"));
-        return;
-      case "CinnabarIsland_Gym_EventScript_GymStatue":
-        await say(T(hasBadge("volcano") ? "CinnabarIsland_Gym_Text_GymStatuePlayerWon" : "CinnabarIsland_Gym_Text_GymStatue"));
-        return;
-      // The Pokémon Lab: Garett's Seel (for a Ponyta), Clifton's Electrode (for
-      // a Raichu), Norma's Tangela (for a Venonat), the fossil doctor and the
-      // Metronome tutor.
-      case "CinnabarIsland_PokemonLab_ExperimentRoom_EventScript_Garett":
-        await inGameTrade(TRADES.seelor);
-        return;
-      case "CinnabarIsland_PokemonLab_Lounge_EventScript_Clifton":
-        await inGameTrade(TRADES.esphere);
-        return;
-      case "CinnabarIsland_PokemonLab_Lounge_EventScript_Norma":
-        await inGameTrade(TRADES.tangeny);
-        return;
-      case "CinnabarIsland_PokemonLab_ExperimentRoom_EventScript_FossilScientist":
-      case PEWTER_FOSSIL_SCIENTIST:
-        await fossilScientist();
-        return;
-      case "CinnabarIsland_PokemonLab_ResearchRoom_EventScript_MetronomeTutor":
-        await moveTutor("Metronome", "tutorMetronome", "Text_Metronome");
-        return;
-      // The Pokémon Mansion's statues: each hides the switch for its doors.
-      case "PokemonMansion_1F_EventScript_Statue":
-      case "PokemonMansion_2F_EventScript_Statue":
-      case "PokemonMansion_3F_EventScript_Statue":
-      case "PokemonMansion_B1F_EventScript_Statue":
-        await mansionSwitch();
-        return;
-
-      // ---------- Fuchsia City ----------
-      case "FuchsiaCity_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      case "FuchsiaCity_Mart_EventScript_Clerk":
-        await mart(ev.person.mart);
-        return;
-      case "FuchsiaCity_EventScript_FossilMonSign":
-        if (f.mtMoonFossil === "dome-fossil") await monSign("Omanyte", T("FuchsiaCity_Text_OmanyteSign"));
-        else await monSign("Kabuto", T("FuchsiaCity_Text_KabutoSign"));
-        return;
-      case "FuchsiaCity_EventScript_SubstituteTutor":
-        await moveTutor("Substitute", "tutorSubstitute", "Text_Substitute");
-        return;
-      case "FuchsiaCity_WardensHouse_EventScript_Warden":
-        await warden();
-        return;
-      // The Fishing Guru's other brother: (FireRed's Good Rod) the Fishing Rod if
-      // you haven't one; then how your fishing is going.
-      case "FuchsiaCity_House2_EventScript_FishingGurusBrother":
-        if (!hasFishingRod()) { await rodGift("FuchsiaCity_House2_Text_", "LikeYourStyleTakeThis"); return; }
-        await say(T("FuchsiaCity_House2_Text_HowAreTheFishBiting"));
-        await say(fishingLevelTalk("Fuchsia"));
-        return;
-      case "FuchsiaCity_House3_EventScript_MoveDeleter":
-        await fuchsiaMoveDeleter();
-        return;
-      case "FuchsiaCity_Gym_EventScript_GymGuy":
-        await say(T(f.TRAINER_LEADER_KOGA ? "FuchsiaCity_Gym_Text_GymGuyPostVictory" : "FuchsiaCity_Gym_Text_GymGuyAdvice"));
-        return;
-      case "FuchsiaCity_Gym_EventScript_GymStatue":
-        await say(T(hasBadge("soul") ? "FuchsiaCity_Gym_Text_GymStatuePlayerWon" : "FuchsiaCity_Gym_Text_GymStatue"));
-        return;
-
-      // ---------- The Safari Zone ----------
-      case "FuchsiaCity_SafariZone_Entrance_EventScript_InfoAttendant":
-        await say(T(await confirm(fill(T("FuchsiaCity_SafariZone_Entrance_Text_FirstTimeAtSafariZone")[0]))
-          ? "FuchsiaCity_SafariZone_Entrance_Text_ExplainSafariZone" : "FuchsiaCity_SafariZone_Entrance_Text_SorryYoureARegularHere"));
-        return;
-      case "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerMid":
-      case "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerRight":
-      case "FuchsiaCity_SafariZone_Entrance_EventScript_EntryTriggerLeft":
-        await safariEntry(script.replace("FuchsiaCity_SafariZone_Entrance_EventScript_EntryTrigger", ""));
-        return;
-      case "enter:FuchsiaCity_SafariZone_Entrance":
-        await safariGateArrival();
-        return;
-      case "SafariZone_SecretHouse_EventScript_Attendant":
-        if (!f.gotHM03) {
-          await say(T("SafariZone_SecretHouse_Text_CongratsYouveWon"));
-          Player.addItem(player, "hm03");
-          f.gotHM03 = true;
-          await sayWithJingle(itemJingle("hm03"), T("SafariZone_SecretHouse_Text_ReceivedHM03FromAttendant"));
-        }
-        await say(T("SafariZone_SecretHouse_Text_ExplainSurf"));
-        return;
-
-      // ---------- Vermilion City ----------
-      // The sailor at the pier checks for an S.S. Ticket (once, until you step back).
-      case "VermilionCity_EventScript_CheckTicketLeft":
-      case "VermilionCity_EventScript_CheckTicketRight":
-        if (ticketChecked) return;
-        if (f.ssAnneDeparted) {
-          // (Then the Seagallop sails from here, with a Tri-Pass or Rainbow Pass:
-          // VermilionCity_EventScript_CheckSeagallopPresentTrigger.)
-          await Overworld.act([{ who: "LOCALID_VERMILION_FERRY_SAILOR", moves: M("Common_Movement_WalkInPlaceFasterLeft") },
-            { who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-          await vermilionSeagallop(true);
-          return;
-        }
-        await Overworld.act([{ who: "LOCALID_VERMILION_FERRY_SAILOR", moves: M("Common_Movement_WalkInPlaceFasterLeft") },
-          { who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-        await say(T("VermilionCity_Text_DoYouHaveATicket"));
-        if (!f.gotSSTicket || !Player.itemCount(player, "ss-ticket")) {
-          await say(T("VermilionCity_Text_DontHaveNeededSSTicket"));
-          await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
-          return;
-        }
-        await say(T("VermilionCity_Text_FlashedSSTicket"));
-        ticketChecked = true;
-        return;
-      case "VermilionCity_EventScript_ExitedTicketCheck":
-        ticketChecked = false;
-        return;
-      // The Tradeback Guy (this game's): he trades with you and straight back,
-      // so a Pokémon that evolves by trading does (Kadabra, Machoke, Graveler,
-      // Haunter, and those holding their item: Onix with a Metal Coat, ...);
-      // he won't take one that wouldn't.
-      case "Game_EventScript_PokerDealer": await pokerTable(); return;
-      case "Game_EventScript_BlackjackDealer": await blackjackTable(); return;
-      case "Game_EventScript_PokerTable": await pokerTable(); return;
-      case "Game_EventScript_BlackjackTable": await blackjackTable(); return;
-      case "Game_EventScript_MahjongPlayer": await mahjongTable(); return;
-      case "Game_EventScript_Rejuvenator": await rejuvenator(); return;
-      case "Game_EventScript_SSAquaSailor": await ssAquaToOlivine(); return;
-      case "Game_EventScript_TradebackGuy": {
-        await say(["Hi! I'm the Tradeback Guy!", "Some Pokémon only evolve when\nthey're traded. Nobody to trade\nwith? Leave it to me!",
-          "I'll trade you my Rattata, and then\ntrade your Pokémon right back!"]);
-        if (!(await confirm("Want to trade a Pokémon with me?"))) { await say("Okay! Come back anytime!"); return; }
-        // (Only a Pokémon that would evolve by it: each box says ABLE or NOT ABLE.)
-        const evolves = (r) => !r.egg && !!Evolution.find(r, { trigger: "trade", party: player.party });
-        const mine = await choosePartyFor("Choose a POKéMON.", null, player.party.map((r) => (evolves(r) ? "ABLE" : "NOT ABLE")));
-        show("world");
-        if (!mine) { await say("Okay! Come back anytime!"); return; }
-        if (mine.egg) { await say("An Egg can't be traded!"); return; }
-        if (!evolves(mine)) {
-          await say(["Hmm… " + Party.displayName(mine) + " won't evolve by\ntrading.", "I only trade Pokémon that evolve\nwhen they're traded. Sorry!"]);
-          return;
-        }
-        // Your Pokémon for his Lv. 5 Rattata, and back again: two trades, as
-        // FireRed shows them (ui/trade-scene.js), then the trade evolution.
-        const rattata = Party.create("Rattata", 5);
-        rattata.hp = Party.maxHp(rattata);
-        rattata.ot = { name: "TRADEBACK", id: 1 };
-        await tradeScene(mine, rattata, "Tradeback Guy");
-        show("world");
-        await Overworld.resume();
-        await say("Great! Now let's trade back!");
-        await tradeScene(rattata, mine, "Tradeback Guy");
-        const name = Party.displayName(mine);
-        const evo = Evolution.find(mine, { trigger: "trade", party: player.party });
-        if (evo) await evolve(mine, evo, false);
-        show("world");
-        music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[player.location.map] || {}).music);
-        await Overworld.resume();
-        await say(evo ? "There you go! Come back anytime!" : "Here's your " + name + " back!\nCome back anytime!");
-        return;
-      }
-      // ---------- The S.S. Anne ----------
-      case "SSAnne_2F_Corridor_EventScript_RivalTriggerLeft":
-      case "SSAnne_2F_Corridor_EventScript_RivalTriggerMid":
-      case "SSAnne_2F_Corridor_EventScript_RivalTriggerRight":
-        if (!f.ssAnneRed && canBattle()) await ssAnneRed(script.replace("SSAnne_2F_Corridor_EventScript_RivalTrigger", ""));
-        return;
-      case "SSAnne_CaptainsOffice_EventScript_Captain":
-        await ssAnneCaptain();
-        return;
-      // A gentleman shows you the sleeping Pokémon he saw: Snorlax (seen in the Pokédex).
-      case "SSAnne_2F_Room1_EventScript_Gentleman":
-        Player.markSeen(player, "Snorlax");
-        showPicture("Snorlax");
-        await say(T("SSAnne_2F_Room1_Text_SleepingMonLookedLikeThis"));
-        hidePicture();
-        return;
-      // The head chef: tonight's main course is one of three.
-      case "SSAnne_Kitchen_EventScript_Chef1": case "SSAnne_Kitchen_EventScript_Chef2":
-      case "SSAnne_Kitchen_EventScript_Chef3": case "SSAnne_Kitchen_EventScript_Chef4": {
-        await say(T("SSAnne_Kitchen_Text_IAmLeChefMainCourseIs"));
-        await say(T(["SSAnne_Kitchen_Text_SalmonDuSalad", "SSAnne_Kitchen_Text_EelsAuBarbecue", "SSAnne_Kitchen_Text_PrimeBeefsteak"][Math.floor(Math.random() * 3)]));
-        return;
-      }
-      case "enter:SSAnne_Exterior":
-        await ssAnneDeparts();
-        return;
-      case "VermilionCity_EventScript_OaksAide":
-        f.talkedToVermilionAide = true;
-        await say(T("VermilionCity_Text_Route2AideHasPackageForYou"));
-        return;
-      case "VermilionCity_PokemonCenter_1F_EventScript_Nurse":
-        await nurse(ev.map, ev.person);
-        return;
-      case "VermilionCity_Mart_EventScript_Clerk":
-      case "LavenderTown_Mart_EventScript_Clerk":
-        await mart(ev.person.mart);
-        return;
-      case "VermilionCity_Gym_EventScript_LtSurge":
-        await ltSurge(ev.person);
-        return;
-      case "VermilionCity_Gym_EventScript_GymGuy":
-        await say(T(f.TRAINER_LEADER_LT_SURGE ? "VermilionCity_Gym_Text_GymGuyPostVictory" : "VermilionCity_Gym_Text_GymGuyAdvice"));
-        return;
-      case "VermilionCity_Gym_EventScript_GymStatue":
-        await say(T(hasBadge("thunder") ? "VermilionCity_Gym_Text_GymStatuePlayerWon" : "VermilionCity_Gym_Text_GymStatue"));
-        return;
-      // The Fishing Guru gives you (FireRed's Old Rod) the Fishing Rod.
-      case "VermilionCity_House1_EventScript_FishingGuru": {
-        if (hasFishingRod()) {
-          await say(T("VermilionCity_House1_Text_HowAreTheFishBiting"));
-          await say(fishingLevelTalk("Vermilion"));
-          return;
-        }
-        const q = T("VermilionCity_House1_Text_ImFishingGuruDoYouLikeToFish");
-        await say(q.slice(0, -1));
-        if (!(await confirm(fill(q[q.length - 1])))) { await say(T("VermilionCity_House1_Text_OhThatsSoDisappointing")); return; }
-        await say(T("VermilionCity_House1_Text_TakeThisAndFish"));
-        await giveFishingRod("the Fishing Guru");
-        f.gotOldRod = true;
-        await say(T("VermilionCity_House1_Text_FishingIsAWayOfLife"));
-        await say(FISHING_LEVELS_EXPLAINED);
-        return;
-      }
-      case "VermilionCity_House2_EventScript_Elyssa":
-        await inGameTrade(TRADES.chDing);
-        return;
-      // Pokémon that cry when you talk to them.
-      case "VermilionCity_House3_EventScript_Pidgey":
-      case "LavenderTown_House1_EventScript_Cubone":
-      case "LavenderTown_VolunteerPokemonHouse_EventScript_Nidorino":
-      case "LavenderTown_VolunteerPokemonHouse_EventScript_Psyduck":
-      case "VermilionCity_PokemonFanClub_EventScript_Pikachu":
-      case "VermilionCity_PokemonFanClub_EventScript_Seel":
-      case "SSAnne_1F_Room3_EventScript_Wigglytuff":
-      case "SSAnne_B1F_Room5_EventScript_Machoke":
-        cry(/_EventScript_(\w+)$/.exec(script)[1]);
-        await say(ev.person.text || []);
-        return;
-      // The Fan Club's Chairman: hear him out about his Rapidash and get a Bike Voucher.
-      case "VermilionCity_PokemonFanClub_EventScript_Chairman": {
-        const C = (k) => T("VermilionCity_PokemonFanClub_Text_" + k);
-        if (f.gotBikeVoucher) { await say(C("DidntComeToSeeAboutMonsAgain")); return; }
-        const q = C("DidYouComeToHearAboutMyMons");
-        await say(q.slice(0, -1));
-        if (!(await confirm(fill(q[q.length - 1])))) { await say(C("ComeBackToHearStory")); return; }
-        await say(C("ChairmansStory"));
-        Player.addItem(player, "bike-voucher");
-        f.gotBikeVoucher = true;
-        await sayWithJingle("mus_obtain_key_item", C("ReceivedBikeVoucherFromChairman"));
-        await say(C("ExplainBikeVoucher"));
-        return;
-      }
-
-      // Super Nerd Miguel guards the fossils: beat him, then each of you takes one.
-      case "MtMoon_B2F_EventScript_MiguelTrigger":
-        if (f.TRAINER_SUPER_NERD_MIGUEL) return;
-        await Overworld.act([{ who: "LOCALID_MIGUEL", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-        await miguelBattle();
-        return;
-      case "MtMoon_B2F_EventScript_Miguel":
-        if (f.mtMoonFossil) await say(T("MtMoon_B2F_Text_LabOnCinnabarRegeneratesFossils"));
-        else if (f.TRAINER_SUPER_NERD_MIGUEL) await say(T("MtMoon_B2F_Text_WellEachTakeAFossil"));
-        else await miguelBattle();
-        return;
-      case "MtMoon_B2F_EventScript_DomeFossil":
-      case "MtMoon_B2F_EventScript_HelixFossil": {
-        if (f.mtMoonFossil || !f.TRAINER_SUPER_NERD_MIGUEL) { if (!f.TRAINER_SUPER_NERD_MIGUEL) await say(T("MtMoon_B2F_Text_MiguelIntro")); return; }
-        const dome = script.endsWith("DomeFossil"), name = dome ? "Dome" : "Helix";
-        if (!(await confirm(fill(T("MtMoon_B2F_Text_YouWant" + name + "Fossil")[0])))) return;
-        Overworld.removeObject(dome ? "LOCALID_DOME_FOSSIL" : "LOCALID_HELIX_FOSSIL");
-        Player.addItem(player, dome ? "dome-fossil" : "helix-fossil");
-        f.mtMoonFossil = dome ? "dome-fossil" : "helix-fossil";
-        await say(T("MtMoon_B2F_Text_Obtained" + name + "Fossil"));
-        // He takes the other one.
-        await Overworld.act([{ who: "LOCALID_MIGUEL", moves: ["delay_10"].concat(M(dome ? "MtMoon_B2F_Movement_MiguelToHelixFossil" : "MtMoon_B2F_Movement_MiguelToDomeFossil")) }]);
-        await say(T("MtMoon_B2F_Text_ThenThisFossilIsMine"));
-        Overworld.removeObject(dome ? "LOCALID_HELIX_FOSSIL" : "LOCALID_DOME_FOSSIL");
-        return;
-      }
-
-      // ---------- Route 2 ----------
-
-      case "Route2_House_EventScript_Reyley":
-        await inGameTrade(TRADES.mimien);
-        return;
-
-      // Prof. Oak's Aide in Route 11's gate: the Itemfinder for thirty kinds caught.
-      case "Route11_EastEntrance_2F_EventScript_Aide": {
-        const NEEDED = 30, item = "itemfinder", label = "Itemfinder", A = (k) => T("Route11_EastEntrance_2F_Text_" + k);
-        if (f.gotItemfinder) { await say(A("ExplainItemfinder"), [NEEDED, label]); return; }
-        const ask = A("GiveItemfinderIfCaught30");
-        await say(ask.slice(0, -1), [NEEDED, label]);
-        if (!(await confirm(fill(ask[ask.length - 1], [NEEDED, label])))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), [NEEDED, label]); return; }
-        const count = Player.dexCount(player, "caught", true);   // (Kanto's: GetPokedexCount)
-        if (count < NEEDED) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), [NEEDED, label, count]); return; }
-        await say(A("GreatHereYouGo"), [NEEDED, label, count]);
-        Player.addItem(player, item);
-        f.gotItemfinder = true;
-        await sayWithJingle("mus_obtain_key_item", A("ReceivedItemfinderFromAide").map((p) => fill(p, [NEEDED, label])));
-        await say(A("ExplainItemfinder"), [NEEDED, label]);
-        return;
-      }
-      case "Route11_EastEntrance_2F_EventScript_Turner":
-        await inGameTrade(TRADES.nina);
-        return;
-      // Prof. Oak's Aide: HM05 Flash for ten kinds of Pokémon caught.
-      case "Route2_EastBuilding_EventScript_Aide": {
-        const NEEDED = 10, item = "hm05", label = "HM05";
-        if (f.gotFlash) { await say(T("Route2_EastBuilding_Text_ExplainHM05")); return; }
-        const ask = T("Route2_EastBuilding_Text_GiveHM05IfSeen10Mons");
-        await say(ask.slice(0, -1));
-        if (!(await confirm(fill(ask[ask.length - 1])))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), [NEEDED, label]); return; }
-        const count = Player.dexCount(player, "caught", true);   // (Kanto's: GetPokedexCount)
-        if (count < NEEDED) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), [NEEDED, label, count]); return; }
-        await say(T("Route2_EastBuilding_Text_GreatHereYouGo"), [NEEDED, label, count]);
-        Player.addItem(player, item);
-        f.gotFlash = true;
-        await say(T("Route2_EastBuilding_Text_ReceivedHM05FromAide"));
-        await say(T("Route2_EastBuilding_Text_ExplainHM05"));
-        return;
-      }
-
-      case "Route1_EventScript_MartClerk":
-        if (f.route1Potion) { await say("Please come see us if you need\nPoké Balls."); return; }
-        await say(ev.person.text);
-        Player.addItem(player, "potion");
-        f.route1Potion = true;
-        await say("{PLAYER} received a Potion.");
-        return;
-    }
   }
 
   // A Pokémon's picture in a box over the map, as FireRed shows the starters.
@@ -5087,73 +3593,6 @@
   const LAB_RIVAL_NAME = "Leaf";
   const leafT = (label) => [].concat(T(label)).map((p) => p.replace(/\{RIVAL\}/g, LAB_RIVAL_NAME)
     .replace(/Gramps/g, "Prof. Oak").replace(/Smell you later!/g, "See you later!"));
-
-  async function oakWalksYouToTheLab(side) {
-    music("mus_oak");
-    await say(T("PalletTown_Text_OakDontGoOut"));
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_ExclamationMark") }]);
-    Overworld.addObject(OAK, { x: 10, y: 8, facing: "up" });
-    await Overworld.act([{ who: OAK, moves: M("PalletTown_Movement_OakEnter" + side) }]);
-    await say(T("PalletTown_Text_OakGrassUnsafeNeedMon"));
-    await Overworld.act([
-      { who: OAK, moves: M("PalletTown_Movement_OakWalkToLab" + side) },
-      { who: "player", moves: M("PalletTown_Movement_PlayerWalkToLab" + side) }]);
-    await Overworld.act([
-      { who: OAK, moves: M("PalletTown_Movement_OakEnterLab") },
-      { who: "player", moves: M("PalletTown_Movement_PlayerEnterLab") }]);
-    player.flags.oakInLab = true;
-    await Overworld.teleport({ map: "PalletTown_ProfessorOaksLab", x: 6, y: 12, facing: "up" });
-
-    // In the lab: Oak walks in ahead of you to his desk.
-    Overworld.removeObject(LAB_OAK);
-    Overworld.addObject(LAB_OAK, { x: 6, y: 11, facing: "up" });
-    await Overworld.act([{ who: LAB_OAK, moves: M("PalletTown_ProfessorOaksLab_Movement_OakEnter") }]);
-    Overworld.removeObject(LAB_OAK);
-    Overworld.refreshPeople();
-    await Overworld.act([{ who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerEnter") }]);
-    await Overworld.act([{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    // Leaf is friendlier than FireRed's rival: glad to see you both, and
-    // happy to wait her turn.
-    await say(["Leaf: Prof. Oak! There you are!", player.flags.metLeaf ? "Oh, and you brought {PLAYER}, too!\nHi again!"
-      : "Oh, hi! I'm Leaf. Nice to meet you,\n{PLAYER}!"]);
-    await say(leafT("PalletTown_ProfessorOaksLab_Text_OakThreeMonsChooseOne"));
-    await Overworld.act([{ who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalReact") }]);
-    await say(["Leaf: Um, Prof. Oak?\nCould I have one, too?"]);
-    await say(["Oak: Of course, Leaf!\nYou can have one, too!"]);
-  }
-
-  // Leaf stops you on the way out of the lab (FireRed's RivalBattle): she
-  // turns, calls out, walks down to you from her Poké Ball, battles, then
-  // leaves. Which path she takes depends on where you are (x 5, 6 or 7) and
-  // which Pokémon she has.
-  async function rivalLabBattle(x) {
-    music("mus_encounter_rival");
-    const f = player.flags;
-    const side = { 5: "Left", 6: "Mid", 7: "Right" }[x] || "Mid";
-    const theirs = RIVAL_PICK[f.starter];
-    await Overworld.act([{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    await say(["Leaf: Wait, {PLAYER}!\nHow about a practice battle?", "Let's see what our Pokémon\ncan do!"]);
-    const approach = theirs === "Charmander" ? "PalletTown_ProfessorOaksLab_Movement_ApproachForBattleCharmander" + side
-      : "PalletTown_ProfessorOaksLab_Movement_RivalApproachForBattle" + theirs + side;
-    await Overworld.act([{ who: LAB_RIVAL, moves: M(approach) }]);
-    f.rivalLabBattle = true;
-    const team = [Party.create(theirs, STARTER_LEVEL)];
-    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green" },
-      defeatText: ["Wow, you're really good!\nThat was fun!"], noBlackout: true });
-    // Back to the lab: everyone's healed, and she heads out.
-    player.party.forEach(Party.heal);
-    show("world");
-    await Overworld.resume();
-    if (outcome === "lost") await say(["Leaf: Yay, I won!\nGood battle, {PLAYER}!"]);
-    await say(["Leaf: I'm going to train my Pokémon\nso we both get stronger!", "Thanks, Prof. Oak!\nSee you later, {PLAYER}!"]);
-    music("mus_rival_exit");
-    await Overworld.act([
-      { who: LAB_RIVAL, moves: M("PalletTown_ProfessorOaksLab_Movement_RivalExitAfterBattle" + side) },
-      { who: "player", moves: M("PalletTown_ProfessorOaksLab_Movement_PlayerWatchRivalExitAfterBattle" + (side === "Right" ? "Right" : "")) }]);
-    Overworld.removeObject(LAB_RIVAL);
-  }
 
   // EventScript_OutOfCenterPartyHeal: the screen goes black while the healing
   // jingle plays, and the party is healed.
@@ -5467,71 +3906,6 @@
     await Overworld.resume();
   }
 
-  // ---------- Oak's parcel and the Pokédex ----------
-  //
-  // FireRed's PalletTown_ProfessorOaksLab_EventScript_ReceiveDexScene: you hand
-  // over the parcel, your rival comes in, Oak fetches the two Pokédexes from
-  // the desk at the back and gives you one and five Poké Balls, and your rival
-  // heads off. Who moves where depends on which side of Oak you're standing
-  // (the way you face him: up, down, left or right).
-  async function pokedexScene() {
-    const f = player.flags;
-    const L = (name) => M("PalletTown_ProfessorOaksLab_Movement_" + name);
-    const facing = Overworld.position().facing;
-    const north = facing === "up", south = facing === "down", east = facing === "right";
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakHaveSomethingForMe"));
-    Player.removeItem(player, "oaks-parcel");   // (a save made mid-scene gets it back: see Player.load)
-    await say(T("PalletTown_ProfessorOaksLab_Text_DeliveredOaksParcel"));
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakCustomBallIOrdered"));
-    // In comes Gary, from the door.
-    Overworld.addObject(LAB_RIVAL, { x: north ? 5 : 6, y: 10, facing: "up" });
-    await Overworld.act(north
-      ? [{ who: "player", moves: L("WatchRivalEnterNorth") }, { who: LAB_RIVAL, moves: L("RivalEnter") }]
-      : [{ who: LAB_OAK, moves: M("Common_Movement_WalkInPlaceFasterDown") },
-        { who: LAB_RIVAL, moves: L("RivalEnter") }].concat(south ? [] : [{ who: "player", moves: L("WatchRivalEnterEastWest") }]));
-    // He hasn't met you: Oak introduces you.
-    await say(["{RIVAL}: Gramps! I almost forgot!\nWhat did you call me for?", "Wait? Who's this?"]);
-    await Overworld.act([{ who: LAB_OAK, moves: ["delay_30"].concat(M("Common_Movement_ExclamationMark"), M("Common_Movement_Delay48")) }]);
-    // Oak looks at you, then at your rival.
-    if (north) await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    else {
-      await Overworld.act([{ who: LAB_OAK, moves: M("Common_Movement_FacePlayer").concat("delay_15") }]);
-      await Overworld.act([{ who: LAB_OAK, moves: M("Common_Movement_WalkInPlaceFasterDown") }]
-        .concat(south ? [] : [{ who: "player", moves: M(east ? "Common_Movement_WalkInPlaceFasterRight" : "Common_Movement_WalkInPlaceFasterLeft") }]));
-    }
-    await say(["Oak: This is {PLAYER}. He's starting\nhis Pokémon journey."]);
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakHaveRequestForYouTwo"));
-    // To the desk at the back, where the Pokédexes are.
-    await Overworld.act(south
-      ? [{ who: LAB_OAK, moves: L("OakWalkToDeskSouth") }, { who: "player", moves: L("WatchOakWalkToDesk") }, { who: LAB_RIVAL, moves: L("WatchOakWalkToDesk") }]
-      : [{ who: LAB_OAK, moves: L("OakWalkToDesk") }].concat(east ? [{ who: "player", moves: L("WatchOakWalkToDeskEast") }] : []));
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakPokedexOnDesk"));
-    await Overworld.act([{ who: LAB_OAK, moves: ["delay_40"] }]);
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakTakeTheseWithYou"));
-    await Overworld.act([{ who: LAB_OAK, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    Overworld.removeObject("LOCALID_POKEDEX_1");
-    await Overworld.act([{ who: LAB_OAK, moves: ["delay_10"] }]);
-    Overworld.removeObject("LOCALID_POKEDEX_2");
-    await Overworld.act([{ who: LAB_OAK, moves: ["delay_25"] }]);
-    await Overworld.act([{ who: LAB_OAK, moves: L(south ? "OakBringDexesOverSouth" : "OakBringDexesOver") }]
-      .concat(east ? [{ who: "player", moves: L("PlayerFaceOakForDexEast") }] : []));
-    await Overworld.act([{ who: LAB_OAK, moves: ["delay_10"] }]);
-    f.pokedex = f.parcelDelivered = true;
-    await say(T("PalletTown_ProfessorOaksLab_Text_ReceivedPokedexFromOak"));
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakCatchMonsForDataTakeThese"));
-    Player.addItem(player, "poke-ball", 5);
-    await say(T("PalletTown_ProfessorOaksLab_Text_ReceivedFivePokeBalls"));
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakExplainCatching"));
-    await say(T("PalletTown_ProfessorOaksLab_Text_OakCompleteMonGuideWasMyDream"));
-    await say(T("PalletTown_ProfessorOaksLab_Text_RivalLeaveItToMeGramps"));
-    await Overworld.act(north ? [{ who: LAB_RIVAL, moves: M("Common_Movement_FacePlayer") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]
-      : south ? [{ who: LAB_RIVAL, moves: M("Common_Movement_WalkInPlaceFasterUp") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]
-        : [{ who: LAB_RIVAL, moves: M("Common_Movement_FacePlayer") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await say(["{RIVAL}: I'll be at Route 22.\nLet me see how weak your Pokémon\nare."]);
-    await Overworld.act([{ who: LAB_RIVAL, moves: L("RivalExit") }].concat(north ? [{ who: "player", moves: L("WatchRivalEnterEastWest") }] : []));
-    Overworld.removeObject(LAB_RIVAL);
-  }
-
   // A Pokémon Center nurse. Blacking out later brings you back to this one.
   // She turns to the machine behind her, your Poké Balls go in and it heals
   // them (FLDEFF_POKECENTER_HEAL), and she turns back.
@@ -5549,30 +3923,6 @@
     if (centerOf(mapName)) player.flags.lastCenter = mapName;
     await say(T("Text_RestoredPkmnToFullHealth"));
     await say(T("Text_WeHopeToSeeYouAgain"));
-  }
-
-  // The old man north of Viridian shows how to catch a Pokémon.
-  // FireRed's ViridianCity_EventScript_DoTutorialBattle: his words, then the
-  // catching demo (StartOldManTutorialBattle: the slice transition into a
-  // battle with a wild Lv. 5 Weedle, BattleScreen.oldManTutorial), then
-  // "There! Now tell me, that was educational, was it not?" (FireRed gives
-  // the Teachy TV with it; this game has none.)
-  async function catchTutorial() {
-    await say(T("ViridianCity_Text_ShowYouHowToCatchMons"));
-    music("mus_vs_wild");
-    await Overworld.battleTransition();
-    show("field");
-    const weedle = Party.create("Weedle", 5);
-    weedle.gender = "M";   // (CreateMaleMon)
-    weedle.hp = Party.maxHp(weedle);
-    await BattleScreen.oldManTutorial({
-      mon: { name: Party.speciesName("Weedle"), species: "Weedle", level: 5, hp: weedle.hp, maxhp: weedle.hp, gender: "M" },
-      terrain: battleTerrain({}), bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl)
-    });
-    player.flags.catchTutorial = true;
-    show("world");
-    await Overworld.resume();
-    await say([T("ViridianCity_Text_ThatWasEducationalTakeThis")[0]]);
   }
 
   // FireRed's move tutors (EventScript_DreamEaterTutor and the like), with
@@ -5650,91 +4000,18 @@
     await say(N(next === name ? "FromNowOnShallBeKnownAsSameName" : "FromNowOnShallBeKnownAsName"), [next]);
   }
 
-  // Prof. Oak's Pokédex rating (PokedexRating_EventScript_Rate): Kanto's seen
-  // and owned and his rating, to its fanfare; then the National Pokédex's
-  // (which you always have here) and whether it's complete (HasAllMons).
-  async function rateDex() {
-    const R = (k) => T("PokedexRating_Text_" + k), n = (which, kanto) => String(Player.dexCount(player, which, kanto));
-    await say(R("SeenXOwnedY"), [n("seen", true), n("caught", true)]);
-    const rating = Player.dexRating(player);
-    await sayWithJingle(rating.complete ? "mus_evolved" : "mus_dex_rating", R(rating.text));
-    if (!Player.nationalDex(player)) return;
-    await say(R("NationalDexSeenXOwnedY"), [n("seen", false), n("caught", false)]);
-    if (Player.hasAllMons(player)) { player.flags.oakSawDexCompletion = true; await say(R("YouveCompletedDex")); }
-    else await say(R("LookForwardToFilledNationalDex"));
-  }
-
-  // Prof. Oak's Aides (FireRed's Aide_EventScript_*): an item for so many kinds
-  // of Pokémon caught (GetPokedexCount with VAR_0x8004 0: Kanto's, National
-  // Pokédex or not).
-  async function aideGift(o) {
-    const f = player.flags, label = Bag.name(o.item), A = (k) => T(o.text + k), vars = () => [o.needed, label, Player.dexCount(player, "caught", true)];
-    if (f[o.flag]) { await say(A(o.explain), vars()); return; }
-    const ask = A(o.ask);
-    await say(ask.slice(0, -1), vars());
-    if (!(await confirm(fill(ask[ask.length - 1], vars())))) { await say(T("Aide_Text_GetEnoughMonsComeBackForItem"), vars()); return; }
-    if (Player.dexCount(player, "caught", true) < o.needed) { await say(T("Aide_Text_HaventCaughtEnoughMonsForItem"), vars()); return; }
-    await say(A("GreatHereYouGo"), vars());
-    // (A key item you have already stays one: the Exp. Share, which this game starts you with.)
-    if (!(Bag.isKeyItem(o.item) && Player.itemCount(player, o.item))) Player.addItem(player, o.item);
-    f[o.flag] = true;
-    await sayWithJingle(itemJingle(o.item), A(o.received).map((p) => fill(p, vars())));
-    await say(A(o.explain), vars());
-  }
-
   // ---------- Badges ----------
 
   const hasBadge = (id) => player.badges.includes(id);
 
-  // ---------- Route 22's rival ----------
-  //
-  // FireRed's Route22_EventScript_EarlyRival: Gary walks up from the left,
-  // battles (Pidgey, level 5, and Eevee, level 7, as in Yellow), and heads off
-  // toward Viridian. Losing doesn't black you out.
-  async function route22Rival(side) {
-    music("mus_encounter_rival");
-    const f = player.flags, R = "LOCALID_ROUTE22_RIVAL";
-    Overworld.addObject(R, { x: 25, y: side === "Top" ? 4 : 5, facing: "right" });
-    await Overworld.act(side === "Bottom"
-      ? [{ who: R, moves: M("Route22_Movement_RivalApproachBottom") }, { who: "player", moves: M("Route22_Movement_PlayerFaceRival") }]
-      : [{ who: R, moves: M("Route22_Movement_RivalApproach") }]);
-    await Overworld.act([{ who: R, moves: ["delay_6"] }]);
-    // FireRed's lines, but he ends with a jab instead of asking about your Pokémon.
-    await say(T("Route22_Text_EarlyRivalIntro").slice(0, -1).concat(["Let's see how weak your Pokémon\nare!"]));
-    // His team as in Yellow: Pidgey (level 5) and Eevee (level 7).
-    const ivs = trainerTeam("TRAINER_RIVAL_ROUTE22_EARLY_SQUIRTLE")[0].ivs.hp;
-    const team = [Party.create("Pidgey", 5, { ivs }), Party.create("Eevee", 7, { ivs })];
-    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early" },
-      defeatText: T("Route22_Text_EarlyRivalDefeat"), noBlackout: true });
-    show("world");
-    await Overworld.resume();
-    if (outcome === "lost") await say(T("Text_RivalVictory"));
-    // (Only a win counts: lose, and he's back to battle you the next time you come along Route 22.)
-    if (outcome !== "lost") f.route22Rival = true;
-    await say(T("Route22_Text_EarlyRivalPostBattle"));
-    music("mus_rival_exit");
-    await Overworld.act([{ who: R, moves: ["delay_10"].concat(M(side === "Bottom" ? "Route22_Movement_EarlyRivalExitBottom" : "Route22_Movement_EarlyRivalExit")) }]);
-    Overworld.removeObject(R);
-  }
-
-  // (This game's own: until you've beaten your rival on Route 22, the old man stops you on your way north out of
-  // Viridian City, towards Viridian Forest, and sends you west to Route 22, where the rival's waiting.)
-  function viridianStopStep() {
-    const f = player.flags, at = player.location;
-    if (at.map !== "ViridianCity" || at.y !== 4 || at.x < 19 || at.x > 23) return null;
-    return f.pokedex && !f.route22Rival && !hasBadge("boulder") ? { type: "viridian-stop" } : null;
-  }
-  async function viridianOldManStop() {
-    sfx("se_pin");
-    await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
-    await say(["Hold on there, youngster!"]);
-    await Overworld.act([{ who: "player", moves: ["face_down"] }]);
-    await say(["A young fella came through here a\nlittle while ago. Said his name was\n{RIVAL}.",
-      "He went west, to Route 22. Said he'd\nwait for you there, to see how\nstrong your Pokémon are.",
-      "You'd best go and see him before you\nhead north to Viridian Forest!"]);
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
-  }
+  // Kanto scenes use the current player, including after loading another save.
+  const { route22Rival, viridianStopStep, viridianOldManStop, redForestStep, redForest,
+    jessieJamesStep, jessieJames, laterJessieJamesStep, laterJessieJames,
+    ceruleanRival, towerRival } = KantoStory.create({
+    get player() { return player; },
+    music, say, T, M, battle, show, sfx, canBattle, canDouble,
+    hasBadge, trainerTeam, STARTER_BALLS, RIVAL_PICK
+  });
 
   // ---------- Leaf, outside Pewter Gym and in Vermilion City ----------
   //
@@ -5753,13 +4030,6 @@
   // Nidorina (21) and her starter's evolution (22).
   const LEAF = "LOCALID_LEAF";
   const LEAF_SPOTS = { PewterCity: { x: 19, y: 17, facing: "left" }, VermilionCity: { x: 23, y: 10, facing: "up" } };
-  function leafWaiting(map) {
-    const f = player.flags;
-    if (!f.starter) return false;
-    if (map === "PewterCity") return !!(f.TRAINER_LEADER_BROCK && !f.leafPewter);
-    if (map === "VermilionCity") return !f.leafVermilion;
-    return false;
-  }
   // People the game's scenes add to a map (Overworld's ctx.extraPeople).
   // ---------- Mega Stones ----------
   //
@@ -5986,97 +4256,8 @@
     }
     return out;
   }
-  function leafPewterDue() {
-    const at = player.location;
-    const door = window.WORLD_MAPS.PewterCity.warps.find((w) => w.map === "PewterCity_Gym");
-    return !!(leafWaiting("PewterCity") && door && at.x === door.x && at.y === door.y && canBattle());
-  }
-  // Coming down the road from Route 6 into Vermilion City, she sees you.
-  function leafVermilionStep() {
-    const at = Overworld.position();
-    return at.map === "VermilionCity" && leafWaiting("VermilionCity") && at.x >= 22 && at.x <= 24 && at.y >= 4 && at.y <= 7 &&
-      canBattle() ? { type: "leaf-vermilion" } : null;
-  }
-  // Leaf sees you ("!") and walks over to stand next to you.
-  async function leafComesOver() {
-    const me = Overworld.position(), leaf = Overworld.personPosition(LEAF);
-    if (!leaf) return;
-    await Overworld.act([{ who: LEAF, moves: M("Common_Movement_ExclamationMark") }]);
-    const moves = [];
-    let x = leaf.x, y = leaf.y;
-    // Along the row first, then the column, to the tile beside you.
-    const target = Math.abs(leaf.y - me.y) <= Math.abs(leaf.x - me.x) && leaf.y === me.y
-      ? { x: me.x + Math.sign(leaf.x - me.x), y: me.y } : { x: me.x, y: me.y + Math.sign(leaf.y - me.y || 1) };
-    while (x !== target.x) { moves.push(x < target.x ? "walk_right" : "walk_left"); x += Math.sign(target.x - x); }
-    while (y !== target.y) { moves.push(y < target.y ? "walk_down" : "walk_up"); y += Math.sign(target.y - y); }
-    if (moves.length) await Overworld.act([{ who: LEAF, moves }]);
-    const face = target.x > me.x ? "right" : target.x < me.x ? "left" : target.y > me.y ? "down" : "up";
-    await Overworld.act([{ who: LEAF, moves: ["face_" + World.OPPOSITE[face]] }, { who: "player", moves: ["face_" + face] }]);
-  }
-  async function leafPewter(talked) {
-    music("mus_encounter_rival");
-    const f = player.flags;
-    if (!talked) await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
-    await leafComesOver();
-    await say(["Leaf: {PLAYER}! I saw you go into the\nGym. You beat Brock? That's amazing!",
-      "Guess what? I went back to see Prof.\nOak, and he gave me a Pokédex too!",
-      "I've been filling it in all the way\nhere. Look, I even caught a\nJigglypuff on Route 3!",
-      "How about a battle? I want to see\nhow strong your Pokémon have gotten!",
-      "But your Pokémon must be tired after\nthe Gym. Let me heal them first!"]);
-    player.party.forEach(Party.heal);
-    await sayWithJingle("mus_heal", "{PLAYER}'s Pokémon were fully healed!");
-    await say("Leaf: There! Now let's battle!");
-    // (Her Butterfree, her ace, Terastallizes into a pure Flying type: she has a Tera Orb too.)
-    const team = [Object.assign(Party.create("Butterfree", 15), { teraType: "Flying", teraAce: true }), Party.create(RIVAL_PICK[f.starter], 16),
-      Party.create("Jigglypuff", 14)];
-    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green", tera: true },
-      defeatText: ["Wow! You really are strong,\n{PLAYER}!"] });
-    if (outcome !== "won") return;
-    f.leafPewter = true;
-    show("world");
-    await Overworld.resume();
-    await say(["Leaf: That was a great battle!\nHere, I want you to have this.",
-      "It'll help you catch Pokémon for\nyour Pokédex!"]);
-    Player.addItem(player, "tm54");
-    await sayWithJingle(itemJingle("tm54"), "{PLAYER} received TM54\nfrom Leaf.");
-    await say(["Leaf: TM54 is False Swipe! It never\nknocks a Pokémon out. It always\nleaves it with at least 1 HP.",
-      "I'm going to keep working on my\nPokédex. Let's both try to fill ours in!",
-      "See you later, {PLAYER}!"]);
-    await leafLeaves();
-  }
-  // Off the way she came (west, round you, in Pewter; back up the road in
-  // Vermilion), until she's out of sight.
-  async function leafLeaves() {
-    music("mus_rival_exit");
-    const me = Overworld.position(), leaf = Overworld.personPosition(LEAF);
-    const away = me.map === "PewterCity" ? ["walk_down"].concat(Array(9).fill("walk_left"), ["walk_up", "walk_up"])
-      : (leaf && leaf.x === me.x ? [leaf.x < 24 ? "walk_right" : "walk_left"] : []).concat(Array(8).fill("walk_down"));
-    await Overworld.act([{ who: LEAF, moves: away.concat(["set_invisible"]) }]);
-    Overworld.removeObject(LEAF);
-  }
   // The second-stage starter her lab Pokémon has become by Vermilion.
   const STAGE_TWO = { Bulbasaur: "Ivysaur", Charmander: "Charmeleon", Squirtle: "Wartortle" };
-  async function leafVermilion() {
-    music("mus_encounter_rival");
-    const f = player.flags;
-    await leafComesOver();
-    await say(["Leaf: {PLAYER}! Over here!",
-      "I came through the Underground\nPath too. Isn't Vermilion pretty?\nYou can smell the sea!",
-      "My Pokémon have gotten a lot\nstronger since Pewter. Want to see?"]);
-    // (Her Butterfree Terastallizes into a pure Flying type again.)
-    const team = [Object.assign(Party.create("Butterfree", 20), { teraType: "Flying", teraAce: true }), Party.create("Wigglytuff", 22),
-      Party.create("Nidorina", 23), Party.create(STAGE_TWO[RIVAL_PICK[f.starter]], 24)];
-    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green", tera: true },
-      defeatText: ["Oh, no! You're still a step ahead\nof me, {PLAYER}!"] });
-    if (outcome !== "won") return;
-    f.leafVermilion = true;
-    show("world");
-    await Overworld.resume();
-    await say(["Leaf: You're really something,\n{PLAYER}!",
-      "I heard Lt. Surge's Gym is here.\nHe uses Electric Pokémon, so be\ncareful!",
-      "I'm going to go look at the big\nship in the harbor. See you!"]);
-    await leafLeaves();
-  }
 
   // ---------- Move Relearner and Move Deleter (each Poké Mart's 2F) ----------
   //
@@ -6179,262 +4360,6 @@
   // scene; signLadyVisit is cleared once you're on another map.
   let signLadyVisit = null;
   const leftPallet = (map) => { if (map !== "PalletTown") signLadyVisit = null; };
-  function signLadyPlace() {
-    if (signLadyVisit) return signLadyVisit;
-    const f = player.flags;
-    signLadyAside = false;   // (a fresh visit: back in front of the sign)
-    if (!f.signLady && f.starter && f.openedMenu) f.signLady = 1;
-    if (f.signLady === 1) f.signLady = 2;
-    signLadyVisit = f.signLady >= 2 ? true                       // wandering, as on the map
-      : f.starter ? { x: 12, y: 2, movement: "face_down" }       // by the north exit
-        : { x: 5, y: 15, movement: "face_up" };                  // in front of the sign
-    return signLadyVisit;
-  }
-  async function signLadyShowSign() {
-    await say(T("PalletTown_Text_LookCopiedTrainerTipsSign"));
-    await say(T("PalletTown_Text_PressStartToOpenMenuCopy"));
-    player.flags.openedMenu = true;
-    player.flags.signLady = 1;
-  }
-  async function signLady(person) {
-    const f = player.flags;
-    const facePlayer = () => Overworld.act([{ who: SIGN_LADY, moves: M("Common_Movement_FacePlayer") }]);
-    if (f.signLady >= 2) { await facePlayer(); await say(T("PalletTown_Text_RaisingMonsToo")); return; }
-    if (f.signLady === 1) { await facePlayer(); await say(T("PalletTown_Text_SignsAreUsefulArentThey")); return; }
-    if (f.starter) { await facePlayer(); await signLadyShowSign(); return; }
-    if (signLadyAside) { await facePlayer(); await say(T("PalletTown_Text_ReadItReadIt")); return; }
-    await say(person.text);
-    await facePlayer();
-    await Overworld.act([{ who: SIGN_LADY, moves: M("Common_Movement_ExclamationMark").concat(M("Common_Movement_Delay48")) }]);
-    await say(T("PalletTown_Text_OhLookLook"));
-    // Out of your way: to the right if you're facing right, otherwise left.
-    const right = Overworld.position().facing === "right";
-    await Overworld.act([{ who: SIGN_LADY, moves: right ? ["walk_right", "walk_in_place_faster_left"] : ["walk_left", "walk_in_place_faster_right"] }]);
-    signLadyAside = true;
-  }
-
-  // ---------- Red, at the edge of Viridian Forest ----------
-  //
-  // Walking up the last stretch of the forest toward Pewter, Red catches up
-  // with you from behind, says nothing much, and battles: the starter neither
-  // you nor Leaf took, the one that beats yours (level 8), and Pikachu (level
-  // 10). Then he goes on past you to Pewter. Losing blacks you out, and he
-  // catches up with you there again.
-  function redForestStep() {
-    const f = player.flags, at = Overworld.position();
-    if (f.redForest || !f.starter || at.map !== "ViridianForest") return null;
-    return at.y === 12 && (at.x === 4 || at.x === 5) && at.facing === "up" && canBattle() ? { type: "red-forest" } : null;
-  }
-  async function redForest() {
-    music("mus_encounter_rival");
-    const f = player.flags, R = "LOCALID_RED", at = Overworld.position();
-    Overworld.addObject(R, { x: at.x, y: at.y + 5, facing: "up" }, window.WORLD_SPRITES.red);
-    await Overworld.act([{ who: R, moves: ["walk_up", "walk_up", "walk_up", "walk_up"] }]);
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_ExclamationMark").concat(M("Common_Movement_WalkInPlaceFasterDown")) }]);
-    await say("…");
-    const starter = Object.values(STARTER_BALLS).map((b) => b.species).find((sp) => sp !== f.starter && sp !== RIVAL_PICK[f.starter]);
-    const team = [Party.create(starter, 8), Party.create("Pikachu", 10)];
-    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer Red", team, pic: "red" }, defeatText: ["…"] });
-    if (outcome !== "won") return;
-    f.redForest = true;
-    show("world");
-    await Overworld.resume();
-    await say("…");
-    // Past you (by the other side of the path) and out toward Pewter.
-    await Overworld.act([{ who: R, moves: [at.x === 4 ? "walk_right" : "walk_left", "walk_up", "walk_up", "walk_up", "walk_up", "set_invisible"] }]);
-    Overworld.removeObject(R);
-  }
-
-  // ---------- Jessie & James, at the end of Mt. Moon ----------
-  //
-  // As in Yellow: heading down to the last ladder on B2F, Jessie and James
-  // climb down it, recite their motto and battle with Ekans, Meowth and
-  // Koffing (level 14), a double battle (this game's). Beaten, they pay ₽750 and blast off; beat you, and
-  // they wait there again.
-  function jessieJamesStep() {
-    const f = player.flags, at = Overworld.position();
-    if (f.jessieJames || at.map !== "MtMoon_B2F") return null;
-    return at.y === 7 && (at.x === 3 || at.x === 4) && at.facing === "down" && canBattle() ? { type: "jessie-james" } : null;
-  }
-  async function jessieJames() {
-    music("mus_encounter_rocket");
-    const f = player.flags, J = "LOCALID_JESSIE", K = "LOCALID_JAMES";
-    // Down the ladder (5, 10), one after the other, and round in front of you.
-    Overworld.addObject(J, { x: 5, y: 10, facing: "down" }, window.WORLD_SPRITES.jessie);
-    await Overworld.act([{ who: J, moves: ["walk_left", "walk_left", "walk_up", "walk_up"] }]);
-    Overworld.addObject(K, { x: 5, y: 10, facing: "down" }, window.WORLD_SPRITES.james);
-    await Overworld.act([{ who: K, moves: ["walk_left", "walk_up", "walk_up"] }]);
-    await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
-    await say(["Jessie: Hold it right there!", "James: Those fossils are ours, kid!",
-      "Jessie: Prepare for trouble!", "James: Make it double!",
-      "Jessie: To protect the world from\ndevastation!", "James: To unite all peoples within\nour nation!",
-      "Jessie: To denounce the evils of\ntruth and love!", "James: To extend our reach to the\nstars above!",
-      "Jessie: Jessie!", "James: James!",
-      "Jessie: Team Rocket, blast off at the\nspeed of light!", "James: Surrender now, or prepare to\nfight!",
-      "Meowth: Meowth! That's right!"]);
-    const team = [Party.create("Ekans", 15), Party.create("Meowth", 15), Party.create("Koffing", 15)];
-    // (A double battle, the two of them together; with only one Pokémon that
-    // can fight, a single one.)
-    const outcome = await battle("trainer", { foe: { name: "Rocket Jessie & James", team, pic: "jessie_james" },
-      defeatText: ["Jessie: We can't lose to a kid\nlike this!"], prize: 750, double: canDouble() });
-    if (outcome !== "won") return;
-    f.jessieJames = true;
-    show("world");
-    await Overworld.resume();
-    await say(["James: This isn't over, twerp!",
-      "Jessie, James & Meowth: Looks like\nTeam Rocket's blasting off again!"]);
-    // Back up the ladder.
-    await Overworld.act([{ who: K, moves: ["walk_down", "walk_down", "walk_right", "set_invisible"] }]);
-    await Overworld.act([{ who: J, moves: ["walk_down", "walk_down", "walk_right", "walk_right", "set_invisible"] }]);
-    Overworld.removeObject(J);
-    Overworld.removeObject(K);
-  }
-
-  // ---------- Jessie & James, later on (as in Yellow) ----------
-  //
-  // Three more ambushes, each a double battle (a single one with only one
-  // Pokémon that can fight): stepping out of the Rocket Hideout's elevator
-  // corridor toward Giovanni on B4F (Koffing, Meowth and Ekans, level 28),
-  // coming up to Mr. Fuji on Pokémon Tower 7F (Meowth, Arbok and Weezing,
-  // 30), and stepping off Silph Co. 7F's warp pad on 11F (Weezing, Arbok and
-  // Meowth, 35). Each time they come at you from a few steps off, say their
-  // piece and battle; beaten, they blast off back the way they came. Beat
-  // you, and they're waiting there again.
-  const LATER_JESSIE_JAMES = {
-    RocketHideout_B4F: {
-      flag: "jessieJamesHideout", team: [["Koffing", 28], ["Meowth", 28], ["Ekans", 28]],
-      // (Only before Giovanni's beaten; up the way from the elevator.)
-      due: (f, at) => !f.TRAINER_BOSS_GIOVANNI && at.y === 19 && (at.x === 16 || at.x === 17) && at.facing === "up",
-      cols: [16, 17], dy: 1, steps: 3,
-      // (Out of the elevator behind you, down a step, along and up the corridor to stand behind you.)
-      enter: (me, other) => [[me.x, 20], [other, 21]].map(([x], i) => {
-        const ex = 20 + i;
-        return { start: { x: ex, y: 23, facing: "down" },
-          moves: ["walk_down"].concat(Array(ex - x).fill("walk_left"), Array(4).fill("walk_up")) };
-      }),
-      intro: ["Jessie: Not another step, brat!", "James: How dare you humiliate us\nat Mt. Moon!",
-        "Jessie: It's payback time, you brat!"],
-      defeat: ["Jessie: Such a dreadful twerp!"],
-      after: ["Jessie, James & Meowth: Looks like\nTeam Rocket's blasting off again!"]
-    },
-    PokemonTower_7F: {
-      flag: "jessieJamesTower", team: [["Meowth", 30], ["Arbok", 30], ["Weezing", 30]],
-      // (Only while Mr. Fuji's still held there.)
-      due: (f, at) => !f.rescuedMrFuji && at.y === 12 && at.x >= 10 && at.x <= 12 && at.facing === "up",
-      cols: [10, 12], dy: 1, steps: 3,
-      // (Up the stairs from 6F behind you, round and up to stand behind you.)
-      enter: (me, other) => [me.x, other].map((x, i, both) => {
-        const sx = x <= both[1 - i] ? 11 : 12;
-        return { start: { x: sx, y: 16, facing: "up" },
-          moves: ["walk_up", "walk_up"].concat(Array(Math.abs(x - sx)).fill(x < sx ? "walk_left" : "walk_right"), ["walk_up"]) };
-      }),
-      intro: ["Jessie: Stop right there!", "James: Grampa here wanted to\ncomplain, so we're setting him\nstraight.",
-        "Jessie: So render yourself invisible,\nor prepare to fight!"],
-      defeat: ["James: You will regret this!"],
-      after: ["Jessie, James & Meowth: Looks like\nTeam Rocket's blasting off again!"]
-    },
-    SilphCo_11F: {
-      flag: "jessieJamesSilph", team: [["Weezing", 35], ["Arbok", 35], ["Meowth", 35]],
-      // (Only before Giovanni's beaten; just off the warp pad from 7F.)
-      due: (f, at) => !f.TRAINER_BOSS_GIOVANNI_2 && at.x <= 2 && (at.y === 6 || at.y === 7),
-      cols: [0, 2], dy: 1, steps: 3,
-      intro: ["Jessie: Hold it right there, brat!", "James: Our Boss is in a meeting!",
-        "Jessie: You'd better not disturb\nhim!"],
-      defeat: ["James: Like always…"],
-      after: ["Jessie: Team Rocket, blast off at\nthe speed of light!", "James: Again…"]
-    }
-  };
-  function laterJessieJamesStep() {
-    const f = player.flags, at = Overworld.position(), J = LATER_JESSIE_JAMES[at.map];
-    return J && !f[J.flag] && J.due(f, at) && canBattle() ? { type: "jessie-james-later" } : null;
-  }
-  async function laterJessieJames() {
-    const f = player.flags, me = Overworld.position(), J = LATER_JESSIE_JAMES[me.map];
-    const JE = "LOCALID_JESSIE", JA = "LOCALID_JAMES";
-    music("mus_encounter_rocket");
-    // (They end up side by side in front of you, Jessie face to face with you;
-    // they come from `steps` tiles further off, from the side of `dy`.)
-    const hi = J.cols[1], other = me.x < hi ? me.x + 1 : me.x - 1;
-    const row = me.y + J.dy, from = row + J.dy * J.steps;
-    const come = J.dy < 0 ? "down" : "up", back = J.dy < 0 ? "up" : "down";
-    await Overworld.act([{ who: "player", moves: ["emote_exclamation_mark"] }]);
-    await say(J.intro.slice(0, 1));
-    const paths = J.enter ? J.enter(me, other) : null;
-    if (paths) {
-      // (A way of their own: B4F's, out of the elevator behind you.)
-      sfx(me.map === "PokemonTower_7F" ? "se_exit" : "se_door");
-      Overworld.follower.hide(true);   // (your Pokémon back in its ball: they stop where it walked)
-      Overworld.addObject(JE, paths[0].start, window.WORLD_SPRITES.jessie);
-      Overworld.addObject(JA, paths[1].start, window.WORLD_SPRITES.james);
-      await Overworld.act([{ who: JE, moves: paths[0].moves }, { who: JA, moves: paths[1].moves }]);
-    } else {
-      Overworld.addObject(JE, { x: me.x, y: from, facing: come }, window.WORLD_SPRITES.jessie);
-      Overworld.addObject(JA, { x: other, y: from, facing: come }, window.WORLD_SPRITES.james);
-      const walk = Array(J.steps).fill("walk_" + come);
-      await Overworld.act([{ who: JE, moves: walk }, { who: JA, moves: walk }]);
-    }
-    await Overworld.act([{ who: "player", moves: ["face_" + back] }]);
-    await say(J.intro.slice(1));
-    const team = J.team.map(([sp, lv]) => Party.create(sp, lv));
-    const outcome = await battle("trainer", { foe: { name: "Rocket Jessie & James", team, pic: "jessie_james" },
-      defeatText: J.defeat, prize: 54 * J.team[0][1], double: canDouble() });
-    if (outcome !== "won") { Overworld.follower.hide(false); return; }
-    f[J.flag] = true;
-    show("world");
-    await Overworld.resume();
-    await say(J.after);
-    // Back the way they came, and gone.
-    if (paths) {
-      const undo = { walk_up: "walk_down", walk_down: "walk_up", walk_left: "walk_right", walk_right: "walk_left" };
-      const leave = (p) => p.moves.slice().reverse().map((m) => undo[m]).concat(["set_invisible"]);
-      await Overworld.act([{ who: JE, moves: leave(paths[0]) }, { who: JA, moves: leave(paths[1]) }]);
-    } else {
-      const leave = Array(J.steps).fill("walk_" + back).concat(["set_invisible"]);
-      await Overworld.act([{ who: JE, moves: leave }, { who: JA, moves: leave }]);
-    }
-    Overworld.removeObject(JE);
-    Overworld.removeObject(JA);
-    Overworld.follower.hide(false);
-    music((window.WORLD_MAPS[me.map] || {}).music);
-  }
-
-  // ---------- Cerulean City: your rival ----------
-  //
-  // Heading north out of Cerulean, Gary comes down from Nugget Bridge for a
-  // battle (CeruleanCity_EventScript_Rival): FireRed's Cerulean team, with
-  // his Eevee (this game's rival) in place of a starter. Then he walks off
-  // round you, south. (FireRed's Fame Checker, which he'd give you, isn't in
-  // this game.) Lose and you black out, and he's waiting next time.
-  async function ceruleanRival(side) {
-    music("mus_encounter_rival");
-    const f = player.flags, R = "LOCALID_CERULEAN_RIVAL";
-    const x = { Left: 22, Mid: 23, Right: 24 }[side];
-    Overworld.addObject(R, { x, y: 0, facing: "down" });
-    await Overworld.act([{ who: R, moves: M("CeruleanCity_Movement_RivalEnter") }]);
-    await say(T("CeruleanCity_Text_RivalIntro"));
-    const base = trainerTeam("TRAINER_RIVAL_CERULEAN_SQUIRTLE");
-    const last = base[base.length - 1];
-    // (This game's own: his Eevee knows Shadow Ball here, and Terastallizes into a Ghost type.)
-    const moves = window.RandomTeam.levelUpMoves("Eevee", last.level).filter((m) => m !== "Shadow Ball").slice(-3).concat(["Shadow Ball"]);
-    const eevee = Object.assign(Party.create("Eevee", last.level, { ivs: last.ivs.hp, moves }), { teraType: "Ghost", teraAce: true });
-    const team = base.slice(0, -1).concat(eevee);
-    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_early", tera: true },
-      defeatText: T("CeruleanCity_Text_RivalDefeat"), trainerId: "TRAINER_RIVAL_CERULEAN_SQUIRTLE" });
-    if (outcome !== "won") return;
-    f.ceruleanRival = true;
-    show("world");
-    await Overworld.resume();
-    await say(T("CeruleanCity_Text_RivalPostBattle"));
-    music("mus_rival_exit");
-    // Round you and away south (the first half of FireRed's walk: he'd come
-    // back with the Fame Checker).
-    const right = side === "Right";
-    const walk = M(right ? "CeruleanCity_Movement_RivalStartExitRight" : "CeruleanCity_Movement_RivalStartExit").slice(0, 8);
-    await Overworld.act([{ who: "player", moves: M(right ? "CeruleanCity_Movement_PlayerWatchRivalExitRight" : "CeruleanCity_Movement_PlayerWatchRivalExit") },
-      { who: R, moves: walk.concat(["walk_down", "walk_down", "set_invisible"]) }]);
-    Overworld.removeObject(R);
-    music("mus_fuchsia");
-  }
 
   // ---------- Pokémon Tower ----------
   //
@@ -6443,35 +4368,6 @@
   // Pokémon are too scared to fight, so you run.
   let inPurifiedZone = false;
   const towerGhost = () => /^PokemonTower_/.test(player.location.map) && !Player.itemCount(player, "silph-scope");
-
-  // 2F: Gary (PokemonTower_2F_EventScript_Rival): FireRed's team, with
-  // Gyarados in Kadabra's place, and his Eevee, an Umbreon by now, in place of
-  // a starter. Then he heads off down the stairs.
-  async function towerRival(right) {
-    const f = player.flags, R = "LOCALID_POKEMON_TOWER_RIVAL";
-    music("mus_encounter_rival");
-    await Overworld.act([{ who: R, moves: [right ? "walk_in_place_faster_right" : "walk_in_place_faster_down"] },
-      { who: "player", moves: [right ? "walk_in_place_faster_left" : "walk_in_place_faster_up"] }]);
-    await Overworld.act([{ who: R, moves: ["emote_exclamation_mark", "delay_48"] }]);
-    await say(T("PokemonTower_2F_Text_RivalIntro"));
-    const base = trainerTeam("TRAINER_RIVAL_POKEMON_TOWER_SQUIRTLE");
-    const last = base[base.length - 1];
-    const team = base.slice(0, -1).map((r) => (r.species === "Kadabra" ? Party.create("Gyarados", r.level, { ivs: r.ivs.hp }) : r))
-      .concat(Party.create("Umbreon", last.level, { ivs: last.ivs.hp }));
-    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
-      defeatText: T("PokemonTower_2F_Text_RivalDefeat"), trainerId: "TRAINER_RIVAL_POKEMON_TOWER_SQUIRTLE",
-      prize: 36 * last.level });   // (FireRed's TRAINER_CLASS_RIVAL_LATE: 9, x4 as this game's prizes are)
-    if (outcome !== "won") return;
-    f.towerRival = true;
-    show("world");
-    await Overworld.resume();
-    await say(T("PokemonTower_2F_Text_RivalPostBattle"));
-    music("mus_rival_exit");
-    await Overworld.act([{ who: R, moves: M(right ? "PokemonTower_2F_Movement_RivalExitRight" : "PokemonTower_2F_Movement_RivalExitDown").concat(["set_invisible"]) }]);
-    sfx("se_exit");
-    Overworld.removeObject(R);
-    music((window.WORLD_MAPS[player.location.map] || {}).music);
-  }
 
   // ---------- Prof. Oak's Mega Evolution test (this game's own) ----------
   //
@@ -6545,63 +4441,6 @@
     Overworld.removeObject(who);
   }
   const megaReady = () => player.badges.length >= 4 && !!player.flags.rescuedMrFuji;
-  // Stepping out of a building onto a town or route, once both are done.
-  function megaAideDue(map) {
-    const m = window.WORLD_MAPS[map];
-    return megaReady() && !player.flags.megaAideMet && !!m && OUTDOORS.includes(m.type) && canBattle();
-  }
-  // He comes from just off the screen (within 10 steps), or else from 5 to 7
-  // steps away, along tiles he can walk on (World.walkable), and goes back
-  // the way he came.
-  // (`behind`: from behind you if he can, his last step the way you face,
-  // else at least from the side of you your back is to; "only": from behind
-  // you or not at all.)
-  function megaAideRoute(behind) {
-    const at = Overworld.position();
-    const people = Overworld.people();
-    const tree = World.walkable(at, (m, x, y) => people.some((q) => q.x === x && q.y === y), 10);
-    const offScreen = (t) => t.x < at.x - 7 || t.x > at.x + 7 || t.y < at.y - 4 || t.y > at.y + 5;
-    const score = (t) => (offScreen(t) && t.dist >= 5 ? 300 - t.dist : t.dist >= 5 && t.dist <= 7 ? 100 + t.dist : t.dist <= 7 ? t.dist : 0);
-    const [fx, fy] = World.DIRS[at.facing] || [0, 0];
-    const backSide = (t) => (t.x - at.x) * fx + (t.y - at.y) * fy < 0;
-    const fromBehind = (key) => World.pathBack(tree, key).slice(-1)[0] === at.facing;
-    const pick = (ok) => {
-      let best = null;
-      for (const [key, t] of tree) if (t.dist >= 1 && ok(key, t) && (!best || score(t) > score(best[1]))) best = [key, t];
-      return best;
-    };
-    const best = behind === "only" ? pick((key, t) => backSide(t) && fromBehind(key) && t.dist >= 3)
-      : (behind && (pick((key, t) => backSide(t) && fromBehind(key)) || pick((key, t) => backSide(t)))) || pick(() => true);
-    if (!best) return null;
-    const toPlayer = World.pathBack(tree, best[0]);   // (the last step would be onto you)
-    return { from: best[1], walk: toPlayer.slice(0, -1), face: toPlayer[toPlayer.length - 1] };
-  }
-  // Coming out of a door, the scenes that start as you walk out ("enter:")
-  // begin before you step out onto the street: step out first.
-  async function stepOutOfDoor() {
-    const at = Overworld.position(), b = World.blockAt(at.map, at.x, at.y).behavior;
-    if (b !== World.MB.WARP_DOOR && b !== World.MB.CAVE_DOOR) return;
-    const people = Overworld.people();
-    const r = World.step({ map: at.map, x: at.x, y: at.y }, "down", (m, x, y) => people.some((q) => q.x === x && q.y === y));
-    if (r.ok && !r.warp) await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
-  }
-  async function megaAide() {
-    await stepOutOfDoor();
-    const route = megaAideRoute();
-    if (!route) return;
-    const back = route.walk.slice().reverse().map((d) => "walk_fast_" + World.OPPOSITE[d]);
-    Overworld.addObject(MEGA_AIDE, { x: route.from.x, y: route.from.y, facing: route.walk[0] || route.face }, lookOf("scientist"));
-    await say("Hey! {PLAYER}! Wait up!");
-    await Overworld.act([{ who: MEGA_AIDE, moves: route.walk.map((d) => "walk_fast_" + d).concat(["face_" + route.face]) }]);
-    await Overworld.act([{ who: "player", moves: ["face_" + World.OPPOSITE[route.face]] }]);
-    await say(["Phew… I've been looking all over\nfor you!",
-      "I'm one of Prof. Oak's aides.\nThe Professor has a message for you.",
-      "He says he's waiting for you at the\ntop of Pokémon Tower in Lavender\nTown.",
-      "He said it was important, so please\nhurry! I'll let him know you're\non your way!"]);
-    player.flags.megaAideMet = true;
-    await Overworld.act([{ who: MEGA_AIDE, moves: back.concat(["set_invisible"]) }]);
-    Overworld.removeObject(MEGA_AIDE);
-  }
   const megaTowerDue = () => !!player.flags.megaAideMet && !player.flags.megaTowerDone;
 
   // The Tera Orb (this game's own): the first time you come out of Viridian Forest's north gate onto Route 2,
@@ -6613,31 +4452,6 @@
     const at = Overworld.position();
     return at.map === "Route2" && at.y === 13 && TERA_GATE_DOORS.includes(at.x);
   })();
-  async function teraAide() {
-    const at = Overworld.position(), door = TERA_GATE_DOORS.find((x) => x !== at.x);
-    // Out of the gate a step, then he calls after you, comes out of the gate too and up beside you.
-    await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
-    await say("Hey! {PLAYER}! Wait up!");
-    Screen.say("");
-    sfx("se_door");
-    Overworld.addObject(TERA_AIDE, { x: door, y: 13, facing: "up" }, lookOf("scientist"));
-    await Overworld.act([{ who: TERA_AIDE, moves: ["walk_fast_up", door < at.x ? "face_right" : "face_left"] }]);
-    await Overworld.act([{ who: "player", moves: [door < at.x ? "face_left" : "face_right"] }]);
-    await say(["Phew… You're a hard one to\ncatch up with! I came all the way\nthrough the forest after you!",
-      "I'm one of Prof. Oak's aides.\nThe Professor has been studying\nTerastallization, from far-off Paldea.",
-      "He wanted you to have this Tera Orb!"]);
-    Player.addItem(player, "tera-orb");
-    player.flags.gotTeraOrb = true;
-    await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Tera Orb\nfrom Prof. Oak's aide!");
-    await say(["With it, START on the move menu\nlets one of your Pokémon\nTerastallize, once a battle.",
-      "It becomes its Tera Type, and moves\nof that type get stronger!",
-      "Using it empties the Orb, but it\nrecharges itself after every\nbattle.", "Good luck, {PLAYER}! I'd better get\nback through the forest."]);
-    Screen.say("");
-    // Back into the gate, towards Viridian Forest.
-    await Overworld.act([{ who: TERA_AIDE, moves: ["walk_down", "set_invisible"] }]);
-    sfx("se_door");
-    Overworld.removeObject(TERA_AIDE);
-  }
   // Who's at the top of the Tower, waiting: Prof. Oak and Mr. Fuji at the
   // top, and Leaf, Gary and Red in a line, facing them, with a place left in
   // the middle for you (MEGA_SPOT), two steps before Oak.
@@ -6646,11 +4460,6 @@
   // Where you and the one you're battling stand, apart from the others: down
   // the floor, face to face.
   const MEGA_ARENA = { you: { x: 11, y: 11 }, them: { x: 11, y: 9 } };
-  function megaTowerPeople() {
-    const sprites = { oak: "prof_oak", fuji: "mr_fuji", gary: "blue", red: "red", leaf: "leaf" };
-    return Object.entries(MEGA_PLACES).map(([who, [x, y, facing]], i) => Object.assign({ id: 910 + i, localId: MEGA_CAST[who],
-      script: "Game_EventScript_MegaTower", x, y, movement: "face_" + facing, text: null }, lookOf(sprites[who])));
-  }
   // Leaf's team: her lab starter (second stage) and the Pokémon that covers its weakness.
   const LEAF_FOURTH = { Bulbasaur: "Vulpix", Squirtle: "Gloom", Charmander: "Poliwhirl" };
   const leafMegaTeam = () => {
@@ -6678,235 +4487,6 @@
       defeat: ["…"],
       after: ["Red: …", "Red gave a small nod."] }
   ];
-  // Someone at the top of the Tower walks down to the stairs and is gone.
-  async function megaLeaves(who) {
-    await walkTo(who, { x: 11, y: 15 });
-    await Overworld.act([{ who, moves: ["walk_down", "set_invisible"] }]);
-    sfx("se_exit");
-    Overworld.removeObject(who);
-  }
-  async function megaTower() {
-    const f = player.flags, beaten = f.megaBeaten || (f.megaBeaten = {});
-    const OAK_ = MEGA_CAST.oak, FUJI = MEGA_CAST.fuji;
-    // (Your Pokémon back in its Ball first: there's little room up here. Out again once it's all over.)
-    if (follower.look(player.location.map)) {
-      const lead = player.party.find((r) => !r.egg && !Party.isFainted(r));
-      await say("{PLAYER} returned " + (lead ? Party.displayName(lead) : "the Pokémon") + " to its\nPoké Ball. It's crowded up here.");
-      Screen.say("");
-      sfx("se_ball");
-    }
-    Overworld.follower.hide(true);
-    music("mus_oak");
-    // Up the aisle, to stand before Prof. Oak, and everyone looks to him.
-    await walkTo("player", MEGA_SPOT, "up");
-    await Overworld.act(MEGA_RIVALS.map((r) => ({ who: MEGA_CAST[r.key], moves: ["face_up"] })));
-    if (!f.megaTalked) {
-      await say(["Oak: Ah, {PLAYER}! There you are!\nThank you for coming.",
-        "Mr. Fuji was kind enough to let us\nmeet here, at the top of the Tower.",
-        "Now then! Have you ever heard of\nsomething called Mega Evolution?",
-        "It's a phenomenon beyond ordinary\nevolution. When a Trainer and their\nPokémon share a truly deep bond…",
-        "…and the right mysterious stones are\nat hand, a Pokémon can transform\nfor the length of a battle!",
-        "I've been studying it for some time,\nand I need everyone's help to\nunlock its secrets.",
-        "But first, I have to test you all!\nYou'll each battle one another.",
-        "Don't worry, I'll heal your Pokémon\nbetween battles. Show me what you\ncan do!"]);
-      await say(["Mr. Fuji: Heh heh… The bond between\npeople and Pokémon…",
-        "That is the heart of all of this.\nI am eager to see it."]);
-      f.megaTalked = true;
-    } else {
-      await say(["Oak: Ah, {PLAYER}! Ready to try my\ntest again?", "You'll have to win all three battles.\nI'll heal your Pokémon. Good luck!"]);
-    }
-    player.party.forEach(Party.heal);
-    await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
-    // One at a time: you and the next one step away from the others, down
-    // the floor, to battle (MEGA_ARENA); then they go back to their place,
-    // Prof. Oak comes down to heal your Pokémon and goes back to his, and
-    // you go back to yours.
-    const [ox, oy] = MEGA_PLACES.oak;
-    for (const r of MEGA_RIVALS) {
-      if (beaten[r.key]) continue;
-      const who = MEGA_CAST[r.key], [hx, hy] = MEGA_PLACES[r.key];
-      music(r.music);
-      await walkTo("player", MEGA_ARENA.you, "up");
-      await walkTo(who, MEGA_ARENA.them, "down");
-      await say(r.intro);
-      const team = r.team().map(([sp, lv]) => Party.create(sp, lv));
-      if (r.tera) {
-        const i = team.findIndex((m) => m.species === r.tera[0]);
-        if (i >= 0) team[i] = r.tera[0] === "Pikachu" ? surfingPikachu(team[i].level) : Object.assign(team[i], { teraType: r.tera[1], teraAce: true });
-      }
-      const outcome = await battle("trainer", { foe: { name: r.name(), team, pic: r.pic, tera: !!r.tera }, defeatText: r.defeat,
-        prize: 36 * team[team.length - 1].level });
-      // (Blacked out: the whole test again next time.)
-      if (outcome !== "won") { delete f.megaBeaten; Overworld.follower.hide(false); await persist(); return; }
-      show("world");
-      await Overworld.resume();
-      beaten[r.key] = true;
-      await say(r.after);
-      music("mus_oak");
-      await walkTo(who, { x: hx, y: hy }, "up");
-      await walkTo(OAK_, { x: MEGA_ARENA.you.x, y: MEGA_ARENA.you.y - 1 }, "down");
-      await Overworld.act([{ who: "player", moves: ["face_up"] }]);
-      player.party.forEach(Party.heal);
-      await sayWithJingle("mus_heal", "Prof. Oak healed {PLAYER}'s Pokémon!");
-      await walkTo(OAK_, { x: ox, y: oy }, "down");
-      // (You stay where you are, down the floor, till all three are done.)
-    }
-    music("mus_oak");
-    await say(["Oak: Splendid! Simply splendid!",
-      "While you were battling, Red, Leaf and\n{RIVAL} had quite the battles among\nthemselves, too.",
-      "You've all passed my test! Each of\nyou shares a real bond with your\nPokémon.",
-      "And {PLAYER}, you won every one of\nyour battles! I knew I could count\non you.",
-      "Come here a moment, {PLAYER}."]);
-    // Up to Prof. Oak for the Mega Ring and the Mega Stones, then back.
-    await walkTo("player", { x: ox, y: oy + 1 }, "up");
-    await say(["Oak: Here! I want you to have this.\nIt's a Mega Ring."]);
-    Player.addItem(player, "mega-ring");
-    await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the Mega Ring\nfrom Prof. Oak!");
-    await say(["Oak: The Key Stone set in the ring\nresonates with a Mega Stone held\nby a Pokémon.",
-      "When the bond between you is strong\nenough, that Pokémon can Mega\nEvolve in battle! Once a battle.",
-      "And these are the Mega Stones for\nthe three Pokémon I give to new\nTrainers in Pallet Town."]);
-    for (const stone of ["venusaurite", "charizardite-x", "charizardite-y", "blastoisinite"]) {
-      Player.addItem(player, stone);
-      await sayWithJingle("mus_obtain_item", "{PLAYER} received " + article(Bag.name(stone)) + "!");
-    }
-    await say(["Oak: Venusaurite for Venusaur,\nCharizardite X and Y for Charizard,\nand Blastoisinite for Blastoise.",
-      "Have your Pokémon hold one, and\npress START when you choose a move\nto Mega Evolve!"]);
-    const back = Array(MEGA_SPOT.y - oy - 1).fill("walk_down");
-    await Overworld.act([{ who: "player", moves: ["lock_facing_direction"].concat(back, ["unlock_facing_direction"]) }]);
-    // Then a Mega Ring for each of the others: one at a time, they step up
-    // to him, and back to their place.
-    await say(["Oak: And you three passed my test,\ntoo! Leaf, {RIVAL}, Red!", "I have a Mega Ring for each of you\nas well. Come here!"]);
-    for (const r of MEGA_RIVALS) {
-      const who = MEGA_CAST[r.key], [hx, hy] = MEGA_PLACES[r.key];
-      await walkTo(who, { x: ox, y: oy + 1 }, "up");
-      await sayWithJingle("mus_obtain_key_item", (r.key === "gary" ? "{RIVAL}" : r.key === "red" ? "Red" : LAB_RIVAL_NAME) + " received a Mega Ring\nfrom Prof. Oak!");
-      await walkTo(who, { x: hx, y: hy }, "up");
-    }
-    // Off they go: Red without a word, Leaf and Gary with one.
-    const RED = MEGA_CAST.red, LEAF_ = MEGA_CAST.leaf, GARY = MEGA_CAST.gary;
-    await Overworld.act([{ who: RED, moves: ["face_player"] }]);
-    await say(["Red: …"]);
-    await megaLeaves(RED);
-    await Overworld.act([{ who: LEAF_, moves: ["face_player"] }]);
-    await say(["Leaf: We all got Mega Rings! You\ntotally earned yours, {PLAYER}!",
-      "I'll keep training with my Pokémon,\ntoo. Now I just need to find a\nMega Stone of my own!",
-      "See you around, {PLAYER}! Take\ncare of yourself!"]);
-    await megaLeaves(LEAF_);
-    music("mus_rival_exit");
-    await Overworld.act([{ who: GARY, moves: ["face_player"] }]);
-    await say(["{RIVAL}: Hmph! So Gramps gave us\nall Mega Rings. Doesn't matter.", "I'll be the one who masters Mega\nEvolution first!",
-      "Next time we battle, I'll be the one\nwho comes out on top. Count on it!",
-      "Smell ya later, {PLAYER}!"]);
-    await megaLeaves(GARY);
-    music("mus_oak");
-    await say(["Oak: Well! I must get back to my\nresearch. There's still so much to\nlearn about Mega Evolution!",
-      "{PLAYER}, keep training, and keep\nfilling in that Pokédex! I'll be\ncalling on you again."]);
-    await megaLeaves(OAK_);
-    music((window.WORLD_MAPS[player.location.map] || {}).music);
-    // Mr. Fuji, last: he comes over to you.
-    const [fx, fy] = [MEGA_SPOT.x, MEGA_SPOT.y - 1];
-    await walkTo(FUJI, { x: fx, y: fy }, "down");
-    await Overworld.act([{ who: "player", moves: ["face_up"] }]);
-    await say(["Mr. Fuji: Young one… I have watched\nmany Trainers come and go from\nthis Tower.",
-      "But the way you battle alongside your\nPokémon… I was truly impressed.",
-      "Please, take this. A Pokémon that\nonce called this Tower home would\nsurely want you to have it."]);
-    Player.addItem(player, "gengarite");
-    await sayWithJingle("mus_obtain_item", "{PLAYER} received the Gengarite\nfrom Mr. Fuji!");
-    await say(["Mr. Fuji: It is the Mega Stone for\nGengar. Treat it kindly.",
-      "Now, I must return to the Pokémon\nHouse. The little ones will be\nwaiting for me."]);
-    await megaLeaves(FUJI);
-    Overworld.follower.hide(false);
-    f.megaTowerDone = true;
-    await persist();
-  }
-
-  // 6F: the restless ghost (PokemonTower_6F_EventScript_MarowakGhost). Without
-  // the Silph Scope it's a Ghost you can only run from, and it pushes you
-  // back; with it, it's Cubone's mother, a Marowak (Lv. 30): beat it and its
-  // spirit is calmed. (This game's own: she can be caught, too, as any wild
-  // Pokémon; caught, she's at rest all the same, and the way up is clear.)
-  async function marowakGhost() {
-    const f = player.flags, scope = !!Player.itemCount(player, "silph-scope");
-    await say(T("PokemonTower_6F_Text_BeGoneIntruders"));
-    if (!canBattle()) return;
-    if (scope) await say(["Silph Scope unveiled the Ghost's\nidentity!", "The Ghost was Marowak!"]);
-    const mon = Party.create("Marowak", 30);
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [mon] }, ghost: !scope, noBlackout: false });
-    show("world");
-    await Overworld.resume();
-    if (scope && (outcome === "won" || outcome === "caught")) {
-      await say(T("PokemonTower_6F_Text_GhostWasCubonesMother"));
-      if (outcome === "won") {
-        cry("Marowak");
-        await say(T("PokemonTower_6F_Text_MothersSpiritWasCalmed"));
-      }
-      f.marowakCalmed = true;
-      return;
-    }
-    if (outcome !== "lost") await Overworld.act([{ who: "player", moves: ["walk_up"] }]);
-  }
-
-  // ---------- Route 24: Nugget Bridge ----------
-  //
-  // At the end of the bridge a man congratulates you on beating the five
-  // contest Trainers, gives you a Nugget, then asks you to join Team Rocket,
-  // and won't take no for an answer (Route24_EventScript_BattleRocket).
-  // `side`: the trigger you stepped on ("left": he walks over to you), or null
-  // when you talked to him.
-  async function nuggetBridgeRocket(side) {
-    const f = player.flags, R = "LOCALID_ROUTE24_ROCKET";
-    if (side === "left") await Overworld.act([{ who: R, moves: M("Route24_Movement_RocketApproachPlayer") }]);
-    else if (side === "right") await Overworld.act([{ who: R, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-    if (side) await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-    await say(T("Route24_Text_JustEarnedFabulousPrize"));
-    if (!f.gotNugget) {
-      Player.addItem(player, "nugget");
-      f.gotNugget = true;
-      await sayWithJingle(itemJingle("nugget"), T("Route24_Text_ReceivedNuggetFromMysteryTrainer"));
-    }
-    music("mus_encounter_rocket");
-    await say(T("Route24_Text_JoinTeamRocket"));
-    if (!canBattle()) return;
-    const data = window.WORLD_TRAINERS.TRAINER_TEAM_ROCKET_GRUNT_6;
-    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam("TRAINER_TEAM_ROCKET_GRUNT_6"), pic: data.pic },
-      defeatText: T("Route24_Text_RocketDefeat"), trainerId: "TRAINER_TEAM_ROCKET_GRUNT_6" });
-    if (outcome !== "won") return;
-    f.nuggetBridgeRocket = true;
-    show("world");
-    await Overworld.resume();
-    await say(T("Route24_Text_YoudBecomeTopRocketLeader"));
-  }
-
-  // ---------- Cerulean City: the robbed house's yard ----------
-  //
-  // The Rocket who robbed the house waits in its yard (out through the hole in
-  // its back wall). Beat him and he gives back TM28 (Dig) and runs off
-  // (CeruleanCity_EventScript_Grunt). `side`: the trigger you stepped on
-  // ("top" or "bottom", he turns to you), or null when you talked to him.
-  async function ceruleanGrunt(side) {
-    const f = player.flags, G = "LOCALID_CERULEAN_GRUNT", ID = "TRAINER_TEAM_ROCKET_GRUNT_5";
-    if (side) {
-      await Overworld.act([{ who: G, moves: M(side === "top" ? "Common_Movement_WalkInPlaceFasterUp" : "Common_Movement_WalkInPlaceFasterDown") }]);
-      await Overworld.act([{ who: "player", moves: M(side === "top" ? "Common_Movement_WalkInPlaceFasterDown" : "Common_Movement_WalkInPlaceFasterUp") }]);
-    }
-    if (!f[ID]) {
-      music("mus_encounter_rocket");
-      await say(T("CeruleanCity_Text_GruntIntro"));
-      if (!canBattle()) return;
-      const data = window.WORLD_TRAINERS[ID];
-      const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(ID), pic: data.pic },
-        defeatText: T("CeruleanCity_Text_GruntDefeat"), trainerId: ID });
-      if (outcome !== "won") return;
-      show("world");
-      await Overworld.resume();
-    }
-    await say(T("CeruleanCity_Text_OkayIllReturnStolenTM"));
-    Player.addItem(player, "tm28");
-    f.gotTM28 = true;
-    await sayWithJingle(itemJingle("tm28"), T("CeruleanCity_Text_RecoveredTM28FromGrunt"));
-    await say(T("CeruleanCity_Text_BetterGetMovingBye"));
-    Overworld.removeObject(G);
-  }
 
   // ---------- HMs outside battle (game/field-moves.js) ----------
   //
@@ -7378,42 +4958,6 @@
     if (fieldAction) { const act = fieldAction; fieldAction = null; await act(); }
   }
 
-  // ---------- Route 5: the Day-Care (game/daycare.js) ----------
-  async function dayCareMan() {
-    const f = player.flags, D = (k) => T("Route5_PokemonDayCare_Text_" + k);
-    const dc = f.dayCare;
-    if (dc) {
-      const name = Party.displayName(dc.mon), grew = DayCare.levelsGained(dc, Player.levelCap(player)), cost = DayCare.cost(dc, Player.levelCap(player));
-      await say(D(grew ? "MonHasGrownByXLevels" : "MonNeedsToSpendMoreTime"), [name, String(grew)]);
-      if (!(await confirm(fill(D("OweMeXForMonsReturn").join(" "), [name, cost.toLocaleString("en-US")])))) { await say(D("ComeAnytimeYouLike")); return; }
-      if (player.party.length >= Player.PARTY_SIZE) { await say(D("YouveGotNoRoomForIt")); return; }
-      if (player.money < cost) { await say(D("DontHaveEnoughMoney")); return; }
-      Player.addMoney(player, -cost);
-      const mon = DayCare.withdraw(dc, Player.levelCap(player));
-      f.dayCare = null;
-      player.party.push(mon);
-      await say(D("ThankYouHeresMon"));
-      cry(mon.species);
-      await say(D("PlayerGotMonBack"), [name]);
-      return;
-    }
-    const q = D("WantMeToRaiseMon");
-    await say(q.slice(0, -1));
-    if (!(await confirm(fill(q[q.length - 1])))) { await say(D("ComeAgain")); return; }
-    if (player.party.filter((r) => !r.egg).length === 1) { await say(D("OnlyHaveOneMonWithYou")); return; }
-    await say(D("WhichMonShouldIRaise"));
-    const mine = await choosePartyFor("Choose a POKéMON.");
-    show("world");
-    if (!mine) { await say(D("ComeAnytimeYouLike")); return; }
-    if (mine.egg) { await say("I can't raise an Egg!"); return; }
-    if (!player.party.some((r) => r !== mine && Party.canFight(r))) { await say(D("WhatWillYouBattleWith")); return; }
-    player.party.splice(player.party.indexOf(mine), 1);
-    f.dayCare = DayCare.deposit(mine);
-    await say(D("LookAfterMonForAWhile"), [Party.displayName(mine)]);
-    cry(mine.species);
-    await say(D("ComeSeeMeInAWhile"));
-  }
-
   // ---------- Route 25: Bill's Sea Cottage ----------
   //
   // Bill has got himself mixed up with a Clefairy. He walks into his
@@ -7422,229 +4966,6 @@
   // Afterwards his PC shows his favourite Pokémon. (Leaving while he's in the
   // Teleporter, he's a Clefairy again when you come back, as in FireRed.)
   let billInTeleporter = false, seaCottageReturn = false, billJustOut = false;
-  async function bill(person) {
-    const f = player.flags;
-    if (f.gotSSTicket) {
-      await say(T(seaCottageReturn ? "Route25_SeaCottage_Text_CheckOutRareMonsOnPC" : "Route25_SeaCottage_Text_SSAnnePartyYouGoInstead"));
-      return;
-    }
-    if (f.billHelped) {
-      await say(T("Route25_SeaCottage_Text_ThanksBudTakeThis"));
-      Player.addItem(player, "ss-ticket");
-      f.gotSSTicket = true;
-      await sayWithJingle(itemJingle("ss-ticket"), T("Route25_SeaCottage_Text_ReceivedSSTicketFromBill"));
-      await say(T("Route25_SeaCottage_Text_SSAnnePartyYouGoInstead"));
-      return;
-    }
-    if (billInTeleporter) return;
-    const ask = T("Route25_SeaCottage_Text_ImBillHelpMeOutPal");
-    await say(ask.slice(0, -1));
-    if (!(await confirm(fill(ask[ask.length - 1])))) await say(T("Route25_SeaCottage_Text_NoPleaseChief"));
-    await say(T("Route25_SeaCottage_Text_RunCellSeparationOnPC"));
-    // Into the Teleporter (round you, if you're in the way above him).
-    const C = "LOCALID_BILL_CLEFAIRY", at = Overworld.position();
-    await Overworld.act([{ who: C, moves: M(at.facing === "down" ? "Route25_SeaCottage_Movement_BillWalkToTeleporterSouth" : "Route25_SeaCottage_Movement_BillWalkToTeleporter") }]);
-    await Overworld.act([{ who: C, moves: M("Route25_SeaCottage_Movement_BillEnterTeleporter").concat(["set_invisible"]) }]);
-    Overworld.removeObject(C);
-    billInTeleporter = true;
-  }
-  async function billsComputer() {
-    const f = player.flags;
-    if (f.gotSSTicket && seaCottageReturn) {
-      await say(T("Route25_SeaCottage_Text_BillsFavoriteMonList"));
-      for (;;) {
-        const species = await ask(T("Route25_SeaCottage_Text_SeeWhichMon")[0],
-          ["Eevee", "Flareon", "Jolteon", "Vaporeon"].map((s) => ({ label: s, value: s, className: "action" })).concat([back("Cancel")]));
-        if (species === "back") return;
-        Player.markSeen(player, species);
-        showPicture(species);
-        await say(" ");
-        hidePicture();
-      }
-    }
-    if (!billInTeleporter) { await say(T("Route25_SeaCottage_Text_TeleporterIsDisplayed")); return; }
-    // The Cell Separator: the Teleporter beeps away, and out comes Bill.
-    music(null);
-    await say(T("Route25_SeaCottage_Text_InitiatedTeleportersCellSeparator"));
-    billInTeleporter = false;
-    f.billHelped = true;
-    const beep = () => new Promise((r) => { if (window.GameAudio) window.GameAudio.se("se_ball"); setTimeout(r, 500); });
-    for (let i = 0; i < 12; i++) await beep();
-    music("mus_fuchsia");
-    const B = "LOCALID_BILL_HUMAN";
-    Overworld.addObject(B, { x: 3, y: 3, facing: "down" });
-    const jingle = fanfare("mus_level_up");
-    await Overworld.act([{ who: B, moves: M("Route25_SeaCottage_Movement_BillExitTeleporter") }]);
-    await jingle;
-    await Overworld.act([{ who: B, moves: M("Route25_SeaCottage_Movement_BillWalkToMiddleOfRoom") }]);
-    billJustOut = true;
-  }
-
-  // Super Nerd Miguel (trainerbattle_no_intro: his lines come first).
-  async function miguelBattle() {
-    await say(T("MtMoon_B2F_Text_MiguelIntro"));
-    if (!canBattle()) return;
-    const outcome = await battle("trainer", { foe: { name: "Super Nerd Miguel", team: trainerTeam("TRAINER_SUPER_NERD_MIGUEL"), pic: "super_nerd" },
-      defeatText: T("MtMoon_B2F_Text_MiguelDefeat"), trainerId: "TRAINER_SUPER_NERD_MIGUEL" });
-    if (outcome !== "won") return;
-    show("world");
-    await Overworld.resume();
-    await say(T("MtMoon_B2F_Text_WellEachTakeAFossil"));
-  }
-
-  // ---------- Pewter City ----------
-
-  // The boy who takes you to the Gym (FireRed's GymGuideTrigger, or talking to
-  // him from beside him: "East"). He leads, you follow, then he leaves.
-  async function gymGuide(side, talked) {
-    const G = "LOCALID_PEWTER_GYM_GUIDE";
-    await say(T("PewterCity_Text_BrocksLookingForChallengersFollowMe"));
-    if (side === "East") {
-      await Overworld.act([{ who: "player", moves: M("PewterCity_Movement_PlayerWaitForGuideEast") }, { who: G, moves: M("PewterCity_Movement_GuideMoveToLeadEast") }]);
-      await Overworld.act([{ who: "player", moves: M("PewterCity_Movement_PlayerWalkToGymEast") }, { who: G, moves: M("PewterCity_Movement_GuideWalkToGymEast") }]);
-    } else {
-      await Overworld.act([{ who: G, moves: M("PewterCity_Movement_GuideMoveToLead" + side) }]);
-      await Overworld.act([{ who: "player", moves: M("PewterCity_Movement_PlayerWalkToGym" + side) }, { who: G, moves: M("PewterCity_Movement_GuideWalkToGym" + side) }]);
-    }
-    await say(T("PewterCity_Text_GoTakeOnBrock"));
-    await Overworld.act([{ who: G, moves: M("PewterCity_Movement_GymGuideExit") }]);
-    Overworld.removeObject(G);
-  }
-
-  // Brock's team: FireRed's Geodude and Onix, plus Zubat (level 11), which he
-  // leads with, and Vulpix (level 13).
-  function brockTeam() {
-    const [geodude, onix] = trainerTeam("TRAINER_LEADER_BROCK");
-    // (His ace, Onix, Terastallizes into a Dragon type as soon as it's out.)
-    Object.assign(onix, { teraType: "Dragon", teraAce: true });
-    return [Party.create("Zubat", 11, { ivs: 0 }), geodude, Party.create("Vulpix", 13, { ivs: 0 }), onix];
-  }
-
-  // Misty's team: Psyduck (level 18, in Staryu's place), which she leads
-  // with, Togepi (level 19), then FireRed's Starmie.
-  function mistyTeam() {
-    const [, starmie] = trainerTeam("TRAINER_LEADER_MISTY");
-    // (Her ace, Starmie, Terastallizes into a pure Psychic type as soon as it's out.)
-    Object.assign(starmie, { teraType: "Psychic", teraAce: true });
-    return [Party.create("Psyduck", 18, { ivs: 0 }),
-      Party.create("Togepi", 19, { ivs: 0 }), starmie];
-  }
-
-  // Brock: battle (talking to him), then the Boulder Badge and TM39.
-  async function brock(person) {
-    const f = player.flags;
-    if (!f.TRAINER_LEADER_BROCK) {
-      await say(person.trainer.intro);
-      if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Brock", team: brockTeam(), pic: "leader_brock", tera: true },
-        defeatText: person.trainer.defeat, trainerId: "TRAINER_LEADER_BROCK", terrain: "leader" });
-      if (outcome !== "won") return;
-      if (!hasBadge("boulder")) player.badges.push("boulder");
-      show("world");
-      await Overworld.resume();
-    }
-    if (!f.gotTM39) {
-      await say(T("PewterCity_Gym_Text_TakeThisWithYou"));
-      Player.addItem(player, "tm39");
-      f.gotTM39 = true;
-      await say(T("PewterCity_Gym_Text_ReceivedTM39FromBrock"));
-      await say(T("PewterCity_Gym_Text_ExplainTM39"));
-      return;
-    }
-    await say(T("PewterCity_Gym_Text_BrockPostBattle"));
-  }
-
-  // Misty: battle (talking to her), then the Cascade Badge and TM03 Water
-  // Pulse (this game's TM101). Beating her also beats her Gym's trainers
-  // (FireRed's set_gym_trainers).
-  async function misty(person) {
-    const f = player.flags;
-    if (!f.TRAINER_LEADER_MISTY) {
-      await say(person.trainer.intro);
-      if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Misty", team: mistyTeam(), pic: "leader_misty", tera: true },
-        defeatText: person.trainer.defeat, trainerId: "TRAINER_LEADER_MISTY", terrain: "leader" });
-      if (outcome !== "won") return;
-      if (!hasBadge("cascade")) player.badges.push("cascade");
-      f.TRAINER_PICNICKER_DIANA = f.TRAINER_SWIMMER_MALE_LUIS = true;
-      player.flags.lastCenter = "CeruleanCity_PokemonCenter_1F";
-      show("world");
-      await Overworld.resume();
-    }
-    if (!f.gotTM03) {
-      await say(T("CeruleanCity_Gym_Text_ExplainCascadeBadge"));
-      Player.addItem(player, "tm101");
-      f.gotTM03 = true;
-      await sayWithJingle(itemJingle("tm101"), "{PLAYER} received TM101\nfrom Misty.");
-    }
-    await say(T("CeruleanCity_Gym_Text_ExplainTM03").map((p) => p.replace(/TM03/g, "TM101")));
-  }
-
-  // Lt. Surge: battle (talking to him), then the Thunder Badge and TM34 Shock
-  // Wave (this game's TM102). Beating him also beats his Gym's trainers.
-  // His team: FireRed's, his ace Raichu Terastallizing into a Water type as soon as it's out.
-  function surgeTeam() {
-    const team = trainerTeam("TRAINER_LEADER_LT_SURGE");
-    Object.assign(team.find((r) => r.species === "Raichu"), { teraType: "Water", teraAce: true });
-    return team;
-  }
-  async function ltSurge(person) {
-    const f = player.flags, ID = "TRAINER_LEADER_LT_SURGE";
-    if (!f[ID]) {
-      await say(person.trainer.intro);
-      if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Lt. Surge", team: surgeTeam(), pic: "leader_lt_surge", tera: true },
-        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
-      if (outcome !== "won") return;
-      if (!hasBadge("thunder")) player.badges.push("thunder");
-      f.TRAINER_ENGINEER_BAILY = f.TRAINER_SAILOR_DWAYNE = f.TRAINER_GENTLEMAN_TUCKER = true;
-      player.flags.lastCenter = "VermilionCity_PokemonCenter_1F";
-      show("world");
-      await Overworld.resume();
-    }
-    if (!f.gotTM34) {
-      await say(T("VermilionCity_Gym_Text_ExplainThunderBadgeTakeThis"));
-      Player.addItem(player, "tm102");
-      f.gotTM34 = true;
-      await sayWithJingle(itemJingle("tm102"), "{PLAYER} received TM102\nfrom Lt. Surge.");
-      await say(T("VermilionCity_Gym_Text_ExplainTM34").map((p) => p.replace(/TM34/g, "TM102")));
-      return;
-    }
-    await say(T("VermilionCity_Gym_Text_LtSurgePostBattle"));
-  }
-
-  // Erika: battle (talking to her), then the Rainbow Badge and TM19 Giga
-  // Drain (this game's TM103). Beating her also beats her Gym's trainers.
-  // Her team: FireRed's, her ace Vileplume Terastallizing into a Poison type as soon as it's out.
-  function erikaTeam() {
-    const team = trainerTeam("TRAINER_LEADER_ERIKA");
-    Object.assign(team.find((r) => r.species === "Vileplume"), { teraType: "Poison", teraAce: true });
-    return team;
-  }
-  async function erika(person) {
-    const f = player.flags, ID = "TRAINER_LEADER_ERIKA";
-    if (!f[ID]) {
-      await say(person.trainer.intro);
-      if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Erika", team: erikaTeam(), pic: "leader_erika", tera: true },
-        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
-      if (outcome !== "won") return;
-      if (!hasBadge("rainbow")) player.badges.push("rainbow");
-      for (const t of ["LASS_KAY", "LASS_LISA", "PICNICKER_TINA", "BEAUTY_BRIDGET", "BEAUTY_TAMIA", "BEAUTY_LORI", "COOLTRAINER_MARY"]) f["TRAINER_" + t] = true;
-      player.flags.lastCenter = "CeladonCity_PokemonCenter_1F";
-      show("world");
-      await Overworld.resume();
-    }
-    if (!f.gotTM19) {
-      await say(T("CeladonCity_Gym_Text_ExplainRainbowBadgeTakeThis"));
-      Player.addItem(player, "tm103");
-      f.gotTM19 = true;
-      await sayWithJingle(itemJingle("tm103"), "{PLAYER} received TM103\nfrom Erika.");
-      await say(T("CeladonCity_Gym_Text_ExplainTM19").map((p) => p.replace(/TM19/g, "TM103")));
-      return;
-    }
-    await say(T("CeladonCity_Gym_Text_ErikaPostBattle"));
-  }
 
   // ---------- Celadon City ----------
 
@@ -7658,104 +4979,13 @@
   // warp, World.setDynamicWarp).
   // FireRed's floor numbers (sFloorNamePointers: B4F is 0, 1F is 4).
   const floorNumber = (label) => { const m = /^(B?)(\d+)F$/.exec(label); return m ? (m[1] ? 4 - +m[2] : 3 + +m[2]) : 4; };
-  const ELEVATOR_SHAKES = [8, 16, 24, 32, 38, 46, 53, 56, 57];   // sElevatorAnimationDuration
-  async function elevator(floors, list) {
-    const f = player.flags, here = floors.findIndex((fl) => f.dynamicWarp && fl.map === f.dynamicWarp.map);
-    if (here >= 0) GbaMenus.fieldWindow("floor", { label: floors[here].label });
-    await Screen.prompt(T("Text_WantWhichFloor")[0]);
-    const v = await GbaMenus.multichoice($("#overlay"), { left: 0, top: 0, items: floors.map((fl) => fl.label).concat(["Exit"]),
-      cursor: Math.max(0, here), frame: GameOptions.get().frame, shown: list ? 7 : undefined });
-    GbaMenus.fieldWindow("floor", null);
-    Screen.say("");
-    if (v < 0 || v >= floors.length || v === here) return;
-    setDynamicWarp({ map: floors[v].map, x: floors[v].x, y: floors[v].y });
-    const from = here >= 0 ? floorNumber(floors[here].label) : floorNumber(floors[v].label);
-    const n = Math.min(8, Math.abs(floorNumber(floors[v].label) - from));
-    sfx("se_elevator");
-    await Overworld.shake(ELEVATOR_SHAKES[n]);
-    sfx("se_ding_dong");
-  }
-  // Where an elevator's doors let out (FireRed's dynamic warp): the floor you
-  // got in on, or the one you chose. Saved, so it survives a reload.
-  function setDynamicWarp(t) {
-    player.flags.dynamicWarp = t;
-    World.setDynamicWarp(t);
-  }
-
-  // A Pokémon given to you (FireRed's givemon): the fanfare, then a nickname
-  // if you like. False when there's no room for it anywhere.
-  // `given` runs once it's yours (before the nickname): paying for it, the
-  // Poké Ball it was in going.
-  async function giftMon(species, level, obtained, vars, given, edit) {
-    const room = player.party.length < Player.PARTY_SIZE || player.boxes.some((b) => Player.firstEmpty(b) >= 0);
-    if (!room) { await say(T("Text_NoMoreRoomForPokemon")); return false; }
-    const record = Party.create(species, level);
-    if (edit) edit(record);   // (as it comes: a held item, say)
-    const where = Player.receive(player, record);
-    if (given) given();
-    Player.markSeen(player, species);
-    await sayWithJingle("mus_level_up", [].concat(obtained).map((p) => fill(p, vars)));
-    const name = Party.speciesName(species);
-    if (await confirm(fill(T("Text_GiveNicknameToThisMon")[0], [name]))) {
-      const typed = await enterText(name + "'s nickname?", name, 10);
-      if (typed && typed !== name) record.nickname = typed;
-      show("world");
-    }
-    if (where !== "party") await say(Party.displayName(record) + " was transferred to " + where.replace("box", "Box") + " on the PC.");
-    return true;
-  }
-
-  // Back to the way they faced before you spoke to them (Common_Movement_FaceOriginalDirection).
-  async function faceBack(person) {
-    if (/^face_/.test(person.movement || "")) await Overworld.act([{ who: "#" + person.id, moves: [person.movement] }]);
-  }
+  const ELEVATOR_SHAKES = [8, 16, 24, 32, 38, 46, 53, 56, 57];
 
   // ---------- The Department Store roof ----------
 
   const DRINKS = [["fresh-water", "tm16", "gotTM16FromThirstyGirl", "YayFreshWaterHaveThis", "ExplainTM16", 200],
     ["soda-pop", "tm20", "gotTM20FromThirstyGirl", "YaySodaPopHaveThis", "ExplainTM20", 300],
     ["lemonade", "tm33", "gotTM33FromThirstyGirl", "YayLemonadeHaveThis", "ExplainTM33", 350]];
-  async function thirstyGirl() {
-    const f = player.flags, R = (k) => T("CeladonCity_DepartmentStore_Roof_Text_" + k);
-    const have = DRINKS.filter(([drink]) => Player.itemCount(player, drink));
-    if (!have.length) { await say(R("ImThirstyIWantDrink")); return; }
-    const q = R("ImThirstyGiveHerDrink");
-    await say(q.slice(0, -1));
-    if (!(await confirm(fill(q[q.length - 1])))) return;
-    // (MULTICHOICE_THIRSTY_GIRL_...: the drinks you have, then EXIT.)
-    const v = await multichoice(R("GiveWhichDrink")[0], 0, 0, have.map(([drink]) => Bag.name(drink)).concat(["Exit"]));
-    Screen.say("");
-    if (v < 0 || v >= have.length) return;
-    const [drink, tm, flag, yay, explain] = have[v];
-    if (f[flag]) { await say(R("ImNotThirstyAfterAll")); return; }
-    await say(R(yay));
-    Player.removeItem(player, drink);
-    Player.addItem(player, tm);
-    f[flag] = true;
-    await sayWithJingle("mus_level_up", "{PLAYER} received " + article(Bag.name(tm)) + "\nfrom the little girl.");
-    await say(R(explain));
-  }
-  // Fresh Water ₽200, Soda Pop ₽300, Lemonade ₽350, as many as you like:
-  // the money box at the top left, the drinks in MULTICHOICE_CELADON_VENDING_MACHINE.
-  async function vendingMachine() {
-    const R = (k) => T("CeladonCity_DepartmentStore_Roof_Text_" + k);
-    await Screen.prompt(R("VendingMachineWhatDoesItHave")[0]);
-    moneyBox(0, 0);
-    try {
-      for (;;) {
-        const v = await multichoice(null, 12, 0, DRINKS.map(([drink, , , , , price]) => Bag.name(drink) + "{CLEAR_TO 87}{FONT_SMALL}¥" + price).concat(["Exit"]));
-        if (v < 0 || v >= DRINKS.length) { await say(R("NotThirsty")); return; }
-        const [drink, , , , , price] = DRINKS[v];
-        if (player.money < price) { await say(R("NotEnoughMoney")); return; }
-        Player.addMoney(player, -price);
-        moneyBox(0, 0);
-        sfx("se_shop");
-        await say(R("DrinkCanPoppedOut"), [Bag.name(drink)]);
-        Player.addItem(player, drink);
-        await Screen.prompt(R("VendingMachineWhatDoesItHave")[0]);
-      }
-    } finally { moneyBox(null); }
-  }
 
   // ---------- The Game Corner ----------
   //
@@ -7766,152 +4996,6 @@
   const coins = () => player.flags.coins || 0;
   const addCoins = (n) => { player.flags.coins = Math.max(0, Math.min(MAX_COINS, coins() + n)); };
   const plainCoins = (n) => n.toLocaleString("en-US");
-
-  // The clerk (CeladonCity_GameCorner_EventScript_CoinsClerk): the money box
-  // and coins box at the top left, and (this game's own) 100, 500 or 1,000
-  // Coins (FireRed's 50 or 500, MULTICHOICE_GAME_CORNER_COIN_PURCHASE_COUNTER) at the top right.
-  async function coinsClerk() {
-    const G = (k) => T("CeladonCity_GameCorner_Text_" + k);
-    moneyBox(0, 0); coinsBox(0, 5);
-    try {
-      const q = G("WelcomeBuySomeCoins");
-      await say(q.slice(0, -1));
-      // (This game's: 100, 500 or 1,000 Coins, at FireRed's ¥20 a Coin.)
-      const i = await multichoice(q[q.length - 1], 12, 0, ["{FONT_SMALL}  100 Coins{CLEAR_TO 74}¥2,000", "{FONT_SMALL}  500 Coins{CLEAR_TO 69}¥10,000",
-        "{FONT_SMALL}1,000 Coins{CLEAR_TO 69}¥20,000", "Exit"]);
-      if (i < 0 || i > 2) { await say(G("ComePlaySometime")); return; }
-      const v = [100, 500, 1000][i];
-      if (!player.flags.gotCoinCase) { await say(G("SorryDontHaveCoinCase")); return; }
-      if (coins() + v > MAX_COINS) { await say(G("CoinCaseIsFull")); return; }
-      if (player.money < v * 20) { await say(G("CantAffordCoins")); return; }
-      addCoins(v);
-      Player.addMoney(player, -v * 20);
-      moneyBox(0, 0); coinsBox(0, 5);
-      sfx("se_shop");
-      await say(G("HereAreYourCoins"));
-    } finally { moneyBox(null); coinsBox(null); }
-  }
-  async function gambler(person, o) {
-    const f = player.flags, G = (k) => T("CeladonCity_GameCorner_Text_" + k);
-    if (f[o.flag]) { await say(G(o.after)); await faceBack(person); return; }
-    await say(G(o.ask));
-    if (!f.gotCoinCase) await say(G("DontHaveCoinCase"));
-    else if (coins() + o.coins > MAX_COINS) await say(G(o.full));
-    else {
-      addCoins(o.coins);
-      await say(G(o.got));
-      sfx("se_shop");
-      f[o.flag] = true;
-    }
-    await faceBack(person);
-  }
-  // Coins found on the floor go in the Coin Case (FireRed's EventScript_TryPickUpHiddenCoins).
-  async function hiddenCoins(h) {
-    const found = "{PLAYER} found\n" + h.quantity + " Coins!";
-    if (!player.flags.gotCoinCase) { await say([found, "But {PLAYER} has nothing to put\nthem in."]); return; }
-    if (coins() + h.quantity > MAX_COINS) { await say([found, "Too bad!\nThe Coin Case is full…"]); return; }
-    addCoins(h.quantity);
-    player.flags[h.flag] = true;
-    await sayWithJingle("mus_obtain_item", found);
-    await say("{PLAYER} put the Coins away in\nthe Coin Case.");
-  }
-  // A slot machine (ui/slot-machine.js): FireRed picks how generous it is.
-  async function slotMachine(id) {
-    const G = (k) => T("CeladonCity_GameCorner_Text_" + k);
-    if (!player.flags.gotCoinCase) { await say(G("CoinCaseIsRequired")); return; }
-    if (!(await confirm(fill(G("SlotMachineWantToPlay").join("\n"))))) return;
-    Screen.say("");
-    player.flags.coins = await window.SlotMachine.play({ machineId: id, coins: coins(), maxCoins: MAX_COINS, sfx, fanfare });
-    show("world");
-    await Overworld.resume();
-  }
-  // Voltorb Flip (ui/voltorb-flip.js), at Mr. Game's table in Goldenrod's
-  // Game Corner (HGSS's CasinoGame): the script fades out and back in round it.
-  async function voltorbFlip() {
-    Screen.say("");
-    player.flags.coins = await window.VoltorbFlip.play({ coins: coins(), maxCoins: MAX_COINS, name: player.name, sfx, fanfare });
-    show("world");
-    await Overworld.resume();
-    await persist();
-  }
-
-  // The card tables' stars (game/table-players.js): besides the Gym Leaders
-  // and the Elite Four, Red, Leaf and your rival now and then sit in.
-  function tableStars() {
-    TablePlayers.setStars([
-      { name: "Pokémon Trainer Red", pic: "red", style: "steady", sprite: "red" },
-      { name: "Pokémon Trainer " + LAB_RIVAL_NAME, pic: "green", style: "loose", sprite: "leaf" },
-      { name: "Rival " + player.rival, pic: "rival_late", style: "loose", sprite: "blue" }]);
-  }
-  // A star at the table gets a mention before the game.
-  async function starNotice(players) {
-    const stars = players.filter((p) => p && p.star);
-    if (stars.length) await say("Whoa! " + stars.map((p) => p.name).join(" and ") + (stars.length > 1 ? "\nare" : "\nis") + " at the table today!");
-  }
-
-  // Texas Hold'em (game/poker.js, ui/poker.js; this game's own): the dealer
-  // seats you with the three regulars for a buy-in of coins (your chips), and
-  // what you have left when you get up goes back in your Coin Case.
-  // The stakes (Poker.STAKES): low (200 Coins in, blinds 1 and 2), mid
-  // (1,000; 5 and 10) or high (3,000; 15 and 30); the other players buy in the same.
-  async function pokerTable() {
-    if (!player.flags.gotCoinCase) { await say(T("CeladonCity_GameCorner_Text_CoinCaseIsRequired")); return; }
-    await say(["Welcome to the poker table!\nWe play Texas Hold'em, fixed limit.",
-      "Bets are the big blind, and twice that\non the turn and river."]);
-    coinsBox(0, 0);
-    let v;
-    try {
-      v = await multichoice("Which stakes will you play?", 14, 0, Poker.STAKES.map((st) =>
-        "{FONT_SMALL}" + st.name + "{CLEAR_TO 62}" + plainCoins(st.buyIn) + " in, " + st.sb + "/" + st.bb).concat(["Cancel"]));
-    } finally { coinsBox(null); }
-    if (v < 0 || v >= Poker.STAKES.length) { await say("Maybe next time, then."); return; }
-    const stakes = Poker.STAKES[v];
-    if (coins() < stakes.buyIn) { await say("The buy-in at " + stakes.name.toLowerCase() + " is " + plainCoins(stakes.buyIn) + " Coins.\nCome back with more!"); return; }
-    const buyIn = stakes.buyIn;
-    addCoins(-buyIn);
-    tableStars();
-    const table = Poker.create({ chips: buyIn, stakes, name: player.name, pic: Player.LOOKS[player.look].front });
-    await say("Here are your chips. Good luck!");
-    await starNotice(table.seats.slice(1).map((st) => TablePlayers.stars().find((p) => p.name === st.name)));
-    Screen.say("");
-    show("scene");
-    clearMenu();
-    const chips = await PokerScreen.run(scene, table);
-    show("world");
-    await Overworld.resume();
-    addCoins(chips);
-    const diff = chips - buyIn;
-    await say(diff > 0 ? "You cashed out " + chips + " Coins: " + diff + " up!\nCome back anytime." : diff < 0 ? (chips ? "You cashed out " + chips + " Coins.\nBetter luck next time!" : "Better luck next time!")
-      : "You broke even! Come back anytime.");
-    await persist();
-  }
-
-  // Blackjack (game/blackjack.js, ui/blackjack.js; this game's own): bets
-  // straight from your Coin Case.
-  async function blackjackTable() {
-    if (!player.flags.gotCoinCase) { await say(T("CeladonCity_GameCorner_Text_CoinCaseIsRequired")); return; }
-    await say(["Welcome to the blackjack table!", "Bets are " + Blackjack.BETS[0] + " to " + Blackjack.BETS[Blackjack.BETS.length - 1] +
-      " Coins. Blackjack pays\n3 to 2, and I stand on all 17s."]);
-    if (coins() < Blackjack.BETS[0]) { await say("You'll need at least " + Blackjack.BETS[0] + " Coins to play.\nCome back with more!"); return; }
-    if (!(await confirm("Care to play a few hands?"))) { await say("Maybe next time, then."); return; }
-    tableStars();
-    const others = TablePlayers.pick(2);
-    await starNotice(others);
-    Screen.say("");
-    show("scene");
-    clearMenu();
-    const before = coins();
-    // (Your Coin Case keeps up with every bet and payout, up to 50,000, and the game saves after each hand.)
-    const keep = (n) => { player.flags.coins = 0; addCoins(n); persist(); return coins(); };
-    const after = await BlackjackScreen.run(scene, Blackjack.create({ coins: before, name: player.name, pic: Player.LOOKS[player.look].front,
-      others }), keep);
-    show("world");
-    await Overworld.resume();
-    keep(after);
-    const diff = after - before;
-    await say(diff > 0 ? "You're " + diff + " Coins up!\nCome back anytime." : diff < 0 ? "Better luck next time!" : "You broke even! Come back anytime.");
-    await persist();
-  }
 
   // The card room's regulars (this game's own; data/card-room.js): people
   // in the chairs. Three at the poker table (a chair left for you) and two at
@@ -7929,51 +5013,6 @@
   // (The mahjong chairs they take: the one nearest the door, 1, is yours.)
   const MAHJONG_CHAIRS = [0, 2, 3];
   let crowdCache = null, mahjongCrowd = null;
-  function crowdLooks() {
-    const looks = {};
-    for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people || []) if (!looks[p.sprite]) looks[p.sprite] = p;
-    return { looks, sprites: CROWD_SPRITES.filter((s) => looks[s]) };
-  }
-  function cardRoomCrowd() {
-    const day = Player.gameTime().day;
-    if (!crowdCache || crowdCache.day !== day) {
-      let seed = day * 2654435761 >>> 0;
-      const rng = () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-      const { looks, sprites } = crowdLooks();
-      tableStars();
-      const room = window.WORLD_MAPS.CeladonCity_GameCorner_CardRoom, players = TablePlayers.pick(5, rng);
-      const people = [];
-      const seat = (table, i) => {
-        // (A star in their own clothes.)
-        const [x, y] = room.seats[table][i], who = players[people.length], random = looks[sprites[Math.floor(rng() * sprites.length)]];
-        const look = (who.star && (looks[who.sprite] || window.WORLD_SPRITES[who.sprite])) || random;
-        const says = who.star ? ["Shh! I'm just here for a quiet game.\nDon't tell anyone!"] : CROWD_SAYS[Math.floor(rng() * CROWD_SAYS.length)];
-        people.push({ id: 910 + people.length, localId: "LOCALID_CARD_PLAYER_" + people.length, script: null, x, y, movement: "face_" + CROWD_FACING[table][i],
-          rangeX: 0, rangeY: 0, flag: null, text: [who.name + ": " + says[0]].concat(says.slice(1)),
-          sprite: look.sprite, width: look.width, height: look.height, frames: look.frames, who });
-      };
-      [0, 1, 2].forEach((i) => seat("poker", i));
-      [0, 2].forEach((i) => seat("blackjack", i));
-      crowdCache = { day, people };
-    }
-    return crowdCache.people.concat(mahjongPlayers());
-  }
-  // The three at the mahjong table, each a way to sit in with them.
-  function mahjongPlayers() {
-    if (!mahjongCrowd) {
-      tableStars();
-      const { looks, sprites } = crowdLooks();
-      const room = window.WORLD_MAPS.CeladonCity_GameCorner_CardRoom;
-      const away = crowdCache ? crowdCache.people.map((p) => p.who.name) : [];
-      mahjongCrowd = TablePlayers.pick(3, Math.random, away).map((who, k) => {
-        const i = MAHJONG_CHAIRS[k], [x, y] = room.seats.mahjong[i];
-        const look = (who.star && (looks[who.sprite] || window.WORLD_SPRITES[who.sprite])) || looks[sprites[Math.floor(Math.random() * sprites.length)]];
-        return { id: 920 + k, localId: "LOCALID_MAHJONG_PLAYER_" + k, script: "Game_EventScript_MahjongPlayer", x, y, movement: "face_" + CROWD_FACING.mahjong[i],
-          rangeX: 0, rangeY: 0, flag: null, text: null, sprite: look.sprite, width: look.width, height: look.height, frames: look.frames, who };
-      });
-    }
-    return mahjongCrowd;
-  }
 
   // Mahjong (game/mahjong.js, ui/mahjong.js; this game's own): Riichi, an
   // East round. 250 Coins buys you in for 25,000 points; when you get up (or
@@ -7981,33 +5020,6 @@
   // with Select forfeits it all. Any of the three at the table asks you to
   // sit in; you play them, and three others sit down after.
   const MAHJONG_BUY_IN = 250;
-  async function mahjongTable() {
-    if (!player.flags.gotCoinCase) { await say(T("CeladonCity_GameCorner_Text_CoinCaseIsRequired")); return; }
-    const others = mahjongPlayers().map((p) => p.who);
-    if (!(await confirm("Want to play with us?\nIt costs " + MAHJONG_BUY_IN + " Coins for the buy-in."))) { await say("Maybe next time, then."); return; }
-    if (coins() < MAHJONG_BUY_IN) { await say("You'll need " + MAHJONG_BUY_IN + " Coins to sit in.\nCome back with more!"); return; }
-    addCoins(-MAHJONG_BUY_IN);
-    await say(["We play Riichi: an East round,\n25,000 points each. Every 100 points\nyou have when you get up is a Coin.",
-      "You can get up between hands, or\nany time with SELECT, but then you\nforfeit your buy-in."]);
-    await starNotice(others);
-    Screen.say("");
-    show("scene");
-    clearMenu();
-    const game = Mahjong.create({ names: [player.name].concat(others.map((p) => p.name)) });
-    const points = await MahjongScreen.run(scene, game, { pics: [Player.LOOKS[player.look].front].concat(others.map((p) => p.pic)) });
-    // (New players at the table for next time.)
-    mahjongCrowd = null;
-    show("world");
-    if (Overworld.refreshPeople) Overworld.refreshPeople();
-    await Overworld.resume();
-    if (points == null) { await say("You got up mid-game and forfeited\nyour buy-in. Come back anytime!"); await persist(); return; }
-    const won = Math.max(0, Math.floor(points / 100));
-    addCoins(won);
-    const diff = won - MAHJONG_BUY_IN;
-    await say(diff > 0 ? "You cashed out " + won + " Coins: " + diff + " up!" : diff < 0 ? (won ? "You cashed out " + won + " Coins.\nBetter luck next time!" : "Better luck next time!")
-      : "You broke even!");
-    await persist();
-  }
 
   // The Prize Room's three counters (FireRed's prizes and prices). A TM
   // prize is the TM of this game with that move.
@@ -8021,38 +5033,6 @@
   // _TMPRIZES, _BATTLE_ITEM_PRIZES: where FireRed puts each one and its
   // prices' column), with the coins box at the top left.
   const PRIZE_MENU = { Mons: { left: 11, at: (i) => (i < 2 ? 85 : 75) }, TMs: { left: 11, at: () => 72 }, Items: { left: 10, at: (i) => (i ? 80 : 90) } };
-  async function prizeClerk(counter) {
-    const P = (k) => T("CeladonCity_GameCorner_PrizeRoom_Text_" + k);
-    if (!player.flags.gotCoinCase) { await say(P("CoinCaseRequired")); return; }
-    coinsBox(0, 0);
-    try {
-      await say(P("WeExchangeCoinsForPrizes"));
-      const list = PRIZES[counter], menu = PRIZE_MENU[counter];
-      const label = ([what]) => counter === "Mons" ? Party.speciesName(what) : counter === "TMs" ? Bag.name(machineFor(what)) : Bag.name(what);
-      const short = (p) => (counter === "TMs" ? label(p).split(" ")[0] : label(p));
-      // (A TM you already have: "-----" for its price, and it can't be had twice, as at the Poké Marts.)
-      const owned = ([what]) => counter === "TMs" && Player.itemCount(player, machineFor(what)) > 0;
-      const v = await multichoice(P("WhichPrize")[0], menu.left, 0, list.map((p, i) => short(p) + "{CLEAR_TO " + menu.at(i) + "}{FONT_SMALL}" +
-        (counter === "Mons" ? " " : "") + (owned(p) ? "-----" : plainCoins(p[1]) + " Coins")).concat(["No thanks"]));
-      Screen.say("");
-      if (v < 0 || v >= list.length) return;
-      const [what, price, level] = list[v];
-      const name = label(list[v]);
-      if (owned(list[v])) { await say("You already have that " + short(list[v]) + ".\nTMs and HMs never run out."); return; }
-      const ok = counter === "TMs" ? await confirm(fill(P("YouWantTM")[0], ["", what])) : await confirm(fill(P("YouWantPrize")[0], [name]));
-      if (!ok) return;
-      if (coins() < price) { await say(P("NeedMoreCoins")); return; }
-      if (counter === "Mons") {
-        await giftMon(what, level, T("Text_PlayerObtainedTheMon"), [name], () => { addCoins(-price); coinsBox(0, 0); });
-        return;
-      }
-      const item = counter === "TMs" ? machineFor(what) : what;
-      addCoins(-price);
-      coinsBox(0, 0);
-      Player.addItem(player, item);
-      await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
-    } finally { coinsBox(null); }
-  }
 
   // ---------- The Rocket Hideout ----------
   //
@@ -8071,116 +5051,6 @@
   // Someone and you turn to each other.
   const faceEachOther = (who) => Overworld.act([{ who, moves: ["face_player"] },
     { who: "player", moves: ["face_" + toward(Overworld.position(), Overworld.personPosition(who))] }]);
-  // The free tiles beside you (not in front): to your sides, then behind.
-  function besideYou(skip) {
-    const out = [];
-    const me = Overworld.position(), people = Overworld.people();
-    const order = { up: ["left", "right", "down"], down: ["right", "left", "up"], left: ["up", "down", "right"], right: ["up", "down", "left"] }[me.facing];
-    for (const d of order) {
-      const [dx, dy] = World.DIRS[d], t = { x: me.x + dx, y: me.y + dy };
-      if ((skip || []).some((q) => q.x === t.x && q.y === t.y)) continue;
-      const r = World.step({ map: me.map, x: me.x, y: me.y }, d, (m, x, y) => people.some((q) => q.x === x && q.y === y));
-      if (r.ok && !r.warp && !r.jump && r.x === t.x && r.y === t.y) out.push(t);
-    }
-    return out;
-  }
-  async function giovanniHideout(person) {
-    const f = player.flags, ID = "TRAINER_BOSS_GIOVANNI", L = HIDEOUT_LEAF;
-    if (!canBattle()) {
-      music("mus_encounter_rocket");
-      await say(T("RocketHideout_B4F_Text_GiovanniIntro"));
-      return;
-    }
-    // Leaf comes running in, from the elevator's side.
-    music("mus_encounter_rival");
-    await say(["{PLAYER}! Wait!"]);
-    const me = Overworld.position();
-    // (Beside you, not where the Silph Scope will be.)
-    hideoutLeafFrom = await walkIn(L, lookOf("leaf"), { x: 20, y: 24 }, besideYou([{ x: 20, y: 5 }]).map((t) => Object.assign(t, { face: me.facing })), "fast_");
-    const spot = Overworld.personPosition(L);
-    if (spot) await Overworld.act([{ who: "player", moves: ["face_" + toward(me, spot)] }]);
-    if (!f.leafHideout) {
-      await say(["Leaf: Phew, I made it! {PLAYER}!\nYou found their hideout, too?",
-        "I've been looking into Team Rocket\never since I heard rumors about the\nGame Corner.",
-        "They've been stealing people's\nPokémon… I couldn't just sit back\nand do nothing!",
-        "So that's their boss… Let's take\nhim on together, {PLAYER}!"]);
-      f.leafHideout = true;
-    } else {
-      await say(["Leaf: Ready this time, {PLAYER}?\nWe can beat him if we work\ntogether!"]);
-    }
-    await Overworld.act([{ who: "player", moves: ["face_" + me.facing] }]);
-    music("mus_encounter_rocket");
-    await say(T("RocketHideout_B4F_Text_GiovanniIntro"));
-    await say(["Leaf: Choose three of your Pokémon,\n{PLAYER}! I'm with you!"]);
-    const own = trainerTeam(ID);
-    const extra = HIDEOUT_GIOVANNI_EXTRA.map(([sp, lv]) => Party.create(sp, lv, { ivs: own[0].ivs.hp }));
-    const team = own.slice(0, 2).concat(extra, own.slice(2));
-    const starter = RIVAL_PICK[f.starter] || "Bulbasaur";
-    const leafTeam = leafMegaTeam().filter(([sp]) => sp === "Butterfree" || sp === "Wigglytuff" || sp === STAGE_TWO[starter])
-      .map(([sp, lv]) => Party.create(sp, lv));
-    const outcome = await battle("trainer", { foe: { name: "Boss Giovanni", team, pic: "leader_giovanni" },
-      defeatText: T("RocketHideout_B4F_Text_GiovanniDefeat"), trainerId: ID, prizeClass: "Boss",
-      prize: Player.prizeMoney("Boss Giovanni", team, "Boss"),
-      partner: { name: LAB_RIVAL_NAME, team: leafTeam, pic: "leaf" } });
-    if (outcome === "cancelled") {
-      // (She keeps watch out of sight, and comes back when you speak to him again.)
-      await faceEachOther(L);
-      await say(["Leaf: Not ready yet? That's OK!\nI'll keep watch nearby.", "Just talk to him again when you're\nready, and I'll be right there!"]);
-      if (hideoutLeafFrom) await walkOut(L, hideoutLeafFrom, "fast_");
-      Overworld.removeObject(L);
-      music((window.WORLD_MAPS[player.location.map] || {}).music);
-      return;
-    }
-    if (outcome !== "won") return;
-    show("world");
-    await Overworld.resume();
-    await say(T("RocketHideout_B4F_Text_GiovanniPostBattle"));
-    const at = Overworld.personPosition(L);
-    await Overworld.fadeToBlack();
-    Overworld.removePerson(person);
-    Overworld.refreshPeople();
-    if (at) Overworld.addObject(L, at, lookOf("leaf"));
-    await Overworld.fadeFromBlack();
-    music("mus_encounter_rival");
-    if (at) await faceEachOther(L);
-    await say(["Leaf: We did it, {PLAYER}! We beat\nthe boss of Team Rocket!",
-      "Huh? He left something behind…\nYou should take it, {PLAYER}!",
-      "I'm going to go and make sure the\nPokémon they stole get back to\ntheir Trainers.",
-      "Thanks for having my back! See\nyou later, {PLAYER}!"]);
-    music("mus_rival_exit");
-    if (at && hideoutLeafFrom) await walkOut(L, hideoutLeafFrom, "fast_");
-    Overworld.removeObject(L);
-    hideoutLeafFrom = null;
-    music((window.WORLD_MAPS[player.location.map] || {}).music);
-  }
-  // What happens once you've beaten some of the Game Corner's and Hideout's
-  // Rockets: the poster guard leaves; the barriers on B1F and B4F open; the
-  // Lift Key's dropped.
-  async function afterRocket(person) {
-    const f = player.flags, id = person.trainer.id;
-    // A Cinnabar Gym trainer beaten opens the door by their quiz machine
-    // (CinnabarIsland_Gym_EventScript_DefeatedQuinn and the like).
-    const quiz = Object.keys(CINNABAR_QUIZ).find((n) => CINNABAR_QUIZ[n].trainer === id);
-    if (quiz && f[id]) { show("world"); await Overworld.resume(); openQuizDoor(+quiz); return; }
-    // The Rocket Warehouse's Admins (FiveIsland_RocketWarehouse_EventScript_DefeatedAdmin1/2).
-    if (f[id] && (await warehouseAdmin(id))) return;
-    if (!f[id] || !/^TRAINER_TEAM_ROCKET_GRUNT_(7|12|16|17|18)$/.test(id)) return;
-    show("world");
-    await Overworld.resume();
-    if (id === "TRAINER_TEAM_ROCKET_GRUNT_7") {
-      await say(T("CeladonCity_GameCorner_Text_GruntPostBattle"));
-      const west = Overworld.position().facing === "left";
-      await Overworld.act([{ who: "#" + person.id, moves: M(west ? "CeladonCity_GameCorner_Movement_GruntExitWest" : "CeladonCity_GameCorner_Movement_GruntExit") }]);
-      Overworld.removePerson(person);
-    } else if (id === "TRAINER_TEAM_ROCKET_GRUNT_12" ||
-      ((id === "TRAINER_TEAM_ROCKET_GRUNT_16" || id === "TRAINER_TEAM_ROCKET_GRUNT_17") && f.TRAINER_TEAM_ROCKET_GRUNT_16 && f.TRAINER_TEAM_ROCKET_GRUNT_17)) {
-      applyPatches(player.location.map);
-      sfx("se_unlock");
-    } else if (id === "TRAINER_TEAM_ROCKET_GRUNT_18") {
-      await say(T("RocketHideout_B4F_Text_Grunt1PostBattle"));
-      Overworld.refreshPeople();
-    }
-  }
 
   // ---------- Saffron City ----------
 
@@ -8193,65 +5063,9 @@
   const tmText = (pages, frNumber, item) => [].concat(pages).map((p) =>
     p.replace(new RegExp("TM" + String(frNumber).padStart(2, "0"), "g"), Bag.name(item).split(" ")[0]));
 
-  // Sabrina: battle (talking to her), then the Marsh Badge and TM04 Calm
-  // Mind (FireRed's TM04: the TM with Calm Mind here). Beating her also beats
-  // her Gym's trainers.
-  async function sabrina(person) {
-    const f = player.flags, ID = "TRAINER_LEADER_SABRINA";
-    if (!f[ID]) {
-      await say(person.trainer.intro);
-      if (!canBattle()) return;
-      // (This game's: her Alakazam holds its Alakazite, Mega Evolves, then
-      // Terastallizes into a Dark type.)
-      const team = swappedTeam(ID).map((r) => (r.species === "Alakazam" ? Object.assign(r, { item: "alakazite", teraType: "Dark", teraAce: true }) : r));
-      const outcome = await battle("trainer", { foe: { name: "Leader Sabrina", team, pic: "leader_sabrina", tera: true },
-        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
-      if (outcome !== "won") return;
-      if (!hasBadge("marsh")) player.badges.push("marsh");
-      for (const t of ["PSYCHIC_JOHAN", "PSYCHIC_TYRON", "PSYCHIC_CAMERON", "PSYCHIC_PRESTON", "CHANNELER_AMANDA", "CHANNELER_STACY",
-        "CHANNELER_TASHA"]) f["TRAINER_" + t] = true;
-      player.flags.lastCenter = "SaffronCity_PokemonCenter_1F";
-      show("world");
-      await Overworld.resume();
-    }
-    const tm = machineFor("Calm Mind");
-    if (!f.gotTM04) {
-      await say(T("SaffronCity_Gym_Text_ExplainMarshBadgeTakeThis"));
-      Player.addItem(player, tm);
-      f.gotTM04 = true;
-      await sayWithJingle(itemJingle(tm), tmText(T("SaffronCity_Gym_Text_ReceivedTM04FromSabrina"), 4, tm));
-      await sabrinaAlakazite();
-      await say(T("SaffronCity_Gym_Text_SabrinaPostBattle"));
-      return;
-    }
-    if (await sabrinaAlakazite()) return;
-    await say(tmText(T("SaffronCity_Gym_Text_ExplainTM04"), 4, tm));
-  }
-
   // (This game's own: her Alakazam's Mega Stone, after the badge and TM.)
   const sabrinaAlakazite = () => megaStoneGift("alakazite", ["I foresaw that you would win…\nand that you would need this.",
     "An Alakazite. Held by Alakazam, it\nawakens a power beyond the mind's."], "Sabrina");
-
-  // The Fighting Dojo's prized Pokémon (SaffronCity_Dojo_EventScript_HitmonleeBall):
-  // its picture, the Karate Master looks up, and it's yours if you like
-  // (Lv. 25); its Poké Ball goes, and the other's yours no longer to take.
-  // (This game's own: once you've beaten the Karate Master's rematch, the
-  // other is yours too, at Lv. 50; see dojoMaster().)
-  async function dojoBall(person, species) {
-    const f = player.flags;
-    const second = !!f.dojoHitmon && dojoMasterRematchWon() && !f.dojoHitmon2;
-    if (f.dojoHitmon && !second) { await say(T("SaffronCity_Dojo_Text_BetterNotGetGreedy")); return; }
-    showPicture(species);
-    cry(species);
-    await Overworld.act([{ who: "LOCALID_KARATE_MASTER", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    const yes = await confirm(fill(T("SaffronCity_Dojo_Text_YouWant" + species)[0]));
-    hidePicture();
-    if (!yes) return;
-    await giftMon(species, second ? DOJO_SECOND_LEVEL : 25, T("SaffronCity_Dojo_Text_ReceivedMonFromKarateMaster"), [Party.speciesName(species)], () => {
-      Overworld.removePerson(person);
-      if (second) f.dojoHitmon2 = species; else f.dojoHitmon = species;
-    });
-  }
 
   // ---------- The Fighting Dojo's rematch ----------
   //
@@ -8297,60 +5111,8 @@
       after: ["Grunt!", "Your strength is beyond doubt.\nWe will train even harder!"]
     }
   };
-  // A trainer's rematch, while it's waiting: { intro, defeat, team() }, or null.
-  function dojoRematch(id) {
-    const f = player.flags, re = DOJO_REMATCH[id];
-    if (!re || !f.gameClear || !f[id] || (f.dojoRematch && f.dojoRematch[id])) return null;
-    const fr = window.WORLD_TRAINERS[id].party;
-    return Object.assign({}, re, {
-      team: () => re.team.map(([sp, lv], i) => Party.create(sp, lv, { ivs: Math.floor(((fr[i] || fr[0]).iv || 0) * 31 / 255) }))
-    });
-  }
   const dojoAfter = (id) => (DOJO_REMATCH[id] && player.flags.dojoRematch && player.flags.dojoRematch[id] ? DOJO_REMATCH[id].after : null);
   const dojoMasterRematchWon = () => !!(player.flags.dojoRematch && player.flags.dojoRematch[DOJO_MASTER]);
-  // The Karate Master, beaten: choose a prized Pokémon (or train with them);
-  // beaten again, the Hitmon you left behind, once (if the party and boxes
-  // are full, he keeps it for you until you come back).
-  async function dojoMaster() {
-    const f = player.flags;
-    if (dojoMasterRematchWon() && f.dojoHitmon && !f.dojoHitmon2) {
-      const species = f.dojoHitmon === "Hitmonlee" ? "Hitmonchan" : "Hitmonlee";
-      const name = Party.speciesName(species);
-      await say(["Indeed, I have lost once more!", "When you came before, you took our\n" + f.dojoHitmon + " and left " + name + " here.",
-        name + " has trained hard ever since,\nand it wishes to go with you!", "Take it! Let the two of them train\ntogether at your side!"]);
-      const ball = window.WORLD_MAPS.SaffronCity_Dojo.people.find((p) => p.script === "SaffronCity_Dojo_EventScript_" + species + "Ball");
-      showPicture(species);
-      cry(species);
-      const got = await giftMon(species, DOJO_SECOND_LEVEL, T("SaffronCity_Dojo_Text_ReceivedMonFromKarateMaster"), [name], () => {
-        f.dojoHitmon2 = species;
-        hidePicture();
-        if (ball) Overworld.removePerson(ball);
-      });
-      hidePicture();
-      if (got) await say(["Grunt!", "Stay and train at karate with us,\nall three of you!"]);
-      return;
-    }
-    if (dojoMasterRematchWon() && f.dojoHitmon) { await say(DOJO_REMATCH[DOJO_MASTER].after); return; }
-    await say(T(f.dojoHitmon ? "SaffronCity_Dojo_Text_StayAndTrainWithUs" : "SaffronCity_Dojo_Text_ChoosePrizedFightingMon"));
-    if (!f.dojoDenDoor) await dojoDenDoor();
-    else if (f.dojoHitmon) await say(["Our training room is through the\ndoor at the back. Its den awaits\nyour Lure!"]);
-  }
-  // (This game's own.) Beaten, the Karate Master opens the door to the
-  // Dojo's back room and its Tera Raid den (game/raid-dens.js), once.
-  async function dojoDenDoor() {
-    const f = player.flags;
-    if (!f[DOJO_MASTER] || f.dojoDenDoor) return;
-    show("world");
-    await Overworld.resume();
-    await say(["Grunt! One thing more!", "Behind the door at the back of my\nDojo is our training room.",
-      "A Tera Raid den sleeps there. Use a\nLure on it, and a Tera Fighting-type\nPokémon will rise to face you!",
-      "I shall open it for you. Train\nthere as often as you like!"]);
-    Screen.say("");
-    f.dojoDenDoor = true;
-    sfx("se_rs_door");
-    applyPatches("SaffronCity_Dojo");
-    await persist();
-  }
 
   // ---------- Silph Co. ----------
 
@@ -8362,54 +5124,12 @@
   // A card-key door (FireRed's SilphCo_<n>F_EventScript_Door<k>): with the
   // Card Key from 5F it opens for good (FLAG_SILPH_<n>F_DOOR_<k>).
   const silphDoorFlag = (n, k, single) => "FLAG_SILPH_" + n + "F_DOOR" + (single ? "" : "_" + k);
-  async function silphDoor(script) {
-    const f = player.flags, [, n, k] = /^SilphCo_(\d+)F_EventScript_Door(\d*)$/.exec(script);
-    const flag = silphDoorFlag(n, k || 1, !k);
-    if (f[flag]) { await say(T("Text_TheDoorIsOpen")); return; }
-    if (!f.FLAG_HIDE_SILPH_CO_5F_CARD_KEY) { await say(T("Text_ItNeedsCardKey")); return; }
-    await sayWithJingle("mus_level_up", T("Text_CardKeyOpenedDoor"));
-    f[flag] = true;
-    applyPatches(player.location.map);
-    sfx("se_unlock");
-  }
 
   // 7F: Gary (SilphCo_7F_EventScript_RivalScene). This game's own team, at
   // about FireRed's levels: Pidgeot, Growlithe, Gyarados (which holds its
   // Gyaradosite and Mega Evolves), Exeggutor, Umbreon (his Eevee) and Alakazam.
   // Then he's off by the warp pad.
   const SILPH_RIVAL_TEAM = [["Pidgeot", 41], ["Growlithe", 39], ["Gyarados", 42, "gyaradosite"], ["Exeggutor", 39], ["Umbreon", 44], ["Alakazam", 39]];
-  async function silphRival(top) {
-    const f = player.flags, R = "LOCALID_SILPH_CO_RIVAL";
-    music("mus_encounter_rival");
-    await Overworld.act([{ who: R, moves: M("Common_Movement_ExclamationMark") }]);
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }, { who: R, moves: M("Common_Movement_Delay48") }]);
-    await say(T("SilphCo_7F_Text_RivalWhatKeptYou"));
-    if (top) await Overworld.act([{ who: R, moves: M("SilphCo_7F_Movement_RivalApproachTop") }]);
-    await say(T("SilphCo_7F_Text_RivalIntro"));
-    // (FireRed's IVs: 100, and 150 for his starter, here Umbreon.)
-    const team = SILPH_RIVAL_TEAM.map(([sp, lv, item]) => Object.assign(Party.create(sp, lv, { ivs: Math.floor((sp === "Umbreon" ? 150 : 100) * 31 / 255) }),
-      item ? { item } : {}));
-    const ace = Math.max(...team.map((r) => r.level));
-    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
-      defeatText: T("SilphCo_7F_Text_RivalDefeat"), trainerId: "TRAINER_RIVAL_SILPH_SQUIRTLE",
-      prize: 36 * ace });   // (FireRed's TRAINER_CLASS_RIVAL_LATE: 9, x4 as this game's prizes are)
-    if (outcome !== "won") return;
-    f.silphRival = true;
-    show("world");
-    await Overworld.resume();
-    // (This game's own: before his "Smell ya!", a Mega Stone from Silph's labs.)
-    const bye = T("SilphCo_7F_Text_RivalPostBattle");
-    await say(bye.slice(0, -1));
-    await megaStoneGift("pidgeotite", ["Oh, and here. Silph was making these.\nI grabbed a spare: a Pidgeotite.",
-      "Not that it'll help you keep up\nwith me!"], player.rival);
-    await say(bye.slice(-1));
-    music("mus_rival_exit");
-    await Overworld.act([{ who: R, moves: M(top ? "SilphCo_7F_Movement_RivalExitTop" : "SilphCo_7F_Movement_RivalExitBottom") }]);
-    sfx("se_warp_in");
-    await Overworld.act([{ who: R, moves: ["set_invisible"] }]);
-    Overworld.removeObject(R);
-    music((window.WORLD_MAPS[player.location.map] || {}).music);
-  }
 
   // 11F: Giovanni (SilphCo_11F_EventScript_BattleGiovanni). This game's
   // own: a tag battle. Red comes down by the warp pad from 7F and stands
@@ -8425,63 +5145,6 @@
   // FireRed's team for him (Nidorino, Kangaskhan, Rhyhorn, Nidoqueen), with
   // two more (his Dugtrio and Persian), six against the two of you.
   const SILPH_GIOVANNI_EXTRA = [["Dugtrio", 42], ["Persian", 43]];
-  async function giovanniSilph(left) {
-    const G = "LOCALID_SILPH_CO_GIOVANNI", ID = "TRAINER_BOSS_GIOVANNI_2", R = SILPH_RED;
-    await Overworld.act([{ who: G, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await sleep(400);
-    await say(T("SilphCo_11F_Text_GiovanniIntro"));
-    Screen.say("");
-    const approach = [{ who: G, moves: M(left ? "SilphCo_11F_Movement_GiovanniApproachLeft" : "SilphCo_11F_Movement_GiovanniApproachRight") }];
-    if (left) approach.push({ who: "player", moves: M("SilphCo_11F_Movement_PlayerFaceGiovanni") });
-    await Overworld.act(approach);
-    if (!canBattle()) return;
-    // Red, from the warp pad.
-    const me = Overworld.position();
-    // (Beside you; or, coming at you from the left, the way round to you
-    // is past Giovanni: below him, then.)
-    const spots = left ? [{ x: 6, y: 16, face: "up" }] : besideYou().map((t) => Object.assign(t, { face: me.facing }));
-    sfx("se_warp_in");
-    // (He walks, there and back: he's in no hurry.)
-    const from = await walkIn(R, lookOf("red"), { x: 2, y: 5 }, spots);
-    if (Overworld.personPosition(R)) await faceEachOther(R);
-    await say(["Red: …"]);
-    await Overworld.act([{ who: R, moves: ["face_up"] }, { who: "player", moves: ["face_" + me.facing] }]);
-    await say(["Red joined {PLAYER}, ready\nto battle!",
-      "Giovanni: Hm? Another child…\nHow tiresome.",
-      "No matter. I'll crush the two of you\ntogether!"]);
-    const own = trainerTeam(ID).map((r) => (r.species === "Kangaskhan" ? Object.assign(r, { item: "kangaskhanite" }) : r));
-    const extra = SILPH_GIOVANNI_EXTRA.map(([sp, lv]) => Party.create(sp, lv, { ivs: own[0].ivs.hp }));
-    const team = own.slice(0, -1).concat(extra, own.slice(-1));   // (Nidoqueen, his ace, still last)
-    const redTeam = RED_SILPH_PICK.map((sp) => RED_SILPH_ROSTER.find((m) => m[0] === sp))
-      .map(([sp, lv, item]) => Object.assign(Party.create(sp, lv), item ? { item } : {}));
-    const outcome = await battle("trainer", { foe: { name: "Boss Giovanni", team, pic: "leader_giovanni" },
-      defeatText: T("SilphCo_11F_Text_GiovanniDefeat"), trainerId: ID, prizeClass: "Boss",
-      prize: Player.prizeMoney("Boss Giovanni", team, "Boss"),
-      partner: { name: "Red", team: redTeam, pic: "red" } });
-    if (outcome === "cancelled") {
-      // (Backed out: Giovanni goes back to his place, and Red with him out of sight.)
-      await say(["Giovanni: Hmph. Lost your nerve?\nI'll be waiting."]);
-      await Overworld.fadeToBlack();
-      Overworld.refreshPeople();
-      await Overworld.fadeFromBlack();
-      return;
-    }
-    if (outcome !== "won") return;
-    show("world");
-    await Overworld.resume();
-    await say(T("SilphCo_11F_Text_GiovanniPostBattle"));
-    Screen.say("");
-    const at = Overworld.personPosition(R);
-    await Overworld.fadeToBlack();
-    Overworld.refreshPeople();
-    if (at) Overworld.addObject(R, at, lookOf("red"));
-    await Overworld.fadeFromBlack();
-    if (!at) return;
-    await faceEachOther(R);
-    await say(["Red: …", "Red gave a small nod."]);
-    if (from) await walkOut(R, from);
-    Overworld.removeObject(R);
-  }
 
   // ---------- Route 12 to Fuchsia City ----------
 
@@ -8489,73 +5152,10 @@
   // (Your room in Littleroot, until a Pokémon Center's your place to come back to: Brendan's house, or May's for a girl, as
   // the truck's step-off has it, ui/hoenn-changes.js.)
   const hoennBedroom = () => ({ map: isGirl() ? "LittlerootTown_MaysHouse_2F" : "LittlerootTown_BrendansHouse_2F", x: 4, y: 2 });
-
-  // A sign by a Pokémon statue: its picture with the sign's words (and it's
-  // seen in the Pokédex).
-  async function monSign(species, text) {
-    Player.markSeen(player, species);
-    showPicture(species);
-    await say(text);
-    hidePicture();
-  }
-
-  // The Snorlax asleep across Route 12 (Route12_EventScript_Snorlax): with
-  // the Poké Flute it wakes up and attacks, a wild Snorlax (Lv. 30) you can
-  // catch. Beaten, run from or not, it's gone; it lumbers back to the
-  // mountains if you didn't catch it.
-  // (Route 16's is the same: Route16_EventScript_Snorlax.)
-  async function snorlax(person, route) {
-    const f = player.flags;
-    if (!f.gotPokeFlute) { await say(T("Route" + route + "_Text_MonSprawledOutInSlumber")); return; }
-    if (!canBattle()) return;
-    if (!(await confirm(fill(T("Text_WantToUsePokeFlute")[0])))) return;
-    await sayWithJingle("mus_poke_flute", T("Text_PlayedPokeFlute"));
-    await say(T("Text_SnorlaxWokeUp"));
-    cry("Snorlax");
-    await sleep(700);
-    f["wokeRoute" + route + "Snorlax"] = true;
-    Overworld.removePerson(person);
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Snorlax", 30)] }, terrain: "grass" });
-    if (outcome === "lost") return;
-    show("world");
-    await Overworld.resume();
-    // (Caught, it's in your party; otherwise it lumbers off.)
-    if (outcome !== "caught") await say(T("Text_SnorlaxReturnedToMountains"));
-  }
-
-  // A fishing rod from one of the Fishing Guru's brothers ("Do you like to fish?").
-  // The Fishing Guru's brothers, if you haven't the Fishing Rod yet: it's
-  // theirs to give then (`explain`: what's said after, if anything). -> given?
-  async function rodGift(prefix, takeThis, explain) {
-    const L = (k) => T(prefix + k);
-    const like = L("DoYouLikeToFish");
-    await say(like.slice(0, -1));
-    if (!(await confirm(fill(like[like.length - 1])))) { await say(L("OhThatsDisappointing")); return false; }
-    await say(L(takeThis));
-    await giveFishingRod("the Fishing Guru's brother");
-    await say(explain ? L(explain) : FISHING_LEVELS_EXPLAINED);
-    return true;
-  }
   const hasFishingRod = () => Player.itemCount(player, "fishing-rod") > 0;
-  async function giveFishingRod(from) {
-    Player.addItem(player, "fishing-rod");
-    await sayWithJingle(itemJingle("fishing-rod"), fill("{PLAYER} received a Fishing Rod from\n" + from + "."));
-  }
   // (This game's own words: fishing levels, game/fishing.js.)
   const FISHING_LEVELS_EXPLAINED = ["The more Pokémon you hook, the\nbetter you get at fishing.",
     "And the better you fish, the rarer\nthe Pokémon that bite!"];
-  // The Fishing Guru and his brothers on how your fishing is going.
-  function fishingLevelTalk(who) {
-    const lv = Fishing.level(fishingXp());
-    const next = Fishing.TIERS.find(([from]) => from > lv);
-    const said = ["Your fishing level is " + lv + "!"];
-    if (lv >= Fishing.MAX_LEVEL) said.push("There's nothing left for me to teach\nyou. You're a true Fishing Guru!");
-    else if (lv < 10) said.push("Keep at it! Better Pokémon bite\nonce you reach level 10.");
-    else if (lv < 25) said.push("Not bad! Reach level 25 and the\nrarest Pokémon start biting.");
-    else said.push(next ? "Splendid! Rare Pokémon bite even\nmore often from level " + next[0] + "." : "Splendid! You land the rare ones\nas often as anyone can.");
-    if (who === "Vermilion") said.push("Fishing is a way of life!");
-    return said;
-  }
 
   // The Magikarp size record (src/pokemon_size_record.c): a Magikarp's size
   // comes from its personality and IVs (GetMonSizeHash), through
@@ -8563,126 +5163,8 @@
   const BIG_MON_SIZES = [[290, 1, 0], [300, 1, 10], [400, 2, 110], [500, 4, 310], [600, 20, 710], [700, 50, 2710],
     [800, 100, 7710], [900, 150, 17710], [1000, 150, 32710], [1100, 100, 47710], [1200, 50, 57710], [1300, 20, 62710],
     [1400, 5, 64710], [1500, 2, 65210], [1600, 1, 65410], [1700, 1, 65510]];
-  function monSizeHash(r) {
-    const p = (r.personality >>> 0) & 0xffff, iv = (k) => ((r.ivs && r.ivs[k]) | 0) & 0xf;
-    const hi = ((iv("atk") ^ iv("def")) * iv("hp")) ^ (p & 0xff);
-    const lo = ((iv("spa") ^ iv("spd")) * iv("spe")) ^ (p >> 8);
-    return ((hi << 8) + lo) & 0xffff;
-  }
-  // (Heracross's too, for the Water Path's Heracross fan.)
-  function monSize(species, hash) {
-    let i = 1;
-    while (i < 15 && !(hash < BIG_MON_SIZES[i][2])) i++;
-    const [base, div, from] = BIG_MON_SIZES[i < 15 ? i - 1 : 15];
-    const height = Math.round(window.DEX[species].height * 10);
-    return Math.floor(height * (base + Math.floor((hash - from) / div)) / 10);
-  }
   const monInches = (species, hash) => { const n = Math.floor(monSize(species, hash) * 100 / 254); return Math.floor(n / 10) + "." + (n % 10); };
   const magikarpSizeHash = monSizeHash, magikarpSize = (hash) => monSize("Magikarp", hash), magikarpInches = (hash) => monInches("Magikarp", hash);
-  async function magikarpRecord() {
-    const f = player.flags, L = (k) => T("Route12_FishingHouse_Text_" + k);
-    if (!player.party.some((r) => r.species === "Magikarp" && !r.egg)) { await say(L("TryFishingBringMeMagikarp")); return; }
-    await say(L("OhMagikarpAllowMeToSee"));
-    const r = await choosePartyFor("Choose a {PKMN}.");
-    if (!r) return;
-    if (r.species !== "Magikarp" || r.egg) { await say(L("DoesntLookLikeMagikarp")); return; }
-    const hash = magikarpSizeHash(r), record = f.magikarpRecord != null ? f.magikarpRecord : 0;
-    const now = magikarpSize(hash), best = magikarpSize(record), vars = [null, magikarpInches(hash), magikarpInches(record)];
-    if (f.magikarpRecord == null || now > best) {
-      f.magikarpRecord = hash;
-      await say(L("WhoaXInchesTakeThis"), vars);
-      Player.addItem(player, "net-ball");
-      await sayWithJingle(itemJingle("net-ball"), "{PLAYER} received a Net Ball!");
-      await say(L("LookForwardToGreaterRecords"));
-      return;
-    }
-    await say(L(now === best ? "HuhXInchesSameSizeAsLast" : "HmmXInchesDoesntMeasureUp"), vars);
-  }
-
-  // The Move Deleter in Fuchsia City (FuchsiaCity_House3_EventScript_MoveDeleter).
-  async function fuchsiaMoveDeleter() {
-    const D = (k) => T("FuchsiaCity_House3_Text_" + k);
-    const intro = D("WouldYouLikeToForgetMove");
-    await say(intro.slice(0, -1));
-    if (!(await confirm(fill(intro[intro.length - 1])))) { await say(D("ComeAgainToForgetOtherMoves")); return; }
-    for (;;) {
-      await say(D("WhichMonShouldForgetMove"));
-      const r = await choosePartyFor("Choose a {PKMN}.");
-      if (!r) { await say(D("ComeAgainToForgetOtherMoves")); return; }
-      if (r.egg) { await say(T("FuchsiaCity_House3_Text_NoEggShouldKnowMoves")); return; }
-      const name = Party.displayName(r);
-      if (r.moves.length <= 1) { await say(D("MonOnlyKnowsOneMove"), [name]); return; }
-      const i = await ask(fill(D("WhichMoveShouldBeForgotten")[0]), r.moves.map((m, k) => ({ label: m.name, value: k, className: "type-" + MOVES[m.name].type }))
-        .concat([back()]));
-      if (i === "back") continue;
-      const move = r.moves[i].name;
-      if (!(await confirm(fill(D("MonsMoveShouldBeForgotten")[0], [name, move])))) { await say(D("ComeAgainToForgetOtherMoves")); return; }
-      r.moves.splice(i, 1);
-      await sayWithJingle("mus_move_deleted", D("MonHasForgottenMoveCompletely").map((p) => fill(p, [name, move])));
-      await persist();
-      return;
-    }
-  }
-
-  // The Safari Zone's Warden: without his teeth no one understands him; give
-  // them back (the Gold Teeth from the Safari Zone's west area) and he gives
-  // you HM04 Strength.
-  async function warden() {
-    const f = player.flags, W = (k) => T("FuchsiaCity_WardensHouse_Text_" + k);
-    if (f.gotHM04) { await say(W("ExplainStrength")); return; }
-    if (!Player.itemCount(player, "gold-teeth")) {
-      const huh = W("HifFuffHefifoo");
-      await say(huh.slice(0, -1));
-      await say(W(await confirm(fill(huh[huh.length - 1])) ? "AhHowheeHoHoo" : "HeOhayHeHaHoo"));
-      return;
-    }
-    await sayWithJingle("mus_obtain_tmhm", W("GaveGoldTeethToWarden"));
-    Player.removeItem(player, "gold-teeth");
-    await say(W("WardenPoppedInHisTeeth"));
-    await say(W(isGirl() ? "ThanksLassieGiveYouSomething" : "ThanksSonGiveYouSomething"));
-    Player.addItem(player, "hm04");
-    f.gotHM04 = true;
-    await sayWithJingle(itemJingle("hm04"), W("ReceivedHM04FromWarden"));
-  }
-
-  // Koga: battle (talking to him), then the Soul Badge and TM06 Toxic
-  // (FireRed's TM06: the TM with Toxic here). Beating him also beats his
-  // Gym's trainers.
-  // His team (this game's): Weezing, Muk (FireRed's), Arbok, and his ace,
-  // Beedrill, holding its Beedrillite: it Mega Evolves, then Terastallizes
-  // into a Ground type (in the rematch too).
-  function kogaTeam() {
-    const fr = trainerTeam("TRAINER_LEADER_KOGA");
-    const weezing = fr.find((r) => r.species === "Weezing"), muk = fr.find((r) => r.species === "Muk");
-    return [weezing, muk, Party.create("Arbok", 40, { ivs: 0 }),
-      Object.assign(Party.create("Beedrill", 44, { ivs: 0 }),
-        { item: "beedrillite", teraType: "Ground", teraAce: true })];
-  }
-  async function koga(person) {
-    const f = player.flags, ID = "TRAINER_LEADER_KOGA";
-    if (!f[ID]) {
-      await say(person.trainer.intro);
-      if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Koga", team: kogaTeam(), pic: "leader_koga", tera: true },
-        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
-      if (outcome !== "won") return;
-      if (!hasBadge("soul")) player.badges.push("soul");
-      for (const t of ["TAMER_PHIL", "TAMER_EDGAR", "JUGGLER_KIRK", "JUGGLER_SHAWN", "JUGGLER_KAYDEN", "JUGGLER_NATE"]) f["TRAINER_" + t] = true;
-      player.flags.lastCenter = "FuchsiaCity_PokemonCenter_1F";
-      show("world");
-      await Overworld.resume();
-    }
-    const tm = machineFor("Toxic");
-    if (!f.gotTM06FromKoga) {
-      await say(T("FuchsiaCity_Gym_Text_KogaExplainSoulBadge"));
-      Player.addItem(player, tm);
-      f.gotTM06FromKoga = true;
-      await sayWithJingle(itemJingle(tm), tmText(T("FuchsiaCity_Gym_Text_ReceivedTM06FromKoga"), 6, tm));
-      await say(tmText(T("FuchsiaCity_Gym_Text_KogaExplainTM06"), 6, tm));
-      return;
-    }
-    await say(T("FuchsiaCity_Gym_Text_KogaPostBattle"));
-  }
 
   // ---------- The Seafoam Islands ----------
   //
@@ -8691,25 +5173,7 @@
   // the floor's boulders block it, the current carries you off: from B3F
   // down to B4F, where you come up its current from below; on B4F to the
   // shore, where you climb out.
-  let seafoamFell = null;   // (FireRed's VAR_TEMP_1 on B3F and B4F: arrived by falling)
-  async function seafoamFall(map) {
-    seafoamFell = null;
-    const at = Overworld.position();
-    Overworld.setAvatar("surf");
-    const ride = Seafoam.fallRide(player.flags, map, at.x);
-    if (!ride) return;
-    await Overworld.act([{ who: "player", moves: ride.moves }]);
-    if (ride.warp) {
-      await Overworld.teleport(Object.assign({ facing: "up" }, ride.warp));
-      Overworld.setAvatar("surf");
-      await Overworld.act([{ who: "player", moves: Seafoam.ENTER_B4F_ON_CURRENT }]);
-      return;
-    }
-    if (ride.dismount) {
-      await Overworld.act([{ who: "player", moves: ["jump_" + ride.dismount] }]);
-      Overworld.setAvatar("walk");
-    }
-  }
+  let seafoamFell = null;
 
   // ---------- Johto's roaming beasts ----------
   //
@@ -9137,74 +5601,12 @@
     if (species === "Mewtwo") Overworld.refreshPeople();
   }
 
-  // ---------- The Power Plant ----------
-  //
-  // The two "item balls" that are Electrode (PowerPlant_EventScript_Electrode1
-  // and 2): a wild Lv. 34 Electrode, with its cry and no words. Whatever
-  // happens (but blacking out), it's gone for good.
-  async function powerPlantElectrode(person, n) {
-    if (!canBattle()) return;
-    cry("Electrode");
-    await sleep(900);
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Electrode", 34)] } });
-    if (outcome === "lost") return;
-    player.flags["foughtPowerPlantElectrode" + n] = true;
-    show("world");
-    await Overworld.resume();
-    if (outcome === "caught") { Overworld.removePerson(person); return; }
-    await Overworld.fadeToBlack();
-    Overworld.removePerson(person);
-    await Overworld.fadeFromBlack();
-  }
-
   // ---------- Viridian City's Gym ----------
 
   // Open once you have the Cascade, Thunder, Rainbow, Soul, Marsh and Volcano
   // Badges (ViridianCity_EventScript_TryUnlockGym: FireRed doesn't check the
   // Boulder Badge).
   const viridianGymOpen = () => LeagueRoad.gymOpen(player.badges);
-
-  // Giovanni (ViridianCity_Gym_EventScript_Giovanni): back at his Gym, the
-  // Leader all along. Battle, then the Earth Badge and TM26 Earthquake;
-  // beating him also beats his Gym's trainers, sends Gary to wait on Route 22
-  // (VAR_MAP_SCENE_ROUTE22, 3) and the Rockets left around Kanto away. Talk
-  // to him again and he tells you Team Rocket is finished, and he's gone.
-  async function giovanniGym(person) {
-    const f = player.flags, ID = "TRAINER_LEADER_GIOVANNI";
-    const tm = machineFor("Earthquake");
-    if (!f[ID]) {
-      const intro = person.trainer.intro;
-      await say(intro.slice(0, -1));
-      music("mus_encounter_rocket");
-      await say(intro.slice(-1));
-      if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Giovanni", team: swappedTeam(ID), pic: "leader_giovanni", tera: true },
-        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
-      if (outcome !== "won") return;
-      if (!hasBadge("earth")) player.badges.push("earth");
-      for (const t of ["TAMER_JASON", "TAMER_COLE", "BLACK_BELT_ATSUSHI", "BLACK_BELT_KIYO", "BLACK_BELT_TAKASHI",
-        "COOLTRAINER_SAMUEL", "COOLTRAINER_YUJI", "COOLTRAINER_WARREN"]) f["TRAINER_" + t] = true;
-      player.flags.lastCenter = "ViridianCity_PokemonCenter_1F";
-      show("world");
-      await Overworld.resume();
-    }
-    if (!f.gotTM26FromGiovanni) {
-      await say(T("ViridianCity_Gym_Text_ExplainEarthBadgeTakeThis"));
-      Player.addItem(player, tm);
-      f.gotTM26FromGiovanni = true;
-      await sayWithJingle(itemJingle(tm), tmText(T("ViridianCity_Gym_Text_ReceivedTM26FromGiovanni"), 26, tm));
-      await say(tmText(T("ViridianCity_Gym_Text_ExplainTM26"), 26, tm));
-      await giovanniKangaskhanite();
-      return;
-    }
-    if (await giovanniKangaskhanite()) return;
-    await say(T("ViridianCity_Gym_Text_GiovanniPostBattle"));
-    Screen.say("");
-    await Overworld.fadeToBlack();
-    f.giovanniLeft = true;
-    Overworld.removePerson(person);
-    await Overworld.fadeFromBlack();
-  }
 
   // (This game's own: his Kangaskhan's Mega Stone, after the badge and TM.)
   const giovanniKangaskhanite = () => megaStoneGift("kangaskhanite", ["And take this. A Kangaskhanite.",
@@ -9225,31 +5627,6 @@
       Object.assign(Party.create("Dragonite", 58, { ivs: 31 }), { item: "dragoninite", teraType: "Flying", teraAce: true })];
   };
   const route22LateRivalDue = () => !!(player.flags.TRAINER_LEADER_GIOVANNI && !player.flags.route22LateRival);
-  async function route22LateRival(side) {
-    if (!route22LateRivalDue()) return;
-    const f = player.flags, R = "LOCALID_ROUTE22_RIVAL";
-    music("mus_encounter_rival");
-    Overworld.addObject(R, { x: 25, y: side === "Top" ? 4 : 5, facing: "right" }, window.WORLD_SPRITES.leaf);
-    await Overworld.act(side === "Bottom"
-      ? [{ who: R, moves: M("Route22_Movement_RivalApproachBottom") }, { who: "player", moves: M("Route22_Movement_PlayerFaceRival") }]
-      : [{ who: R, moves: M("Route22_Movement_RivalApproach") }]);
-    await say(["Leaf: {PLAYER}! I knew I'd catch\nyou here!", "You've got all eight Badges too?\nSo have I!",
-      "Before we take on the Pokémon\nLeague… one more battle?", "I've been training really hard.\nThis time I'm going to win!"]);
-    const team = route22LeafTeam();
-    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer " + LAB_RIVAL_NAME, team, pic: "green", tera: true },
-      defeatText: ["Leaf: Wow… You're amazing,\n{PLAYER}!"], prize: 36 * 53 });
-    if (outcome !== "won") { if (outcome === "cancelled") Overworld.removeObject(R); return; }
-    f.route22LateRival = true;
-    show("world");
-    await Overworld.resume();
-    await say(["Leaf: I'll keep training, and one day\nI'll beat you!", "Good luck at the Pokémon League,\n{PLAYER}! I'll be cheering for you!"]);
-    Screen.say("");
-    await sleep(170);
-    music("mus_rival_exit");
-    await Overworld.act([{ who: R, moves: M("Route22_Movement_LateRivalExit") }]);
-    Overworld.removeObject(R);
-    music((window.WORLD_MAPS[player.location.map] || {}).music);
-  }
 
   // ---------- Kanto's Gym Leaders' rematches ----------
   //
@@ -9291,40 +5668,6 @@
       intro: ["Blaine: Hah! The Champion returns!", "My fire burns hotter than ever!\nCan you stand the heat?"],
       defeat: ["Blaine: I've burned out! You're\na blazing talent. Come again!"] }
   };
-  // A rematch team from a trainer's party: its ace (by species) given its
-  // Tera Type and anything else in `ace` (a level: raised to it); `swap`:
-  // [species, for species, extras], the new one the ace.
-  function leaderTeam(id, aceSpecies, ace, swap) {
-    const team = trainerTeam(id);
-    for (const [from, to, extra] of swap || []) {
-      const i = team.findIndex((r) => r.species === from);
-      if (i >= 0) team.push(Object.assign(Party.create(to, team.splice(i, 1)[0].level + 1, { ivs: 31 }), extra || {}, { teraAce: true }));   // (last: the ace)
-    }
-    const r = aceSpecies && team.find((m) => m.species === aceSpecies);
-    if (r) {
-      const { level, ...rest } = ace;
-      if (level) Object.assign(r, Party.create(r.species, level, { ivs: 31 }), { item: r.item });
-      Object.assign(r, rest, { teraAce: true });
-    }
-    return team;
-  }
-  async function leaderRematch(L) {
-    const f = player.flags;
-    if (!f.gameClear || !f[L.id] || !f[L.tm]) return false;
-    const days = f.leaderRematchDay || (f.leaderRematchDay = {}), today = Player.gameTime().today;
-    if (days[L.id] === today) return false;   // (beaten today: their usual words)
-    await say(L.intro);
-    if (!(await confirm(L.name + ": Will you battle me again?"))) { await say([L.name + ": Very well. Come back anytime."]); return true; }
-    if (!canBattle()) return true;
-    const team = L.team(), top = Math.max(...team.map((r) => r.level));
-    const outcome = await battle("trainer", { foe: { name: "Leader " + L.name, team, pic: L.pic, tera: true }, defeatText: L.defeat, terrain: "leader", prize: top * 200 });
-    if (outcome !== "won") return true;
-    days[L.id] = today;
-    show("world");
-    await Overworld.resume();
-    await say([L.name + ": Come back tomorrow, Champion,\nand we'll battle again!"]);
-    return true;
-  }
 
   // ---------- The end of Victory Road: Gary ----------
   //
@@ -9339,31 +5682,6 @@
     const at = Overworld.position();
     return !!(player.flags.TRAINER_LEADER_GIOVANNI && !player.flags.victoryRoadRival && at.map === "Route23" && at.x === 18 && at.y === 28 && canBattle());
   };
-  async function victoryRoadRival() {
-    const f = player.flags, R = "LOCALID_VICTORY_ROAD_RIVAL";
-    // (A step out of the cave's mouth first, onto the route, where he meets you.)
-    await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
-    music("mus_encounter_rival");
-    const from = await walkIn(R, lookOf("blue"), { x: 21, y: 18 }, [{ x: 19, y: 29, face: "left" }, { x: 18, y: 30, face: "up" }], "fast_");
-    if (Overworld.personPosition(R)) await faceEachOther(R);
-    await say(["{RIVAL}: Hey! {PLAYER}!", "So you made it through Victory Road\ntoo. Took you long enough!",
-      "I've already seen the Pokémon League.\nAnd I'm going to be its Champion!", "But first, I'll show you how much\nstronger I've gotten! Let's go!"]);
-    // (FireRed's Route 22 IVs: 150, and 250 for his starter, here Umbreon.)
-    const team = VICTORY_ROAD_RIVAL_TEAM.map(([sp, lv, item]) => Object.assign(Party.create(sp, lv, { ivs: Math.floor((sp === "Umbreon" ? 250 : 150) * 31 / 255) }),
-      item ? { item } : {}));
-    const outcome = await battle("trainer", { foe: { name: "Rival " + player.rival, team, pic: "rival_late" },
-      defeatText: ["{RIVAL}: What!? Again!?", "Tch… I was just warming up!"], prize: 36 * 53 });
-    if (outcome !== "won") { if (Overworld.personPosition(R)) Overworld.removeObject(R); return; }
-    f.victoryRoadRival = true;
-    show("world");
-    await Overworld.resume();
-    await say(["{RIVAL}: Hmph. Don't get cocky.", "The Pokémon League's Champion is\nstronger than anyone. You'll see!", "Smell ya later, {PLAYER}!"]);
-    Screen.say("");
-    music("mus_rival_exit");
-    if (from) await walkOut(R, from, "fast_");
-    else Overworld.removeObject(R);
-    music((window.WORLD_MAPS[player.location.map] || {}).music);
-  }
 
   // ---------- Route 23's badge guards ----------
   //
@@ -9374,48 +5692,6 @@
   // the last Badge shown). Talking to one, he checks his Badge whatever
   // you've shown before.
   const route23Scene = () => LeagueRoad.scene(player.flags);
-  async function badgeGuard(k, trigger, who) {
-    const f = player.flags, name = [ROUTE23_BADGES[k - 1] + " Badge"];
-    if (trigger && !LeagueRoad.guardStops(f, k)) return;
-    if (trigger) await Overworld.act([{ who, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-    const ok = () => {
-      const t = T(k === 1 ? "Text_OhThatsBadgeGoRightAhead" : "Text_OnlyPassWithBadgeOhGoAhead");
-      // (The "Oh! That is the …" page has the level-up jingle.)
-      const at = t.findIndex((p) => /^Oh!/.test(p));
-      return say(t.slice(0, at), name).then(() => sayWithJingle("mus_level_up", fill(t[at], name))).then(() => say(t.slice(at + 1), name));
-    };
-    if (!trigger && route23Scene() >= k) { await ok(); return; }
-    if (LeagueRoad.show(f, player.badges, k)) { await ok(); return; }
-    if (k === 1) {
-      await say(T("Text_OnlySkilledTrainersAllowedThrough"), name);
-      sfx("se_boo");
-      await say(T("Text_CantLetYouPass"));
-    } else {
-      const t = T("Text_OnlyPassWithBadgeDontHaveYet");
-      await say(t.slice(0, -1), name);
-      sfx("se_boo");
-      await say(t.slice(-1), name);
-    }
-    Screen.say("");
-    if (trigger) await Overworld.act([{ who: "player", moves: ["walk_down"] }, { who, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-  }
-
-  // ---------- Victory Road ----------
-  //
-  // Each floor's rock barrier is up until a Strength boulder's pushed onto
-  // its floor switch (VictoryRoad_<floor>_EventScript_FloorSwitch, by
-  // HandleBoulderActivateVictoryRoadSwitch); the boulders go back where they
-  // were whenever you leave the floor, and the barriers stay down until you
-  // come back through Route 23 (Route23_OnTransition), which also puts 3F's
-  // boulder back that drops through the hole to 2F.
-  // (FireRed's VAR_MAP_SCENE_VICTORY_ROAD_1F, .._2F_BOULDER1/2 and .._3F, and
-  // FLAG_HIDE_VICTORY_ROAD_2F/3F_BOULDER: flags.victoryRoad here.)
-  function victoryRoadSwitch(map, x, y) {
-    const t = ((window.WORLD_MAPS[map] || {}).triggers || []).find((q) => q.x === x && q.y === y);
-    if (!LeagueRoad.pressSwitch(player.flags, map, t)) return;
-    applyPatches(map);
-    sfx("se_ice_break");
-  }
 
 
   // ---------- The Pokémon League ----------
@@ -9432,20 +5708,6 @@
     "PokemonLeague_AgathasRoom_EventScript_Agatha", "PokemonLeague_LancesRoom_EventScript_Lance"];
   const LEAGUE_TEXT = ["PokemonLeague_LoreleisRoom_Text_", "PokemonLeague_BrunosRoom_Text_", "PokemonLeague_AgathasRoom_Text_", "PokemonLeague_LancesRoom_Text_"];
   const LEAGUE_IDS = [null, "LOCALID_BRUNO", "#0", "LOCALID_LANCE"];
-
-  // Walking in (each room's OnFrame, while it's that room's turn).
-  async function leagueEnter(map) {
-    const f = player.flags, k = League.room(map);
-    if (map === League.HALL_OF_FAME) { await hallOfFame(); return; }
-    if (k === 4) { await championsRoom(); return; }
-    if (!League.entryDue(f, map)) return;
-    // (PokemonLeague_EventScript_EnterRoom; Lance's walk through his corridor.)
-    await Overworld.act([{ who: "player", moves: M(k === 3 ? "PokemonLeague_LancesRoom_Movement_WalkThroughCorridor" : "Common_Movement_WalkUp5") }]);
-    League.enter(f, map);
-    sfx("se_unlock");
-    applyPatches(map);
-    await persist();
-  }
 
   // An Elite Four member (PokemonLeague_<name>sRoom_EventScript_<name>):
   // FireRed's team (the rematch team, _2, once FLAG_SYS_CAN_LINK_WITH_RS is
@@ -9471,71 +5733,12 @@
     TRAINER_ELITE_FOUR_LANCE: [[1, "Kingdra"], [2, "Charizard", { item: "charizardite-x" }], [4, null, { teraType: "Flying", teraAce: true }]],
     TRAINER_ELITE_FOUR_LANCE_2: [[1, "Kingdra"], [2, "Charizard", { item: "charizardite-x" }], [4, null, { teraType: "Flying", teraAce: true }]]
   };
-  function swappedTeam(id) {
-    const team = trainerTeam(id);
-    for (const [slot, species, extra] of TEAM_SWAPS[id] || []) {
-      const was = team[slot];
-      if (species) team[slot] = Party.create(species, was.level, { ivs: was.ivs.hp });
-      if (extra) Object.assign(team[slot], extra);
-    }
-    return team;
-  }
   // Johto's League (this game's): once you've Johto's eight Badges, HGSS's
   // Elite Four, Will, Koga, Bruno and Karen, and Champion Lance take the
   // League's rooms (data/johto-maps.js's JOHTO_LEAGUE, from HGSS's T10R0201-0601),
   // with their HGSS teams, their rematch teams once you've beaten them, and
   // their lines. (Its rooms and Hall of Fame are FireRed's as before.)
   const johtoLeague = () => !!window.JOHTO_LEAGUE && Player.REGION_BADGES.johto.every((b) => player.badges.includes(b));
-  async function johtoEliteFour(k) {
-    const f = player.flags, J = window.JOHTO_LEAGUE[k];
-    if (League.beaten(f, k)) { await say(J.after); return; }
-    await say(J.intro);
-    if (!canBattle()) return;
-    const id = f.johtoLeagueClear ? J.rematch : J.trainer, data = window.WORLD_TRAINERS[id];
-    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
-      defeatText: data.defeat || ["…"], trainerId: id, prizeClass: "Elite Four", music: "gs_vs_gymreader", victoryMusic: "gs_win3" });
-    if (outcome !== "won") return;
-    show("world");
-    await Overworld.resume();
-    League.beat(f, k);
-    await sleep(533);
-    sfx("se_rs_door");
-    applyPatches(player.location.map);
-    await persist();
-    await say(J.after);
-  }
-  async function eliteFour(k) {
-    if (johtoLeague()) { await johtoEliteFour(k); return; }
-    const f = player.flags, X = (label) => T(LEAGUE_TEXT[k] + label);
-    const lookAway = async () => {
-      if (k !== 1 && k !== 2) return;
-      Screen.say("");
-      const facing = Overworld.position().facing;
-      const way = facing === "up" ? "Right" : facing === "down" ? "Left" : "Down";
-      await Overworld.act([{ who: LEAGUE_IDS[k], moves: M("Common_Movement_WalkInPlaceFaster" + way) }]);
-    };
-    if (League.beaten(f, k)) { await say(X("PostBattle")); await lookAway(); return; }
-    const intro = X((k === 0 ? f.canLinkWithRS : f.gameClear) ? "RematchIntro" : "Intro");
-    await say(intro.slice(0, -1));
-    music("mus_encounter_gym_leader");
-    await say(intro.slice(-1));
-    if (!canBattle()) return;
-    const id = League.trainerId(f, k), data = window.WORLD_TRAINERS[id], team = swappedTeam(id);
-    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic, tera: team.some((r) => r.teraAce) },
-      defeatText: X("Defeat"), trainerId: id, prizeClass: "Elite Four",
-      music: "mus_vs_gym_leader", victoryMusic: "mus_victory_trainer" });
-    if (outcome !== "won") return;
-    show("world");
-    await Overworld.resume();
-    // (PokemonLeague_EventScript_OpenDoor: a pause, SE_RS_DOOR, and it's open.)
-    League.beat(f, k);
-    await sleep(533);
-    sfx("se_rs_door");
-    applyPatches(player.location.map);
-    await persist();
-    await say(X("PostBattle"));
-    await lookAway();
-  }
 
   // Red, the Champion (this game's own; FireRed has Gary,
   // PokemonLeague_ChampionsRoom_EventScript_EnterRoom): Pikachu, Espeon,
@@ -9543,268 +5746,6 @@
   // Charizardite Y: it Mega Evolves. Levels about FireRed's Champion's (57-63),
   // and with FLAG_SYS_CAN_LINK_WITH_RS its rematch ones (72-75).
   const CHAMPION_TEAM = [["Pikachu", 58, 72], ["Espeon", 59, 72], ["Blastoise", 60, 73], ["Venusaur", 60, 73], ["Snorlax", 61, 74], ["Charizard", 63, 75, "charizardite-y"]];
-  function championTeam(rematch) {
-    return CHAMPION_TEAM.map(([sp, lv, lv2, item]) => Object.assign(Party.create(sp, rematch ? lv2 : lv, { ivs: 31 }), item ? { item } : {}));
-  }
-  async function championsRoom() {
-    const f = player.flags, R = "LOCALID_CHAMPIONS_ROOM_RIVAL", O = "LOCALID_CHAMPIONS_ROOM_PROF_OAK";
-    if (!League.entryDue(f, player.location.map)) return;
-    await Overworld.act([{ who: "player", moves: M("PokemonLeague_ChampionsRoom_Movement_PlayerEnter") }]);
-    await sleep(333);
-    if (johtoLeague()) { await johtoChampion(); return; }
-    await say(f.gameClear ? ["Red: …", "Red stepped forward, ready to\nbattle again!"]
-      : ["Red: …", "Red, the Pokémon League Champion,\nlooks at {PLAYER} in silence.", "Red stepped forward, ready to battle!"]);
-    if (!canBattle()) return;
-    const rematch = !!f.canLinkWithRS, team = championTeam(rematch);
-    const outcome = await battle("trainer", { foe: { name: "Champion Red", team, pic: "red" },
-      defeatText: ["…"],
-      trainerId: rematch ? "TRAINER_CHAMPION_REMATCH_SQUIRTLE" : "TRAINER_CHAMPION_FIRST_SQUIRTLE",
-      prize: 100 * Math.max(...team.map((r) => r.level)),   // (TRAINER_CLASS_CHAMPION: 25, x4)
-      music: "mus_vs_champion", victoryMusic: "mus_victory_gym_leader", terrain: "champion" });
-    if (outcome !== "won") return;
-    League.beat(f, 4);
-    show("world");
-    await Overworld.resume();
-    await say(["Red: …", "Red smiled, and gave a small nod."]);
-    // Prof. Oak comes in.
-    music("mus_slow_pallet");
-    Overworld.follower.hide(true);   // (your Pokémon back in its ball: Oak walks up the way it stands)
-    Overworld.addObject(O, { x: 6, y: 15, facing: "up" });
-    await say(T("PokemonLeague_ChampionsRoom_Text_OakPlayer"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: M("PokemonLeague_ChampionsRoom_Movement_PlayerWatchOakEnter") },
-      { who: R, moves: M("PokemonLeague_ChampionsRoom_Movement_RivalWatchOakEnter") },
-      { who: O, moves: M("PokemonLeague_ChampionsRoom_Movement_OakEnter") }]);
-    await sleep(417);
-    await say(T("PokemonLeague_ChampionsRoom_Text_OakCongratulations"), [Party.speciesName(f.starter || player.party[0].species)]);
-    await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterRight") }, { who: R, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-    await say(["Oak: Red… You've been the Champion\nfor a long time.", "But today, {PLAYER} and their\nPokémon were stronger.",
-      "Keep training with your Pokémon,\nRed. I'm sure you two will meet\nagain!"]);
-    Screen.say("");
-    await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await sleep(333);
-    await say(T("PokemonLeague_ChampionsRoom_Text_OakPlayerComeWithMe"));
-    Screen.say("");
-    await sleep(217);
-    // Oak, then you, up the stairs and into the Hall of Fame.
-    await Overworld.act([{ who: O, moves: M("PokemonLeague_ChampionsRoom_Movement_OakExit") },
-      { who: "player", moves: M("PokemonLeague_ChampionsRoom_Movement_PlayerExit") }]);
-    await Overworld.teleport({ map: League.HALL_OF_FAME, x: 5, y: 12, facing: "up" });
-    Overworld.follower.hide(false);
-    await hallOfFame();
-  }
-
-  // Lance, Johto's Champion (scr_seq_T10R0601): his words (for a boy or a
-  // girl), his team, and once he's beaten, he takes you to the Hall of Fame.
-  async function johtoChampion() {
-    const f = player.flags, J = window.JOHTO_LEAGUE[4];
-    await say(isGirl() ? J.introGirl : J.intro);
-    if (!canBattle()) return;
-    const id = f.johtoLeagueClear ? J.rematch : J.trainer, data = window.WORLD_TRAINERS[id];
-    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
-      defeatText: data.defeat || ["…"], trainerId: id, prize: 100 * Math.max(...trainerTeam(id).map((r) => r.level)),
-      music: "gs_vs_champ", victoryMusic: "gs_win3", terrain: "champion" });
-    if (outcome !== "won") return;
-    League.beat(f, 4);
-    f.johtoLeagueDone = true;
-    show("world");
-    await Overworld.resume();
-    await say(isGirl() ? J.afterGirl : J.after);
-    Screen.say("");
-    await Overworld.teleport({ map: League.HALL_OF_FAME, x: 5, y: 12, facing: "up" });
-    await hallOfFame();
-  }
-
-  // The Hall of Fame (PokemonLeague_HallOfFame_EventScript_EnterRoom): you
-  // walk up beside Prof. Oak; his words; the record machine flashes
-  // (FLDEFF_HALL_OF_FAME_RECORD); then EventScript_SetDefeatedEliteFourFlagsVars
-  // (the League starts over), setrespawn at home, and EnterHallOfFame: the
-  // party healed, FLAG_SYS_GAME_CLEAR, your team on record, saved, and
-  // FireRed's Hall of Fame screen; the credits; and you're home.
-  async function hallOfFame() {
-    const f = player.flags, O = "LOCALID_HALL_OF_FAME_PROF_OAK";
-    await Overworld.act([{ who: "player", moves: M("PokemonLeague_HallOfFame_Movement_EnterRoom") }]);
-    await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterLeft") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-    await sleep(300);
-    await say(T("PokemonLeague_HallOfFame_Text_OakCongratulations"));
-    // (Johto's League won, this game's own: Oak has a ticket for the Fast Ship S.S. Aqua's run to Hoenn.)
-    if (f.johtoLeagueDone) await giveHoennTicket("Oak");
-    Screen.say("");
-    await Overworld.act([{ who: O, moves: M("Common_Movement_WalkInPlaceFasterUp") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    await sleep(333);
-    await HallOfFame.recordFlash($("#overlay"));
-    await sleep(667);
-    League.reset(f);
-    // (Johto's League won: its rematch teams from now on.)
-    if (f.johtoLeagueDone) { f.johtoLeagueClear = true; delete f.johtoLeagueDone; johto.setFlag("FLAG_GAME_CLEAR", true); }   // (HGSS's, for its scripts after the League)
-    // (And the Bug-Catching Contest on offer again: once for each time you beat the Elite Four.)
-    { const s = johto.state(); s.contestRound = (s.contestRound || 0) + 1; johto.setFlag("FLAG_DAILY_DID_BUG_CONTEST", false); }
-    delete f.lastCenter;   // (setrespawn HEAL_LOCATION_PALLET_TOWN)
-    player.party.forEach(Party.heal);
-    const entry = League.record(f, player.party.filter((r) => !r.egg).map((r) => Object.assign({}, r, { form: Party.form(r) })),
-      { name: player.name, id: player.trainerId, playTimeMs: player.playTimeMs });
-    // Where you'll be after the credits (FireRed's continue warp, at home).
-    player.location = Object.assign({}, Player.HOME);
-    music(null);
-    await Overworld.fadeToBlack();
-    // (Whatever goes wrong drawing it, you're Champion and the game goes on.)
-    await HallOfFame.show($("#overlay"), entry, {
-      cry, sfx, music, player: { name: player.name, id: player.trainerId, playTimeMs: player.playTimeMs, pic: Player.LOOKS[player.look].front },
-      // (FireRed saves the game here, on its own: the one save that isn't asked.)
-      save: async () => { tick(); Save.write(player); savePromptAt = player.playTimeMs; }
-    }).catch((e) => { console.error(e); tick(); Save.write(player); });
-    await creditsRoll();
-  }
-
-  // The credits (FireRed's IndigoPlateau_Exterior_EventScript_Credits, then
-  // DoCredits): out in front of the Indigo Plateau, Red (FireRed's rival:
-  // here the Champion you beat) comes out and runs off, Prof. Oak comes out,
-  // looks at you and walks off, and you run off too; then the credits roll
-  // over Kanto, with Charizard, Venusaur, Blastoise and Pikachu, to THE END.
-  // (Start skips them, the first time too.) Then you're at home in Pallet Town.
-  async function creditsRoll() {
-    const f = player.flags, R = "LOCALID_CREDITS_RIVAL", O = "LOCALID_CREDITS_PROF_OAK";
-    const run = (moves) => moves.map((m) => m.replace(/^player_run_/, "walk_fast_"));
-    $("#overlay").classList.add("hidden");
-    show("world");
-    await Overworld.teleport({ map: "IndigoPlateau_Exterior", x: 11, y: 7, facing: "down" });
-    music("mus_credits");
-    await sleep(1750);
-    Overworld.addObject(R, { x: 11, y: 6, facing: "down" }, lookOf("red"));
-    await Overworld.act([{ who: R, moves: M("IndigoPlateau_Exterior_Movement_RivalExitBuilding") },
-      { who: "player", moves: M("IndigoPlateau_Exterior_Movement_PushPlayerOutOfWay") }]);
-    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerWatchRivalLeave") },
-      { who: R, moves: M("IndigoPlateau_Exterior_Movement_RivalLeave") }]);
-    Overworld.removeObject(R);
-    await sleep(1667);
-    Overworld.addObject(O, { x: 11, y: 6, facing: "down" });
-    await Overworld.act([{ who: O, moves: M("IndigoPlateau_Exterior_Movement_OakExitBuilding") }]);
-    await sleep(2667);
-    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerWatchOakLeave") },
-      { who: O, moves: M("IndigoPlateau_Exterior_Movement_OakLeave") }]);
-    Overworld.removeObject(O);
-    await sleep(1667);
-    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerBeginLeave") }]);
-    await sleep(2583);
-    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerFaceLeague") }]);
-    await sleep(1500);
-    await Overworld.act([{ who: "player", moves: M("IndigoPlateau_Exterior_Movement_PlayerTurnAround") }]);
-    await Overworld.act([{ who: "player", moves: run(M("IndigoPlateau_Exterior_Movement_PlayerLeave")) }]);
-    await Overworld.fadeToBlack();
-    await HallOfFame.credits($("#overlay"), { skippable: true, cry, music, rival: player.rival,
-      player: { look: player.look, name: player.name } }).catch((e) => console.error(e));
-    f.seenCredits = true;
-    $("#overlay").classList.add("hidden");
-    await Overworld.teleport(Object.assign({}, Player.HOME));
-    music((window.WORLD_MAPS[Player.HOME.map] || {}).music);
-    await persist();
-  }
-
-  // ---------- The Sevii Islands: the Seagallop ferries ----------
-  //
-  // FireRed's EventScript_SetSail (data/scripts/seagallop.inc): "All aboard
-  // SEAGALLOP HI-SPEED 7!", the screen goes dark and the ferry crosses the sea
-  // (ui/seagallop.js: DoSeagallopFerryScene), and you're at the other harbor.
-  // game/sevii.js has the ports, the menus and the story's flags.
-  async function setSail(from, to, announce) {
-    if (announce !== false) {
-      await say(from === "VERMILION_CITY" && to !== "CINNABAR_ISLAND" ? T("VermilionCity_Text_Seagallop7Departing") : T("Text_AllAboardSeagallopNum"),
-        [String(Sevii.ferryNumber(from, to))]);
-    }
-    Screen.say("");
-    clearMenu();
-    await sleep(333);
-    await Overworld.fadeToBlack();
-    const o = $("#overlay");
-    await Seagallop.ride(o, { eastbound: Sevii.eastbound(from, to), sfx, fadeMusic: () => music(null) }).catch((e) => console.error(e));
-    o.classList.add("hidden");
-    sfx("se_exit");
-    const p = Sevii.port(to);
-    Overworld.setAvatar("walk");
-    await Overworld.teleport({ map: p.map, x: p.x, y: p.y, facing: to === "CINNABAR_ISLAND" ? "down" : "up" });
-    music((window.WORLD_MAPS[p.map] || {}).music);
-    // Landing on One Island the first time (OneIsland_Harbor's ON_FRAME), or
-    // back on Cinnabar with Bill (CinnabarIsland_EventScript_ReturnFromSeviiIslands).
-    if (to === "ONE_ISLAND" && player.flags.oneHarborScene === 1) await oneIslandArrival();
-    else if (to === "CINNABAR_ISLAND" && player.flags.cinnabarScene === 3) await cinnabarBillReturns();
-    await persist();
-  }
-
-  // A Seagallop sailor (a harbor's, or Vermilion's by the dock): where to?
-  // `from`: the harbor (SEAGALLOP_*). `question`: what he asks.
-  // (A port whose island isn't in the game, the sailor says so: none now.)
-  async function seagallopMenu(from, question, onCancel) {
-    let page = 0;
-    for (;;) {
-      const m = Sevii.menu(player.flags, from, page);
-      const pages = m.items.includes("MORE");
-      // (FireRed's windows: the two-page menu at the top right, the others lower down.)
-      const [left, top] = pages ? [17, page ? 2 : 0] : [19, m.items.length >= 4 ? 5 : 6];
-      const i = await multichoice(fill(question[question.length - 1]), left, top, m.labels);
-      const pick = i < 0 ? "EXIT" : m.items[i];
-      if (pick === "MORE") { page = 1 - page; continue; }
-      if (pick === "EXIT") { Screen.say(""); if (onCancel) await onCancel(); return; }
-      if (!Sevii.built(pick)) {
-        await say(["Sorry, the Seagallop doesn't sail\nto " + Sevii.port(pick).label + " yet.", "(" + Sevii.port(pick).label + " isn't in\nthis game yet.)"]);
-        return;
-      }
-      await setSail(from, pick);
-      return;
-    }
-  }
-  // The harbor sailors on One, Two and Three Island.
-  async function harborSailor(from) {
-    const q = T("Text_WhereDoYouWantToSail");
-    await say(q.slice(0, -1));
-    await seagallopMenu(from, q);
-  }
-  // Vermilion's dock (VermilionCity_EventScript_CheckSeagallopPresent): once
-  // the S.S. Anne's gone, the Seagallop sails from here for whoever has a pass.
-  async function vermilionSeagallop(walkBack) {
-    const f = player.flags, scene = f.celioScene || 0;
-    const back = async () => { if (walkBack) await Overworld.act([{ who: "player", moves: ["walk_up"] }]); };
-    if (scene < 1) { await say(T("VermilionCity_Text_TheShipSetSail")); await back(); return; }
-    const q = T(scene >= 5 ? "VermilionCity_Text_BoardSeagallopRainbowPass" : "VermilionCity_Text_BoardSeagallopTriPass");
-    // With the Rainbow Pass, Stadium Island and Hoenn too; and with the Old Sea Map, as FireRed's sailor is with
-    // an event ticket (VermilionCity_EventScript_HasMysticTicket): the first time, he's amazed; then Faraway
-    // Island, on Seagallop 10.
-    if (scene >= 5) {
-      const oldMap = Player.itemCount(player, "old-sea-map");
-      if (oldMap && !f.shownOldSeaMap) {
-        f.shownOldSeaMap = true;
-        await say(["Oh! That's an Old Sea Map!\nNow that is rare.", "We'll be happy to take you to\nFaraway Island anytime."]);
-      }
-      const dests = ["Sevii Islands", "Stadium Island"].concat(oldMap ? ["Faraway Island"] : [], ["Hoenn", "Exit"]);
-      const i = await multichoice(T("VermilionCity_Text_BoardSeagallopFerry")[0], 17, dests.length >= 5 ? 2 : dests.length === 4 ? 4 : 6, dests);
-      const pick = i < 0 ? "Exit" : dests[i];
-      if (pick === "Sevii Islands") { await say(q.slice(0, -1)); await seagallopMenu("VERMILION_CITY", q, back); return; }
-      if (pick === "Stadium Island") { await say(["All aboard SEAGALLOP HI-SPEED 8!"]); await ferry({ map: "StadiumIsland", x: 17, y: 25, facing: "up" }, true); return; }
-      if (pick === "Faraway Island") {
-        await say(T("VermilionCity_Text_Seagallop10Departing"));
-        await ferry({ map: "FarawayIsland_Entrance", x: 13, y: 38, facing: "up" }, false);
-        return;
-      }
-      if (pick === "Hoenn") { await sailToHoenn(); return; }
-      Screen.say(""); await back(); return;
-    }
-    await say(q.slice(0, -1));
-    await seagallopMenu("VERMILION_CITY", q, back);
-  }
-  // The Seagallop's crossing (as setSail's) to `to` ({ map, x, y, facing }).
-  async function ferry(to, eastbound) {
-    Screen.say("");
-    clearMenu();
-    await sleep(333);
-    await Overworld.fadeToBlack();
-    const o = $("#overlay");
-    await Seagallop.ride(o, { eastbound, sfx, fadeMusic: () => music(null) }).catch((e) => console.error(e));
-    o.classList.add("hidden");
-    sfx("se_exit");
-    Overworld.setAvatar("walk");
-    await Overworld.teleport(to);
-    music((window.WORLD_MAPS[to.map] || {}).music);
-    await persist();
-  }
 
   // ---------- Hoenn: by Seagallop from Vermilion (this game's own) ----------
   //
@@ -11498,146 +7439,10 @@
   // to Lostelle's dad on Two Island, find Lostelle in Three Island's Berry
   // Forest past the bikers, and Bill takes you home to Cinnabar.
   const CINNABAR_BILL = "LOCALID_CINNABAR_BILL", CINNABAR_SEAGALLOP = "LOCALID_CINNABAR_SEAGALLOP";
-  // Bill and the boat at Cinnabar (CinnabarIsland_EventScript_BillScene):
-  // coming out of the Gym he's right there and walks up; coming out of the
-  // Pokémon Center he comes over from the east (FLAG_TEMP_2); anywhere else
-  // he walks over to you.
-  async function cinnabarBill() {
-    const f = player.flags, C = (k) => T("CinnabarIsland_Text_" + k), Cm = (k) => M("CinnabarIsland_Movement_" + k);
-    let at = Overworld.position();
-    if (at.x === 20 && at.y === 4) { await Overworld.act([{ who: "player", moves: ["walk_down"] }]); at = Overworld.position(); }
-    const gym = at.x === 20 && at.y === 5, center = at.x === 14 && at.y === 12;
-    if (center) Overworld.addObject(CINNABAR_BILL, { x: 18, y: 12, facing: "up" });
-    await Overworld.act([{ who: CINNABAR_BILL, moves: gym ? M("Common_Movement_WalkInPlaceFasterUp") : ["face_player"] }]);
-    sfx("se_pin");
-    await Overworld.act([{ who: CINNABAR_BILL, moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
-    if (gym) await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillApproachPlayer1") }]);
-    else if (center) {
-      await Overworld.act([{ who: CINNABAR_BILL, moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-      await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillApproachPlayer2") }]);
-      await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-    } else {
-      // (Next to you, whichever side he can get to.)
-      const spots = [[1, 0, "left"], [-1, 0, "right"], [0, 1, "up"], [0, -1, "down"]].map(([dx, dy, face]) => ({ x: at.x + dx, y: at.y + dy, face }));
-      for (const s of spots) { const path = pathTo(CINNABAR_BILL, s); if (path) { await walkTo(CINNABAR_BILL, s, s.face); break; } }
-      await Overworld.act([{ who: "player", moves: ["face_" + (() => { const b = Overworld.personPosition(CINNABAR_BILL) || at; return b.x > at.x ? "right" : b.x < at.x ? "left" : b.y > at.y ? "down" : "up"; })()] }]);
-    }
-    await say(C("HeyIfItIsntPlayer"));
-    const q = C("ComeWithMeToOneIsland");
-    await say(q.slice(0, -1));
-    if (await confirm(fill(q[q.length - 1]))) {
-      await say(C("AllRightLetsGo"));
-      Screen.say("");
-      await cinnabarSailWithBill(gym ? "gym" : center ? "shore" : "walk");
-      return;
-    }
-    await say(C("IllBeWaitingInPokeCenter"));
-    Screen.say("");
-    if (gym) await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillExitToPokeCenter").concat(["set_invisible"]) }]);
-    else if (center) {
-      await Overworld.act([{ who: "player", moves: Cm("PlayerWatchBillExit") }, { who: CINNABAR_BILL, moves: Cm("BillApproachDoor") }]);
-      sfx("se_door");
-      await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillReEnterPokeCenter") }]);
-    } else {
-      await walkTo(CINNABAR_BILL, { x: 14, y: 12 }, "up");
-      sfx("se_door");
-      await Overworld.act([{ who: CINNABAR_BILL, moves: ["walk_up", "set_invisible"] }]);
-    }
-    Overworld.removeObject(CINNABAR_BILL);
-    f.cinnabarScene = 2;
-    f.cinnabarBillInCenter = true;   // (FLAG_HIDE_CINNABAR_POKECENTER_BILL cleared)
-  }
-  // CinnabarIsland_EventScript_SailToOneIsland: the Seagallop pulls in, and
-  // you board it with Bill. `how`: "gym" (outside the Gym), "shore" (out of
-  // the Pokémon Center, along the shore), or "walk" (from anywhere else).
-  async function cinnabarSailWithBill(how) {
-    const f = player.flags, C = (k) => T("CinnabarIsland_Text_" + k), Cm = (k) => M("CinnabarIsland_Movement_" + k);
-    if (how === "shore") await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("ApproachShore") }, { who: "player", moves: Cm("ApproachShore") }]);
-    if (how === "walk") {
-      await walkTo(CINNABAR_BILL, { x: 21, y: 8 }, "right");
-      await walkTo("player", { x: 20, y: 8 }, "right");
-    }
-    const row = how === "shore" ? 12 : 8;
-    Overworld.addObject(CINNABAR_SEAGALLOP, { x: 30, y: row, facing: "left" });
-    await Overworld.act(how === "gym" ? [{ who: CINNABAR_BILL, moves: Cm("BillFaceBoat") }, { who: CINNABAR_SEAGALLOP, moves: Cm("BoatArrive") }]
-      : [{ who: CINNABAR_SEAGALLOP, moves: Cm("BoatArrive") }]);
-    await say(C("MyPalsBoatArrived"));
-    Screen.say("");
-    if (how === "gym") await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillBoardBoat") }, { who: "player", moves: Cm("PlayerBoardBoat") }]);
-    else if (how === "shore") await Overworld.act([{ who: CINNABAR_BILL, moves: Cm("BillBoardBoatFromShore") }, { who: "player", moves: Cm("PlayerBoardBoatFromShore") }]);
-    else await Overworld.act([{ who: CINNABAR_BILL, moves: ["walk_right", "delay_4", "set_invisible"] }, { who: "player", moves: ["walk_right", "delay_4", "walk_right", "delay_4", "set_invisible"] }]);
-    f.cinnabarScene = 2;
-    delete f.cinnabarExitWithBill;
-    delete f.cinnabarBillInCenter;
-    Overworld.removeObject(CINNABAR_BILL);
-    await sleep(667);
-    f.oneHarborScene = 1;
-    await setSail("CINNABAR_ISLAND", "ONE_ISLAND", false);
-  }
-  // Bill in Cinnabar's Pokémon Center (..._PokemonCenter_1F_EventScript_Bill):
-  // ready? Then out you go together, along the shore to the boat.
-  async function cinnabarCenterBill(person) {
-    const f = player.flags, P = (k) => T("CinnabarIsland_PokemonCenter_1F_Text_" + k), Pm = (k) => M("CinnabarIsland_PokemonCenter_1F_Movement_" + k);
-    const q = P("ReadyToSailToOneIsland");
-    await say(q.slice(0, -1));
-    if (!(await confirm(fill(q[q.length - 1])))) { await say(P("OhNotDoneYet")); return; }
-    await say(P("LetsGo"));
-    Screen.say("");
-    music("mus_follow_me");
-    await sleep(333);
-    const facing = Overworld.position().facing, id = "LOCALID_CINNABAR_POKEMON_CENTER_BILL";
-    // (By the way you face him: from below, from his left or right.)
-    const moves = facing === "left" ? [Pm("BillExit"), Pm("PlayerExitWest")] : facing === "right" ? [Pm("BillExitEast"), Pm("PlayerExitEast")] : [Pm("BillExit"), Pm("PlayerExitSouth")];
-    await Overworld.act([{ who: id, moves: moves[0] }, { who: "player", moves: moves[1] }]);
-    Overworld.removeObject(id);
-    delete f.cinnabarBillInCenter;
-    f.cinnabarExitWithBill = true;   // VAR_MAP_SCENE_CINNABAR_ISLAND_2, 1
-    sfx("se_exit");
-    await Overworld.teleport({ map: "CinnabarIsland", x: 14, y: 12, facing: "down" });
-    music("mus_follow_me");
-    Overworld.addObject(CINNABAR_BILL, { x: 15, y: 12, facing: "left" });
-    await sleep(333);
-    await cinnabarSailWithBill("shore");
-  }
-  // Back from One Island (CinnabarIsland_EventScript_ReturnFromSeviiIslands):
-  // Bill says goodbye and goes home; Lostelle's back home on Three Island.
-  async function cinnabarBillReturns() {
-    const f = player.flags;
-    Overworld.addObject(CINNABAR_BILL, { x: 21, y: 8, facing: "up" });
-    await say(T("CinnabarIsland_Text_IfYouHaveTriPassYouCanGoAgain"));
-    Screen.say("");
-    await Overworld.act([{ who: CINNABAR_BILL, moves: M("CinnabarIsland_Movement_BillExit").concat(["set_invisible"]) }]);
-    Overworld.removeObject(CINNABAR_BILL);
-    f.cinnabarScene = 4;
-  }
 
   // Off the boat at One Island (OneIsland_Harbor's and OneIsland's ON_FRAME
   // scenes): up out of the harbor, and Bill takes you to the Pokémon Center.
   const ONE_BILL = "LOCALID_ONE_ISLAND_BILL";
-  async function oneIslandArrival() {
-    const f = player.flags;
-    await Overworld.act([{ who: "player", moves: M("OneIsland_Harbor_Movement_PlayerExitHarbor") }]);
-    f.oneHarborScene = 2;
-    sfx("se_exit");
-    await Overworld.teleport({ map: "OneIsland", x: 12, y: 18, facing: "up" });
-    await billToCelio();
-  }
-  // OneIsland_EventScript_EnterOneIslandFirstTime: out of the harbor, Bill
-  // walks you up to the Pokémon Center.
-  async function billToCelio() {
-    const f = player.flags, O = (k) => M("OneIsland_Movement_" + k);
-    await Overworld.act([{ who: "player", moves: O("PlayerExitHarbor") }]);
-    await say(T("OneIsland_Text_BillLetsGoSeeCelio"));
-    Screen.say("");
-    await Overworld.act([{ who: ONE_BILL, moves: O("BillWalkToPokeCenter") }, { who: "player", moves: O("PlayerWalkToPokeCenter") }]);
-    sfx("se_door");
-    await Overworld.act([{ who: ONE_BILL, moves: O("BillEnterPokeCenter") }, { who: "player", moves: O("PlayerEnterPokeCenter") }]);
-    Overworld.removeObject(ONE_BILL);
-    f.oneHarborScene = 3;
-    await Overworld.teleport({ map: "OneIsland_PokemonCenter_1F", x: 9, y: 9, facing: "up" });
-    player.flags.lastCenter = "OneIsland_PokemonCenter_1F";   // (setrespawn HEAL_LOCATION_ONE_ISLAND)
-    await meetCelio();
-  }
 
   // One Island's Pokémon Net Center (OneIsland_PokemonCenter_1F_EventScript_MeetCelioScene):
   // Bill introduces you to Celio, who can't get his PCs to link with Kanto's.
@@ -11645,410 +7450,22 @@
   // Island; Celio gives you the Tri-Pass, and the Town Map's page of the
   // Sevii Islands. The PCs can't reach Bill's storage meanwhile.
   const PC_BILL = "LOCALID_ONE_ISLAND_POKEMON_CENTER_BILL", CELIO = "LOCALID_CELIO";
-  async function meetCelio() {
-    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k), Xm = (k) => M("OneIsland_PokemonCenter_1F_Movement_" + k);
-    const turn = (who, dir) => Overworld.act([{ who, moves: M("Common_Movement_WalkInPlaceFaster" + dir) }]);
-    await Overworld.act([{ who: "player", moves: Xm("PlayerWalkToCelio") }, { who: PC_BILL, moves: Xm("BillWalkToCelio") }]);
-    await say(X("BillHeyThereCelio"));
-    await turn("player", "Right");
-    sfx("se_pin");
-    await Overworld.act([{ who: CELIO, moves: ["emote_exclamation_mark"] }]);
-    await turn(CELIO, "Left");
-    await sleep(800);
-    await say(X("CelioCantBelieveYouCameOut"));
-    await say(X("BillHowsYourResearchComing"));
-    await Overworld.act([{ who: PC_BILL, moves: M("Common_Movement_WalkInPlaceFasterDown") }, { who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    await say(X("ThisIsMyBuddyCelio"));
-    await turn(PC_BILL, "Right");
-    await turn("player", "Right");
-    await say(X(f.gameClear ? "PlayerIsReigningPokemonChamp" : "PlayerIsRisingPokemonChamp"));
-    await turn(CELIO, "Down");
-    await say(X("CelioThatsReallyImpressive"));
-    await say(X("BillBringMeUpToSpeed"));
-    await turn(CELIO, "Left");
-    await say(X("CelioPCsCantLinkWithYours"));
-    Screen.say("");
-    await turn(PC_BILL, "Up");
-    await say(X("BillLetMeHelpYou"));
-    await turn(PC_BILL, "Down");
-    await turn("player", "Up");
-    await say(X("CanYouDeliverThisMeteoritePlayer"));
-    Player.addItem(player, "meteorite");
-    await sayWithJingle("mus_obtain_key_item", X("AcceptedMeteoriteFromBill"));
-    await turn(CELIO, "Down");
-    await say(X("CelioPleaseTakeThis"));
-    Player.addItem(player, "tri-pass");
-    await sayWithJingle("mus_obtain_key_item", X("ObtainedTriPass"));
-    await say(X("PassLetsYouTravelBetweenIslands"));
-    // The Town Map's page for the islands (or the Town Map, if Daisy hasn't given you one).
-    if (f.townMap) await sayWithJingle("mus_obtain_key_item", X("ReceivedExtraPageForTownMap"));
-    else {
-      Player.addItem(player, "town-map");
-      f.townMap = true;
-      await sayWithJingle("mus_obtain_key_item", X("ReceivedTownMap"));
-    }
-    f.seviiMap123 = true;
-    await say(X("BillCatchYouLater"));
-    Screen.say("");
-    await turn(PC_BILL, "Up");
-    await turn(CELIO, "Up");
-    f.pcStorageDisabled = true;
-    f.celioScene = 1;
-  }
-
-  // Celio (OneIsland_PokemonCenter_1F_EventScript_Celio): what he says as
-  // the story goes on. With the National Pokédex (yours from the start here),
-  // once Bill's taken you home (scene 3), he asks you to find a gem for his
-  // Network Machine, and Team Rocket turns up on Mt. Ember; bring him the
-  // Ruby and he trades your Tri-Pass for the Rainbow Pass and asks for the
-  // Sapphire (the Dotted Hole on Six Island; Gideon takes it to the Rocket
-  // Warehouse on Five Island, and gives it back once beaten).
-  async function celio() {
-    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k), scene = f.celioScene || 0;
-    if (scene >= 6 && !f.gotOldSeaMap) { await giveOldSeaMap(); return; }
-    if (scene >= 7) {
-      await say(X("CelioHearingRumorsAboutYou"));
-      await say(X(["BillsFirstMonWasAbra", "BillsHometownInGoldenrod", "BillCantStomachMilk"][Math.floor(Math.random() * 3)]));
-      return;
-    }
-    if (scene === 6) { await say(X("WishYouBestOfLuck")); return; }
-    if (f.recoveredSapphire && Player.itemCount(player, "sapphire")) { await celioSapphire(); return; }
-    if (scene === 5) { await say(X("PassLetYouGetToAllIslands")); return; }
-    if (f.gotRuby && Player.itemCount(player, "ruby")) { await celioRuby(); return; }
-    if (scene === 4) { await say(X("TryingToFindGem")); return; }
-    // (FireRed asks once you have the National Pokédex, which comes after the
-    // Hall of Fame; here you have it from the start, so: once you're Champion.
-    // Until then only One, Two and Three Island can be reached: the Rainbow
-    // Pass for the rest is his thanks for the Ruby.)
-    if (Player.nationalDex(player) && player.flags.gameClear && scene >= 3) {
-      await say(X("CelioCaughtMoreMonMaybeICanBeUseful"));
-      await Overworld.act([{ who: CELIO, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-      await say(X("YoullBeTradingFromTrainersFarAway"));
-      await Overworld.act([{ who: CELIO, moves: ["face_player"] }]);
-      await say(X("NeedsSpecialGemstone"));
-      f.mtEmberScene = 1;
-      f.celioScene = 4;
-      applyPatches("OneIsland_PokemonCenter_1F");
-      return;
-    }
-    if (scene === 3) { await say(X("CelioImModifyingMyNetworkMachine")); return; }
-    await say(X("SorryForBeingPoorHost"));
-    Screen.say("");
-    await Overworld.act([{ who: CELIO, moves: ["face_up"] }]);
-  }
-  // The Ruby into the machine (..._EventScript_GiveCelioRuby), and one more
-  // favour: the Rainbow Pass for your Tri-Pass, and the Town Map's pages for
-  // Four to Seven Island.
-  async function celioRuby() {
-    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k);
-    await say(X("OhThats"));
-    await sayWithJingle("mus_obtain_tmhm", X("HandedRubyToCelio"));
-    Screen.say("");
-    await Overworld.act([{ who: CELIO, moves: M("OneIsland_PokemonCenter_1F_Movement_CelioPutGemInMachine") }]);
-    sfx("se_select");
-    f.celioRubyIn = true;
-    applyPatches("OneIsland_PokemonCenter_1F");
-    await sleep(500);
-    await Overworld.act([{ who: CELIO, moves: ["face_player"] }]);
-    const q = X("MayIAskOneMoreFavor");
-    await say(q.slice(0, -1));
-    if (!(await confirm(fill(q[q.length - 1])))) {
-      for (;;) {
-        const p = X("PleaseINeedYourHelp");
-        await say(p.slice(0, -1));
-        if (await confirm(fill(p[p.length - 1]))) break;
-      }
-    }
-    await say(X("AnotherGemstoneInSeviiIslands"));
-    Player.removeItem(player, "ruby");
-    Player.removeItem(player, "tri-pass");
-    f.celioScene = 5;
-    Player.addItem(player, "rainbow-pass");
-    f.seviiMap4567 = true;
-    await sayWithJingle("mus_obtain_key_item", X("ReturnedTriPassForRainbowPass"));
-    await sayWithJingle("mus_obtain_key_item", X("ObtainedExtraMapPage"));
-    await say(X("PassLetYouGetToAllIslands"));
-  }
-  // The Sapphire (..._EventScript_GiveCelioSapphire): the hook for the rest
-  // of the islands. Bring it back (flags.recoveredSapphire, and the item) and
-  // the Network Machine links with Hoenn: FLAG_SYS_CAN_LINK_WITH_RS
-  // (flags.canLinkWithRS, the League's rematch teams).
-  async function celioSapphire() {
-    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k);
-    await sayWithJingle("mus_obtain_tmhm", X("HandedSapphireToCelio"));
-    Player.removeItem(player, "sapphire");
-    await say(X("ThankYouGiveMeTime"));
-    Screen.say("");
-    await Overworld.act([{ who: CELIO, moves: M("OneIsland_PokemonCenter_1F_Movement_CelioPutGemInMachine") }]);
-    sfx("se_select");
-    f.celioSapphireIn = true;
-    applyPatches("OneIsland_PokemonCenter_1F");
-    await say(X("OkayThisIsGood"));
-    Screen.say("");
-    await sleep(1000);
-    await Overworld.act([{ who: CELIO, moves: M("OneIsland_PokemonCenter_1F_Movement_CelioCheckMachine") }]);
-    await sleep(500);
-    await Overworld.act([{ who: CELIO, moves: M("OneIsland_PokemonCenter_1F_Movement_CelioCheckMachine") }]);
-    await sleep(667);
-    sfx("se_pc_on");
-    f.canLinkWithRS = true;
-    applyPatches("OneIsland_PokemonCenter_1F");
-    await say(X("LinkedUpWithLanette"));
-    await Overworld.act([{ who: CELIO, moves: ["face_player"] }]);
-    await say(X("ManagedToLinkWithHoennThankYou"));
-    f.celioScene = 6;
-    await giveOldSeaMap();
-  }
-  // This game's: with Hoenn linked up, Celio gives you Bill's reward for
-  // your help, Emerald's Old Sea Map (its island: Faraway Island, by Seagallop
-  // from Vermilion). (Saves that linked up before this get it next time they talk.)
-  async function giveOldSeaMap() {
-    const f = player.flags;
-    if (f.gotOldSeaMap) return;
-    await say(["Oh, and {PLAYER}, Bill wanted me\nto give you this.", "It's a reward for all your help."]);
-    Player.addItem(player, "old-sea-map");
-    f.gotOldSeaMap = true;
-    await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the " + Bag.name("old-sea-map") + "!");
-    await say(["It's an old sea chart. It shows an\nisland nobody's been to in a very\nlong time.",
-      "The Seagallop sailors in Vermilion\nmight know how to get there."]);
-  }
-  // Bill, helping Celio (..._EventScript_Bill).
-  async function oneIslandCenterBill() {
-    const X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k);
-    if (player.flags.seviiDetourDone) {
-      await Overworld.act([{ who: PC_BILL, moves: ["face_player"] }]);
-      await say(X("GotPCWorkingStrollAWhileMore"));
-    } else await say(X("HmmHowAboutLikeThis"));
-  }
-  // Lostelle's back and the Meteorite delivered: walking in, Bill's done and
-  // takes you back to Kanto (..._EventScript_LeaveOneIslandScene). `row`: 1-4,
-  // which of the triggers (top to bottom).
-  async function leaveOneIsland(row) {
-    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k), Xm = (k) => M("OneIsland_PokemonCenter_1F_Movement_" + k);
-    const turn = (who, dir) => Overworld.act([{ who, moves: M("Common_Movement_WalkInPlaceFaster" + dir) }]);
-    sfx("se_pin");
-    await Overworld.act([{ who: PC_BILL, moves: ["emote_exclamation_mark"] }]);
-    await say(X("BillOhHeyPlayer"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: Xm(["PlayerWalkToBillTop", "PlayerWalkToBillMidTop", "PlayerWalkToBillMidBottom", "PlayerWalkToBillBottom"][row - 1]) }]);
-    await sleep(167);
-    await say(X("BillWeGotItDone"));
-    await turn("player", "Down");
-    await say(X("CelioJobWentQuick"));
-    await turn(PC_BILL, "Down");
-    await turn(CELIO, "Up");
-    await say(X("BillYouveLearnedALot"));
-    await say(X("CelioOhReallyEhehe"));
-    Screen.say("");
-    await turn(PC_BILL, "Left");
-    await sleep(167);
-    await turn("player", "Right");
-    await sleep(250);
-    await say(X("BillWeShouldHeadBackToKanto"));
-    Screen.say("");
-    await turn(PC_BILL, "Down");
-    await sleep(250);
-    await turn(CELIO, "Left");
-    await turn("player", "Down");
-    await say(X("CelioPromiseIllShowYouAroundSometime"));
-    Screen.say("");
-    await sleep(417);
-    await Overworld.act([{ who: "player", moves: Xm("PlayerExit") }, { who: PC_BILL, moves: Xm("BillExit") }]);
-    sfx("se_exit");
-    f.celioScene = 3;
-    f.cinnabarScene = 3;
-    await setSail("ONE_ISLAND", "CINNABAR_ISLAND", false);
-  }
-
-  // The Network Machine (..._EventScript_NetworkMachine).
-  async function networkMachine() {
-    const f = player.flags, X = (k) => T("OneIsland_PokemonCenter_1F_Text_" + k);
-    await say(X(f.canLinkWithRS ? "MachineLinkedWithKantoAndHoenn" : f.seviiDetourDone ? "MachineLinkedWithKanto" : "MachineUnderAdjustment"));
-  }
-
-  // ---------- Two Island ----------
-
-  // The shop (TwoIsland_EventScript_SetShopState): more for sale as Lostelle's
-  // found, you become Champion, and Kanto links with Hoenn.
-  function twoIslandShop() {
-    const f = player.flags;
-    if (f.canLinkWithRS) return !f.twoIslandShopIntro ? 1 : !f.twoIslandShop1 ? 2 : !f.twoIslandShop2 ? 3 : 4;
-    if (f.gameClear) return !f.twoIslandShopIntro || !f.rescuedLostelle ? 1 : !f.twoIslandShop1 ? 2 : 3;
-    if (f.rescuedLostelle) return !f.twoIslandShopIntro ? 1 : 2;
-    return 1;
-  }
   const TWO_ISLAND_STOCK = {
     1: ["great-ball", "fresh-water"],
     2: ["ultra-ball", "great-ball", "soda-pop", "fresh-water"],
     3: ["ultra-ball", "great-ball", "lemonade", "soda-pop", "fresh-water", "moomoo-milk"],
     4: ["ultra-ball", "repeat-ball", "timer-ball", "lemonade", "soda-pop", "fresh-water", "moomoo-milk", "lava-cookie"]
   };
-  async function twoIslandClerk() {
-    const f = player.flags, state = f.twoIslandShopState || twoIslandShop();
-    const intro = { 1: ["twoIslandShopIntro", "WelcomeToShopMerchandiseLimited"], 2: ["twoIslandShop1", "AddedMerchandiseForLostelle"],
-      3: ["twoIslandShop2", "HopeYouGiveItYourBest"], 4: ["twoIslandShop3", "BringingItemsFromDistantLands"] }[state];
-    if (!f[intro[0]]) {
-      f[intro[0]] = true;
-      await say(T("TwoIsland_Text_" + intro[1]));
-      await mart(TWO_ISLAND_STOCK[state]);
-      return;
-    }
-    await mart(TWO_ISLAND_STOCK[state]);
-  }
 
   // The Joyful Game Corner: Lostelle's dad, the biker, and Lostelle home.
   const GC_DADDY = "LOCALID_JOYFUL_GAME_CORNER_DADDY", GC_BIKER = "LOCALID_JOYFUL_GAME_CORNER_BIKER", GC_LOSTELLE = "LOCALID_JOYFUL_GAME_CORNER_LOSTELLE";
   const bigGuy = () => [Player.LOOKS[player.look] && Player.LOOKS[player.look].girl ? "big girl" : "big guy"];
-  async function gameCornerHelp() {
-    const f = player.flags, J = (k) => T("TwoIsland_JoyfulGameCorner_Text_" + k), Jm = (k) => M("TwoIsland_JoyfulGameCorner_Movement_" + k);
-    await Overworld.act([{ who: GC_DADDY, moves: Jm("DaddyPacing") }]);
-    await say(J("WhereHasLostelleGottenTo"));
-    Screen.say("");
-    await Overworld.act([{ who: GC_DADDY, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    sfx("se_pin");
-    await Overworld.act([{ who: GC_DADDY, moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
-    await Overworld.act([{ who: GC_DADDY, moves: Jm("DaddyApproachPlayer") }]);
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-    await say(J("PleaseHelpFindLostelle"));
-    Screen.say("");
-    sfx("se_rs_door");
-    await sleep(300);
-    await Overworld.act([{ who: "player", moves: Jm("PlayerFaceDaddy") }]);
-    music("mus_encounter_boy");
-    Overworld.addObject(GC_BIKER, { x: 5, y: 8, facing: "up" });
-    await Overworld.act([{ who: GC_BIKER, moves: Jm("BikerLookAround") }]);
-    await say(J("IsThisOnlyThreeIsland"));
-    await Overworld.act([{ who: GC_BIKER, moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-    await say(J("ThisIsTwoIslandMoveIt"));
-    await say(J("TheseIslandsAreConfusing"));
-    Screen.say("");
-    await Overworld.act([{ who: GC_BIKER, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    sfx("se_exit");
-    Overworld.removeObject(GC_BIKER);
-    music((window.WORLD_MAPS.TwoIsland_JoyfulGameCorner || {}).music);
-    await sleep(1000);
-    await say(J("PunkScuffedUpMyFloor"));
-    f.threeIslandScene = 2;
-    f.gameCornerScene = 1;
-  }
-  async function gameCornerLostelleHome() {
-    const f = player.flags, J = (k) => T("TwoIsland_JoyfulGameCorner_Text_" + k);
-    await say(J("YouRescuedLostelle"));
-    await say(J("LostelleItsOkayDaddy"), bigGuy());
-    Screen.say("");
-    await Overworld.act([{ who: GC_LOSTELLE, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    f.gameCornerScene = 3;
-  }
-  async function lostellesDaddy() {
-    const f = player.flags, J = (k) => T("TwoIsland_JoyfulGameCorner_Text_" + k);
-    if ((f.gameCornerScene || 0) >= 4) {
-      // (The minigames are played over FireRed's wireless link.)
-      await say(T("Text_WelcomeCanYouWait"));
-      await say(T("Text_AdapterNotConnectedMinigame"));
-      return;
-    }
-    if (f.gotMoonStoneFromDaddy) { await say(J("IllGetGameCornerRunning")); return; }
-    if (f.gameCornerScene !== 3) { await say(J("PleaseGoToThreeIsland")); return; }
-    if (!f.noRoomForMoonStone) {
-      await say(J("ThisIsForMe"));
-      f.celioScene = Math.max(f.celioScene || 0, 2);
-      Player.removeItem(player, "meteorite");
-      await sayWithJingle("mus_obtain_tmhm", J("HandedMeteoriteToLostellesDaddy"));
-      await say(J("OhThisIsFromBill"));
-    }
-    Player.addItem(player, "moon-stone");
-    f.gotMoonStoneFromDaddy = true;
-    delete f.noRoomForMoonStone;
-    await sayWithJingle("mus_obtain_item", J("ReceivedMoonStoneFromLostellesDaddy"));
-  }
-
-  // Cape Brink's tutor (TwoIsland_CapeBrink_House_EventScript_StarterTutor):
-  // the ultimate move of a fully evolved starter you lead with that's as fond
-  // of you as can be — Frenzy Plant, Blast Burn or Hydro Cannon. In FireRed
-  // each once; here the first time free, then again and again for TUTOR_PRICE.
-  async function capeBrinkTutor() {
-    const f = player.flags, lead = player.party.find((r) => !r.egg);
-    if (capeBrinkJustTaught) { await say(T("Text_MakeBestUseOfMove")); return; }
-    const m = Sevii.capeBrinkMove(lead);
-    if (!m && f.capeBrinkDone) { await say(T("Text_FeelRejuvenated")); return; }
-    const species = lead ? Party.speciesName(lead.species) : "";
-    await say(T("Text_UltimateMoveThatMon"), [species]);
-    if (!m) { await say(T("Text_JustMistaken")); return; }
-    const vars = [species, m.move], again = !!f[m.flag];
-    await Overworld.act([{ who: "LOCALID_CAPE_BRINK_TUTOR", moves: ["jump_in_place_" + World.OPPOSITE[Overworld.position().facing]] }]);
-    const q = T("Text_AllowMeToTeachMonUltimateMove");
-    await say(q.slice(0, -1), vars);
-    if (!(await confirm(fill(q[q.length - 1], vars)))) { await say(T("Text_YouRejectIt")); return; }
-    if (Party.knowsMove(lead, m.move)) { await say(Party.displayName(lead) + " already knows " + m.move + "."); return; }
-    if (again) {
-      if (!(await confirm("It'll cost " + money(TUTOR_PRICE) + ". Is that okay?\n(You have " + money(player.money) + ".)"))) { await say(T("Text_YouRejectIt")); return; }
-      if (player.money < TUTOR_PRICE) { await say("You don't have enough money."); return; }
-    }
-    await say(T("Text_LetMeConferUltimateMove"), vars);
-    Screen.say("");
-    await Overworld.fadeToBlack();
-    await learnMove(lead, m.move);
-    show("world");
-    await Overworld.fadeFromBlack();
-    if (!Party.knowsMove(lead, m.move)) { await say(T("Text_YouRejectIt")); return; }
-    if (again) {
-      Player.addMoney(player, -TUTOR_PRICE);
-      await say(player.name + " paid " + money(TUTOR_PRICE) + ".");
-      await say(T("Text_TaughtMove"));
-      capeBrinkJustTaught = true;
-      return;
-    }
-    f[m.flag] = true;
-    if (Sevii.capeBrinkDone(f)) { await say(T("Text_PassedOnEverythingIKnow")); f.capeBrinkDone = true; return; }
-    await say(T("Text_TaughtMove"));
-    capeBrinkJustTaught = true;   // (FLAG_TEMP_2, until you leave)
-  }
   let capeBrinkJustTaught = false;
 
   // The Move Maniac (TwoIsland_House_EventScript_MoveManiac): a move a
   // Pokémon has forgotten (or could have learned by now), for two Tiny
   // Mushrooms or a Big Mushroom.
   let moveManiacMet = false;
-  async function moveManiac() {
-    const H = (k) => T("TwoIsland_House_Text_" + k);
-    if (!moveManiacMet) { await say(H("TeachMonMoveForMushroom")); moveManiacMet = true; }
-    const big = Player.itemCount(player, "big-mushroom") >= 1, tiny = Player.itemCount(player, "tiny-mushroom") >= 2;
-    if (!big && !tiny) { await say(H("NeedMushroomOrTwoToLearnMove")); return; }
-    const q = H("WantMeToTeachMove");
-    await say(q.slice(0, -1));
-    if (!(await confirm(fill(q[q.length - 1])))) { await say(H("NeedMushroomOrTwoToLearnMove")); return; }
-    for (;;) {
-      await say(H("TutorWhichMon"));
-      const r = await choosePartyFor("Choose a POKéMON.");
-      show("world");
-      if (!r) { await say(H("NeedMushroomOrTwoToLearnMove")); return; }
-      if (r.egg) { await say(H("CantTeachAnEgg")); continue; }
-      const moves = relearnable(r);
-      if (!moves.length) { await say(H("NoMoveICanTeachThatMon")); continue; }
-      await say(H("TeachWhichMove"));
-      Screen.say("");
-      clearMenu();
-      const move = await MoveRelearner.open({
-        name: Party.displayName(r), moves, known: r.moves.map((m) => m.name), frame: GameOptions.get().frame,
-        forget: (m) => chooseMoveToForget(r, m),
-        teach: (m, slot) => Party.teachMove(r, m, slot == null ? undefined : slot)
-      });
-      show("world");
-      if (!move || !Party.knowsMove(r, move)) continue;
-      let useBig = big && !tiny;
-      if (big && tiny) {
-        // (FireRed's MULTICHOICE_MUSHROOMS ignores B.)
-        let i;
-        do i = await multichoice(H("IllNeedMushroomOrTwo")[0], 0, 0, ["Tinymushroom", "Big Mushroom"]); while (i < 0);
-        Screen.say("");
-        useBig = i === 1;
-      }
-      if (useBig) { Player.removeItem(player, "big-mushroom"); await say(H("HandedOverOneBigMushroom")); }
-      else { Player.removeItem(player, "tiny-mushroom", 2); await say(H("HandedOverTwoTinyMushrooms")); }
-      await say(H("NeedMushroomOrTwoToLearnMove"));
-      return;
-    }
-  }
 
   // ---------- Three Island ----------
   //
@@ -12060,138 +7477,6 @@
   const TB = { anti1: "LOCALID_THREE_ISLAND_ANTIBIKER1", anti2: "LOCALID_THREE_ISLAND_ANTIBIKER2", paxton: "LOCALID_PAXTON",
     b1: "LOCALID_THREE_ISLAND_BIKER1", b2: "LOCALID_THREE_ISLAND_BIKER2", b3: "LOCALID_THREE_ISLAND_BIKER3",
     b4: "LOCALID_THREE_ISLAND_BIKER4", b5: "LOCALID_THREE_ISLAND_BIKER5", b6: "LOCALID_THREE_ISLAND_BIKER6" };
-  // `who`: 0 the first islander, 1 the second, 2 a biker (VAR_TEMP_1).
-  async function bikerArgument(who) {
-    const I = (k) => T("ThreeIsland_Text_" + k), Im = (k) => M("ThreeIsland_Movement_" + k);
-    const face = (dir) => Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFaster" + dir) }]);
-    const atRight = Overworld.position().x >= 9;
-    if (who !== 0) await face("Left");
-    await Overworld.act([{ who: TB.anti1, moves: Im("SpeakRight") }]);
-    await say(I("GoBackToKanto"));
-    await face(who === 2 ? (atRight ? "Up" : "Right") : "Right");
-    await Overworld.act([{ who: TB.b1, moves: Im("SpeakLeft") }]);
-    await say(I("BossIsOnHisWay"));
-    await face(who === 2 ? (atRight ? "Left" : "Up") : "Up");
-    await Overworld.act([{ who: TB.anti2, moves: Im("SpeakRight") }]);
-    await say(I("GetOffIslandNow"));
-    await face(who === 2 ? (atRight ? "Up" : "Right") : "Right");
-    await Overworld.act([{ who: TB.b3, moves: Im("SpeakLeft") }]);
-    await say(I("WhosGonnaMakeMe"));
-  }
-  async function antiBiker(n) {
-    const f = player.flags, I = (k) => T("ThreeIsland_Text_" + k);
-    if (n === 1) {
-      if (f.gotFullRestoreFromDefender) { await Overworld.act([{ who: TB.anti1, moves: ["face_player"] }]); await say(I("YouveGotImpressiveMons")); return; }
-      if (f.threeIslandScene === 4) {
-        await Overworld.act([{ who: TB.anti1, moves: ["face_player"] }]);
-        await say(I("ThankYouOhYourMonGotHurt"));
-        Player.addItem(player, "full-restore");
-        f.gotFullRestoreFromDefender = true;
-        await sayWithJingle("mus_obtain_item", I("GivenFullRestore"));
-        await say(I("YouveGotImpressiveMons"));
-        return;
-      }
-      await bikerArgument(0);
-      return;
-    }
-    if (f.threeIslandScene === 4) { await Overworld.act([{ who: TB.anti2, moves: ["face_player"] }]); await say(I("LostelleWentOffTowardsBondBridge")); return; }
-    await bikerArgument(1);
-  }
-  // Paxton arrives (ThreeIsland_EventScript_BikerBossIntroTrigger).
-  async function bikerBossIntro() {
-    const I = (k) => T("ThreeIsland_Text_" + k), Im = (k) => M("ThreeIsland_Movement_" + k);
-    const speak = async (who, dir, text) => { await Overworld.act([{ who, moves: Im("Speak" + dir) }]); await say(I(text)); };
-    await speak(TB.anti1, "Right", "AreYouBossGoBackToKanto");
-    await speak(TB.paxton, "Left", "JustGotHerePal");
-    await speak(TB.anti1, "Right", "FollowersRaisingHavoc");
-    await speak(TB.paxton, "Left", "OughtToBeThankingUs");
-    await speak(TB.anti1, "Right", "YouCowardsToughInPack");
-    player.flags.threeIslandScene = 3;
-  }
-  // The gang takes you on (ThreeIsland_EventScript_BattleBikersScene). `col`:
-  // 0-4, which trigger (left to right).
-  async function bikerBattles(col) {
-    const f = player.flags, I = (k) => T("ThreeIsland_Text_" + k), Im = (k) => M("ThreeIsland_Movement_" + k);
-    const fight = async (id, who, intro, defeat, post, after) => {
-      music("mus_encounter_boy");
-      if (intro) await say(I(intro));
-      if (!canBattle()) return false;
-      const data = window.WORLD_TRAINERS[id];
-      const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
-        defeatText: I(defeat), trainerId: id, prizeClass: data.className });
-      if (outcome !== "won") return false;
-      show("world");
-      await Overworld.resume();
-      if (after) await Overworld.act(after);
-      await say(I(post));
-      Screen.say("");
-      return true;
-    };
-    await Overworld.act([{ who: TB.b1, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    sfx("se_pin");
-    await Overworld.act([{ who: TB.b1, moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
-    await Overworld.act([{ who: TB.b1, moves: Im("BikerApproach") }]);
-    music("mus_encounter_boy");
-    const q = I("WannaMakeSomethingOfYourStaring");
-    await say(q.slice(0, -1));
-    if (!(await confirm(fill(q[q.length - 1])))) {
-      await say(I("ThatsSmart"));
-      Screen.say("");
-      await Overworld.act([{ who: "player", moves: Im("PlayerLeaveBikers") }]);
-      await Overworld.act([{ who: TB.b1, moves: Im("Biker1ReturnToPack") }]);
-      music((window.WORLD_MAPS.ThreeIsland || {}).music);
-      return;
-    }
-    if (!(await fight("TRAINER_BIKER_GOON", TB.b1, "Biker1Intro", "Biker1Defeat", "Biker1PostBattle", [{ who: TB.b1, moves: Im("BikerSpeak") }]))) return;
-    await Overworld.act([{ who: TB.b2, moves: Im("BikerApproach") }]);
-    if (!(await fight("TRAINER_BIKER_GOON_2", TB.b2, "Biker2Intro", "Biker2Defeat", "Biker2PostBattle", [{ who: TB.b2, moves: Im("BikerSpeak") }]))) return;
-    await Overworld.act([{ who: TB.b3, moves: Im("BikerApproach") }]);
-    if (!(await fight("TRAINER_BIKER_GOON_3", TB.b3, "Biker3Intro", "Biker3Defeat", "Biker3PostBattle",
-      [{ who: TB.b3, moves: M("Common_Movement_WalkInPlaceFasterLeft") }, { who: TB.b4, moves: M("Common_Movement_WalkInPlaceFasterDown") },
-        { who: TB.b5, moves: M("Common_Movement_WalkInPlaceFasterDown") }]))) return;
-    await sleep(750);
-    const approach = ["Left", "MidLeft", "Mid", "MidRight", "Right"][col];
-    const tracks = [{ who: TB.b3, moves: M("Common_Movement_WalkInPlaceFasterDown") }, { who: TB.paxton, moves: Im("PaxtonApproach" + approach) }];
-    if (col >= 2) tracks.push({ who: "player", moves: Im("PlayerFacePaxton") });
-    await Overworld.act(tracks);
-    if (!(await fight("TRAINER_CUE_BALL_PAXTON", TB.paxton, "PaxtonIntro", "PaxtonDefeat", "PaxtonPostBattle"))) return;
-    await Overworld.fadeToBlack();
-    for (const id of [TB.paxton, TB.b1, TB.b2, TB.b3, TB.b4, TB.b5, TB.b6]) Overworld.removeObject(id);
-    f.threeIslandScene = 4;
-    Overworld.refreshPeople();
-    await Overworld.fadeFromBlack();
-    music((window.WORLD_MAPS.ThreeIsland || {}).music);
-  }
-
-  // Lostelle in Berry Forest (ThreeIsland_BerryForest_EventScript_Lostelle):
-  // a wild Hypno (Lv. 30) comes for her; then she gives you an Iapapa Berry
-  // and you take her home to the Joyful Game Corner.
-  async function berryForestLostelle(person) {
-    const f = player.flags, B = (k) => T("ThreeIsland_BerryForest_Text_" + k), L = "LOCALID_BERRY_FOREST_LOSTELLE";
-    await say(B("HelpScaryPokemon"));
-    sfx("se_pin");
-    await Overworld.act([{ who: L, moves: ["emote_exclamation_mark"] }]);
-    await Overworld.act([{ who: L, moves: M("ThreeIsland_BerryForest_Movement_LostelleLookAround") }]);
-    await say(B("HereItComesAgain"));
-    if (!canBattle()) return;
-    cry("Hypno");
-    await sleep(900);
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [Party.create("Hypno", 30)] } });
-    if (outcome === "lost") return;
-    show("world");
-    await Overworld.resume();
-    await Overworld.act([{ who: L, moves: ["face_player"] }]);
-    await say(B("ThankYouHaveThis"));
-    Player.addItem(player, "iapapa-berry");
-    await sayWithJingle("mus_obtain_item", "{PLAYER} received an " + Bag.name("iapapa-berry") + "!");
-    await say(B("LetsGoHome"), bigGuy());
-    Screen.say("");
-    f.rescuedLostelle = true;
-    f.gameCornerScene = 2;
-    sfx("se_exit");
-    await Overworld.teleport({ map: "TwoIsland_JoyfulGameCorner", x: 6, y: 6, facing: "up" });
-    await gameCornerLostelleHome();
-  }
 
   // ---------- Mt. Ember ----------
   //
@@ -12200,114 +7485,6 @@
   // passwords ("Goldeen need log", "Yes, nah, Chansey") and they battle you,
   // and the way in opens. Moltres waits at the summit.
   const EMBER_GRUNTS = ["TRAINER_TEAM_ROCKET_GRUNT_43", "TRAINER_TEAM_ROCKET_GRUNT_44"];
-  async function emberPassword() {
-    const E = (k) => T("MtEmber_Exterior_Text_" + k);
-    await say(E("PunchedThroughAtLast"));
-    const q = E("WhatsPasswordAgain");
-    await say(q.slice(0, -1));
-    sfx("se_pin");
-    await Overworld.act([{ who: "LOCALID_MT_EMBER_GRUNT2", moves: ["emote_question_mark"] }]);
-    await say(q.slice(-1));
-    await say(E("FirstPasswordGoldeen"));
-    await Overworld.act([{ who: "LOCALID_MT_EMBER_GRUNT1", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    sfx("se_pin");
-    await Overworld.act([{ who: "LOCALID_MT_EMBER_GRUNT1", moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
-    await Overworld.act([{ who: "LOCALID_MT_EMBER_GRUNT2", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await say(E("SnoopsBeenListeningIn"));
-    player.flags.mtEmberScene = 2;
-  }
-  async function emberGrunt(n) {
-    const f = player.flags, E = (k) => T("MtEmber_Exterior_Text_" + k), id = EMBER_GRUNTS[n - 1], who = "LOCALID_MT_EMBER_GRUNT" + n;
-    if (f[id]) { await say(E("Grunt" + n + "PostBattle")); return; }
-    if (f.celioScene !== 4) {
-      if (n === 1) { await say(E("WellTryDiggingHere")); return; }
-      await say(E("YoureInTheWayGetLost"));
-      Screen.say("");
-      await Overworld.act([{ who, moves: [f.mtEmberScene === 2 ? "face_down" : "face_left"] }]);
-      return;
-    }
-    await Overworld.act([{ who, moves: ["face_player"] }]);
-    music("mus_encounter_rocket");
-    await say(E("Grunt" + n + "Intro"));
-    if (!canBattle()) return;
-    const data = window.WORLD_TRAINERS[id];
-    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
-      defeatText: E("Grunt" + n + "Defeat"), trainerId: id, prizeClass: data.className });
-    if (outcome !== "won") return;
-    show("world");
-    await Overworld.resume();
-    await say(E("Grunt" + n + "PostBattle"));
-    if (!EMBER_GRUNTS.every((t) => f[t])) return;
-    await say(E("WellRegroupDontStepInsideThere"));
-    Screen.say("");
-    await Overworld.fadeToBlack();
-    Overworld.removeObject("LOCALID_MT_EMBER_GRUNT1");
-    Overworld.removeObject("LOCALID_MT_EMBER_GRUNT2");
-    await Overworld.fadeFromBlack();
-  }
-
-  // The Ember Spa's hot spring (OneIsland_KindleRoad_EmberSpa_EventScript_SpaHeal):
-  // stepping in heals your Pokémon, once each visit.
-  async function emberSpa() {
-    await Overworld.fadeToBlack();
-    player.party.forEach(Party.heal);
-    await Overworld.fadeFromBlack();
-    await say(T("OneIsland_KindleRoad_EmberSpa_Text_WaterExquisiteFullyRefreshed"));
-    tempFlags.add("OneIsland_KindleRoad_EmberSpa:spa");
-  }
-
-  // The islands' ON_TRANSITION scripts, arriving on map `m`.
-  function seviiTransition(m) {
-    const f = player.flags;
-    // (Saves from before the islands were built, Blaine already beaten: Bill's waiting.)
-    if (m === "CinnabarIsland" && f.TRAINER_LEADER_BLAINE && !f.cinnabarScene) f.cinnabarScene = 1;
-    // Three Isle Port: the trip's done, and the PCs work again
-    // (ThreeIsland_Port_OnTransition: FLAG_SEVII_DETOUR_FINISHED).
-    if (m === "ThreeIsland_Port") { f.seviiDetourDone = true; delete f.pcStorageDisabled; }
-    // Two Island's shop (TwoIsland_EventScript_SetShopState).
-    if (m === "TwoIsland") { f.twoIslandShopState = twoIslandShop(); f.twoIslandShopMax = Math.max(f.twoIslandShopMax || 1, f.twoIslandShopState); }
-    // Lostelle's dad back at the counter, the games on (SetLostelleReturnedPos).
-    if (m === "TwoIsland_JoyfulGameCorner" && f.gotMoonStoneFromDaddy) f.gameCornerScene = 4;
-    // Celio, his work done (OneIsland_PokemonCenter_1F_EventScript_SetCelioQuestDone).
-    if (m === "OneIsland_PokemonCenter_1F" && f.celioScene === 6) f.celioScene = 7;
-    // An Escape Rope in Berry Forest takes you to Bond Bridge (setescapewarp).
-    if (m === "ThreeIsland_BerryForest") f.escapeWarp = { map: "ThreeIsland_BondBridge", x: 12, y: 6 };
-    // ... in Pattern Bush, out to Green Path by the way you came in
-    // (SixIsland_PatternBush_OnTransition: the east half's exit or the west's).
-    if (m === "SixIsland_PatternBush") {
-      const at = Overworld.position();
-      f.escapeWarp = at && at.map === m && at.x <= 49 ? { map: "SixIsland_GreenPath", x: 45, y: 10 } : { map: "SixIsland_GreenPath", x: 64, y: 10 };
-    }
-    // Outside Trainer Tower the challenge is over (SevenIsland_TrainerTower_OnTransition).
-    if (m === "SevenIsland_TrainerTower") f.towerScene = 0;
-    if (m === "Route40_BattleFrontierGatehouse") f.battleTowerScene = 0;   // (the Battle Tower's counter asks again)
-  }
-  // Walking about Cinnabar while Bill's waiting there: he comes over.
-  function cinnabarBillStep() {
-    return player.location.map === "CinnabarIsland" && player.flags.cinnabarScene === 1
-      ? { type: "trigger", trigger: { script: "enter:CinnabarIsland" }, map: "CinnabarIsland" } : null;
-  }
-
-  // ---------- The Sevii Islands: Four Island ----------
-  //
-  // Gary's here the first time you come (FourIsland_EventScript_RivalScene):
-  // he's got his Pokémon Egg from the Day-Care and is off again.
-  async function fourIslandRival() {
-    const R = "LOCALID_FOUR_ISLAND_RIVAL", Fm = (k) => M("FourIsland_Movement_" + k);
-    await Overworld.act([{ who: R, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    music("mus_encounter_rival");
-    await Overworld.act([{ who: R, moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
-    await sleep(417);
-    await Overworld.act([{ who: R, moves: Fm("RivalApproach") }]);
-    await say(T("FourIsland_Text_RivalAlreadyGotEggBeSmellingYa"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: Fm("PlayerWatchRivalExit") }, { who: R, moves: Fm("RivalExit") }]);
-    music((window.WORLD_MAPS.FourIsland || {}).music);
-    sfx("se_exit");
-    await sleep(583);
-    Overworld.removeObject(R);
-    player.flags.fourIslandScene = 1;
-  }
 
   // Four Island's Day-Care (FourIsland_PokemonDayCare_EventScript_DaycareWoman
   // and FourIsland_EventScript_DaycareMan): FireRed's two-Pokémon Day-Care.
@@ -12316,164 +7493,13 @@
   // says how they're doing, and has the Eggs the two of them find
   // (game/breeding.js).
   const DC = (k) => T("DayCare_Text_" + k);
-  async function yesNo(pages, vars) {
-    await say(pages.slice(0, -1), vars);
-    return confirm(fill(pages[pages.length - 1], vars));
-  }
   // (Route 34's in Johto is the same Day-Care, its own: player.flags.johtoDayCare and johtoDayCareEggs.)
   const DAY_CARES = { four: { list: "dayCare2", eggs: "dayCareEggs", lady: "LOCALID_FOUR_ISLAND_DAYCARE_WOMAN" }, johto: { list: "johtoDayCare", eggs: "johtoDayCareEggs", lady: null } };
-  async function fourIslandDayCareLady(where) {
-    const D = DAY_CARES[where || "four"];
-    const f = player.flags, list = f[D.list] || (f[D.list] = []);
-    if (f[D.eggs] && f[D.eggs].eggWaiting && list.length === 2) { await say(DC("HusbandWasLookingForYou")); return; }
-    const comeAgain = () => say(DC("ComeAgain"));
-    // FourIsland_PokemonDayCare_GiveMonToRaise, and "one more?" while there's room.
-    const give = async () => {
-      for (;;) {
-        if (player.party.filter((r) => !r.egg).length === 1) { await say(DC("YouHaveJustOneMon")); return; }
-        await say(DC("WhichMonShouldWeRaise"));
-        const mine = await choosePartyFor("Choose a POKéMON.");
-        show("world");
-        if (!mine) { await comeAgain(); return; }
-        if (mine.egg) { await say("We can't raise an Egg!"); return; }
-        if (!player.party.some((r) => r !== mine && Party.canFight(r))) { await say(DC("WhatWillYouBattleWith")); return; }
-        player.party.splice(player.party.indexOf(mine), 1);
-        list.push(DayCare.deposit(mine));
-        cry(mine.species);
-        await say(DC("WellRaiseYourMon"), [Party.displayName(mine)]);
-        if (list.length !== 1) return;
-        if (!(await yesNo(DC("WeCanRaiseOneMore")))) { await comeAgain(); return; }
-      }
-    };
-    // FourIsland_PokemonDayCare_TryRetrieveMon: which one (ShowDaycareLevelMenu,
-    // with two), what it costs, and the other one too?
-    const retrieve = async () => {
-      for (;;) {
-        if (player.party.length >= Player.PARTY_SIZE) { await say(DC("YourPartyIsFull")); return; }
-        let dc = list[0];
-        if (list.length > 1) {
-          const i = await multichoice(null, 15, 6, list.map((d) => Party.displayName(d.mon) + " Lv" + (d.mon.level + DayCare.levelsGained(d, Player.levelCap(player)))).concat(["Exit"]));
-          if (i < 0 || i >= list.length) { await comeAgain(); return; }
-          dc = list[i];
-        }
-        const name = Party.displayName(dc.mon), cost = DayCare.cost(dc, Player.levelCap(player));
-        if (!(await yesNo(DC("ItWillCostX"), [name, cost.toLocaleString("en-US")]))) { await comeAgain(); return; }
-        if (player.money < cost) { await say(DC("NotEnoughMoney")); return; }
-        Screen.say("");
-        if (D.lady) await Overworld.act([{ who: D.lady, moves: M("FourIsland_PokemonDayCare_Movement_RetrieveMon") }]);
-        list.splice(list.indexOf(dc), 1);
-        const mon = DayCare.withdraw(dc, Player.levelCap(player));
-        Player.addMoney(player, -cost);
-        player.party.push(mon);
-        sfx("se_rs_shop");
-        await say(DC("HeresYourMon"));
-        cry(mon.species);
-        await say(DC("TookBackMon"), [name]);
-        if (list.length !== 1) { await comeAgain(); return; }
-        if (!(await yesNo(DC("TakeOtherOneBackToo")))) { await comeAgain(); return; }
-      }
-    };
-    if (!list.length) {
-      if (!(await yesNo(DC("WouldYouLikeUsToRaiseMon")))) { await say(DC("FineThenComeAgain")); return; }
-      await give();
-      return;
-    }
-    await say(DC("GoodToSeeYou"));
-    for (const dc of list) {
-      const n = DayCare.levelsGained(dc, Player.levelCap(player));
-      if (n) await say(DC("YourMonHasGrownXLevels"), [Party.displayName(dc.mon), String(n)]);
-    }
-    if (list.length === 1 && (await yesNo(DC("WeCanRaiseOneMore")))) { await give(); return; }
-    if (await yesNo(DC("TakeYourMonBack"))) { await retrieve(); return; }
-    await comeAgain();
-  }
-  async function fourIslandDayCareMan(where) {
-    const D = DAY_CARES[where || "four"];
-    const f = player.flags, list = f[D.list] || [], eggs = f[D.eggs] || (f[D.eggs] = {});
-    // An Egg waiting (FourIsland_EventScript_DaycareEggWaiting): "You do want it, yes?"
-    if (eggs.eggWaiting && list.length === 2) {
-      if (!(await yesNo(DC("DoYouWantEgg"))) && !(await confirm(fill(DC("IWillKeepDoYouWantIt").join(" "))))) {
-        await say(DC("IllKeepIt"));
-        eggs.eggWaiting = false;   // (RejectEggFromDayCare)
-        return;
-      }
-      if (player.party.length >= Player.PARTY_SIZE) { await say(DC("YouHaveNoRoomForIt")); return; }
-      await sayWithJingle("mus_level_up", DC("ReceivedEgg"));
-      await say(DC("TakeGoodCareOfIt"));
-      // (GiveEggFromDaycare: what's in it is decided now.)
-      player.party.push(Breeding.makeEgg(list[0].mon, list[1].mon, { map: player.location.map }));
-      eggs.eggWaiting = false;
-      return;
-    }
-    if (!list.length) { await say(DC("ImDaycareManSpeakToMyWife")); return; }
-    await say(DC(list.length === 1 ? "YourMonIsDoingFine" : "YourMonsAreDoingFine"), list.map((d) => Party.displayName(d.mon)));
-    // (With two, how well they get on: SetDaycareCompatibilityString.)
-    if (list.length === 2) await say(Breeding.compatibilityText(Breeding.compatibility(list[0].mon, list[1].mon)));
-  }
-
-  // The sticker man (FourIsland_House2_EventScript_StickerMan): brag about
-  // your Hall of Fame entries and he gives your Trainer Card a sticker, a
-  // better one each tier (up to 39 entries, 99, 199, 200 on). (FireRed also
-  // takes Eggs hatched and link battles won, which this game hasn't got.)
-  async function stickerMan() {
-    const f = player.flags, S = (k) => T("FourIsland_House2_Text_" + k), id = "LOCALID_STICKER_MAN", hof = f.hofCount || 0;
-    const brag = async (question) => {
-      await say(question.slice(0, -1));
-      const i = await multichoice(question[question.length - 1], 15, 8, ["Hall of Fame", "Quit"]);
-      Screen.say("");
-      if (i !== 0) return;
-      const tier = Sevii.hofBrag(hof);
-      if (f.hofBragState === tier) { await say(S(tier === 4 ? "LivingLegendHoF" : "ComeBackWithBetterStoryHoF")); return; }
-      f.hofBragState = tier;
-      await say(S(["WowHoFLowest", "WowHoFLow", "WowHoFHigh", "WowHoFHighest"][tier - 1]));
-      await sayWithJingle("mus_level_up", S("HoFStickerApplied"));
-    };
-    if (!f.metStickerMan) {
-      f.metStickerMan = true;
-      await say(S("WishICouldShowOffStickers"));
-      Screen.say("");
-      await Overworld.act([{ who: id, moves: ["face_player"] }]);
-      sfx("se_pin");
-      await Overworld.act([{ who: id, moves: ["emote_exclamation_mark", "delay_16", "delay_16", "delay_16"] }]);
-      if (!hof) { await say(S("GiveYouStickerIfYouBrag")); return; }
-      await brag(S("GiveYouStickerIfYouBrag"));
-      return;
-    }
-    await Overworld.act([{ who: id, moves: ["face_player"] }]);
-    if (!hof) { await say(S("BragAboutSomethingForMe")); return; }
-    await brag(S("BragAboutWhatToday"));
-  }
 
   // Icefall Cave 1F's thin ice (IcefallCaveIcePerStepCallback): a step on it
   // cracks it, the next breaks it and you fall through to B1F. Whole again
   // once you've left (FireRed's FLAG_TEMP_1..9). { "x,y": 1 cracked, 2 broken }
   let icefallIce = {};
-  function icefallStep() {
-    const at = player.location;
-    if (!at || at.map !== "FourIsland_IcefallCave_1F") return null;
-    const b = World.blockAt(at.map, at.x, at.y).behavior, key = at.x + "," + at.y;
-    if (b === World.MB.THIN_ICE) {
-      icefallIce[key] = 1;
-      sfx("se_ice_crack");
-      applyPatches(at.map);
-      return null;
-    }
-    if (b !== World.MB.CRACKED_ICE) return null;
-    icefallIce[key] = 2;
-    sfx("se_ice_break");
-    applyPatches(at.map);
-    return { type: "trigger", trigger: { script: "FourIsland_IcefallCave_1F_EventScript_FallDownHole" }, map: at.map };
-  }
-  // FourIsland_IcefallCave_1F_EventScript_FallDownHole: through the ice to
-  // the same spot on B1F (warphole).
-  async function icefallFall() {
-    const at = Overworld.position();
-    await sleep(333);
-    await Overworld.act([{ who: "player", moves: ["set_invisible"] }]);
-    sfx("se_fall");
-    await sleep(1000);
-    await Overworld.teleport({ map: "FourIsland_IcefallCave_B1F", x: at.x, y: at.y, facing: at.facing });
-  }
 
   // Icefall Cave's back (FourIsland_IcefallCave_Back_EventScript_LoreleiRocketsScene):
   // Lorelei, home on Four Island, catches Team Rocket poaching the cave's
@@ -12483,183 +7509,10 @@
   // the Rocket Warehouse on Five Island.
   const ICEFALL_LORELEI = [["Dewgong", 40], ["Jynx", 40], ["Lapras", 42]];
   const ICEFALL_GRUNT2 = [["Sneasel", 38], ["Koffing", 38], ["Golbat", 39]];
-  async function icefallLorelei() {
-    const f = player.flags, I = (k) => T("FourIsland_IcefallCave_Back_Text_" + k), Im = (k) => M("FourIsland_IcefallCave_Back_Movement_" + k);
-    const L = "LOCALID_ICEFALL_LORELEI", R1 = "LOCALID_ICEFALL_ROCKET1", R2 = "LOCALID_ICEFALL_ROCKET2", R3 = "LOCALID_ICEFALL_ROCKET3";
-    const start = Object.assign({ map: player.location.map }, Overworld.position());
-    await say(I("LoreleiKeepHandsOffMons"));
-    await Overworld.act([{ who: R1, moves: Im("WalkInPlaceDown") }]);
-    await say(I("ShutItLadyLeaveUsBe"));
-    Screen.say("");
-    sfx("se_pin");
-    await Overworld.act([{ who: L, moves: ["emote_exclamation_mark"] }]);
-    await Overworld.act([{ who: L, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await Overworld.act([{ who: L, moves: ["delay_16", "delay_16", "delay_16"] }]);
-    await say(I("LoreleiPlayerHelpMeKickPoachersOut"));
-    Screen.say("");
-    await Overworld.act([{ who: L, moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-    await sleep(300);
-    await Overworld.act([{ who: L, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await sleep(583);
-    await Overworld.act([{ who: R3, moves: Im("Rocket3FaceLorelei") }, { who: L, moves: Im("LoreleiToRockets") }, { who: "player", moves: Im("PlayerToRockets") }]);
-    await Overworld.act([{ who: R2, moves: Im("WalkInPlaceDown") }]);
-    music("mus_encounter_rocket");
-    await say(I("GruntIntro"));
-    if (!canBattle()) return;
-    // (This game's own: Lorelei battles beside you, against both Grunts:
-    // FireRed's one, and the other with Pokémon of his own.)
-    await Overworld.act([{ who: R1, moves: Im("WalkInPlaceDown") }]);
-    await say(["Hey, this one's mine too!", "Lorelei: Then we'll take you both on.\n{PLAYER}, choose three Pokémon!"]);
-    Screen.say("");
-    const id = "TRAINER_TEAM_ROCKET_GRUNT_45", data = window.WORLD_TRAINERS[id];
-    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(id), pic: data.pic },
-      foe2: { name: data.className + " " + data.name, team: ICEFALL_GRUNT2.map(([sp, lv]) => Party.create(sp, lv)), pic: data.pic,
-        defeatText: ["Gah! Two against two, and\nwe still lost?!"], prizeClass: data.className },
-      defeatText: I("GruntDefeat"), trainerId: id, prizeClass: data.className,
-      partner: { name: "Lorelei", team: ICEFALL_LORELEI.map(([sp, lv]) => Party.create(sp, lv, { ivs: 31 })), pic: "lorelei" } });
-    if (outcome === "cancelled") {
-      // (Not ready: back where you came in, and it all happens again when you return.)
-      await say(["Lorelei: Not ready? Then hurry,\n{PLAYER}! I'll hold them here."]);
-      await Overworld.fadeToBlack();
-      await Overworld.teleport(Object.assign({}, start));
-      music((window.WORLD_MAPS[player.location.map] || {}).music);
-      return;
-    }
-    if (outcome !== "won") return;
-    show("world");
-    await Overworld.resume();
-    await Overworld.act([{ who: L, moves: Im("WalkInPlaceUp") }]);
-    await say(I("LoreleiWhereHaveYouTakenMons"));
-    await say(I("NotTellingYouThat"));
-    const freeze = I("LoreleiWellDeepFreezeYou");
-    await say(freeze.slice(0, -1));
-    cry("Lapras");
-    await say(freeze.slice(-1));
-    await Overworld.act([{ who: R1, moves: Im("Rocket1ReactToThreat") }]);
-    await say(I("OkayRocketWareHouseFiveIsland"));
-    Screen.say("");
-    await Overworld.act([{ who: L, moves: Im("LoreleiWatchRocketsExit") }, { who: "player", moves: Im("PlayerWatchRocketsExit") },
-      { who: R1, moves: Im("Rocket1Exit") }, { who: R2, moves: Im("Rocket2Exit") }, { who: R3, moves: Im("Rocket3Exit") }]);
-    for (const r of [R1, R2, R3]) Overworld.removeObject(r);
-    await sleep(833);
-    await Overworld.act([{ who: L, moves: Im("LoreleiWalkToPlayer") }]);
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-    await say(I("ThankYouThisIsAwful"));
-    f.icefallScene = 1;   // (Lorelei's at home now: FLAG_HIDE_LORELEI_IN_HER_HOUSE cleared)
-    tempFlags.add("icefallLorelei");
-  }
-
-  // ---------- The Sevii Islands: Five Island ----------
-  //
-  // The Rocket Warehouse's door in Five Isle Meadow (FiveIsland_Meadow_EventScript_WarehouseDoor):
-  // two passwords, "GOLDEEN need log" and "Yes, nah, CHANSEY" (FLAG_LEARNED_YES_NAH_CHANSEY:
-  // flags.learnedYesNahChansey, which part 3's Dotted Hole sets).
-  async function warehouseDoor() {
-    const f = player.flags, D = (k) => T("FiveIsland_Meadow_Text_" + k);
-    if (f.unlockedRocketWarehouse) { await say(D("WarehouseDoorAlreadyOpen")); return; }
-    if (!f.learnedYesNahChansey) { await say(D("EnteredPasswordAnotherNeeded")); return; }
-    f.unlockedRocketWarehouse = true;
-    await say(D("EnteredPasswordDoorOpened"));
-    await sleep(1000);
-    applyPatches("FiveIsland_Meadow");
-    sfx("se_pin");
-  }
-  // In the Warehouse: the Admin by the arrows turns them round once she's
-  // beaten so you can come back through (FiveIsland_RocketWarehouse_EventScript_DefeatedAdmin1);
-  // the other Admin, beaten, takes Team Rocket away (..._DefeatedAdmin2:
-  // FLAG_DEFEATED_ROCKETS_IN_WAREHOUSE). -> true if it was one of them.
-  async function warehouseAdmin(id) {
-    const f = player.flags, W = (k) => T("FiveIsland_RocketWarehouse_Text_" + k);
-    if (id === "TRAINER_TEAM_ROCKET_ADMIN") {
-      const A = "LOCALID_WAREHOUSE_ADMIN1", at = Overworld.position();
-      show("world");
-      await Overworld.resume();
-      if (at.facing === "up" && at.x !== 27) await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-      await say(W("Admin1PostBattle"));
-      Screen.say("");
-      // (To the switch at 27: from wherever she stopped coming at you.)
-      const a = Overworld.personPosition(A);
-      await Overworld.act([{ who: A, moves: Array(Math.max(0, 27 - (a ? a.x : 27))).fill("walk_right").concat(M("Common_Movement_WalkInPlaceFasterUp")) }]);
-      sfx("se_pin");
-      applyPatches("FiveIsland_RocketWarehouse");
-      await sleep(300);
-      await Overworld.act([{ who: A, moves: M(at.x === 27 ? "Common_Movement_WalkInPlaceFasterDown" : "Common_Movement_WalkInPlaceFasterLeft") }]);
-      await say(W("MadeItSoYouCanComeBackThrough"));
-      if (f.trainerSpots) delete f.trainerSpots[id];   // (back at her post by the switch)
-      return true;
-    }
-    if (id === "TRAINER_TEAM_ROCKET_ADMIN_2") {
-      show("world");
-      await Overworld.resume();
-      if (Overworld.position().x <= 24) await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-      await say(W("Admin2PostBattle"));
-      Screen.say("");
-      await Overworld.fadeToBlack();
-      for (const who of ["LOCALID_WAREHOUSE_GRUNT2", "LOCALID_WAREHOUSE_GRUNT3", "LOCALID_WAREHOUSE_ADMIN2", "LOCALID_WAREHOUSE_ADMIN1"]) Overworld.removeObject(who);
-      f.warehouseScene = 1;
-      f.defeatedRocketsInWarehouse = true;   // (and FLAG_HIDE_FIVE_ISLAND_ROCKETS)
-      // (Gone for good, wherever they stopped coming at you.)
-      for (const t of ["TRAINER_TEAM_ROCKET_ADMIN", "TRAINER_TEAM_ROCKET_ADMIN_2", "TRAINER_TEAM_ROCKET_GRUNT_42", "TRAINER_TEAM_ROCKET_GRUNT_47",
-        "TRAINER_TEAM_ROCKET_GRUNT_48", "TRAINER_TEAM_ROCKET_GRUNT_49", "TRAINER_TEAM_ROCKET_GRUNT_50", "TRAINER_TEAM_ROCKET_GRUNT_51"]) if (f.trainerSpots) delete f.trainerSpots[t];
-      await Overworld.fadeFromBlack();
-      return true;
-    }
-    return false;
-  }
-  // Gideon (FiveIsland_RocketWarehouse_EventScript_Gideon): the scientist who
-  // stole the Sapphire (part 3: the Dotted Hole) hands it over once beaten.
-  async function gideon(person) {
-    const f = player.flags, W = (k) => T("FiveIsland_RocketWarehouse_Text_" + k), id = "TRAINER_SCIENTIST_GIDEON";
-    if (f[id]) { await say(W(f.canLinkWithRS ? "GiovannisKidHasRedHair" : "GetLostLeaveMeBe")); return; }
-    await trainerBattle(person, null);
-    if (!f[id]) return;
-    show("world");
-    await Overworld.resume();
-    await say(W("GideonPostBattle"));
-    f.recoveredSapphire = true;
-    Player.addItem(player, "sapphire");
-    await sayWithJingle("mus_obtain_key_item", "{PLAYER} received the " + Bag.name("sapphire") + "!");
-  }
 
   // The Memorial Pillar: a man scrubbing his Onix's grave. Leave a Lemonade
   // there and he gives you TM42 Facade (FiveIsland_MemorialPillar_EventScript_*).
   const MEMORIAL_MAN = "LOCALID_MEMORIAL_MAN", P5 = (k) => T("FiveIsland_MemorialPillar_Text_" + k);
-  async function memorialMan() {
-    const f = player.flags;
-    if (f.gotTM42AtMemorialPillar) { await say(P5("ScrubScrubTectonix")); return; }
-    if (f.noRoomForTM42) { await say(P5("StillHaveThingAsMyThanks")); await memorialTM(); return; }
-    await say(P5("ScrubScrub"));
-    Screen.say("");
-    await Overworld.act([{ who: MEMORIAL_MAN, moves: ["face_player"] }]);
-    await sleep(750);
-    await say(P5("YourMonsLookHealthy"));
-    await Overworld.act([{ who: MEMORIAL_MAN, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    await say(P5("ThisIsWhereIBuriedMyOnix"));
-  }
-  async function memorialTM() {
-    const tm = machineFor("Facade");   // (FireRed's TM42 Facade)
-    Player.addItem(player, tm);
-    await sayWithJingle(itemJingle(tm), "{PLAYER} received " + Bag.name(tm) + "!");
-    await say(P5("BeGoodToYourMonsToo"));
-    await Overworld.act([{ who: MEMORIAL_MAN, moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    player.flags.gotTM42AtMemorialPillar = true;
-    delete player.flags.noRoomForTM42;
-  }
-  async function memorial() {
-    const f = player.flags;
-    if (f.gotTM42AtMemorialPillar || f.noRoomForTM42) { await say(P5("HereLiesTectonix")); return; }
-    await say(P5("HereLiesTectonixLemonadeOffering"));
-    if (!Player.itemCount(player, "lemonade")) return;
-    if (!(await yesNo(P5("LeaveAnotherLemonadeOffering")))) return;
-    Player.removeItem(player, "lemonade");
-    await say(P5("PlacedCanOfLemonade"));
-    Screen.say("");
-    await Overworld.act([{ who: MEMORIAL_MAN, moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-    await sleep(750);
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterLeft") }]);
-    await say(P5("ThankYouPleaseTakeThis"));
-    await memorialTM();
-  }
 
   let stepEvolvers = null;
   const STEP_EVOLVERS = () => stepEvolvers || (stepEvolvers = new Set(Object.keys(window.EVOLUTIONS).filter((sp) => window.EVOLUTIONS[sp].some((e) => e.steps))));
@@ -12811,124 +7664,6 @@
     delete f.resortRequest;
   }
 
-  // ---------- The Sevii Islands: Six Island ----------
-  //
-  // Gary's in Six Island's Pokémon Center the first time you come
-  // (SixIsland_PokemonCenter_1F_EventScript_RivalScene): he can't find all the
-  // Pokémon around here, and he's off; after this he's not on Four Island.
-  async function sixIslandRival() {
-    const R = "LOCALID_SIX_ISLAND_RIVAL", Sm = (k) => M("SixIsland_PokemonCenter_1F_Movement_" + k);
-    await Overworld.act([{ who: R, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    music("mus_encounter_rival");
-    await Overworld.act([{ who: R, moves: ["emote_exclamation_mark"] }]);
-    await Overworld.act([{ who: R, moves: ["delay_16", "delay_16", "delay_16"] }]);
-    await sleep(417);
-    await Overworld.act([{ who: R, moves: Sm("RivalApproach") }]);
-    await say(T("SixIsland_PokemonCenter_1F_Text_RivalImpossibleToGetAllMonsAroundHere"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: Sm("PlayerWatchRivalExit") }, { who: R, moves: Sm("RivalExit") }]);
-    music((window.WORLD_MAPS.SixIsland_PokemonCenter_1F || {}).music);
-    sfx("se_exit");
-    await sleep(583);
-    Overworld.removeObject(R);
-    player.flags.sixCenterScene = 1;
-    player.flags.fourIslandScene = 1;
-  }
-
-  // Ruin Valley: the scientist outside the Dotted Hole (SixIsland_RuinValley_EventScript_Scientist),
-  // and its door (..._EventScript_DottedHoleDoor): six dots in Braille, "CUT".
-  async function ruinValleyScientist() {
-    const S = "LOCALID_RUIN_VALLEY_SCIENTIST";
-    await say(T("SixIsland_RuinValley_Text_CantFigureOutHowToGetInside"));
-    await Overworld.act([{ who: S, moves: ["face_player"] }]);
-    await say(T("SixIsland_RuinValley_Text_IFoundThisPlace"));
-    await Overworld.act([{ who: S, moves: ["face_up"] }]);
-  }
-  async function dottedHoleDoor() {
-    const R = (k) => T("SixIsland_RuinValley_Text_" + k);
-    if (player.flags.usedCutOnRuinValleyBraille) { await say(R("DoorIsOpen")); return; }
-    const q = R("CheckDoorMoreThoroughly");
-    await say(q.slice(0, -1));
-    if (!(await confirm(fill(q[q.length - 1])))) { await say(R("LeftDoorAlone")); return; }
-    await say(R("SeveralDotsOnTheDoor"));
-    await say(braille("CUT"));
-  }
-  // Cut used on it, from below (CutMoveOpenDottedHoleDoor): it opens.
-  async function cutDottedHoleDoor(mon) {
-    await say(usedMove(mon, "Cut"));
-    Screen.say("");
-    player.flags.usedCutOnRuinValleyBraille = true;
-    applyPatches("SixIsland_RuinValley");
-    sfx("se_bang");
-  }
-
-  // The Dotted Hole's Sapphire room (SixIsland_DottedHole_SapphireRoom_EventScript_Sapphire):
-  // you find the Sapphire, and the man who's been following you drops in,
-  // snatches it to sell to Team Rocket, and gives away a password to their
-  // Warehouse as he runs: "Yes, nah, Chansey." (He's Gideon, in the Warehouse
-  // on Five Island.)
-  async function dottedHoleSapphire() {
-    const f = player.flags, D = (k) => T("SixIsland_DottedHole_SapphireRoom_Text_" + k), Dm = (k) => M("SixIsland_DottedHole_SapphireRoom_Movement_" + k);
-    const THIEF = "LOCALID_DOTTED_HOLE_THIEF", facing = Overworld.position().facing, upDown = facing === "up" || facing === "down";
-    const face = (dir) => ({ who: "player", moves: M("Common_Movement_WalkInPlaceFaster" + dir) });
-    await sayWithJingle("mus_obtain_key_item", D("FoundSapphire"));
-    Screen.say("");
-    // (He drops in from above: slide_down, nine tiles to the hole's foot.)
-    Overworld.addObject(THIEF, { x: 5, y: 0, facing: "down" });
-    sfx("se_fall");
-    await Overworld.act([{ who: THIEF, moves: ["lock_facing_direction"].concat(Array(9).fill("walk_faster_down"), ["unlock_facing_direction"]) }]);
-    sfx("se_m_strength");
-    await Overworld.act([face(upDown ? "Left" : "Down")]);
-    await Overworld.shake(12, { x: 3, y: 0, delay: 3 });
-    await sleep(1000);
-    await Overworld.act([{ who: THIEF, moves: Dm(upDown ? "ThiefLookAtSapphireFromLeft" : "ThiefLookAtSapphireFromBelow") }]);
-    await say(D("IWasRightInTailingYou"));
-    Screen.say("");
-    await Overworld.act([{ who: THIEF, moves: Dm(upDown ? "ThiefGetSapphireFromLeft" : "ThiefGetSapphireFromBelow") }]);
-    await Overworld.act([face({ up: "Up", down: "Down", right: "Right", left: "Left" }[facing])]);
-    Overworld.removeObject("LOCALID_SAPPHIRE");
-    await Overworld.act([face(upDown ? "Left" : "Down")]);
-    await say(D("SellToTeamRocketTellPassword"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: Dm("PlayerWatchThiefExit") },
-      { who: THIEF, moves: Dm(facing === "up" ? "ThiefExitNorth" : facing === "down" ? "ThiefExitSouth" : "ThiefExitEastWest") }]);
-    sfx("se_exit");
-    await sleep(583);
-    Overworld.removeObject(THIEF);
-    f.learnedYesNahChansey = true;   // (and FLAG_HIDE_SAPPHIRE)
-  }
-
-  // The Water Path's Heracross fan (SixIsland_WaterPath_House1_EventScript_Beauty):
-  // she measures a Heracross (FireRed's size record, as the Magikarp's) and
-  // gives you a Nest Ball for the biggest yet.
-  async function heracrossFan() {
-    const f = player.flags, H = (k) => T("SixIsland_WaterPath_House1_Text_" + k);
-    if (!player.party.some((r) => r.species === "Heracross" && !r.egg)) { await say(H("LoveItNeedItHeracross")); return; }
-    await say(H("MayIMeasureHeracross"));
-    const r = await choosePartyFor("Choose a {PKMN}.");
-    show("world");
-    if (!r) return;
-    if (r.species !== "Heracross" || r.egg) { await say(H("ThisWontDo")); return; }
-    const hash = monSizeHash(r), record = f.heracrossRecord || 0;
-    const now = monSize("Heracross", hash), best = monSize("Heracross", record), vars = [null, monInches("Heracross", hash), monInches("Heracross", record)];
-    // (Smaller, or the same, is only a letdown once she's given you the Nest Ball.)
-    if (now > best || !f.gotNestBallFromWaterPathHouse1) {
-      if (now > best) f.heracrossRecord = hash;
-      f.gotNestBallFromWaterPathHouse1 = true;
-      await say(H("ItsXInchesDeserveReward"), vars);
-      Player.addItem(player, "nest-ball");
-      await sayWithJingle(itemJingle("nest-ball"), "{PLAYER} received a Nest Ball!");
-      await say(H("WantToSeeBiggerOne"));
-      return;
-    }
-    await say(H(now === best ? "ItsXInchesSameAsBefore" : "ItsXInchesYInchesWasBiggest"), vars);
-  }
-  async function heracrossChart() {
-    const f = player.flags, H = (k) => T("SixIsland_WaterPath_House1_Text_" + k);
-    if (!f.gotNestBallFromWaterPathHouse1) { await say(H("BlankChartOfSomeSort")); return; }
-    await say(H("BiggestHeracrossIsXInches"), [null, null, monInches("Heracross", f.heracrossRecord || 0)]);
-  }
-
   // ---------- Seven Island ----------
   //
   // Sevault Canyon's Chansey dance (SevenIsland_SevaultCanyon_House_EventScript_ChanseyDanceMan):
@@ -12936,59 +7671,11 @@
   const CHANSEY_DANCE = ["walk_in_place_down", "delay_16", "walk_in_place_down", "delay_16", "walk_in_place_down", "delay_16",
     "walk_in_place_down", "delay_16", "walk_in_place_faster_right", "delay_4", "walk_in_place_faster_up", "delay_4",
     "walk_in_place_faster_left", "delay_4", "walk_in_place_faster_down", "delay_4"];
-  async function chanseyDance() {
-    const C = (k) => T("SevenIsland_SevaultCanyon_House_Text_" + k), man = "LOCALID_CHANSEY_DANCE_MAN", danced = "SevenIsland_SevaultCanyon_House:danced";
-    const home = (window.WORLD_MAPS.SevenIsland_SevaultCanyon_House || {}).music;
-    if (tempFlags.has(danced)) { await Overworld.act([{ who: man, moves: ["face_player"] }]); await say(C("ChanseyDanceJoinIn")); return; }
-    music("mus_school");
-    await Overworld.act([{ who: man, moves: CHANSEY_DANCE }]);
-    music(home);
-    await sleep(500);
-    await Overworld.act([{ who: man, moves: ["face_player"] }]);
-    await say(C("ChanseyDanceJoinIn"));
-    const q = C("WouldYouLikeToDance");
-    await say(q.slice(0, -1));
-    if (!(await confirm(fill(q[q.length - 1])))) { await say(C("ComeOnDance")); return; }
-    await say(C("DancedChanseyDance"));
-    Screen.say("");
-    if (Overworld.position().facing !== "down") await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    await sleep(500);
-    music("mus_school");
-    await Overworld.act([{ who: "player", moves: CHANSEY_DANCE }]);
-    music(home);
-    await sleep(500);
-    await outOfCenterHeal();
-    await say(C("YoureAllChipperNow"));
-    tempFlags.add(danced);
-  }
 
   // The Tanoby Key (SevenIsland_SevaultCanyon_TanobyKey_EventScript_Switch1-7):
   // a boulder pushed onto each of its seven switches; the seventh, and far
   // away the Tanoby Ruins rumble open (FLAG_SYS_UNLOCKED_TANOBY_RUINS).
   const TANOBY_KEY = "SevenIsland_SevaultCanyon_TanobyKey";
-  function tanobySwitch(map, x, y) {
-    if (map !== TANOBY_KEY) return null;
-    const t = ((window.WORLD_MAPS[map] || {}).triggers || []).find((q) => q.x === x && q.y === y);
-    return t ? { type: "trigger", trigger: t, map } : null;
-  }
-  async function tanobyKeySwitch(script) {
-    const key = TANOBY_KEY + ":" + script;
-    if (tempFlags.has(key) || player.flags.unlockedTanobyRuins) return;
-    tempFlags.add(key);
-    const pressed = [...tempFlags].filter((k) => k.startsWith(TANOBY_KEY + ":")).length;
-    sfx("se_truck_move");
-    await Overworld.shake(8, { x: 1, y: 1, delay: 3 });
-    await sleep(1000);
-    if (pressed < 7) return;
-    await Overworld.shake(10, { x: 2, y: 2, delay: 3 });
-    await sleep(1000);
-    await Overworld.shake(12, { x: 3, y: 3, delay: 2 });
-    await sleep(1000);
-    sfx("se_lavaridge_fall_warp");
-    await sleep(1000);
-    await say(T("SevenIsland_SevaultCanyon_TanobyKey_Text_MysteriousRumbleFarAway"));
-    player.flags.unlockedTanobyRuins = true;
-  }
 
   // ---------- Trainer Tower ----------
   //
@@ -13008,192 +7695,7 @@
   const towerFloor = (n) => TrainerTower.floor(towerMode(), n);
   const towerLook = (gfx) => Object.assign({}, (window.WORLD_SPRITES || {})[gfx] || {});
   const lobbyText = (k) => T("TrainerTower_Lobby_Text_" + k);
-  let towerCounterOpen = false;   // (the lobby's counter barrier, as you come out of the elevator)
-  // Who's on a floor, where, looking like whom (TrainerTower_OnTransition and
-  // SetTrainerTowerNPCGraphics); the owner's only on the roof.
-  function towerPerson(person, map) {
-    if (map === "TrainerTower_Roof") return undefined;
-    const n = towerFloorNo(map);
-    if (!n) return undefined;
-    if (!person.localId) return false;   // (the owner)
-    const fl = towerFloor(n), cleared = TrainerTower.floorCleared(player.flags, n), at = (x, y, dir, gfx) => Object.assign(towerLook(gfx), { x, y, movement: "face_" + dir });
-    if (fl.type === "single") return person.localId === TOWER.S && at(15, 13, "left", fl.looks[0]);
-    if (fl.type === "double") {
-      if (person.localId === TOWER.D1) return at(10, 12, cleared ? "down" : "left", fl.looks[0]);
-      if (person.localId === TOWER.D2) return cleared ? at(11, 12, "down", fl.looks[1]) : at(10, 13, "left", fl.looks[1]);
-      return false;
-    }
-    if (person.localId === TOWER.D1) return at(10, 10, "down", fl.looks[1]);
-    if (person.localId === TOWER.S) return at(14, 13, "left", fl.looks[2]);
-    if (person.localId === TOWER.K) return at(10, 16, "up", fl.looks[0]);
-    return false;
-  }
-  // The lobby's counter (TrainerTower_Lobby_EventScript_EntryTrigger).
-  async function towerEntry() {
-    const f = player.flags;
-    await Overworld.act([{ who: "player", moves: ["face_right"] }]);
-    await say(lobbyText("WelcomeToTrainerTower"));
-    // (FireRed's built-in challenges all go up to the eighth floor.)
-    await say(lobbyText("TrainersUpEighthFloor"));
-    for (;;) {
-      const i = await multichoice(lobbyText("LikeToChallengeTrainers")[0], 18, 6, ["Yes", "No", "Info"]);
-      if (i === 2) { await say(lobbyText("ExplainTrainerTower")); continue; }
-      if (i === 0) {
-        const mode = await multichoice(null, 13, 3, TrainerTower.MODES.concat(["Exit"]));
-        if (mode >= 0 && mode < 4) {
-          f.towerScene = 1;
-          player.party.forEach(Party.heal);
-          await say(lobbyText("StartClockGetSetGo"));
-          tick();
-          TrainerTower.start(f, mode);
-          return;
-        }
-      }
-      break;
-    }
-    await say(lobbyText("PleaseVisitUsAgain"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
-  }
-  // Back in the lobby having lost (TrainerTower_Lobby_EventScript_LostChallenge).
-  async function towerLost() {
-    const f = player.flags;
-    await Overworld.act([{ who: "player", moves: ["face_right"] }]);
-    await say(lobbyText("TooBadComeBackTryAgain"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: ["walk_down"] }]);
-    f.towerScene = 0;
-    if (f.tower) f.tower.lost = false;
-  }
-  // The lobby's Time Board (TrainerTower_Lobby_EventScript_ShowRecords: PrintTrainerTowerRecords).
-  async function towerTimeBoard() {
-    const f = player.flags;
-    const line = (mode) => TrainerTower.MODES[mode] + ": " + fill(T("TrainerTower_Text_XMinYZSec")[0], TrainerTower.time(TrainerTower.best(f, mode)));
-    await say(["Time Board", line(0) + "\n" + line(1), line(2) + "\n" + line(3)]);
-  }
-  // A floor's battle (TrainerTower_EventScript_TriggerBattle): singles walk
-  // up to you; a double battle's pair are waiting by its trigger (and won't
-  // battle you without two Pokémon that can fight); in a Knockout the three
-  // come one after another, the first from below, then above, then the
-  // right. `side`: which of the double battle's triggers (0 top, 1 bottom).
-  async function towerBattle(map, side) {
-    const f = player.flags, n = towerFloorNo(map), fl = towerFloor(n), t = f.tower;
-    const towards = async (who, dir) => {
-      // (Up to you: from where they stand to the tile next to yours.)
-      const me = Overworld.position(), p = Overworld.personPosition(who);
-      const steps = !p ? 0 : dir === "left" ? p.x - me.x - 1 : dir === "up" ? p.y - me.y - 1 : me.y - p.y - 1;
-      await Overworld.act([{ who, moves: Array(Math.max(0, steps)).fill("walk_" + dir) }]);
-    };
-    const spotted = async (who, trainer) => {
-      music(trainer.music);
-      await Overworld.act([{ who, moves: ["emote_exclamation_mark"] }]);
-      await Overworld.act([{ who, moves: ["delay_16", "delay_16", "delay_16"] }]);
-    };
-    const fight = async (team, trainer, double, defeat) => {
-      const outcome = await battle("trainer", { foe: { name: trainer.className + " " + trainer.name, team, pic: trainer.pic },
-        defeatText: defeat, double, noBlackout: true, noExp: true, noPrize: true });
-      if (outcome === "won") {
-        show("world");
-        await Overworld.resume();
-        // (Battle Points for each trainer beaten: a double battle's two, both.)
-        const bp = towerBP(n) * (double ? 2 : 1);
-        f.bp = (f.bp || 0) + bp;
-        await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)");
-        return true;
-      }
-      // TrainerTower_EventScript_WarpToLobbyLost: healed, and back to the lobby.
-      player.party.forEach(Party.heal);
-      t.lost = true;
-      t.running = false;
-      show("world");
-      await Overworld.resume();
-      await Overworld.teleport({ map: "TrainerTower_Lobby", x: 9, y: 7, facing: "right" });
-      await towerLost();
-      return false;
-    };
-    const level = TrainerTower.partyLevel(player.party), lines = (s) => [s];
-    if (fl.type === "double") {
-      if (!canDouble()) {
-        sfx("se_ding_dong");
-        await say(lobbyText("NeedTwoMonsForDouble"));
-        Screen.say("");
-        await Overworld.act([{ who: "player", moves: ["walk_left"] }]);
-        return;
-      }
-      await spotted(side ? TOWER.D2 : TOWER.D1, fl.trainers[side]);
-      tempFlags.add(map + ":doubles");
-      await say(lines(fl.trainers[side].intro));
-      await say(lines(fl.trainers[1 - side].intro));
-      const pair = Object.assign({}, fl.trainers[0], { name: fl.trainers[0].name });
-      if (!(await fight(TrainerTower.team(fl, 0, t.floorsCleared, level), pair, true, [fl.trainers[0].lose, fl.trainers[1].lose]))) return;
-      await Overworld.act([{ who: TOWER.D2, moves: ["walk_right", "walk_up", "face_down"] }]);
-      await Overworld.act([{ who: TOWER.D1, moves: ["face_down"] }]);
-      t.floorsCleared++;
-      return;
-    }
-    if (fl.type === "single") {
-      await spotted(TOWER.S, fl.trainers[0]);
-      tempFlags.add(map + ":singles");
-      await towards(TOWER.S, "left");
-      await say(lines(fl.trainers[0].intro));
-      if (!(await fight(TrainerTower.team(fl, 0, t.floorsCleared, level), fl.trainers[0], false, [fl.trainers[0].lose]))) return;
-      t.floorsCleared++;
-      return;
-    }
-    // Knockout: below (walk_up), above (walk_down), then the right (walk_left).
-    tempFlags.add(map + ":singles");
-    const order = [[TOWER.K, "up"], [TOWER.D1, "down"], [TOWER.S, "left"]];
-    for (let i = 0; i < 3; i++) {
-      await spotted(order[i][0], fl.trainers[i]);
-      await towards(order[i][0], order[i][1]);
-      await say(lines(fl.trainers[i].intro));
-      if (!(await fight(TrainerTower.team(fl, i, t.floorsCleared, level), fl.trainers[i], false, [fl.trainers[i].lose]))) return;
-    }
-    await Overworld.act([{ who: TOWER.S, moves: ["walk_up", "face_down"] }]);
-    t.floorsCleared++;
-  }
-  // Talking to a floor's trainers after (TrainerTower_EventScript_SpeakTo*):
-  // what they say after a battle.
-  async function towerTrainerTalk(map, localId) {
-    const n = towerFloorNo(map);
-    if (!n) return;
-    const fl = towerFloor(n), knockout = fl.type === "knockout";
-    const i = { [TOWER.D1]: knockout ? 1 : 0, [TOWER.S]: knockout ? 2 : 0, [TOWER.K]: 0, [TOWER.D2]: 1 }[localId] || 0;
-    await Overworld.act([{ who: localId, moves: ["face_player"] }]);
-    await say([(fl.trainers[i] || fl.trainers[0]).after]);
-  }
-  // The owner, on the roof (TrainerTower_EventScript_SpeakToOwner): the
-  // clock stops; the rewards (this game's: items and Battle Points every challenge,
-  // by how fast it went, TrainerTower.rewards and finishBP); your time, a record or not.
-  async function towerOwner() {
-    const f = player.flags, R = (k) => T("TrainerTower_Roof_Text_" + k);
-    tick();
-    const t = f.tower || TrainerTower.start(f, 0);
-    TrainerTower.records(f);
-    t.running = false;
-    if (!t.spokeToOwner) {
-      t.spokeToOwner = true;
-      await say(R("ImOwnerBattledPerfectly"));
-      // (Your time, as the Time Board has it.)
-      await say("Your time was\n" + fill(T("TrainerTower_Text_XMinYZSec")[0], TrainerTower.time(t.frames)) + "…");
-      const items = TrainerTower.rewards(t.mode, t.frames);
-      const pace = TrainerTower.pace(t.mode, t.frames);
-      await say(pace === 3 ? "And so quickly, too! Here, these are for you." : pace === 2 ? "Not bad at all. Here, these are for you." : R("ThisIsForYou"));
-      for (const item of items) {
-        Player.addItem(player, item);
-        await sayWithJingle("mus_level_up", "{PLAYER} obtained the " + Bag.name(item) + "!");
-      }
-      // (And Battle Points, by the same pace: TrainerTower.finishBP.)
-      const bp = TrainerTower.finishBP(t.mode, t.frames);
-      f.bp = (f.bp || 0) + bp;
-      await say("{PLAYER} earned " + bp + " BP!\n(" + f.bp + " BP in total.)");
-      const r = TrainerTower.finalTime(f);
-      if (r === 0) await say(R("DoneItInRecordTime"));
-      else if (r === 1) await say(R("TookSweetTimeGettingHere"));
-    }
-    else await say("Your time was\n" + fill(T("TrainerTower_Text_XMinYZSec")[0], TrainerTower.time(t.frames)) + "…");
-    await say(R("IdLikeToSeeBetterTime"));
-  }
+  let towerCounterOpen = false;
   // ---------- Battle Points and the lobby's BP tutor (this game's own) ----------
   //
   // Each trainer beaten in Trainer Tower earns Battle Points (player.flags.bp):
@@ -13718,48 +8220,6 @@
     sfx("se_click");
   }
 
-  // ---------- Cinnabar Island ----------
-
-  // Blaine: battle (talking to him), then the Volcano Badge and TM38 Fire
-  // Blast. Beating him also beats his Gym's trainers and opens all its doors.
-  // Bill's then waiting outside to take you to the Sevii Islands
-  // (VAR_MAP_SCENE_CINNABAR_ISLAND 1: flags.cinnabarScene).
-  // His team (this game's): Magmortar and Magcargo in place of FireRed's
-  // Growlithe and Ponyta, FireRed's Rapidash and Arcanine, and his ace,
-  // Houndoom with its Houndoominite: it Mega Evolves and Terastallizes into a Dark type.
-  function blaineTeam() {
-    const [, , rapidash, arcanine] = trainerTeam("TRAINER_LEADER_BLAINE");
-    return [Party.create("Magmortar", 43, { ivs: 0 }), Party.create("Magcargo", 42, { ivs: 0 }),
-      rapidash, arcanine, Object.assign(Party.create("Houndoom", 48, { ivs: 0 }), { item: "houndoominite", teraType: "Dark", teraAce: true })];
-  }
-  async function blaine(person) {
-    const f = player.flags, ID = "TRAINER_LEADER_BLAINE";
-    if (!f[ID]) {
-      await say(person.trainer.intro);
-      if (!canBattle()) return;
-      const outcome = await battle("trainer", { foe: { name: "Leader Blaine", team: blaineTeam(), pic: "leader_blaine", tera: true },
-        defeatText: person.trainer.defeat, trainerId: ID, terrain: "leader" });
-      if (outcome !== "won") return;
-      if (!hasBadge("volcano")) player.badges.push("volcano");
-      for (const t of ["SUPER_NERD_ERIK", "SUPER_NERD_AVERY", "SUPER_NERD_DEREK", "SUPER_NERD_ZAC", "BURGLAR_QUINN", "BURGLAR_RAMON", "BURGLAR_DUSTY"]) f["TRAINER_" + t] = true;
-      player.flags.lastCenter = "CinnabarIsland_PokemonCenter_1F";
-      if (!f.cinnabarScene) f.cinnabarScene = 1;
-      applyPatches("CinnabarIsland_Gym");
-      show("world");
-      await Overworld.resume();
-    }
-    const tm = machineFor("Fire Blast");
-    if (!f.gotTM38FromBlaine) {
-      await say(T("CinnabarIsland_Gym_Text_ExplainVolcanoBadge"));
-      Player.addItem(player, tm);
-      f.gotTM38FromBlaine = true;
-      await sayWithJingle(itemJingle(tm), tmText(T("CinnabarIsland_Gym_Text_ReceivedTM38FromBlaine"), 38, tm));
-      await say(tmText(T("CinnabarIsland_Gym_Text_FireBlastIsUltimateFireMove"), 38, tm));
-      return;
-    }
-    await say(tmText(T("CinnabarIsland_Gym_Text_BlainePostBattle"), 38, tm));
-  }
-
   // The Gym's quiz machines (CinnabarIsland_Gym_EventScript_Quiz1..6): answer
   // right and the door past them opens; wrong, and the trainer guarding it
   // comes over to battle (once beaten, nobody comes), and beating them opens it too.
@@ -13774,40 +8234,6 @@
     6: { yes: false, trainer: "TRAINER_SUPER_NERD_ZAC", who: "LOCALID_ZAC", name: "Zac" }
   };
   const quizDoorOpen = (n) => !!(player.flags.cinnabarQuiz && player.flags.cinnabarQuiz[n]);
-  function openQuizDoor(n) {
-    if (quizDoorOpen(n)) return;
-    sfx("se_unlock");
-    (player.flags.cinnabarQuiz || (player.flags.cinnabarQuiz = {}))[n] = true;
-    applyPatches("CinnabarIsland_Gym");
-  }
-  async function cinnabarQuiz(n, side) {
-    const q = CINNABAR_QUIZ[n], G = (k) => T("CinnabarIsland_Gym_Text_" + k);
-    await say(G("PokemonQuizRules"));
-    const answer = await confirm(G("QuizQuestion" + n).join("\n"));
-    if (answer === q.yes) {
-      await sayWithJingle("mus_level_up", G("CorrectGoOnThrough"));
-      openQuizDoor(n);
-      return;
-    }
-    sfx("se_boo");
-    await say(G("SorryBadCall"));
-    Screen.say("");
-    if (player.flags[q.trainer]) return;
-    // (Avery comes round the machine; the others walk over.)
-    const L = (k) => M("CinnabarIsland_Gym_Movement_" + k);
-    await Overworld.act([{ who: "player", moves: n === 2 ? L("PlayerFaceAvery") : M("Common_Movement_WalkInPlaceFasterRight") },
-      { who: q.who, moves: L(q.name + "Approach" + side) }]);
-    const data = window.WORLD_TRAINERS[q.trainer];
-    music(data.music || "mus_encounter_boy");
-    await say(G(q.name + "Intro"));
-    if (!canBattle()) return;
-    const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team: trainerTeam(q.trainer), pic: data.pic },
-      defeatText: G(q.name + "Defeat"), trainerId: q.trainer, prizeClass: data.className });
-    if (outcome !== "won") return;
-    show("world");
-    await Overworld.resume();
-    openQuizDoor(n);
-  }
 
   // The fossil doctor in the Lab's experiment room
   // (..._ExperimentRoom_EventScript_FossilScientist): show him a fossil (the
@@ -13837,49 +8263,6 @@
     }
     SPECIAL.add(PEWTER_FOSSIL_SCIENTIST);
   }
-  async function fossilScientist() {
-    const f = player.flags, X = (k) => T("CinnabarIsland_PokemonLab_ExperimentRoom_Text_" + k);
-    const reviving = f.fossilRevive;
-    if (reviving && reviving.ready) {
-      const fo = FOSSILS.find((x) => x.item === reviving.item), name = Party.speciesName(fo.species);
-      await say(X("FossilMonBackToLife"), [name]);
-      const given = await giftMon(fo.species, 5, X("ReceivedMonFromDoctor"), [name], () => { f[fo.flag] = true; delete f.fossilRevive; });
-      if (!given) return;
-      return;
-    }
-    if (reviving) { await say(X("TakesTimeGoForWalk")); return; }
-    // (Any fossil in your Bag, however you came by it: Mt. Moon's, the Old
-    // Amber, or one dug up mining, as many times as you bring one.)
-    const can = FOSSILS.filter((fo) => Player.itemCount(player, fo.item));
-    const ask1 = X("HaveYouAFossilForMe");
-    if (!can.length) { await say(ask1); await say(X("NoIsTooBad")); return; }
-    await say(ask1.slice(0, -1));
-    const v = await ask(fill(ask1[ask1.length - 1]), can.map((fo) => ({ label: Bag.name(fo.item), value: fo.item })).concat([back("Cancel")]));
-    Screen.say("");
-    if (v === "back") { await say(X("NoIsTooBad")); return; }
-    const fo = FOSSILS.find((x) => x.item === v), vars = [Party.speciesName(fo.species), Bag.name(fo.item)];
-    const make = X("ThatFossilIsOfMonMakeItLiveAgain");
-    await say(make.slice(0, -1), vars);
-    if (!(await confirm(fill(make[make.length - 1], vars)))) { await say(X("YouComeAgain")); return; }
-    await say(X("HandedFossilToWeirdDoctor"), vars);
-    Player.removeItem(player, fo.item);
-    f.fossilRevive = { item: fo.item };
-    await say(X("TakesTimeGoForWalk"));
-  }
-
-  // The Pokémon Mansion's statues (PokemonMansion_EventScript_SecretSwitch):
-  // one switch for the whole house (FLAG_POKEMON_MANSION_SWITCH_STATE), which
-  // swaps which of its doors are open on every floor (the "pressed" patches).
-  async function mansionSwitch() {
-    const q = T("PokemonMansion_Text_PressSecretSwitch");
-    await say(q.slice(0, -1));
-    if (!(await confirm(q[q.length - 1]))) { await say(T("PokemonMansion_Text_NotQuiteYet")); return; }
-    await say(T("PokemonMansion_Text_WhoWouldnt"));
-    Screen.say("");
-    if (player.flags.mansionSwitch) delete player.flags.mansionSwitch; else player.flags.mansionSwitch = true;
-    applyPatches(player.location.map);
-    sfx("se_unlock");
-  }
 
   // ---------- The Safari Game ----------
   //
@@ -13898,20 +8281,6 @@
   // scripted step onto a trigger doesn't set it off); this game's one step
   // more puts you below it, so going back in means paying again.
   const SAFARI_EXIT = () => M("FuchsiaCity_SafariZone_Entrance_Movement_Exit").concat("walk_down");
-  function safariStep() {
-    const s = player.flags.safari;
-    if (!s || s.hgss) return null;   // (Johto's has no steps: ui/johto-safari.js)
-    // (Hoenn's: 500 steps in its areas, and its Pokéblock feeders' blocks last 100: SafariZoneTakeStep.)
-    if (s.hoenn) {
-      if (!/^HoennSafariZone_/.test(player.location.map)) return null;
-      hoennSafari.step();
-      s.steps = Math.max(0, s.steps - 1);
-      return s.steps === 0 ? { type: "safari-over", hoenn: true } : null;
-    }
-    if (!/^SafariZone_/.test(player.location.map)) return null;
-    s.steps = Math.max(0, s.steps - 1);
-    return s.steps === 0 ? { type: "safari-over", text: "SafariZone_Text_TimesUp" } : null;
-  }
   // Hoenn's Safari Zone (Emerald's src/safari_zone.c): entered at Route 121's gate for ₽500 with the Pokéblock Case, 30
   // Safari Balls and 500 steps; its scripts are Emerald's own (EnterSafariMode and ExitSafariMode below, SafariZone_EventScript_*),
   // and its Pokéblock feeders take a block from the case, which draws Pokémon that like it (a nature that does, four times in
@@ -13931,84 +8300,6 @@
       return liked.length ? liked[Math.floor(Math.random() * liked.length)] : null;
     }
   };
-  // Talking to the attendant as you step up to the counter.
-  async function safariEntry(side) {
-    if (safariOn()) return;
-    const back = async () => { Screen.say(""); await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_ForceBack") }]); };
-    await say(G("WelcomeToSafariZone"));
-    await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterRight") }]);
-    const pitch = G("PlaySafariGameFor500");
-    await say(pitch.slice(0, -1));
-    if (!(await confirm(fill(pitch[pitch.length - 1]) + "\n(You have " + money(player.money) + ".)"))) {
-      await say(G("OkayPleaseComeAgain"));
-      await back();
-      return;
-    }
-    if (player.party.length >= Player.PARTY_SIZE && !player.boxes.some((b) => Player.firstEmpty(b) >= 0)) {
-      await say(T("SafariZone_Text_ExcuseMeYourPCBoxIsFull"));
-      await back();
-      return;
-    }
-    if (player.money < Safari.ENTRY_FEE) { await say(G("OopsNotEnoughMoney")); await back(); return; }
-    Player.addMoney(player, -Safari.ENTRY_FEE);
-    await say(G("ThatllBe500WeOnlyUseSpecialBalls"));
-    await sayWithJingle("mus_level_up", G("PlayerReceived30SafariBalls"));
-    await say(G("CallYouOnPAWhenYouRunOut"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_EnterSafariZone" + side) }]);
-    player.flags.safari = { balls: Safari.BALLS, steps: Safari.STEPS };
-    await Overworld.teleport({ map: "SafariZone_Center", x: 26, y: 30, facing: "up" });
-  }
-  // Back in the gate: leaving early? (Or, sent back, on your way out.)
-  async function safariGateArrival() {
-    if (!safariOn()) return;
-    if (await confirm(fill(G("GoingToLeaveSafariZoneEarly")[0]))) {
-      await say(G("PleaseReturnSafariBalls"));
-      Screen.say("");
-      delete player.flags.safari;
-      await Overworld.act([{ who: "player", moves: SAFARI_EXIT() }]);
-      return;
-    }
-    await say(G("GoodLuck"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_ReEnter") }]);
-    await Overworld.teleport({ map: "SafariZone_Center", x: 26, y: 30, facing: "up" });
-  }
-  // The game's over: the PA (`text`, if any), then you're at the gate's
-  // counter and on your way out. `walkIn`: the last Safari Ball missed in a
-  // battle (FireRed's ExitWalkIn: you come in a step first).
-  async function safariOver(text, walkIn) {
-    if (text) { sfx("se_ding_dong"); await say(T(text)); }
-    Screen.say("");
-    delete player.flags.safari;
-    await Overworld.teleport({ map: SAFARI_GATE, x: 4, y: 1, facing: "down" });
-    if (walkIn) await Overworld.act([{ who: "player", moves: M("FuchsiaCity_SafariZone_Entrance_Movement_ApproachCounter") }]);
-    await say(G("CatchFairShareComeAgain"));
-    Screen.say("");
-    await Overworld.act([{ who: "player", moves: walkIn ? M("FuchsiaCity_SafariZone_Entrance_Movement_Exit2") : SAFARI_EXIT() }]);
-  }
-  // A wild Pokémon in the Safari Zone.
-  async function safariBattle(species, level, terrain, nature) {
-    const outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level, nature ? { nature } : {}))] }, terrain, safari: true });
-    const s = player.flags.safari;
-    // (Johto's, HGSS's: ui/johto-safari.js.)
-    if (s && s.hgss) { show("world"); await Overworld.resume(); await johtoSafari.afterBattle(outcome); return; }
-    // (Hoenn's: Emerald's own scripts take you out when the Balls run out: CB2_EndSafariBattle.)
-    if (s && s.hoenn) {
-      if (outcome === "caught") s.caught = (s.caught || 0) + 1;
-      if (outcome === "noballs" || s.balls <= 0) { show("world"); await Overworld.resume(); await runHoenn(outcome === "noballs" ? "SafariZone_EventScript_OutOfBallsMidBattle" : "SafariZone_EventScript_OutOfBalls"); }
-      return;
-    }
-    if (outcome === "noballs") {
-      show("world");
-      await Overworld.resume();
-      await safariOver(null, true);
-    } else if (s && s.balls <= 0) {
-      show("world");
-      await Overworld.resume();
-      await safariOver("SafariZone_Text_OutOfBalls", false);
-    }
-  }
 
   // Vermilion Gym's trash cans (VermilionCity_Gym_EventScript_TrashCan): a
   // switch is under one of the fifteen, and the second under one next to it
@@ -14016,35 +8307,6 @@
   // second, or both are hidden somewhere new. Both found, the way to Lt. Surge
   // stays open. Leaving the Gym hides them again.
   let gymCans = null, ticketChecked = false;
-  function hideVermilionSwitches() {
-    // Cans 1-15, five a row in three rows: the second is a neighbour of the first.
-    const first = 1 + Math.floor(Math.random() * 15), col = (first - 1) % 5;
-    const next = [first - 5, first + 5, col > 0 ? first - 1 : 0, col < 4 ? first + 1 : 0].filter((c) => c >= 1 && c <= 15);
-    gymCans = { first, second: next[Math.floor(Math.random() * next.length)], foundFirst: false };
-  }
-  async function trashCan(n) {
-    const f = player.flags;
-    if (!gymCans) hideVermilionSwitches();
-    if (f.vermilionGymLocksOpen) { await say(T("VermilionCity_Gym_Text_NopeOnlyTrashHere")); return; }
-    if (!gymCans.foundFirst) {
-      if (n !== gymCans.first) { await say(T("VermilionCity_Gym_Text_NopeOnlyTrashHere")); return; }
-      await say(T("VermilionCity_Gym_Text_SwitchUnderTrashFirstLockOpened"));
-      sfx("se_pin");
-      gymCans.foundFirst = true;
-      applyPatches("VermilionCity_Gym");
-      return;
-    }
-    if (n !== gymCans.second) {
-      await say(T("VermilionCity_Gym_Text_OnlyTrashLocksWereReset"));
-      hideVermilionSwitches();
-      applyPatches("VermilionCity_Gym");
-      return;
-    }
-    await say(T("VermilionCity_Gym_Text_SecondLockOpened"));
-    f.vermilionGymLocksOpen = true;
-    applyPatches("VermilionCity_Gym");
-    sfx("se_unlock");
-  }
   // Which of a map's patches (WORLD_MAPS[..].patches) are on now.
   function mapPatches(map) {
     const f = player.flags;
@@ -14135,73 +8397,6 @@
       m.collision[y * m.width + x] = c;
       if (b != null) m.behavior[y * m.width + x] = b;
     }
-  }
-
-  // ---------- The S.S. Anne ----------
-  //
-  // Red (where FireRed has Gary) comes out of a cabin on 2F and battles you:
-  // Pikachu (26, knowing Surf and Terastallizing into a Water type),
-  // Charmeleon, Wartortle and Ivysaur (27 each). The Captain,
-  // seasick, gives you HM01 Cut once you've rubbed his back; the next time you
-  // step out onto the dock, the ship sets sail and is gone.
-  // Red's Pikachu (this game's own): it knows Surf, and Terastallizes into a Water type.
-  function surfingPikachu(level) {
-    const moves = window.RandomTeam.levelUpMoves("Pikachu", level).filter((m) => m !== "Surf").slice(-3).concat(["Surf"]);
-    return Object.assign(Party.create("Pikachu", level, { moves }), { teraType: "Water", teraAce: true });
-  }
-  async function ssAnneRed(side) {
-    const f = player.flags, R = "LOCALID_SS_ANNE_RIVAL";
-    sfx("se_exit");
-    music("mus_encounter_rival");
-    Overworld.addObject(R, { x: 30, y: 2, facing: "down" }, window.WORLD_SPRITES.red);
-    await Overworld.act([{ who: R, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
-    const approach = [{ who: R, moves: M("SSAnne_2F_Corridor_Movement_RivalApproach" + side) }];
-    if (side !== "Left") approach.push({ who: "player", moves: M("SSAnne_2F_Corridor_Movement_PlayerFaceRival" + side) });
-    await Overworld.act(approach);
-    if (side === "Left") await Overworld.act([{ who: "player", moves: M("Common_Movement_WalkInPlaceFasterUp") }]);
-    await say("…");
-    // (His Pikachu knows Surf, and Terastallizes into a Water type.)
-    const team = [surfingPikachu(26), Party.create("Charmeleon", 27), Party.create("Wartortle", 27), Party.create("Ivysaur", 27)];
-    const outcome = await battle("trainer", { foe: { name: "Pokémon Trainer Red", team, pic: "red", tera: true }, defeatText: ["…"] });
-    if (outcome !== "won") return;
-    f.ssAnneRed = true;
-    show("world");
-    await Overworld.resume();
-    await say(["…", "Red nodded, and headed off."]);
-    music("mus_rival_exit");
-    await Overworld.act([{ who: R, moves: M("SSAnne_2F_Corridor_Movement_RivalExit" + side).concat(["set_invisible"]) }]);
-    Overworld.removeObject(R);
-    music((window.WORLD_MAPS.SSAnne_2F_Corridor || {}).music);
-  }
-  async function ssAnneCaptain() {
-    const f = player.flags, C = "SSAnne_CaptainsOffice_Text_";
-    if (f.gotHM01) {
-      await Overworld.act([{ who: "LOCALID_SS_ANNE_CAPTAIN", moves: ["face_player"] }]);
-      await say(T(C + "SSAnneWillSetSailSoon"));
-      return;
-    }
-    await say(T(C + "CaptainIFeelSeasick"));
-    await sayWithJingle("mus_heal", T(C + "RubbedCaptainsBack"));
-    await Overworld.act([{ who: "LOCALID_SS_ANNE_CAPTAIN", moves: ["face_player"] }]);
-    await say(T(C + "ThankYouHaveHMForCut"));
-    Player.addItem(player, "hm01");
-    f.gotHM01 = true;
-    await sayWithJingle("mus_obtain_key_item", T(C + "ObtainedHM01FromCaptain"));
-    await say(T(C + "ExplainCut"));
-  }
-  // Out on the dock with HM01: the ship sails off, and you head back up the pier.
-  function ssAnneDeparting() { return !!(player.flags.gotHM01 && !player.flags.ssAnneDeparted); }
-  async function ssAnneDeparts() {
-    const f = player.flags, at = Overworld.position();
-    await Overworld.act([{ who: "player", moves: at.y <= 6 ? M("SSAnne_Exterior_Movement_WalkDown") : M("Common_Movement_WalkInPlaceFasterDown") }]);
-    music("mus_surf");
-    await new Promise((r) => setTimeout(r, 800));
-    await Overworld.act([{ who: "LOCALID_SS_ANNE", moves: Array(12).fill("walk_slow_left") }]);
-    Overworld.removeObject("LOCALID_SS_ANNE");
-    f.ssAnneDeparted = true;
-    await Overworld.act([{ who: "player", moves: M("SSAnne_Exterior_Movement_Exit") }]);
-    await Overworld.teleport({ map: "VermilionCity", x: 23, y: 34, facing: "up" });
-    await Overworld.act([{ who: "player", moves: M("VermilionCity_Movement_ExitSSAnne") }]);
   }
 
   // ---------- The S.S. Aqua ----------
@@ -15975,167 +10170,6 @@
     if (await confirm(what + "'s effect wore off… Would you like to use another " + Bag.name(item) + "? (" +
       Player.itemCount(player, item) + " left)")) await useRepel(item);
     await persist();
-  }
-
-  // ---------- Exploring ----------
-
-  function special(script) {
-    if (deltaDue(script)) return true;   // (the Delta Episode's scenes as you come in)
-    // (Orre: up the road from the Air Strip to the Outskirt Stand the first time, Folly and Trudly come out.)
-    if ((script === "arrive:OutskirtStand" || script === "enter:OutskirtStand") && (!(player.flags.orre | 0) || ((player.flags.orreStory | 0) === 18 && !player.flags.orreStandFT))) return true;
-    // (Colosseum's story proper: Folly and Trudly at Phenac City; the Mayor's house's scene.)
-    if ((script === "arrive:PhenacCity" || script === "enter:PhenacCity") && (player.flags.orreStory | 0) === 19 && !player.flags.orreFT) return true;
-    if (script === "enter:PhenacCity_MayorsHouse" && (player.flags.orreStory | 0) === 20) return true;
-    // (Colosseum's story, Pyrite: coming to town, the Pyrite Building's top floor, Miror B.'s hideout.)
-    if ((script === "arrive:PyriteTown" || script === "enter:PyriteTown") && (player.flags.orreStory | 0) === 21) return true;
-    if (script === "enter:PyriteTown_PyriteBuilding_4F" && (player.flags.orreStory | 0) === 25) return true;
-    if (script === "enter:PyriteCave_MirorBHideout" && (player.flags.orreStory | 0) === 26) return true;
-    if (script === "enter:AgateVillage_EaguansHouse" && (player.flags.orreStory | 0) === 28) return true;
-    if ((script === "arrive:MtBattle" || script === "enter:MtBattle") && (player.flags.orreStory | 0) === 31) return true;
-    {
-      const story = player.flags.orreStory | 0, at = (name) => script === "arrive:" + name || script === "enter:" + name;
-      if (at("TheUnder") && story === 33) return true;
-      if (script === "enter:TheUnder_Studio" && story === 35) return true;
-      if (at("ShadowLab_1F") && story === 36) return true;
-      if (script === "enter:ShadowLab_B1F" && story === 37) return true;
-      if (script === "enter:ShadowLab_EinsRoom" && story === 38) return true;
-      if (at("RealgamTower_1F") && story === 40) return true;
-      if (script === "enter:RealgamTower_Top" && story === 43) return true;
-    }
-    if (script === "Orre_WorldMap") return true;   // (Orre: out of a place, its map: orreTravel())
-    // Johto: its scripts (a step's, while its var has its value), its
-    // Apricorn trees, and its maps' frame tables as you come in.
-    // Hoenn: a step's scene while its var has its value, and its maps' frame tables as you come in.
-    if (/^hoenn:/.test(script || "")) return hoenn.triggerDue(script);
-    // (Anyone or any sign in Hoenn that has an Emerald script, unless this game has its own for it.)
-    if (isHoenn(player.location.map) && hoenn.hasScript(script) && !SPECIAL.has(script) && !TRAINER_SCRIPTS.has(script) && !ITEM_BALLS.has(script)) return true;
-    if (/^(enter|arrive):/.test(script || "") && isHoenn(script.replace(/^\w+:/, ""))) return !!hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
-    if (/^hgss:/.test(script || "")) return johto.triggerDue(script);
-    if (/^hgss_apricorn:/.test(script || "")) return true;
-    if (/^Johto_AzaleaRide:\d+$/.test(script || "")) return true;   // (Azalea's Gym's Ariados: azaleaRide())
-    if (/^Johto_GoldenrodPanel:\d$/.test(script || "")) return true;   // (Goldenrod Underground's switches: goldenrodPanel())
-    if (script === "Johto_MagnetTrain") return true;   // (the Magnet Train's doors: magnetTrainBoard())
-    if (script === "Johto_SSAquaBoard") return true;   // (Olivine's port: ssAquaBoard())
-    if (/^(BerryFarm_(Caretaker|Tree_\d+)|HoennBerry_Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
-    if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && johto.zoneOf(player.location.map)) return true;
-    if (/^(enter|arrive):/.test(script || "") && johto.frameScript(script.replace(/^\w+:/, ""))) return true;
-    // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
-    // Coming out of the Gym with the Boulder Badge, Leaf is waiting.
-    // Prof. Oak's aide, then his test at the top of Pokémon Tower (this game's own).
-    if (script === "enter:Route23" && victoryRoadRivalDue()) return true;
-    if (/^enter:/.test(script) && megaAideDue(script.slice(6))) return true;
-    if ((script === "enter:PokemonTower_7F" || script === "Game_EventScript_MegaTower") && megaTowerDue()) return true;
-    if (script === "enter:PewterCity") player.flags.museumTicket = false;
-    if (teraAideDue(script)) return true;
-    if (script === "enter:PewterCity") return leafPewterDue();
-    // Into Faraway Island's grass (FarawayIsland_Interior_OnTransition): the
-    // step count starts again, and Mew, if it's there, is spotted and hides.
-    if (script === "enter:FarawayIsland_Interior") { player.flags.farawaySteps = 0; return !player.flags.foughtMew; }
-    // (Orre: Willie comes after you as Folly and Trudly drive off, in Colosseum's story proper: orreStandStory.)
-    if (script === "enter:OutskirtStand_Diner" || script === "enter:OutskirtStand") return false;
-    // Walking into the Route 4 Pokémon Center makes it where you go after
-    // blacking out (FireRed's setrespawn there).
-    if (script === "enter:Route4_PokemonCenter_1F") { player.flags.lastCenter = "Route4_PokemonCenter_1F"; return false; }
-    // (FireRed's FLAG_TEMP_2 and 3: Bill in the Teleporter, back after the ticket.)
-    if (script === "enter:SSAnne_Exterior") return ssAnneDeparting();
-    if (script === "enter:Route25_SeaCottage") { billInTeleporter = billJustOut = false; seaCottageReturn = !!player.flags.gotSSTicket; return false; }
-    // Pokémon Tower: Gary on 2F until you've battled him, the ghost on 6F
-    // until it's at rest, and 5F's purified zone each time you step in.
-    if (/^PokemonTower_2F_EventScript_RivalTrigger/.test(script)) return !player.flags.towerRival;
-    if (script === "PokemonTower_6F_EventScript_MarowakGhost") return !player.flags.marowakCalmed;
-    if (script === "PokemonTower_5F_EventScript_PurifiedZone") return !inPurifiedZone;
-    if (script === "PokemonTower_5F_EventScript_ExitPurifiedZone") { inPurifiedZone = false; return false; }
-    // The Karate Master turns to you until he's beaten; Gary waits on Silph's
-    // 7F, and Giovanni on 11F, until you've battled them.
-    if (/^SaffronCity_Dojo_EventScript_TriggerMasterBattle/.test(script)) return !player.flags.TRAINER_BLACK_BELT_KOICHI || !!dojoRematch(DOJO_MASTER);
-    if (/^SilphCo_7F_EventScript_RivalTrigger/.test(script)) return !player.flags.silphRival;
-    if (/^SilphCo_11F_EventScript_GiovanniTrigger/.test(script)) return !silphFreed();
-    // Back in the Safari Zone's gate during the Safari Game: leaving early?
-    if (script === "enter:" + SAFARI_GATE) return safariOn();
-    // Cycling Road (FireRed's VAR_MAP_SCENE_ROUTE16): which side of a gate's
-    // guard you're on; coming out onto Route 16 or 18 on the Cycling Road
-    // side, you're put on your Bicycle (ForcePlayerOntoBike).
-    if (script === "EventScript_SetEnteringCyclingRoad") { player.flags.cyclingRoad = true; return false; }
-    if (script === "EventScript_SetExitingCyclingRoad") { delete player.flags.cyclingRoad; return false; }
-    if (script === "enter:Route16" || script === "enter:Route18") {
-      if (player.flags.cyclingRoad && Overworld.avatar() === "walk") Overworld.setAvatar("bike");
-      return false;
-    }
-    // The Seafoam Islands: fallen onto B3F's or B4F's water (FallWarpEffect_7).
-    if (script === "enter:SeafoamIslands_B3F" || script === "enter:SeafoamIslands_B4F") {
-      const at = player.location;
-      return seafoamFell === at.map && World.isSurfable(World.blockAt(at.map, at.x, at.y).behavior);
-    }
-    // Viridian Gym's door, locked until you've the other Badges.
-    if (script === "ViridianCity_EventScript_GymDoorLocked") return !viridianGymOpen();
-    // Route 22: Gary, once Giovanni's beaten; the gate's and Route 23's
-    // guards stop you at the next one whose Badge you haven't shown.
-    if (/^Route22_EventScript_EarlyRivalTrigger/.test(script)) return !!(player.flags.pokedex && !player.flags.route22Rival);
-    if (/^Route22_EventScript_LateRivalTrigger/.test(script)) return route22LateRivalDue();
-    if (script === "Route22_NorthEntrance_EventScript_BoulderBadgeGuardTrigger") return LeagueRoad.guardStops(player.flags, 1);
-    { const g = /^Route23_EventScript_(\w+)BadgeGuardTrigger$/.exec(script); if (g) return LeagueRoad.guardStops(player.flags, ROUTE23_BADGES.indexOf(g[1]) + 1); }
-    // The Pokémon League's rooms: their entry scenes, while it's their turn;
-    // the Hall of Fame's, always.
-    if (/^enter:PokemonLeague_/.test(script)) { const m = script.slice(6); return m === League.HALL_OF_FAME || League.entryDue(player.flags, m); }
-    // Walking into the Indigo Plateau's Pokémon Center makes it where you go
-    // after blacking out (FireRed's setrespawn there).
-    if (script === "enter:IndigoPlateau_PokemonCenter_1F") { player.flags.lastCenter = "IndigoPlateau_PokemonCenter_1F"; return false; }
-    // Cinnabar Gym's door, locked until you've the Secret Key.
-    if (script === "CinnabarIsland_EventScript_GymDoorLocked") return !player.flags.FLAG_HIDE_POKEMON_MANSION_B1F_SECRET_KEY;
-    // Back in the Pokémon Lab (or Pewter's Museum), a fossil you left with the doctor is ready.
-    // (Or Sinnoh's: Oreburgh's, the Essentials project's.)
-    const fossilHere = /^enter:/.test(script || "") && isSinnoh(script.slice(6)) && (window.WORLD_MAPS[script.slice(6)].people || []).some((p) => /_EventScript_FossilScientist$/.test(p.script || ""));
-    if (script === "enter:CinnabarIsland_PokemonLab_Entrance" || script === "enter:PewterCity_Museum_1F" || fossilHere) {
-      if (player.flags.fossilRevive) player.flags.fossilRevive.ready = true;
-      return false;
-    }
-    // The Sevii Islands: Bill waiting outside Blaine's Gym (on arriving
-    // however you come, or walking about); the Pokémon Centers where you'll
-    // be after blacking out (FireRed's setrespawn on entering them); the
-    // Joyful Game Corner's scene; Bill ready to leave One Island; the Ember
-    // Spa's spring, once a visit; the bikers; the Rockets' password.
-    if (script === "enter:CinnabarIsland" || script === "arrive:CinnabarIsland") return player.flags.cinnabarScene === 1;
-    if (/^enter:(One|Two|Three|Four|Five|Six|Seven)Island_PokemonCenter_1F$/.test(script)) {
-      player.flags.lastCenter = script.slice(6);
-      // (Gary's there the first time you come to Six Island's: SixIsland_PokemonCenter_1F_OnFrame.)
-      if (script === "enter:SixIsland_PokemonCenter_1F") return !player.flags.sixCenterScene;
-      // (Celio's not been met: OneIsland_PokemonCenter_1F_OnFrame.)
-      return script === "enter:OneIsland_PokemonCenter_1F" && !player.flags.celioScene && (player.flags.oneHarborScene || 0) >= 2;
-    }
-    // Trainer Tower: its counter while no challenge is on; back in the lobby
-    // having lost (TrainerTower_Lobby_EventScript_Enter); a floor's battle
-    // while it's the next to clear, and its trainers haven't come for you yet.
-    if (script === "TrainerTower_Lobby_EventScript_EntryTrigger") return !player.flags.towerScene;
-    if (script === BT_ENTRY) return !player.flags.battleTowerScene;
-    if (script === "enter:TrainerTower_Lobby") return !!(player.flags.tower && player.flags.tower.lost);
-    if (/^TrainerTower_EventScript_(Single|Double)BattleTrigger/.test(script)) {
-      const map = player.location.map, n = towerFloorNo(map);
-      if (!n || !player.flags.tower || TrainerTower.floorCleared(player.flags, n)) return false;
-      const type = towerFloor(n).type, double = /Double/.test(script);
-      if (double ? type !== "double" : type === "double") return false;
-      return !tempFlags.has(map + (double ? ":doubles" : ":singles"));
-    }
-    if (script === "enter:TwoIsland_JoyfulGameCorner") return !player.flags.gameCornerScene;
-    if (script === "enter:OneIsland") return player.flags.oneHarborScene === 2;
-    if (/^OneIsland_PokemonCenter_1F_EventScript_LeaveOneIslandTrigger/.test(script)) return player.flags.celioScene === 2;
-    if (script === "OneIsland_KindleRoad_EmberSpa_EventScript_SpaHeal") return !tempFlags.has("OneIsland_KindleRoad_EmberSpa:spa");
-    if (script === "ThreeIsland_EventScript_BikerBossIntroTrigger") return player.flags.threeIslandScene === 2;
-    if (/^ThreeIsland_EventScript_BattleBikersTrigger/.test(script)) return player.flags.threeIslandScene === 3;
-    if (script === "MtEmber_Exterior_EventScript_RocketPasswordScene") return player.flags.mtEmberScene === 1;
-    // Four Island: Gary the first time you come; Lorelei and the poachers in
-    // Icefall Cave. Five Island: the Warehouse Admin turning round; Selphy
-    // lost in the Lost Cave (until she's beaten: ..._Room10_OnResume), and
-    // brought home to Resort Gorgeous.
-    if (script === "enter:FourIsland") return !player.flags.fourIslandScene;
-    if (script === "FourIsland_IcefallCave_Back_EventScript_LoreleiRocketsScene") return !player.flags.icefallScene;
-    if (script === "FiveIsland_RocketWarehouse_EventScript_Admin2Trigger") return !player.flags.warehouseScene;
-    if (script === "enter:FiveIsland_LostCave_Room10") return !player.flags.lostCaveScene && !player.flags.TRAINER_LADY_SELPHY;
-    if (script === "enter:FiveIsland_ResortGorgeous") return player.flags.resortScene === 1;
-    // The guards stop you only until you have a Bicycle (VAR_TEMP_1).
-    if (/_EventScript_NeedBikeTrigger/.test(script)) return !Player.itemCount(player, "bicycle");
-    // The Saffron gates' guards, until they've had the Tea.
-    if (/^Route[5-8]_\w+Entrance_EventScript_GuardTrigger/.test(script)) return !player.flags.gatesOpen;
-    return SPECIAL.has(script) || ITEM_BALLS.has(script) || TRAINER_SCRIPTS.has(script);
   }
 
   async function explore() {
