@@ -29,7 +29,7 @@ function building(m, c, b, style = "tin") { const { x, y, w, h } = b; block(m, x
 function finish(m) {
   const { c, z } = drawings[m.name];
   for (const t of m.triggers || []) if (t.script === "Orre_WorldMap") block(m, t.x, t.y, 1, 1, false);
-  for (const w of m.warps) { block(m, w.x, w.y, 1, 1, false); m.behavior[w.y * m.width + w.x] = m.name === "PhenacCity_PreGym" ? 0x65 : m.name === "AgateVillage" && w.map === "RelicForest" ? 0x63 : m.name === "RelicForest" ? 0x62 : w.map === "PyriteCave" ? 0x62 : w.map === "PyriteTown" ? 0x65 : 0x69; }
+  for (const w of m.warps) { block(m, w.x, w.y, 1, 1, false); m.behavior[w.y * m.width + w.x] = m.name === "PhenacCity_PreGym" ? 0x65 : m.name === "AgateVillage" && (w.map === "RelicForest" || w.map === "AgateVillage_RelicCave") ? 0x63 : m.name === "RelicForest" ? 0x62 : w.map === "PyriteCave" ? 0x62 : w.map === "PyriteTown" ? 0x65 : 0x69; }
   c.save(path.join(out, m.name + ".png")); z.save(path.join(out, m.name + "-top.png"));
   const border = canvas(32, 32); texture(border, [0, 0, 32, 32], m.name === "AgateVillage" || m.name === "RelicForest" ? C.grass : m.name === "TheUnder" ? [[33, 34, 39], [40, 41, 45]] : C.sand, 9); border.save(path.join(out, m.name + "-border.png"));
 }
@@ -282,6 +282,28 @@ function wheel(c, x, y, r, colors = C.rust) { c.ellipse(x, y, r, r, colors[0], 2
   lobby.triggers = lobby.triggers.filter((t) => t.script !== "Orre_WorldMap");
   lobby.behavior[11 * lobby.width + 9] = 0x65; lobby.collision[11 * lobby.width + 9] = 0;
   lobby.collision[11 * lobby.width + 10] = 1; changed[lobby.name] = lobby;
+}
+
+// Rooms Colosseum has that the base maps don't, each an Emerald room (its picture and layout), as Orre's other
+// insides are: the Pyrite Building's 2F and 3F (Devon's 2F, twice), so it has Colosseum's four floors, 1F up to the
+// top floor; and the cave on the way from Agate Village to the Relic Stone (Cave of Origin's entrance hall), its
+// mouth at Agate's west path and its far end out to the Relic Forest.
+{
+  const em = { window: { WORLD_MAPS: {} } }; vm.createContext(em);
+  try { vm.runInContext(fs.readFileSync(path.join(root, "data/emerald-maps.js"), "utf8"), em); } catch (e) { /* (only its maps are wanted) */ }
+  const room = (from, name, title, music, warps) => Object.assign(clone(em.window.WORLD_MAPS[from]), { name, title, image: from, region: "orre", music,
+    showName: false, allowEscaping: false, connections: [], triggers: [], hidden: [], signs: [], wild: null, warps, people: [] });
+  const B = "PyriteTown_PyriteBuilding_";
+  const b1 = changed[B + "1F"] || clone(maps[B + "1F"]), b4 = changed[B + "4F"] || clone(maps[B + "4F"]);
+  b1.warps[2] = { x: 14, y: 1, map: B + "2F", warp: 0 }; changed[b1.name] = b1;
+  b4.warps[0] = { x: 2, y: 1, map: B + "3F", warp: 1 }; changed[b4.name] = b4;
+  changed[B + "2F"] = room("RustboroCity_DevonCorp_2F", B + "2F", "Pyrite Building", b1.music, [{ x: 14, y: 1, map: B + "1F", warp: 2 }, { x: 2, y: 1, map: B + "3F", warp: 0 }]);
+  changed[B + "3F"] = room("RustboroCity_DevonCorp_2F", B + "3F", "Pyrite Building", b1.music, [{ x: 2, y: 1, map: B + "2F", warp: 1 }, { x: 14, y: 1, map: B + "4F", warp: 0 }]);
+  const agate = changed.AgateVillage, forest = changed.RelicForest, CAVE = "AgateVillage_RelicCave";
+  for (const i of [1, 2]) Object.assign(agate.warps[i], { map: CAVE, warp: 0 });
+  for (const i of [0, 1]) Object.assign(forest.warps[i], { map: CAVE, warp: 1 });
+  changed[CAVE] = Object.assign(room("CaveOfOrigin_1F", CAVE, "Relic Cave", "em_cave_of_origin", [{ x: 11, y: 17, map: "AgateVillage", warp: 1 }, { x: 14, y: 5, map: "RelicForest", warp: 0 }]),
+    { showName: true });
 }
 
 // Persist exact adaptation choices and references alongside the generated maps.

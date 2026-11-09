@@ -3339,11 +3339,14 @@ Pokémon back if it was never snagged), whose four ID Badges open the way to the
   `-middle.js`, `-late.js` place by place): all 83 of its Trainers without Shadow Pokémon, where Colosseum puts them, with
   Colosseum's parties and words: Phenac's Drig and Kaib and the **Pre Gym** (Botan, Liqui, Dugo and Gwin, then Justy,
   once four Shadow Pokémon are snagged: the White Herb and TM27 Return); Pyrite's Calda, Emok and Hader, the Pyrite
-  Building's and Pyrite Cave's Trainers; Agate's Skof and Dury and the Peons on the way to the Relic Stone; Mt. Battle's
+  Building's (its four floors, as in Colosseum: the lobby, 2F and 3F, Devon's 2F, and the top floor) and Pyrite
+  Cave's Trainers; Agate's Skof and Dury, and Doven, Silton and Kass in the **Relic Cave** (Cave of Origin's entrance hall,
+  `AgateVillage_RelicCave`), the way from Agate's west path to the Relic Forest; Mt. Battle's
   and The Under's; the lab's Researchers; Realgam's halls; the rebuilt Snagem Hideout. Each battles with the party of
   the stage the story's at (Colosseum's later parties after Miror B., Dakim and Evice: `stages`, `player.flags.orreColo`),
   and the Shadow Pokémon Trainers likewise once theirs is snagged (`Orre.addRematches`, `orreColoRematch`); a later
-  battle brings back a Shadow Pokémon never snagged. Who says which of Colosseum's unnamed lines follows the game's own
+  battle brings back a Shadow Pokémon never snagged. After the game Rogue Cail tells you of the Mystery Troop member in the
+  Snagem Hideout, and Chaser Gurks of the one then in Ein's lab (`Orre.CAIL_TIP`, `Orre.GURKS_TIP`). Who says which of Colosseum's unnamed lines follows the game's own
   numbering: a Trainer's lines come just before their named line in the battle text. Map sprites and battle pictures go
   by class and gender (`Orre.SPRITES`).
 - **Colosseum's Shadow Pokémon** (`Orre.SHADOW` in `game/orre.js`): all 48 of them, in Colosseum's order, each with its

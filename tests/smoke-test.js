@@ -3149,10 +3149,33 @@ if (window.JOHTO_TOWN_MAP) {
     // (The Relic Forest, west of Agate: in and out by its arrow warps, the shrine at the end of the path.)
     const RF = WORLD_MAPS.RelicForest;
     assert(RF && RF.region === "orre" && fs.existsSync(path.join(root, "assets/world/maps/RelicForest.png")), "the Relic Forest");
-    for (const w of G.warps.filter((w) => w.map === "RelicForest")) {
-      const t = World.warpTarget(w), back = RF.warps.find((b) => b.x === t.x && b.y === t.y);
-      assert(t.map === "RelicForest" && back && World.warpTarget(back).map === "AgateVillage", "Agate <-> the Relic Forest");
-      assert(G.behavior[w.y * G.width + w.x] === 0x63 && RF.behavior[back.y * RF.width + back.x] === 0x62, "arrow warps");
+    // (Agate's west path into the Relic Cave, as in Colosseum, and through it to the Relic Forest: in and out, and the
+    // cave walked through from its mouth to its far end.)
+    const RC = WORLD_MAPS.AgateVillage_RelicCave;
+    assert(RC && RC.region === "orre", "the Relic Cave");
+    for (const w of G.warps.filter((w) => w.map === RC.name)) {
+      const t = World.warpTarget(w), back = RC.warps.find((b) => b.x === t.x && b.y === t.y);
+      assert(t.map === RC.name && back && World.warpTarget(back).map === "AgateVillage", "Agate <-> the Relic Cave");
+      assert(G.behavior[w.y * G.width + w.x] === 0x63, "Agate's arrow warp");
+    }
+    for (const w of RF.warps) {
+      const t = World.warpTarget(w), back = RC.warps.find((b) => b.x === t.x && b.y === t.y);
+      assert(t.map === RC.name && back && World.warpTarget(back).map === "RelicForest" && RF.behavior[w.y * RF.width + w.x] === 0x62, "the Relic Cave <-> the Relic Forest");
+    }
+    {
+      const [a, z] = RC.warps, seen = new Set([a.x + "," + a.y]), q = [[a.x, a.y]];
+      while (q.length) { const [x, y] = q.shift(); for (const dir of ["up", "down", "left", "right"]) { const r = World.step({ map: RC.name, x, y }, dir), k = r.x + "," + r.y;
+        if (r.ok && r.map === RC.name && !seen.has(k)) { seen.add(k); q.push([r.x, r.y]); } } }
+      assert([[0, 1], [0, -1], [1, 0], [-1, 0]].some(([dx, dy]) => seen.has((z.x + dx) + "," + (z.y + dy))), "through the Relic Cave");
+    }
+    // (The Pyrite Building's four floors, as in Colosseum: up from the lobby floor by floor, and back down.)
+    {
+      const fl = ["1F", "2F", "3F", "4F"].map((n) => WORLD_MAPS["PyriteTown_PyriteBuilding_" + n]);
+      for (let i = 0; i < 3; i++) {
+        const up = fl[i].warps.find((w) => w.map === fl[i + 1].name), t = up && World.warpTarget(up);
+        const down = t && fl[i + 1].warps.find((w) => w.x === t.x && w.y === t.y);
+        assert(down && World.warpTarget(down).map === fl[i].name, fl[i].name + " <-> " + fl[i + 1].name);
+      }
     }
     {
       const sx = RF.warps[0].x, sy = RF.warps[0].y, seen = new Set([sx + "," + sy]), q = [[sx, sy]];
@@ -3285,6 +3308,17 @@ if (window.JOHTO_TOWN_MAP) {
           assert([].concat(s.intro || tr.before || [], s.defeat || [], s.after || []).length, tr.script + " says something");
         }
       }
+      // (After the game, Cail tells of the Mystery Troop member in the Snagem Hideout and Gurks of the one then in Ein's
+      // lab: the two you didn't battle in Phenac.)
+      {
+        const f = { orreStory: 44, orreTroop: "Verde" }, hide = Orre.troopHideout(f), lab = Orre.troopLab(f);
+        assert(hide !== "Verde" && lab !== "Verde" && hide !== lab);
+        const cail = Orre.REMATCHES.PyriteTown_EventScript_Shadow_CAIL.find((s) => s.from === 44);
+        const gurks = Orre.COLO_TRAINERS.TheUnder_EventScript_Colo_GURKS.stages.find((s) => s.from === 44);
+        const starter = { Verde: "Bayleef", Rosso: "Quilava", Bluno: "Croconaw" };
+        assert(cail.won(f).join(" ").includes(starter[hide]) && gurks.won(f).join(" ").includes(lab), "who's left");
+      }
+      assert(Orre.COLO_TRAINERS.PyriteCave_EventScript_Colo_MELA.female, "Chaser Mela");
       for (const [script, list] of Object.entries(Orre.REMATCHES)) {
         assert(Orre.SHADOW_TRAINERS[script], script);
         for (const s of list) assert(s.team.every(([sp]) => DEX[sp]), script);

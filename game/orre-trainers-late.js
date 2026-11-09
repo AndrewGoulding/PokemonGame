@@ -265,4 +265,25 @@
     }
     return { team, snag };
   };
+
+  // After the game, Rogue Cail and Chaser Gurks each tell you of a Mystery Troop member still out there, as in
+  // Colosseum: Cail of the one in the Snagem Hideout (by his Shadow Pokémon: M2_out #17028, #17612, #17613), Gurks of
+  // the one who then turns up in Ein's lab (by name: M4_out #17082, #17080, #17086).
+  {
+    const CAIL_TIP = {
+      Verde: ["Cail: That trainer, he used a Shadow\nBayleef. The trainer's name was…", "Cail: Uh… I forgot! He did say\nsomething about the Snagem Hideout,\nthough."],
+      Rosso: ["Cail: That trainer, he used a Shadow\nQuilava. The trainer's name was…", "Cail: Uh… I forgot! He did say\nsomething about the Snagem Hideout,\nthough."],
+      Bluno: ["Cail: That trainer, he used a Shadow\nCroconaw. The trainer's name was…", "Cail: Uh… I forgot! He did say\nsomething about the Snagem Hideout,\nthough."]
+    };
+    const GURKS_TIP = {
+      Verde: ["All right. I promised that I'd\ntell you about that Shadow Pokémon.", "The trainer was this guy named\nVerde in a flashy green outfit. He\nhad a Shadow Bayleef with him."],
+      Rosso: ["All right. I promised that I'd\ntell you about that Shadow Pokémon.", "The trainer was this guy named\nRosso in a flashy red outfit. He had\na Shadow Quilava with him."],
+      Bluno: ["All right. I promised that I'd\ntell you about that Shadow Pokémon.", "The trainer was this guy named\nBluno in a flashy blue outfit. He had\na Shadow Croconaw with him."]
+    };
+    Orre.CAIL_TIP = CAIL_TIP; Orre.GURKS_TIP = GURKS_TIP;
+    const cail = (Orre.REMATCHES.PyriteTown_EventScript_Shadow_CAIL || []).find((s) => s.from === 44);
+    if (cail) cail.won = (f) => CAIL_TIP[troopHideout(f)];
+    const gurks = (Orre.COLO_TRAINERS.TheUnder_EventScript_Colo_GURKS || { stages: [] }).stages.find((s) => s.from === 44);
+    if (gurks) gurks.won = (f) => GURKS_TIP[troopLab(f)];
+  }
 })();

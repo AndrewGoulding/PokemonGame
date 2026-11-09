@@ -7560,34 +7560,36 @@
   const teamOf = (list) => list.map(([sp, lv]) => Party.create(sp, lv));
   // Colosseum's other Trainers (game/orre-trainers*.js): the party of the stage they're at, once a stage; beaten,
   // that stage's words. Also a Shadow Pokémon Trainer's later parties, once theirs is snagged (Orre.REMATCHES).
+  // (A stage's words can be a function of the flags: who's left to find, say.)
+  const stageWords = (x) => (typeof x === "function" ? x(player.flags) : x);
   async function coloStageBattle(t, stage, index, store, script) {
     const f = player.flags;
-    await say(stage.intro);
+    await say(stageWords(stage.intro));
     // (`shadow`: whose Shadow Pokémon, if it was never snagged, comes back in the first one's place, to be snagged, as
     // Colosseum's later battles have it.)
     const team = stage.team.map(([sp, lv]) => Party.create(sp, lv));
     const back = stage.shadow ? Orre.shadowOf(stage.shadow).filter((s) => !(f.orreShadowSnagged || []).includes(s.species)) : [];
     if (back.length) team.splice(0, back.length, ...back.map(Orre.shadowMon));
     const opts = { foe: { name: t.name, team, pic: t.pic }, prizeClass: t.cls,
-      double: !t.single, defeatText: stage.defeat, snag: back.map((s) => s.species) };
+      double: !t.single, defeatText: stageWords(stage.defeat), snag: back.map((s) => s.species) };
     const outcome = await storyBattle(opts);
     if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
-    if (outcome !== "won") { if (stage.lost) await say(stage.lost); return false; }
+    if (outcome !== "won") { if (stage.lost) await say(stageWords(stage.lost)); return false; }
     (f[store] = f[store] || {})[script] = index;
     // (Said once, on winning: `won`; then a gift, `item`, the first time that stage is won.)
-    if (stage.won) await say(stage.won);
+    if (stage.won) await say(stageWords(stage.won));
     if (stage.item) {
       Player.addItem(player, stage.item);
       await sayWithJingle("mus_obtain_item", "{PLAYER} obtained " + article(Bag.name(stage.item)) + "!");
     }
-    if (stage.after && !stage.won) await say(stage.after);
+    if (stage.after && !stage.won) await say(stageWords(stage.after));
     await persist();
     return true;
   }
   async function coloTrainer(script) {
     const t = Orre.COLO_TRAINERS[script], s = Orre.coloStage(script, player.flags);
-    if (!s || !s.stage) { if (t && t.before) await say(t.before); return; }
-    if (s.beaten) { await say(s.stage.after); return; }
+    if (!s || !s.stage) { if (t && t.before) await say(stageWords(t.before)); return; }
+    if (s.beaten) { await say(stageWords(s.stage.after)); return; }
     await coloStageBattle(t, s.stage, s.index, "orreColo", script);
   }
   async function shadowTrainer(script) {
@@ -7595,7 +7597,7 @@
     if (done.includes(script)) {
       const r = Orre.rematchStage(script, f);
       if (r && r.stage && !r.beaten) { await coloStageBattle(d, r.stage, r.index, "orreColoRematch", script); return; }
-      await say(r && r.stage ? r.stage.after : d.after);
+      await say(r && r.stage ? stageWords(r.stage.after) : d.after);
       return;
     }
     const shadows = Orre.shadowOf(d.trainer);

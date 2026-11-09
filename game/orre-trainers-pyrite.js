@@ -29,7 +29,7 @@
         defeat: ["Too strong for me!"],
         after: ["Urgh… I'm no match… I must level up\nsome more…"] }] },
     // (Colosseum's 2F)
-    PyriteTown_PyriteBuilding_1F_EventScript_Colo_GEATS: { name: "Bandana Guy Geats", cls: "Bandana Guy", map: "PyriteTown_PyriteBuilding_1F", x: 1, y: 5, facing: "face_right",
+    PyriteTown_PyriteBuilding_2F_EventScript_Colo_GEATS: { name: "Bandana Guy Geats", cls: "Bandana Guy", map: "PyriteTown_PyriteBuilding_2F", x: 5, y: 5, facing: "face_right",
       stages: [{ from: 24, team: [["Barboach",32], ["Larvitar",31], ["Carvanha",32]], // #23125 / 23126 / 23128
         intro: ["Fufufu… My Pokémon are looking for\nthe chance to go wild! Booyah!"],
         defeat: ["I want to go wilder!"],
@@ -39,7 +39,7 @@
         defeat: ["I want to go wilder!"],
         after: ["My Pokémon don't look like they've\ngone wild enough, but I'll let you\noff with just this, this time."] }] },
     // (Colosseum's 2F)
-    PyriteTown_PyriteBuilding_1F_EventScript_Colo_GEARE: { name: "Hunter Geare", cls: "Hunter", map: "PyriteTown_PyriteBuilding_1F", x: 17, y: 5, facing: "face_left",
+    PyriteTown_PyriteBuilding_2F_EventScript_Colo_GEARE: { name: "Hunter Geare", cls: "Hunter", map: "PyriteTown_PyriteBuilding_2F", x: 13, y: 5, facing: "face_left",
       stages: [{ from: 24, team: [["Remoraid",33], ["Magnemite",32]], // #23157 / 23159 / 23161
         intro: ["Abnormality detected! Target locked\non!"],
         defeat: ["Emergency! Mayday, mayday!"],
@@ -49,7 +49,7 @@
         defeat: ["Emergency! Mayday, mayday!"],
         after: ["Abnormality detected in friendly\nPokémon…"] }] },
     // (Colosseum's 2F)
-    PyriteTown_PyriteBuilding_1F_EventScript_Colo_LOBA: { name: "Bandana Guy Loba", cls: "Bandana Guy", map: "PyriteTown_PyriteBuilding_1F", x: 2, y: 8, facing: "face_up",
+    PyriteTown_PyriteBuilding_2F_EventScript_Colo_LOBA: { name: "Bandana Guy Loba", cls: "Bandana Guy", map: "PyriteTown_PyriteBuilding_2F", x: 4, y: 8, facing: "face_up",
       stages: [{ from: 24, team: [["Wingull",32], ["Wooper",33]], // #23185 / 23186 / 23187
         intro: ["My beloved Pokémon! See? Giggle…\nFresh prey!"],
         defeat: ["Aiyeeeh! My beloved Pokémon!"],
@@ -59,7 +59,7 @@
         defeat: ["Aiyeeeh! My beloved Pokémon!"],
         after: ["Waaaaaaah! My beloved Pokémon are all\nbeat up!"] }] },
     // (Colosseum's 2F)
-    PyriteTown_PyriteBuilding_1F_EventScript_Colo_AKMEN: { name: "Bodybuilder Akmen", cls: "Bodybuilder", map: "PyriteTown_PyriteBuilding_1F", x: 16, y: 8, facing: "face_up",
+    PyriteTown_PyriteBuilding_2F_EventScript_Colo_AKMEN: { name: "Bodybuilder Akmen", cls: "Bodybuilder", map: "PyriteTown_PyriteBuilding_2F", x: 17, y: 7, facing: "face_left",
       stages: [{ from: 24, team: [["Electrike",31], ["Voltorb",31]], // #23097 / 23099 / 23101
         intro: ["You're like Bug Pokémon drawn to a\ncandle! I'm going with these Pokémon!"],
         defeat: ["This wasn't good enough… This is a\ndilemma…"],
@@ -69,7 +69,7 @@
         defeat: ["This wasn't good enough… This is a\ndilemma…"],
         after: ["No glory for the fallen… I'm crushed…"] }] },
     // (Colosseum's 3F)
-    PyriteTown_PyriteBuilding_4F_EventScript_Colo_RALEEN: { name: "Rider Raleen", cls: "Rider", map: "PyriteTown_PyriteBuilding_4F", x: 0, y: 6, facing: "face_right",
+    PyriteTown_PyriteBuilding_3F_EventScript_Colo_RALEEN: { name: "Rider Raleen", cls: "Rider", map: "PyriteTown_PyriteBuilding_3F", x: 5, y: 5, facing: "face_right",
       stages: [{ from: 24, team: [["Doduo",32], ["Ledyba",32], ["Swablu",31]], // #23130 / 23131 / 23132
         intro: ["Come and get some! We're gunning our\nengines!"],
         defeat: ["Dropped in the dirt…"],
@@ -79,7 +79,7 @@
         defeat: ["Dropped in the dirt…"],
         after: ["I only lost because I didn't have a\nShadow Pokémon this time."] }] },
     // (Colosseum's 3F)
-    PyriteTown_PyriteBuilding_4F_EventScript_Colo_TURA: { name: "Hunter Tura", cls: "Hunter", map: "PyriteTown_PyriteBuilding_4F", x: 18, y: 5, facing: "face_left",
+    PyriteTown_PyriteBuilding_3F_EventScript_Colo_TURA: { name: "Hunter Tura", cls: "Hunter", map: "PyriteTown_PyriteBuilding_3F", x: 13, y: 5, facing: "face_left",
       stages: [{ from: 24, team: [["Spheal",31], ["Snorunt",32]], // #23092 / 23093 / 23095
         intro: ["My Pokémon are solid troopers! Check\nthem out!"],
         defeat: ["How'd this happen?!"],
@@ -89,7 +89,7 @@
         defeat: ["How'd this happen?!"],
         after: ["So, admit it! My Pokémon are decent,\nhuh? …Even though they can't win…"] }] },
     // (Colosseum's 3F (the guide's "Tori"; the game's own name list has TOTI))
-    PyriteTown_PyriteBuilding_4F_EventScript_Colo_TOTI: { name: "Hunter Toti", cls: "Hunter", map: "PyriteTown_PyriteBuilding_4F", x: 3, y: 8, facing: "face_up",
+    PyriteTown_PyriteBuilding_3F_EventScript_Colo_TOTI: { name: "Hunter Toti", cls: "Hunter", map: "PyriteTown_PyriteBuilding_3F", x: 1, y: 7, facing: "face_right",
       stages: [{ from: 24, team: [["Horsea",31], ["Oddish",32], ["Sandshrew",32]], // #23222 / 23223 / 23224
         intro: ["My Pokémon can dance with elegance\neven in a dump like this!"],
         defeat: ["Dancing alone doesn't win any\nbattles!"],
@@ -99,7 +99,7 @@
         defeat: ["Dancing alone doesn't win any\nbattles!"],
         after: ["The end is always so cruelly\npitiless… Oh, woe…"] }] },
     // (Colosseum's 3F)
-    PyriteTown_PyriteBuilding_4F_EventScript_Colo_ELIDI: { name: "Bodybuilder Elidi", cls: "Bodybuilder", map: "PyriteTown_PyriteBuilding_4F", x: 10, y: 8, facing: "face_up",
+    PyriteTown_PyriteBuilding_3F_EventScript_Colo_ELIDI: { name: "Bodybuilder Elidi", cls: "Bodybuilder", map: "PyriteTown_PyriteBuilding_3F", x: 17, y: 7, facing: "face_left",
       stages: [{ from: 24, team: [["Cacnea",32], ["Tentacool",33]], // #23144 / 23146 / 23148
         intro: ["Now what compels someone like you to\ncome here just for the sake of\ngetting thrashed by me?"],
         defeat: ["You turned the tables on me!"],
@@ -189,7 +189,7 @@
         defeat: ["Waaah! My confidence took a hit!"],
         after: ["Maybe… Should I be training at the\nPre Gym?"] }] },
     // (the northern sewers)
-    PyriteCave_EventScript_Colo_MELA: { name: "Chaser Mela", cls: "Chaser", map: "PyriteCave", x: 19, y: 4, facing: "face_right",
+    PyriteCave_EventScript_Colo_MELA: { name: "Chaser Mela", cls: "Chaser", female: true, map: "PyriteCave", x: 19, y: 4, facing: "face_right",
       stages: [{ from: 26, team: [["Natu",33], ["Tentacool",32], ["Teddiursa",32]], // #23403 / 23406 / 23407
         intro: ["Are you looking for Duking's Pokémon?\nCould it be beyond here, I wonder?"],
         defeat: ["Where's that Pokémon? I'll never tell\nyou!"],
