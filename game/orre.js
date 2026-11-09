@@ -131,7 +131,10 @@
   // (Colosseum's story proper, player.flags.orreStory from 18: Team Snagem's hideout wrecked and its people gone;
   // Folly and Trudly's truck back at the Stand (18), then at Phenac City (19); Willie in the diner once they've gone;
   // Rui, the Snagem grunts and Folly and Trudly at the Mayor's house only in its scene. ui/game.js's Orre scenes.)
+  // (Others' rules, by localId: game/orre-trainers.js's Trainers.)
+  const EXTRA_VISIBLE = {};
   function visible(person, flags) {
+    if (EXTRA_VISIBLE[person.localId]) return EXTRA_VISIBLE[person.localId](flags);
     const step = flags.orre | 0, story = flags.orreStory | 0;
     switch (person.localId) {
       case ID("TRUCK"): return step < 2 || (story === 18 && !flags.orreStandFT);
@@ -455,11 +458,11 @@
     PyriteTown_EventScript_Shadow_NOVER: T("Nover", "Rider Nover", "Rider", "biker", ["This is Duel Square, where even\ncrying kids know they'd better shut\nup. This is where roughnecks gather.", "So, how about it? How would you like\nto battle with me?",
         "Excellent! I like a man who can come\nto a quick decision! Let's have it\nout!"],
       "You're pretty good at this. But I'm\nnot losing the next time!", "Everyone's itching for the chance to\nbattle it out. If you ever get the\nurge, come back."),
-    PyriteTown_EventScript_Shadow_DIOGO: T("Diogo", "St. Performer Diogo", "St. Performer", "juggler", ["Hohohoho! Do you feel like sticking\naround for a demonstration of my\nPokémon's moves?", "Good, good. I like your attitude.\nFeast your eyes on these!"],
+    PyriteTown_EventScript_Shadow_DIOGO: T("Diogo", "St. Performer Diogo", "St. Performer", "em_expert_f", ["Hohohoho! Do you feel like sticking\naround for a demonstration of my\nPokémon's moves?", "Good, good. I like your attitude.\nFeast your eyes on these!"],
       "Your Pokémon surpassed my little\ndarlings. But you won't get to win\nnext time!",
       ["You're surprisingly good. I think you\ndeserve to know a little secret about\na certain Pokémon move.", "The move Shadow Rush inflicts damage\non any kind of Pokémon without being\naffected by their types.",
         "The amount of damage doesn't vary\nwith the target Pokémon's type, so\nit's easy to use."]),
-    PyriteTown_EventScript_Shadow_LEBA: T("Leba", "Rider Leba", "Rider", "biker", "If you try talking to anyone in Duel\nSquare, there's only one answer!",
+    PyriteTown_EventScript_Shadow_LEBA: T("Leba", "Rider Leba", "Rider", "em_cycling_triathlete_f", "If you try talking to anyone in Duel\nSquare, there's only one answer!",
       ["Ooh, that was an incredible battle!\nI simply love strong guys! That's\nL-O-V-E!", "If you ever get the urge to battle\nwith me again, I'll always be here\nfor you, honey!"],
       ["Ooh, that was an incredible battle!\nI simply love strong guys! That's\nL-O-V-E!", "If you ever get the urge to battle\nwith me again, I'll always be here\nfor you, honey!"]),
     PyriteTown_EventScript_Shadow_DIVEL: T("Divel", "Bandana Guy Divel", "Bandana Guy", "rocker", ["Huh? You want to battle me?", "Sure thing! Battling fans are always\nwelcome!"],
@@ -469,15 +472,15 @@
       "Battling you was fun, so that's good\nenough for me.", ["Oh, yeah, I love strong guys.", "…Wait. I said \"love,\" but don't get\nany wrong ideas…"]),
     PyriteCave_EventScript_Shadow_TWAN: T("Twan", "Rider Twan", "Rider", "biker", "Hold it! Don't think you're going\nanywhere when you catch my eye.",
       "Are you maybe even stronger than\nMiror B.?", "My Pokémon have won a knockout\nchallenge! You're no average trainer\nfor beating them!"),
-    PyriteCave_EventScript_Shadow_SOSH: T("Sosh", "Rider Sosh", "Rider", "biker", "Kukukuku… Welcome to here!",
+    PyriteCave_EventScript_Shadow_SOSH: T("Sosh", "Rider Sosh", "Rider", "em_cycling_triathlete_f", "Kukukuku… Welcome to here!",
       "No way, no way! You're supposed to\ntell me that you're so strong!", "No way, no way! I'm supposed to beat\nsomeone as strong as you? They must\nbe joking!"),
     // (The Under's subway, Colosseum's words.)
     TheUnder_EventScript_Shadow_FRENA: T("Frena", "Hunter Frena", "Hunter", "cooltrainer_f", "If you're mean to me, I'm going to\ncry. Okay?", "But I want to cry… Waaaaah!", "Waaaaaaah!"),
-    TheUnder_EventScript_Shadow_LIAKS: T("Liaks", "Chaser Liaks", "Chaser", "camper", ["What the…? What're you two doing all\nthe way down here?", "What's Frena doing up top?"],
+    TheUnder_EventScript_Shadow_LIAKS: T("Liaks", "Chaser Liaks", "Chaser", "em_running_triathlete_f", ["What the…? What're you two doing all\nthe way down here?", "What's Frena doing up top?"],
       "I know why Frena up top let you two\nthrough. Oh, I get it. I got it real\ngood.", "I know why Frena up top let you two\nthrough. Oh, I get it. I got it real\ngood."),
-    TheUnder_EventScript_Shadow_LONIA: T("Lonia", "Bodybuilder Lonia", "Bodybuilder", "black_belt", "Well, what do you know. I hardly\nthought that I'd have to get involved\nin this.",
+    TheUnder_EventScript_Shadow_LONIA: T("Lonia", "Bodybuilder Lonia", "Bodybuilder", "em_battle_girl", "Well, what do you know. I hardly\nthought that I'd have to get involved\nin this.",
       "I'm a loser… I can't show my face in\nfront of Lady Venus like this…", "I'm a loser… I can't show my face in\nfront of Lady Venus like this…"),
-    TheUnder_EventScript_Shadow_NELIS: T("Nelis", "Rider Nelis", "Rider", "biker", "Forget about getting past me. I'll\nprotect Lady Venus from you!",
+    TheUnder_EventScript_Shadow_NELIS: T("Nelis", "Rider Nelis", "Rider", "em_cycling_triathlete_f", "Forget about getting past me. I'll\nprotect Lady Venus from you!",
       "This makes me feel like going\nsomewhere far away by train…", "This makes me feel like going\nsomewhere far away by train…"),
     // (The Shadow Pokémon Lab's Peons, Tanie with them as in Colosseum, and Realgam Tower's Trainers: Colosseum's
     // words, from the lab's and the tower's own lines and its battle lines, D1_labo_*, D4_dome_*, D4_casino_colo.)
@@ -489,15 +492,15 @@
       ["Waaaargh! You two! You're not Lab\nstaff!"],
       ["Back for more mischief?!"],
       ["Uh-uh, you're not supposed to be in\nhere!"]),
-    ShadowLab_B1F_EventScript_Shadow_VANA: T("Vana", "Cipher Peon Vana", "Team Rocket", "cipher_peon",
+    ShadowLab_B1F_EventScript_Shadow_VANA: T("Vana", "Cipher Peon Vana", "Team Rocket", "cipher_peon_f",
       ["Uh-oh! Intruder alert!"],
       ["Back again? No welcome for you this\ntime!"],
       ["Stop right there! There's no entry\nbeyond this point!"]),
-    ShadowLab_B1F_EventScript_Shadow_LESAR: T("Lesar", "Cipher Peon Lesar", "Team Rocket", "cipher_peon_f",
+    ShadowLab_B1F_EventScript_Shadow_LESAR: T("Lesar", "Cipher Peon Lesar", "Team Rocket", "cipher_peon",
       ["Wh-What? What are outsiders doing\nhere? Why isn't security doing their\njob?"],
       ["So long as I have my Shadow Ariados,\nI won't abandon my plans!"],
       ["Sweeties, you've caused enough\nmischief already!"]),
-    ShadowLab_B1F_EventScript_Shadow_REMIL: T("Remil", "Cipher Peon Remil", "Team Rocket", "cipher_peon",
+    ShadowLab_B1F_EventScript_Shadow_REMIL: T("Remil", "Cipher Peon Remil", "Team Rocket", "cipher_peon_f",
       ["Waah! How did you sneak up on me like\nthat?", "Huh? Don't I know you from somewhere?\nLike at the Mayor's home in Phenac?", "You've been spoiling Cipher's plans\nall over, haven't you? You're not\ngoing to mess my plan up!"],
       ["I'm going to become a Cipher Admin no\nmatter what! Don't get in my way!"],
       ["What? Quit annoying me. You'd better\nget ready, or Master Ein will… Huh?!"]),
@@ -517,7 +520,7 @@
       ["Whoa, stop right there. I can't very\nwell let you go any farther."],
       ["Hohoho. Yes, turn your back on the\nenemy; that's so fundamentally wrong.\nI would say amateurish, even."],
       ["Ah, that is good to hear. Go with\ncare."]),
-    RealgamTower_Colosseum_EventScript_Shadow_JOMAS: T("Jomas", "Bodybuilder Jomas", "Bodybuilder", "black_belt",
+    RealgamTower_Colosseum_EventScript_Shadow_JOMAS: T("Jomas", "Bodybuilder Jomas", "Bodybuilder", "em_battle_girl",
       ["A big crowd like this… It is a little\nintimidating.", "I don't want to be embarrassed here,\nso I'll battle to win!"],
       ["Okay, that's that, then. My Pokémon\nare all nursed back to perfect health\nand readiness.", "Now we can go full tilt against you\nin battle!"],
       ["I lost this battle, but it made me a\nlittle bit stronger, too."]),
@@ -743,6 +746,6 @@
     throw new Error("No safe position in " + at.map);
   }
 
-  window.Orre = { correctLocation, SHADOW, TEAMS, team, snaggable, TOURNAMENTS, tournamentDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
+  window.Orre = { EXTRA_VISIBLE, correctLocation, SHADOW, TEAMS, team, snaggable, TOURNAMENTS, tournamentDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
   Object.assign(window.Orre, { REALGAM_ADMINS, realgamAdmin, realgamBadges });
 })();

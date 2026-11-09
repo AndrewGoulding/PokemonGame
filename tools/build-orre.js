@@ -2010,8 +2010,8 @@ const MTBATTLE = {
   warps: [{ x: BPC_DOOR.x, y: BPC_DOOR.y, map: "MtBattle_PokemonCenter_1F", warp: 0 }],
   signs: [{ x: BSIGN.x, y: BSIGN.y, script: "MtBattle_EventScript_Sign", text: ["MT. BATTLE", "Where Trainers come to test\nthemselves."] }],
   people: [
-    person(0, "BATTLE_TRAINER_1", 8, 25, "black_belt", "face_right", "MtBattle_EventScript_Trainer1", null),
-    person(1, "BATTLE_TRAINER_2", 12, 27, "cooltrainer_f", "face_left", "MtBattle_EventScript_Trainer2", null),
+    person(0, "BATTLE_TRAINER_1", 8, 25, "biker", "face_right", "MtBattle_EventScript_Trainer1", null),
+    person(1, "BATTLE_TRAINER_2", 12, 27, "cooltrainer_m", "face_left", "MtBattle_EventScript_Trainer2", null),
     person(2, "TURO", 12, 15, "orre_peon_m", "face_right", "MtBattle_EventScript_Turo", null),
     person(3, "BERIN", 21, 17, "orre_peon_m", "face_left", "MtBattle_EventScript_Berin", null),
     person(4, "DAKIM", 17, 5, "black_belt", "face_down", "MtBattle_EventScript_Dakim", null),
@@ -2104,9 +2104,9 @@ PYRITE.signs = PYRITE.signs.filter((s) => !((s.x === PYRITE_DUKING_DOOR.x && s.y
 for (const d of [PYRITE_DUKING_DOOR, PYRITE_BUILDING_DOOR]) { PYRITE.behavior[d.y * YW + d.x] = 0x69; PYRITE.collision[d.y * YW + d.x] = 1; }
 const SHADOW_TRAINERS = {
   PyriteTown: [["CAIL", 14, 27, "man", "face_right"], ["VANT", 11, 9, "biker", "face_down"], ["NOVER", 21, 11, "biker", "face_down"],
-    ["DIOGO", 13, 15, "em_artist", "face_down"], ["LEBA", 24, 18, "biker", "face_left"], ["DIVEL", 5, 26, "rocker", "face_right"],
+    ["DIOGO", 13, 15, "em_expert_f", "face_down"], ["LEBA", 24, 18, "em_cycling_triathlete_f", "face_left"], ["DIVEL", 5, 26, "rocker", "face_right"],
     ["LON", 28, 26, "youngster", "face_left"], ["DOKEN", 31, 8, "cooltrainer_m", "face_left"]],
-  PyriteCave: [["TWAN", 20, 13, "biker", "face_left"], ["SOSH", 21, 21, "biker", "face_right"], ["ZALO", 20, 3, "cooltrainer_m", "face_right"]]
+  PyriteCave: [["TWAN", 20, 13, "biker", "face_left"], ["SOSH", 21, 21, "em_cycling_triathlete_f", "face_right"], ["ZALO", 20, 3, "cooltrainer_m", "face_right"]]
 };
 for (const [m, list] of [[PYRITE, SHADOW_TRAINERS.PyriteTown], [PYCAVE, SHADOW_TRAINERS.PyriteCave]]) for (const [key, x, y, sprite, facing] of list) {
   const id = Math.max(-1, ...m.people.map((p) => p.id)) + 1;
@@ -2208,7 +2208,7 @@ const UNDER = {
     { x: USTUDIO.x + Math.floor(USTUDIO.w / 2), y: USTUDIO.y + USTUDIO.h - 1, map: "TheUnder_Studio", warp: 0 }],
   signs: USHACKS.map((b) => ({ x: doorBelow(b).x, y: doorBelow(b).y, script: "TheUnder_EventScript_LockedDoor", text: ["The door is locked."] })),
   people: [
-    person(0, "KLOAK", USTUDIO.x + Math.floor(USTUDIO.w / 2), USTUDIO.y + USTUDIO.h, "orre_peon_m", "face_down", "TheUnder_EventScript_Kloak", null),
+    person(0, "KLOAK", USTUDIO.x + Math.floor(USTUDIO.w / 2), USTUDIO.y + USTUDIO.h, "orre_peon_f", "face_down", "TheUnder_EventScript_Kloak", null),
     person(1, "UNDER_MAN", 10, 13, "balding_man", "wander_around", "TheUnder_EventScript_Man",
       ["Welcome to The Under. Folks down here\ndon't ask questions.", "Lately, though, there's been talk of a\nPokémon on TV that'd give you chills."], { rangeX: 2, rangeY: 1 }),
     person(2, "UNDER_WOMAN", 20, 20, "woman_3", "face_left", "TheUnder_EventScript_Woman",
@@ -2292,8 +2292,8 @@ const STUDIO = emeraldRoom("ContestHall", "TheUnder_Studio", "The Under", [{ x: 
 ], { music: "em_game_corner" });
 STUDIO.collision[10 * STUDIO.width + 7] = 0; STUDIO.behavior[10 * STUDIO.width + 7] = 0x65;
 // The Under's subway Trainers, on the platform (Colosseum's Shadow Pokémon: Frena, Liaks, Lonia and Nelis).
-for (const [key, x, y, sprite, facing] of [["FRENA", 25, 8, "cooltrainer_f", "face_right"], ["LIAKS", 26, 11, "camper", "face_left"],
-  ["LONIA", 25, 15, "black_belt", "face_right"], ["NELIS", 26, 19, "biker", "face_left"]]) {
+for (const [key, x, y, sprite, facing] of [["FRENA", 25, 8, "cooltrainer_f", "face_right"], ["LIAKS", 26, 11, "em_running_triathlete_f", "face_left"],
+  ["LONIA", 25, 15, "cooltrainer_f", "face_right"], ["NELIS", 26, 19, "em_cycling_triathlete_f", "face_left"]]) {
   UNDER.people.push(person(Math.max(...UNDER.people.map((p) => p.id)) + 1, "SHADOW_" + key, x, y, sprite, facing, "TheUnder_EventScript_Shadow_" + key, null));
 }
 // Ein's Shadow Pokémon Lab: 1F, B1F, and Ein's room (Mossdeep Space Center's floors and its deck); its doors out to
@@ -2308,9 +2308,9 @@ orreDoorsOut(LAB_1F);
 LAB_1F.warps = [{ x: 13, y: 1, map: "ShadowLab_B1F", warp: 0 }];
 const LAB_B1F = emeraldRoom("MossdeepCity_SpaceCenter_2F", "ShadowLab_B1F", "Shadow Pokémon Lab",
   [{ x: 13, y: 1, map: "ShadowLab_1F", warp: 0 }, { x: 7, y: 1, map: "ShadowLab_EinsRoom", warp: 0 }], [
-    person(0, "SHADOW_VANA", 2, 6, "orre_peon_m", "face_right", "ShadowLab_B1F_EventScript_Shadow_VANA", null),
-    person(1, "SHADOW_LESAR", 12, 6, "orre_peon_f", "face_left", "ShadowLab_B1F_EventScript_Shadow_LESAR", null),
-    person(2, "SHADOW_REMIL", 6, 8, "orre_peon_m", "face_right", "ShadowLab_B1F_EventScript_Shadow_REMIL", null),
+    person(0, "SHADOW_VANA", 2, 6, "orre_peon_f", "face_right", "ShadowLab_B1F_EventScript_Shadow_VANA", null),
+    person(1, "SHADOW_LESAR", 12, 6, "orre_peon_m", "face_left", "ShadowLab_B1F_EventScript_Shadow_LESAR", null),
+    person(2, "SHADOW_REMIL", 6, 8, "orre_peon_f", "face_right", "ShadowLab_B1F_EventScript_Shadow_REMIL", null),
     person(3, "VERDE", 6, 3, "orre_peon_m", "face_down", "ShadowLab_B1F_EventScript_Troop", null),
     person(4, "ROSSO", 7, 2, "orre_peon_m", "face_down", "ShadowLab_B1F_EventScript_Troop", null),
     person(5, "BLUNO", 8, 3, "orre_peon_m", "face_down", "ShadowLab_B1F_EventScript_Troop", null)
@@ -2342,7 +2342,7 @@ const REALGAM_DOME = emeraldRoom("EverGrandeCity_SidneysRoom", "RealgamTower_Dom
 const REALGAM_COLO = emeraldRoom("EverGrandeCity_GlaciasRoom", "RealgamTower_Colosseum", "Realgam Tower",
   [{ x: 6, y: 13, map: "RealgamTower_Dome", warp: 1 }, { x: 6, y: 2, map: "RealgamTower_Top", warp: 0 }], [
     person(0, "REALGAM_NASCOUR", 6, 3, "gentleman", "face_down", "RealgamTower_Colosseum_EventScript_Nascour", null),
-    person(1, "SHADOW_JOMAS", 3, 6, "black_belt", "face_right", "RealgamTower_Colosseum_EventScript_Shadow_JOMAS", null),
+    person(1, "SHADOW_JOMAS", 3, 6, "cooltrainer_f", "face_right", "RealgamTower_Colosseum_EventScript_Shadow_JOMAS", null),
     person(2, "SHADOW_DELAN", 9, 6, "biker", "face_left", "RealgamTower_Colosseum_EventScript_Shadow_DELAN", null),
     person(3, "SHADOW_NELLA", 3, 10, "orre_peon_f", "face_right", "RealgamTower_Colosseum_EventScript_Shadow_NELLA", null),
     person(4, "SHADOW_STON", 9, 10, "orre_peon_m", "face_left", "RealgamTower_Colosseum_EventScript_Shadow_STON", null)

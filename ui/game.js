@@ -351,6 +351,7 @@
     get orreStandStory() { return orreStandStory; },
     get orreTournament() { return orreTournament; },
     get orreTrainer() { return orreTrainer; },
+    get coloTrainer() { return coloTrainer; },
     get orreTravel() { return orreTravel; },
     get outOfCenterHeal() { return outOfCenterHeal; },
     get outOfDoorway() { return outOfDoorway; },
@@ -3520,7 +3521,7 @@
       "PhenacCity_EventScript_Trudly", "PhenacCity_MayorsHouse_EventScript_EsCade",
       "arrive:PyriteTown", "enter:PyriteTown", "PyriteTown_DukingsHouse_EventScript_Duking", "PyriteTown_DukingsHouse_EventScript_Marcia",
       "PyriteTown_DukingsHouse_EventScript_Secc", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", "enter:PyriteTown_PyriteBuilding_4F",
-      "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS),
+      "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS), ...Object.keys(Orre.COLO_TRAINERS),
       "enter:AgateVillage_EaguansHouse", "AgateVillage_EaguansHouse_EventScript_Eagun", "AgateVillage_EaguansHouse_EventScript_Beluh",
       "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone", "RelicForest_EventScript_Shrine", ...Object.keys(Orre.TOURNAMENTS), "MtBattle_EventScript_Challenge",
       "arrive:MtBattle", "enter:MtBattle", "MtBattle_EventScript_Dakim", "MtBattle_EventScript_SummitSkrub", "MtBattle_EventScript_Vander",
@@ -7341,7 +7342,7 @@
   }
   async function underKloak() {
     await say(["Kloak: Hold on, you two! You're not\nfrom around these parts, are you,\nnow?", "Kloak: I get it! You two are spies!"]);
-    if (!(await bossBattle("Kloak", "Cipher Peon Kloak", "cipher_peon", ["We're out of our league against\nthis guy!"], { prizeClass: "Team Rocket" }))) return;
+    if (!(await bossBattle("Kloak", "Cipher Peon Kloak", "cipher_peon_f", ["We're out of our league against\nthis guy!"], { prizeClass: "Team Rocket" }))) return;
     await say(["Kloak: We're out of our league\nagainst this guy!"]);
     await goAway("KLOAK", ["walk_fast_right", "walk_fast_down", "walk_fast_down"]);
     player.flags.orreStory = 35;
@@ -7536,13 +7537,38 @@
     return outcome;
   };
   const teamOf = (list) => list.map(([sp, lv]) => Party.create(sp, lv));
+  // Colosseum's other Trainers (game/orre-trainers*.js): the party of the stage they're at, once a stage; beaten,
+  // that stage's words. Also a Shadow Pokémon Trainer's later parties, once theirs is snagged (Orre.REMATCHES).
+  async function coloStageBattle(t, stage, index, store, script) {
+    const f = player.flags;
+    await say(stage.intro);
+    const opts = { foe: { name: t.name, team: stage.team.map(([sp, lv]) => Party.create(sp, lv)), pic: t.pic }, prizeClass: t.cls,
+      double: !t.single, defeatText: stage.defeat };
+    const outcome = await storyBattle(opts);
+    if (outcome !== "won") { if (stage.lost) await say(stage.lost); return false; }
+    (f[store] = f[store] || {})[script] = index;
+    if (stage.after) await say(stage.after);
+    await persist();
+    return true;
+  }
+  async function coloTrainer(script) {
+    const t = Orre.COLO_TRAINERS[script], s = Orre.coloStage(script, player.flags);
+    if (!s || !s.stage) return;
+    if (s.beaten) { await say(s.stage.after); return; }
+    await coloStageBattle(t, s.stage, s.index, "orreColo", script);
+  }
   async function shadowTrainer(script) {
     const f = player.flags, d = Orre.SHADOW_TRAINERS[script], done = (f.orreShadowDone = f.orreShadowDone || []);
-    if (done.includes(script)) { await say(d.after); return; }
+    if (done.includes(script)) {
+      const r = Orre.rematchStage(script, f);
+      if (r && r.stage && !r.beaten) { await coloStageBattle(d, r.stage, r.index, "orreColoRematch", script); return; }
+      await say(r && r.stage ? r.stage.after : d.after);
+      return;
+    }
     const shadows = Orre.shadowOf(d.trainer);
     await say(d.intro);
     const opts = { foe: { name: d.name, team: Orre.team(d.key || d.trainer), pic: d.pic }, prizeClass: d.cls,
-      snag: shadows.map((s) => s.species), defeatText: ["Wh-what?!"] };
+      snag: shadows.map((s) => s.species), defeatText: d.defeat || d.kept };
     const outcome = await storyBattle(opts);
     const snagged = (opts.snagged || []).filter((sp) => shadows.some((s) => s.species === sp));
     if (snagged.length) { (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...snagged); done.push(script); }

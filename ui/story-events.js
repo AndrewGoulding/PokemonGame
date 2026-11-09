@@ -440,6 +440,7 @@
 
       if (Orre.FILLERS[script]) { await env.orreTrainer(script); return; }
       if (Orre.SHADOW_TRAINERS[script]) { await env.shadowTrainer(script); return; }
+      if (Orre.COLO_TRAINERS[script]) { await env.coloTrainer(script); return; }
       if (Orre.TOURNAMENTS[script]) { await env.orreTournament(script); return; }
       switch (script) {
         case "PalletTown_EventScript_SignLady":
