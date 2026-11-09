@@ -4948,7 +4948,7 @@
   // (Route 16's and Route 18's gates, and the maps between: CYCLING_ROAD_MAPS.)
   // FireRed's FLAG_SYS_ON_CYCLING_ROAD: out on the road (not in a gate), where
   // you can't get off the Bicycle.
-  const onCyclingRoad = () => !!player.flags.cyclingRoad && ["Route16", "Route17", "Route18"].includes(player.location.map);
+  const onCyclingRoad = () => !!player.flags.cyclingRoad && ["Route16", "Route17", "Route18"].includes(player.location.map) || Sinnoh.cyclingRequired(player.location) && Sinnoh.cyclingAllowed(player);
   // A gate's guard without a Bicycle (FireRed's NeedBikeTrigger): "Excuse me!",
   // you face him, walk up to the counter, and are turned back the way you came.
   async function needBike(script) {
@@ -5867,7 +5867,8 @@
     choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name }))),
     showWorld: () => show("world"), resume: () => Overworld.resume(),
     refreshPeople: () => Overworld.refreshPeople(), teleport: (to) => Overworld.teleport(to),
-    refreshMap: () => { applyPatches(player.location.map); Overworld.refreshPeople(); }
+    refreshMap: () => { applyPatches(player.location.map); Overworld.refreshPeople(); },
+    onBike: () => Overworld.avatar() === "bike", mountBike: () => Overworld.setAvatar("bike")
   });
 
   // ---------- Sinnoh: the S.S. Tidal's run (this game's own) ----------
@@ -10609,6 +10610,7 @@
           if (m !== tempFlagsMap) { hoennCameFrom = hoennLastType; magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoennDecorApply(m); hoennSpotOpen(m); hoennEntering = m; hoenn.transition(m).then(() => { if (hoennEntering === m) hoennEntering = null; }); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
           if (m === "SSAqua_1F") ssAquaExit();
           forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
+          if (Sinnoh.cyclingRequired({ ...Overworld.position(), map: m }) && Sinnoh.cyclingAllowed(player)) Overworld.setAvatar("bike");
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)
       });
       if (ev.type === "menu") {

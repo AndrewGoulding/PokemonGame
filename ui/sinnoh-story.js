@@ -3,7 +3,7 @@
 (function () {
   "use strict";
   function create(env) {
-    const next = SinnohEterna.create(env);
+    const next = SinnohEterna.create(env), galactic = SinnohGalactic.create(env);
     const player = () => env.player();
     const state = () => Sinnoh.state(player());
     const say = (id, buffers) => env.say(Sinnoh.text(id, player(), buffers));
@@ -116,6 +116,7 @@
       await env.say(player().badges.includes("coal") ? "The Coal Badge lets you use\nRock Smash here in Sinnoh." : "You can teach Rock Smash now.\nEarn the Coal Badge to use it\noutside battle here in Sinnoh.");
     }
     function visible(person) {
+      const third = galactic.visible(person); if (third !== undefined) return third;
       const result = next.visible(person); if (result !== undefined) return result;
       if (person.script === "pt:barry203") return !state().rival203;
       if (person.script === "pt:mine-roark" || person.script === "pt:gym-door") return !state().roarkFound;
@@ -124,6 +125,7 @@
       return undefined;
     }
     function step() {
+      const third = galactic.step(); if (third) return third;
       const result = next.step(); if (result) return result;
       const p = player(), at = p.location;
       if (!Sinnoh.owns(at.map)) return null;
@@ -135,7 +137,7 @@
     }
     async function run(script) {
       if (!script || !script.startsWith("pt:") || script.startsWith("pt:PT_TRAINER_")) return false;
-      if (await next.run(script)) return true;
+      if (await galactic.run(script) || await next.run(script)) return true;
       switch (script.slice(3)) {
         case "rowan": await rowan(); break;
         case "aide": await aide(); break;

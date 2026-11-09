@@ -3514,6 +3514,16 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
   advances through Caroline, Jenna and Angela before opening the way to Gardenia's Turtwig,
   Cherrim and Roserade (Lv. 20, 20, 22). Victory gives the Forest Badge and reusable Grass Knot
   TM, enables Cut in Sinnoh and raises the regional level cap to 26.
+- **Eterna's Galactic rescue and Cycling Road are playable**: use Cut at the Galactic
+  building west of the Mart, climb its four floors, and battle Jupiter's Zubat Lv. 21 and
+  Skuntank Lv. 23. The imported grunts and scientist leave after her defeat. Rad Rickshaw
+  returns to the existing Cycle Shop beside Eterna's bicycle racks and gives a Bicycle once;
+  a Bicycle brought from another region is retained. Cynthia then offers her Togepi Egg,
+  with refusal and full-party retries. Eggs are not registered as caught until hatching.
+  The northern gate requires the rescue and a Bicycle, and the raised Cycling Road forces
+  cycling while Route 206 below it stays walkable. Eight cyclists, the lower route's hiker,
+  and six Route 207 trainers use Platinum's parties. Rowan's gate aide awards an Exp. Share
+  after 35 Pokémon have been seen (adapted to this project's party-wide Exp. Share).
 - **Adaptations**: this is a chapter for a player arriving from another region. The starter is
   chosen in Rowan's lab, rather than replaying Platinum's Twinleaf/Route 201 opening. Character
   placements are adapted to the existing Essentials geometry. Roark's room uses FireRed rock-Gym
@@ -3522,19 +3532,22 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
   coordinates in a newly drawn industrial room. The clock Gym uses a fixed central hub and
   four changing 2D walkways, rather than Platinum's animated 3D clock model. Cheryl participates
   in battles without a walking human-follower sprite; leaving the forest suspends her battle
-  support until you return, and taking the eastern exit completes her escort. TMs remain reusable, as elsewhere in this game.
+  support until you return, and taking the eastern exit completes her escort. The Galactic
+  rooms retain source trainer/actor positions and reciprocal stair connections in newly
+  drawn 2D interiors; the DS room models and exact partition layouts are not imported.
+  The existing Cycle Shop map ID is preserved for saves. TMs remain reusable, as elsewhere in this game.
 - **Still unfinished**: the full Twinleaf opening, catching demonstration, Trainer School,
-  Looker and Pokétch introduction, later Gyms, Eterna's Galactic building/bicycle rescue, later Galactic story, Distortion World, League
+  Looker and Pokétch introduction, later Gyms, the Route 207 Dawn/Pokétch scene, later Galactic story, Distortion World, League
   and postgame. Most other interiors and later trainers are still absent. Existing later-region
   maps remain available for exploration; reaching them does not imply their story is implemented.
   Some story-opened places (the ruins behind Mt. Coronet, drained Lake Valor, Turnback Cave's
-  other rooms, Pal Park and the event islands) remain inaccessible.
+  other rooms, the Secret Key/Rotom room, Pal Park and the event islands) remain inaccessible.
 
 ### Importing Platinum's campaign data
 
 `tools/build-platinum.js` reads the public `pret/pokeplatinum` decompilation directly; no built ROM
 is needed. `data/platinum.js` records the exact source commit and the source event/script paths.
-It contains 458 imported messages, 59 trainer teams (including partner/starter variants), held
+It contains 510 imported messages, 81 trainer teams (including partner/starter variants), held
 items, authored moves and explicit placements. Imported
 character sprites and trainer portraits live under `assets/world/sprites/pt_*` and
 `assets/sprites/trainers/front/pt_*`. Rebuild with:
@@ -3543,16 +3556,18 @@ character sprites and trainer portraits live under `assets/world/sprites/pt_*` a
 node tools/build-platinum.js /path/to/pokeplatinum
 ```
 
-`game/sinnoh.js` applies the overlay after the base Sinnoh maps load, and `ui/sinnoh-story.js`
-and `ui/sinnoh-eterna.js` run the adapted scenes through the shared event dispatcher. This is not a complete Platinum
+`game/sinnoh.js` applies the overlay after the base Sinnoh maps load. The scenes in
+`ui/sinnoh-story.js`, `ui/sinnoh-eterna.js` and `ui/sinnoh-galactic.js` run through the shared
+event dispatcher. This is not a complete Platinum
 script interpreter. The base Essentials importer and Platinum overlay are separate so rebuilding
 base maps does not erase campaign logic. Progress lives in `player.flags.sinnoh`; trainer defeats
 use `PT_TRAINER_*`, and the Coal and Forest Badges live in the ordinary saved badge list.
 
 `npm test` checks imported content, placement/warp validity, all three starter paths, loss/retry
 behavior, one-time rewards, regional caps, field moves and save round-trips. Run the actual-page
-chapter checks with `node tests/browser/sinnoh-story.js` and
-`node tests/browser/sinnoh-eterna.js` (both support `PLAYWRIGHT_PATH` and `CHROMIUM`).
+chapter checks with `node tests/browser/sinnoh-story.js`,
+`node tests/browser/sinnoh-eterna.js`, plus `node tests/browser/sinnoh-galactic.js`
+(all support `PLAYWRIGHT_PATH` and `CHROMIUM`).
 
 
 `tools/build-sinnoh.js` builds them from the project (it needs Ruby, to read RPG Maker's `.rxdata` files through

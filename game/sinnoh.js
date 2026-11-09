@@ -21,8 +21,9 @@
   gym.warps[0].warp = door;
   for (const d of D.doors || []) {
     const outside = window.WORLD_MAPS[d.outside], inside = window.WORLD_MAPS[d.inside];
-    inside.warps[0].warp = outside.warps.length;
-    outside.warps.push({ x: d.x, y: d.y, map: d.inside, warp: 0 });
+    inside.warps[0].warp = d.existing == null ? outside.warps.length : d.existing;
+    const warp = { x: d.x, y: d.y, map: d.inside, warp: 0 };
+    if (d.existing == null) outside.warps.push(warp); else outside.warps[d.existing] = warp;
     outside.collision[d.y * outside.width + d.x] = 0;
     outside.behavior[d.y * outside.width + d.x] = 0x69;
   }
@@ -72,5 +73,9 @@
     }
     return out;
   }
-  window.Sinnoh = { state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle };
+  // Only the raised deck and the gates require a bicycle. Route 206 below
+  // the deck remains walkable; these maps must not share the same rule.
+  const cyclingRequired = at => at.map === "CyclingRoad" || at.map === "CyclingRoadNorth_Gate" && at.y >= 10 || at.map === "CyclingRoadSouth_Gate" && at.y <= 5;
+  const cyclingAllowed = player => player.badges.includes("forest") && !!state(player).jupiter && Player.itemCount(player, "bicycle") > 0;
+  window.Sinnoh = { state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed };
 })();

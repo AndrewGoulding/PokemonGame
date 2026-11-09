@@ -4,22 +4,23 @@ const root = path.join(__dirname, "..");
 global.window = global;
 global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g)) {
-  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
+  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna|galactic)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
 }
 function fixture(choice = "Turtwig") {
   let p = Player.create("TEST"); p.location = { map: "SandgemTown_RowansLab", x: 6, y: 4, facing: "up" };
   p.party = [Party.create("Pikachu", 5)];
-  let outcome = "won", confirm = true;
+  let outcome = "won", confirm = true, riding = false;
   const calls = [], messages = [];
   const env = { player: () => p, say: async (text) => { messages.push(...[].concat(text)); }, choose: async () => choice, confirm: async () => confirm,
+    onBike: () => riding, mountBike: () => { riding = true; },
     showPicture() {}, hidePicture() {}, canBattle: () => p.party.some(Party.canFight), showWorld() {}, resume: async () => {}, refreshPeople() {}, sfx() {},
     teleport: async (to) => { p.location = to; }, battle: async (kind, opts) => { calls.push({ kind, ...opts }); if (outcome === "won") p.flags[opts.trainerId] = true; return outcome; } };
   const story = SinnohStory.create(env);
-  return { get p() { return p; }, story, calls, messages, outcome: (s) => { outcome = s; }, confirm: (s) => { confirm = s; }, reload: () => { p = Player.load(JSON.parse(Player.serialize(p))).player; } };
+  return { get p() { return p; }, story, calls, messages, onBike: () => riding, outcome: (s) => { outcome = s; }, confirm: (s) => { confirm = s; }, reload: () => { p = Player.load(JSON.parse(Player.serialize(p))).player; } };
 }
 async function main() {
   assert(/^[a-f0-9]{40}$/.test(PLATINUM_DATA.source.commit));
-  assert.equal(Object.keys(PLATINUM_DATA.trainers).length, 59);
+  assert.equal(Object.keys(PLATINUM_DATA.trainers).length, 81);
   for (const [id, t] of Object.entries(PLATINUM_DATA.trainers)) {
     assert(t.party.length > 0, id);
     for (const m of t.party) { assert(DEX[m.species], id); for (const move of m.moves || []) assert(MOVES[move], move); }
@@ -184,6 +185,75 @@ async function main() {
     }
     assert.deepEqual(Sinnoh.team("PT_TRAINER_LEADER_GARDENIA").map(r => [r.species, r.level]), [["Turtwig", 20], ["Cherrim", 20], ["Roserade", 22]]);
   }
+  // Eterna rescue: old bicycles do not skip Jupiter, losses preserve the
+  // captive, and the shop, Egg and aide rewards are each given once.
+  {
+    const f = fixture(), s = Sinnoh.state(f.p);
+    Object.assign(s, { starter: "Turtwig", dex: true, balls: true, cutHM: true, mars: true });
+    f.p.location = { map: "EternaGalactic_4F", x: 14, y: 7 };
+    await f.story.run("pt:jupiter"); assert.equal(f.calls.length, 0);
+    assert.equal(f.story.step().trigger.script, "pt:galactic-stop");
+    f.p.badges.push("coal", "forest"); Player.addItem(f.p, "bicycle");
+    f.p.location = { map: "CyclingRoadNorth_Gate", x: 9, y: 10 };
+    assert.equal(Sinnoh.cyclingAllowed(f.p), false, "an earlier region's bike does not bypass the rescue");
+    assert.equal(f.story.step().trigger.script, "pt:cycle-stop");
+    await f.story.run("pt:cycle-stop"); assert.equal(f.p.location.map, "EternaCity");
+    f.p.location = { map: "EternaGalactic_4F", x: 14, y: 7 };
+    f.outcome("lost"); await f.story.run("pt:jupiter"); assert(!s.jupiter);
+    assert.equal(f.story.visible({ script: "pt:rad-rickshaw-captive" }), true);
+    f.outcome("won"); await f.story.run("pt:jupiter"); assert(s.jupiter);
+    assert.deepEqual(f.calls.at(-1).foe.team.map(r => [r.species, r.level]), [["Zubat", 21], ["Skuntank", 23]]);
+    assert.equal(f.calls.at(-1).foe.team[1].item, "sitrus-berry");
+    assert.equal(f.story.visible({ script: "pt:jupiter" }), false);
+    assert.equal(f.story.visible({ script: "pt:rad-rickshaw-captive" }), false);
+    assert.equal(f.story.visible({ script: "pt:rad-rickshaw" }), true);
+    assert.equal(f.story.visible({ trainer: { id: "PT_TRAINER_SCIENTIST_TRAVON" } }), false);
+    const fought = f.calls.length; await f.story.run("pt:jupiter"); assert.equal(f.calls.length, fought);
+    f.p.location = { map: "EternaCity_2", x: 7, y: 6 };
+    await f.story.run("pt:rad-rickshaw"); await f.story.run("pt:rad-rickshaw");
+    assert(s.bicycle); assert.equal(Player.itemCount(f.p, "bicycle"), 1);
+    f.p.location = { map: "CyclingRoad", x: 20, y: 10 };
+    assert(Sinnoh.cyclingAllowed(f.p)); assert.equal(f.story.step().trigger.script, "pt:cycle-mount");
+    await f.story.run("pt:cycle-mount"); assert(f.onBike()); assert.equal(f.story.step(), null);
+    assert(!Sinnoh.cyclingRequired({ map: "Route206", x: 20, y: 40 }));
+    assert(!Sinnoh.cyclingRequired({ map: "CyclingRoadSouth_Gate", x: 9, y: 12 }));
+    f.p.location = { map: "EternaCity", x: 26, y: 35 };
+    const caught = f.p.pokedex.caught.slice();
+    f.confirm(false); await f.story.run("pt:cynthia-cut"); assert(!s.togepiEgg);
+    f.confirm(true); const original = f.p.party.slice(); f.p.party = Array(6).fill(original[0]);
+    await f.story.run("pt:cynthia-cut"); assert(!s.togepiEgg, "full party must leave Egg available");
+    f.p.party = original; await f.story.run("pt:cynthia-cut"); assert(s.togepiEgg);
+    assert.equal(f.p.party.at(-1).species, "Togepi"); assert(f.p.party.at(-1).egg);
+    assert.equal(f.p.party.at(-1).met.from, "Cynthia"); assert.deepEqual(f.p.pokedex.caught, caught);
+    const size = f.p.party.length; f.reload(); await f.story.run("pt:cynthia-cut"); assert.equal(f.p.party.length, size);
+    assert.equal(f.p.party.filter(r => r.egg && r.species === "Togepi").length, 1);
+    f.p.location = { map: "CyclingRoadNorth_Gate", x: 12, y: 8 };
+    await f.story.run("pt:sinnoh-exp-share"); assert(!Sinnoh.state(f.p).cyclingExpShare);
+    f.p.pokedex.seen = Object.keys(DEX).slice(0, 35);
+    await f.story.run("pt:sinnoh-exp-share"); await f.story.run("pt:sinnoh-exp-share");
+    assert(Sinnoh.state(f.p).cyclingExpShare); assert.equal(Player.itemCount(f.p, "exp-share"), 1);
+  }
+  {
+    const f = fixture(); Object.assign(Sinnoh.state(f.p), { jupiter: true });
+    await f.story.run("pt:rad-rickshaw"); assert.equal(Player.itemCount(f.p, "bicycle"), 1);
+    assert.equal(WORLD_MAPS.EternaCity.warps[0].map, "EternaCity_2", "legacy shop door index is preserved");
+    for (const name of ["EternaGalactic_1F", "EternaGalactic_2F", "EternaGalactic_3F", "EternaGalactic_4F"]) {
+      const m = WORLD_MAPS[name];
+      for (const w of m.warps) {
+        const to = World.warpTarget(w); assert(to && WORLD_MAPS[to.map]);
+        const back = WORLD_MAPS[w.map].warps[w.warp];
+        assert.equal(back.map, name, name + " reciprocal stair");
+        assert.equal(World.blockAt(to.map, to.x, to.y).collision, 0);
+      }
+      const q = [[m.warps[0].x, m.warps[0].y]], seen = new Set([q[0].join(",")]);
+      for (let i = 0; i < q.length; i++) for (const dir of ["up", "down", "left", "right"]) {
+        const r = World.step({ map: name, x: q[i][0], y: q[i][1] }, dir), key = r.x + "," + r.y;
+        if (r.ok && r.map === name && !seen.has(key)) { seen.add(key); q.push([r.x, r.y]); }
+      }
+      for (const p of [...m.people, ...m.warps]) assert([[0,1],[1,0],[0,-1],[-1,0]].some(([dx,dy]) => seen.has((p.x+dx) + "," + (p.y+dy))), name + " actor/stair access");
+    }
+    assert.equal(Object.values(PLATINUM_DATA.additions).flat().filter(p => (p.flag || "").startsWith("PT_ITEM_VisibleItems_TeamGalacticEterna")).length, 5);
+  }
   // A full party and PC must not consume the one-time starter choice or mark it caught.
   {
     const f = fixture(), mon = f.p.party[0];
@@ -225,6 +295,6 @@ async function main() {
     if (choice) assert(b.choose(id, choice).ok);
   }
   assert(b.ended, "imported Roark battle must terminate");
-  console.log("ok: Platinum imports, map overlays, three starter paths, retries, rewards, save reload, regional caps, Roark, Galactic/Windworks progression, Cheryl partner, clock stages and Gardenia");
+  console.log("ok: Platinum imports, map overlays, three starter paths, retries, rewards, save reload, regional caps, Roark, Galactic/Windworks progression, Cheryl partner, clock stages, Gardenia, Jupiter/Cycle Shop rescue, Cynthia Egg and Cycling Road");
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });
