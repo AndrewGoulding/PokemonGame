@@ -69,8 +69,35 @@
   // The text box holds two lines, as FireRed's does: a longer text scrolls
   // up a line at a time, each time A is pressed (FireRed's \l). -> the
   // steps: [text on screen, how much of it was already there].
-  function scrollSteps(text) {
+  // A line too wide for the text window (its font's real widths, not a count of letters: the box is 208 of FireRed's
+  // 240 pixels, the battle box 220): its last words carried on to the next line, as the line would have been written
+  // to fit, instead of the whole text shrunk to fit. Lines that fit are left as they are; a word too wide by itself
+  // still falls back to a smaller font (say).
+  let measure = null;
+  function reflow(text) {
     const lines = String(text == null ? "" : text).split("\n");
+    const cs = getComputedStyle(textbox), host = textbox.parentElement;
+    const room = (host ? host.clientWidth : textbox.clientWidth) - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 1;
+    if (!(room > 0)) return lines.join("\n");
+    measure = measure || document.createElement("canvas").getContext("2d");
+    measure.font = cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    const fits = (line) => measure.measureText(line).width <= room;
+    for (let i = 0; i < lines.length; i++) {
+      if (fits(lines[i])) continue;
+      const words = lines[i].split(" ");
+      let keep = words.length;
+      while (keep > 1 && !fits(words.slice(0, keep).join(" "))) keep--;
+      if (keep === words.length) continue;
+      const rest = words.slice(keep).join(" ");
+      lines[i] = words.slice(0, keep).join(" ");
+      // (Carried on to the next line when that line is part of the same sentence, else a line of its own.)
+      if (i + 1 < lines.length && lines[i + 1] && !/[.!?…"”)]$/.test(lines[i])) lines[i + 1] = rest + " " + lines[i + 1];
+      else lines.splice(i + 1, 0, rest);
+    }
+    return lines.join("\n");
+  }
+  function scrollSteps(text) {
+    const lines = reflow(text).split("\n");
     if (lines.length <= 2) return [[lines.join("\n"), 0]];
     const steps = [[lines[0] + "\n" + lines[1], 0]];
     for (let i = 2; i < lines.length; i++) steps.push([lines[i - 1] + "\n" + lines[i], lines[i - 1].length + 1]);

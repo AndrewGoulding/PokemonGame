@@ -252,7 +252,7 @@
         const col = MOVE_COLOURS[i === 4 ? 0 : ppColour(m.pp, m.maxpp)];
         T(m.name, 163, y, tm, 7, 8);
         T("{PP}", 196, y + 11, tm, col[0], col[1]);
-        const mv = window.MOVES[m.name], noPp = mv && mv.type === "Shadow";   // (Shadow moves have no PP)
+        const mv = window.MOVES[m.name], noPp = (mv && mv.type === "Shadow") || m.sealed;   // (Shadow moves have no PP; nor a "????")
         T(noPp ? "--" : String(m.pp), 206 + 12 - (noPp ? 12 : String(m.pp).length * 6), y + 11, tm, col[0], col[1]);
         T("/", 218, y + 11, tm, col[0], col[1]);
         T(noPp ? "--" : String(m.maxpp), 224 + 12 - (noPp ? 12 : String(m.maxpp).length * 6), y + 11, tm, col[0], col[1]);

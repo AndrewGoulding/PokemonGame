@@ -84,7 +84,8 @@ module.exports = function ({ maps, changed, clone, room }) {
   // Lesar's room and the northernmost room (Dubik); the third cabin's not used.
   const r2 = lab("AbandonedShip_Rooms_B1F", "B2F_Rooms",
     [{ x: 4, y: 1, map: L("B2F"), warp: 2 }, { x: 13, y: 1, map: L("B2F"), warp: 3 }, { x: 22, y: 1, map: L("B2F"), warp: 3 }]);
-  r2.people = [take("SHADOW_LESAR", 3, 4, "face_right")];
+  // (Lesar by the room's south side: at its west corner's only way in, he'd shut a DNA Sample's spot off for good.)
+  r2.people = [take("SHADOW_LESAR", 5, 6, "face_up")];
   changed[r2.name] = r2;
   changed[L("B2F_Room")] = lab("AbandonedShip_Room_B1F", "B2F_Room", [{ x: 4, y: 7, map: L("B2F"), warp: 5 }, { x: 5, y: 7, map: L("B2F"), warp: 5 }]);
   // Past the DNA Samples' door: Skrub's room (the Oceanic Museum's hall), its stairs down to Ein's room.

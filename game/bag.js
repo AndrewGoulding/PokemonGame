@@ -132,8 +132,17 @@
   // where it has the item (data/item-descriptions.js, its lines broken as
   // FireRed breaks them), else data/items.js's.
   const EVOLUTION_ITEM_TEXT = "Evolves certain Pok\u00e9mon\nwhen used.";
+  // (Orre's items: Pok\u00e9mon Colosseum's own descriptions, its lines as it breaks them (pocket_menu #10253-#10291).)
+  const ORRE_ITEM_TEXT = {
+    "subway-key": "The operating key\nfor The Under's\nsubway.", "lab-card-key": "The key for getting\ninto the Lab.",
+    "down-st-key": "The key for\nopening the Lab's\nunderground door.", "dna-sample": "A DNA sample of\nsome sort.",
+    "data-rom": "A data rom of some\nsort found on Ein's\ndesk.", "time-flute": "A marvelous flute\nthat can summon\nCelebi.",
+    "cologne-case": "A case for carrying\nScents that appeal\nto Pok\u00e9mon.", "joy-scent": "A Scent that\nslightly pleases\nPok\u00e9mon.",
+    "excite-scent": "A Scent that\npleases Pok\u00e9mon.", "vivid-scent": "A Scent that\ngreatly pleases\nPok\u00e9mon.",
+    "powerup-part": "A part to be\ndelivered to\nNett from Perr."
+  };
   const description = (item) => ((window.ITEMS[item] || {}).category === "evolution" ? EVOLUTION_ITEM_TEXT : "") ||
-    (window.ITEM_DESCRIPTIONS && window.ITEM_DESCRIPTIONS[item]) ||
+    ORRE_ITEM_TEXT[item] || (window.ITEM_DESCRIPTIONS && window.ITEM_DESCRIPTIONS[item]) ||
     (window.ITEMS[item] && window.ITEMS[item].effect) || "";
   const sprite = (item) => (window.ITEM_SPRITES && window.ITEM_SPRITES[item]) || "";
   const price = (item) => PRICES[item] || (isMachine(item) ? machinePrice(item) : mintNature(item) ? MINT_PRICE : 0);

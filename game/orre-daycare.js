@@ -13,7 +13,9 @@
   const state = (player) => (player.flags.orreDayCare && player.flags.orreDayCare.record ? player.flags.orreDayCare : null);
   const held = (player) => (state(player) || {}).record || null;
   function deposit(player, record, levelCap) {
-    record.hyper = false;
+    // (Leaving it here ends a Shadow Pokémon's Hyper Mode. Only a Shadow Pokémon's: anyone else's `hyper` is the
+    // stats it's been Hyper Trained in, game/bag.js, kept.)
+    if (record.shadow) record.hyper = false;
     player.flags.orreDayCare = { record, steps: 0, level: record.level, cap: levelCap };
   }
   // A step with her Pokémon: Exp. Points (a Shadow Pokémon's kept for it, once they are).

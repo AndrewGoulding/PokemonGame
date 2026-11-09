@@ -2308,7 +2308,13 @@
       shadow: !!r.shadow && r.heart != null, heart: r.shadow && r.heart != null ? OrreHeart.bars(r) : 0,
       heartDoor: r.shadow && r.heart != null ? OrreHeart.door(r) : "",
       ability, abilityText: (window.SUMMARY_SCREEN.abilityText || {})[ability] || "",
-      moves: r.moves.map((m) => ({ name: m.name, pp: m.pp, maxpp: Party.maxPp(m) })),
+      // (A Shadow Pokémon's own moves still sealed by its heart show as Colosseum shows them: "????".)
+      moves: (() => {
+        let own = 0;
+        const back = r.shadow && r.heart != null ? OrreHeart.moves(r) : 4;
+        return r.moves.map((m) => (m.name !== "Shadow Rush" && ++own > back ? { name: "????", pp: 0, maxpp: 0, sealed: true }
+          : { name: m.name, pp: m.pp, maxpp: Party.maxPp(m) }));
+      })(),
       status: r.status, shiny: !!r.shiny, teraType: Party.teraType(r),
       pic: Screen.spriteUrl(r.species, Party.form(r), false, r.shiny),
       picEmpty: ((window.SPRITE_METRICS || {}).front || {})[dex.id] || 0,
@@ -6160,7 +6166,7 @@
   // ---------- Orre: Colosseum's e-mail (game/orre-mail.js) ----------
   //
   // An e-mail arriving (Colosseum's notice, then it's read: its subject and sender, then its words), and the ones
-  // received, to read again (the Start menu's E-MAIL while in Orre; the newest first, a "*" on any not read yet).
+  // received, to read again (the Start menu's E-MAIL while in Orre; the newest first, a "+" on any not read yet: the menu font has no "*").
   async function readMail(key) {
     const m = Orre.MAIL[key], first = !((player.flags.orreMail || {}).read || []).includes(key);
     await say([m.subject + "\nFrom: " + m.from].concat(m.body));
@@ -6193,7 +6199,7 @@
     for (let cursor = 0; ;) {
       const list = Orre.mailList(player.flags);
       if (!list.length) { await say("There's no e-mail."); return; }
-      const i = await multichoice("Which e-mail will you read?", 0, 0, list.map((e) => (e.read ? " " : "*") + e.subject).concat(["CANCEL"]), { shown: 6, cursor });
+      const i = await multichoice("Which e-mail will you read?", 0, 0, list.map((e) => (e.read ? " " : "+") + e.subject).concat(["CANCEL"]), { shown: 6, cursor });
       Screen.say("");
       if (i < 0 || i >= list.length) return;
       cursor = i;
@@ -7058,7 +7064,7 @@
   // purified. Once the door's open, Agate's Relic Stone purifies it (from orreStory 30, when Eagun's family tablet has
   // told you how): it regains its own first move in Shadow Rush's place, its Exp. Points, and a Ribbon.
   const SCENT_HEART = { "joy-scent": 1, "excite-scent": 2, "vivid-scent": 3 };
-  const SCENT_SAYS = { "joy-scent": "a JOY SCENT", "excite-scent": "an EXCITE SCENT", "vivid-scent": "a VIVID SCENT" };
+  const SCENT_SAYS = { "joy-scent": "a Joy Scent", "excite-scent": "an Excite Scent", "vivid-scent": "a Vivid Scent" };
   // (A heart just about to open: Colosseum's words, its Summary's.)
   const heartOpenText = (r) => "The door to " + Party.displayName(r) + "'s heart is\nabout to open. Undo the final lock!";
   // A heart opened by `way` (OrreHeart.open), `times` over: its bars, before and after, and whether it's now ready.
@@ -7082,15 +7088,26 @@
   }
   // Agate's Day-Care Lady (Colosseum's words: M3_houseD_1F #15121-#15134; game/orre-daycare.js): one Pokémon at a time.
   async function dayCareLady() {
-    const lady = (s) => "Day-Care Lady: " + s;
+    // (Her name before her words, the page wrapped again so no line runs past the box: 37 a line, three a page.)
+    const lady = (s) => {
+      const lines = [];
+      let line = "";
+      for (const w of ("Day-Care Lady: " + s).replace(/\n/g, " ").split(" ")) {
+        if (line && (line + " " + w).length > 37) { lines.push(line); line = w; } else line = line ? line + " " + w : w;
+      }
+      if (line) lines.push(line);
+      const pages = [];
+      for (let i = 0; i < lines.length; i += 3) pages.push(lines.slice(i, i + 3).join("\n"));
+      return pages.length === 1 ? pages[0] : pages;
+    };
     const r = OrreDayCare.held(player);
     if (r) {
       const name = Party.displayName(r), up = OrreDayCare.grown(player);
-      await say([lady("Ah, good to see you! Your\ndarling Pokémon is doing\nmarvelously well.")].concat(up ? [lady("By level, " + name + " has\ngrown by about " + up + ".")] : []));
+      await say([lady("Ah, good to see you! Your\ndarling Pokémon is doing\nmarvelously well.")].concat(up ? [lady("By level, " + name + " has\ngrown by about " + up + ".")] : []).flat());
       if (!(await confirm(lady("Are you here to reclaim your\nPokémon?")))) { await say(lady("Come see me when you want\nyour Pokémon back.")); return; }
       if (player.party.length >= 6) { await say(lady("Your Pokémon party is full. I\ncan't return your little darling if\nthere's no room for it.")); return; }
       const price = OrreDayCare.fee(player);
-      if (!(await confirm(lady("If you're reclaiming your darling\n" + name + ", you'll have to pay $" + price + ".")))) { await say(lady("Come see me when you want\nyour Pokémon back.")); return; }
+      if (!(await confirm(lady("If you're reclaiming your darling\n" + name + ", you'll have to pay ¥" + price + ".")))) { await say(lady("Come see me when you want\nyour Pokémon back.")); return; }
       if (player.money < price) { await say(lady("You don't seem to have enough\nmoney, dear.")); return; }
       Player.addMoney(player, -price);
       player.party.push(OrreDayCare.withdraw(player));
@@ -7103,7 +7120,7 @@
     if (!(await confirm(lady("Have you a Pokémon you'd like\nme to raise?")))) { await say(lady("Come see me again if you have a\nPokémon you'd like me to raise.")); return; }
     if (player.party.filter((q) => !q.egg).length < 2) {
       await say([lady("Oh? You've got only one\nPokémon with you."), lady("If you leave that one with me,\nwhy, you'll have none with you."),
-        lady("I'll raise a Pokémon for you if you\nhave at least two with you. Come back\nthen.")]);
+        lady("I'll raise a Pokémon for you if you\nhave at least two with you. Come back\nthen.")].flat());
       return;
     }
     await say(lady("Which darling Pokémon should\nI raise?"));
@@ -7212,9 +7229,9 @@
     await say(["{PLAYER} received ¥" + t.prize + " in prize money!"]);
     Player.addItem(player, item, 1);
     await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
-    // (The Deep Colosseum's first champion: its king comes out.)
-    if (t.key === "deep" && firstTime) { await say(["The Deep King has been watching you…", "He's waiting by the counter. Take him\non, if you dare!"]); Overworld.refreshPeople(); }
-    else await say(["Please come back and enter again!"]);
+    // (The Deep King, Agnol, is the Deep Colosseum's last round's last battle, Orre.DEEP_ROUNDS: no one waits by the
+    // counter.)
+    await say(["Please come back and enter again!"]);
     await persist();
   }
   const pickOne = (list) => list[Math.floor(Math.random() * list.length)];
@@ -7225,8 +7242,8 @@
   async function mtBattleChallenge() {
     const f = player.flags, M = Orre.MT_BATTLE, rec = (f.orreMtBattle = f.orreMtBattle || { best: 0, cleared: [] });
     if ((f.orreStory | 0) < M.from) { await say(["The challenge is closed while those\npurple crooks are on the mountain.", "Sorry, kid. Come back once they're\ngone."]); return; }
-    await say(["Welcome to Mt. Battle's challenge!", "Ten areas, ten Trainers each, all\ndouble battles. The tenth in each area\nis its Area Leader.",
-      "Your Pokémon are only healed between\nareas, and you can stop there. Beat all\n100 in one go and, they say, something\nwonderful happens!"]);
+    await say(["Welcome to Mt. Battle's challenge!", "Ten areas, ten Trainers each, all\ndouble battles. The tenth in each\narea is its Area Leader.",
+      "Your Pokémon are only healed between\nareas, and you can stop there.", "Beat all 100 in one go and, they say,\nsomething wonderful happens!"]);
     if (player.party.filter((r) => !r.egg).length < 2) { await say(["You'll need at least two Pokémon.\nThey're double battles!"]); return; }
     const starts = M.starts.filter((a) => a === 1 || rec.best >= a - 1);
     const at = await multichoice("Where will you start?", 0, 0, starts.map((a) => "Area " + a).concat(["Cancel"]));
@@ -7265,11 +7282,16 @@
       if (area < 10 && !(await confirm("Your Pokémon are healed. Go on to\nArea " + (area + 1) + "?"))) { await say(["Come back any time!"]); return; }
     }
     await say(["Incredible! You've beaten all of Mt.\nBattle's Trainers!"]);
-    if (from === 1 && !rec.hooh && (f.orreStory | 0) >= 44) {
+    // (As in Colosseum: all 100 in one go, once all 48 Shadow Pokémon have been purified. Its Ho-Oh, Lv. 70, knows
+    // Recover, Fire Blast, Sunny Day and Swift: Serebii's Colosseum Ho-Oh page.)
+    const allPurified = Orre.SHADOW.every((s) => (f.orrePurified || []).includes(s.species));
+    if (from === 1 && !rec.hooh && (f.orreStory | 0) >= 44 && allPurified) {
       await say(["…Huh? Look at the sky!", "A rainbow… and something's flying out\nof it!"]);
       await Overworld.flash();
       cry("Ho-Oh");
-      if (await giftMon("Ho-Oh", 70, "Ho-Oh came down to {PLAYER}!")) rec.hooh = true;
+      const moves = ["Recover", "Fire Blast", "Sunny Day", "Swift"];
+      if (await giftMon("Ho-Oh", 70, "Ho-Oh came down to {PLAYER}!", null, null,
+        (r) => { r.moves = moves.map((name) => ({ name, pp: Party.maxPp(name) })); })) rec.hooh = true;
     }
     await say(["Come back and take the challenge\nagain any time!"]);
     await persist();
@@ -7357,7 +7379,7 @@
         "Eagun: Luckily, as it is inscribed on\nthe Small Tablet, the Relic in the\nRelic Forest is imbued with Celebi's", "power.", "Eagun: If a Shadow Pokémon is ready\nto throw open its heart's door, you\nmust visit the Relic."]
       : ["Eagun: Ah, Rui! And {PLAYER}! It's\ngood to see you back!", "Eagun: Hmhm… I see! So Vander\nconferred the Time Flute upon you.",
         "Eagun: Then, what are you waiting\nfor? Depart for the Relic Forest and\nsummon Celebi at once.", "Eagun: I wonder what will happen. I\nfind it quite exciting."])
-      : story >= 31 ? ["Eagun: Mt. Battle is to the northeast.\nYou can see it in the distance once\nyou leave the village. Hurry, Rui!"]
+      : story >= 31 ? ["Eagun: Mt. Battle is to the\nnortheast. You can see it in the\ndistance once you leave the village.", "Hurry, Rui!"]
       : story >= 30 ? ["Eagun: The Relic must have some\neffect on Shadow Pokémon.", "Eagun: I will leave that for you to\ndetermine for yourselves."]
       : ["Eagun: You've finally arrived. What\nheld you up?"]);
   }
@@ -7365,8 +7387,9 @@
     if ((player.flags.orreStory | 0) !== 28) return;
     const f = player.flags, R = ORRE("EAGUN_RUI"), V = ORRE("AGATE_RUNNER"), E = ORRE("EAGUN"), B = ORRE("BELUH");
     const me = player.location;
-    Overworld.addObject(R, { x: me.x + 1, y: me.y, facing: "up" });
-    await Overworld.act([{ who: "player", moves: ["walk_up", "walk_up", "walk_up"] }, { who: R, moves: ["walk_up", "walk_up", "walk_up"] }]);
+    // (Up past the table on the left, to stand before Eagun, Rui beside you.)
+    Overworld.addObject(R, { x: me.x + 2, y: me.y, facing: "up" });
+    await Overworld.act([{ who: "player", moves: ["walk_up", "walk_right", "walk_up", "walk_up"] }, { who: R, moves: ["walk_up", "walk_up", "walk_up"] }]);
     // (Colosseum's words, in its order.)
     await say(["Rui: Grandpa Eagun! Grandma Beluh! I\nmissed you!"]);
     await say(["Eagun: You've finally arrived. What\nheld you up?"]);
@@ -7456,7 +7479,7 @@
     await receiveMail("EMERGENCY");
     await say(["Rui: Whaaat?! Those crooks are loose\non Mt. Battle now?! That's awful!", "Rui: We can't let this go on!\n{PLAYER}, let's go! …Oh, wait."]);
     await say(["Rui: Grandpa, where is Mt. Battle,\nanyway?"]);
-    await say(["Eagun: Mt. Battle is to the northeast.\nYou can see it in the distance once\nyou leave the village. Hurry, Rui!"]);
+    await say(["Eagun: Mt. Battle is to the\nnortheast. You can see it in the\ndistance once you leave the village.", "Hurry, Rui!"]);
     await say("{PLAYER} gave the P★DA number to\nEagun.");   // (M3_houseC_1F #20862: his e-mail comes later, GREETINGS)
     f.orreStory = 31;
     Orre.unlock(f, "MtBattle");
@@ -7959,7 +7982,7 @@
   async function realgamArrival() {
     // (Before the tower opens it's Colosseum's Construction Lot: its way in shut (D4_out #21585).)
     if ((player.flags.orreStory | 0) < 40) {
-      await say(["Worker: Whoa, hold it there. This is a\nconstruction site. It's not a safe\nplace to be."]);
+      await say(["Worker: Whoa, hold it there. This is\na construction site. It's not a safe\nplace to be."]);
       Screen.say("");
       player.location = { map: "RealgamTower_Exterior", x: 19, y: 25, facing: "down" };
       await Overworld.teleport(player.location);
@@ -8156,7 +8179,10 @@
   // Each of the story's Trainers with a Shadow Pokémon battles you until you've snagged it (orreShadowDone).
   const ORRE_PYRITE_CAP = 35;
   const storyBattle = async (opts) => {
-    const outcome = await battle("trainer", Object.assign({ double: true, music: "mus_vs_trainer" }, opts));
+    const o = Object.assign({ double: true, music: "mus_vs_trainer" }, opts);
+    const outcome = await battle("trainer", o);
+    // (What was snagged, battle() writes on the options it was given: back on the caller's, which it reads.)
+    opts.snagged = o.snagged;
     show("world");
     await Overworld.resume();
     music((window.WORLD_MAPS[player.location.map] || {}).music);
@@ -8351,7 +8377,7 @@
         return;
       case "ConstructionLot_EventScript_Guard":
         await say(f.orreLotGuard ? ["Worker: This is no place for tourists\nto visit. Go on, scram."]
-          : ["Worker: Whoa, hold it there. This is a\nconstruction site. It's not a safe\nplace to be.", "Worker: This is no place for tourists\nto visit. Go on, scram."]);
+          : ["Worker: Whoa, hold it there. This is\na construction site. It's not a safe\nplace to be.", "Worker: This is no place for tourists\nto visit. Go on, scram."]);
         f.orreLotGuard = true;
         return;
       case "ConstructionLot_EventScript_Worker1":
@@ -8672,7 +8698,7 @@
     // (Marcia runs in: Colosseum's M2_building_1F #20763, #20764; Rui's #20573, then #20576 and #23076.)
     const MA = ORRE("BUILDING_MARCIA");
     sfx("se_door");
-    Overworld.addObject(MA, { x: door.x + 1, y: door.y - 1, facing: "up" }, { sprite: "little_girl", width: 16, height: 32, frames: 10 });
+    Overworld.addObject(MA, { x: door.x + 1, y: door.y - 1, facing: "up" }, { sprite: "little_girl", width: 16, height: 16, frames: 10 });
     await say(["Marcia: Big lady! My papa… Papa's\nPokémon was taken away by Miror B. as\na prisoner!", "Marcia: It's Papa's Plusle. I'm so\nworried that they might be mean to\nit…"]);
     await say(["Rui: He did what?! Miror B. used a\ndirty move like that?"]);
     await say(["Rui: He's not getting away with this!\nThat rotten Miror B.!", "Rui: But we're here now! We'll get\nPlusle back for you! Right, {PLAYER}?"]);
@@ -9114,6 +9140,16 @@
     const fr = Object.keys(window.TUTOR_LEARNERS || {}).filter((m) => window.TUTOR_LEARNERS[m].includes(record.species));
     const xd = window.XD_PURIFICATION_MOVES[Party.speciesName(record.species)] || [];
     return [...new Set((set.tutor || []).concat(fr, xd))].filter((m) => window.MOVES[m] && !Party.knowsMove(record, m)).sort();
+  }
+  // Orre's people's sprites at the size the rest of the game draws them (a Biker's bike, the cyclists, 32 pixels wide; the
+  // little ones 16 high): Orre's map data and the people added to it took every sprite to be 16 by 32.
+  {
+    const size = {};
+    for (const m of Object.values(window.WORLD_MAPS)) if (m.region !== "orre") for (const p of m.people || []) if (p.sprite && !size[p.sprite]) size[p.sprite] = p;
+    for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "orre") for (const p of m.people || []) {
+      const c = size[p.sprite];
+      if (c) Object.assign(p, { width: c.width, height: c.height, frames: c.frames });
+    }
   }
   const BP_TUTOR = "TrainerTower_Lobby_EventScript_BPTutor";
   {

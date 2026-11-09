@@ -520,10 +520,18 @@ const inside = drawDinerInside();
 
 // ---------- The maps' data ----------
 
-const frames = (sprite) => readPng(path.join(outSprites, sprite + ".png")).width / 16;
+// (A sprite's frame size: square for the riders on bikes, 32 by 32, as FireRed's and Emerald's maps draw them, and
+// for the little ones 16 by 16; the rest 16 by 32. ui/game.js also puts every Orre person at the size the rest of the
+// game draws their sprite.)
+const WIDE = new Set(["biker", "em_cycling_triathlete_m", "em_cycling_triathlete_f"]);
+const spriteSize = (sprite) => {
+  const png = readPng(path.join(outSprites, sprite + ".png")), w = WIDE.has(sprite) ? 32 : 16;
+  return { width: w, height: png.height, frames: png.width / w };
+};
+const frames = (sprite) => spriteSize(sprite).frames;
 const person = (id, localId, x, y, sprite, movement, script, text, extra) => Object.assign({
   id, x, y, movement, rangeX: 0, rangeY: 0, script, flag: null, text, localId: "LOCALID_ORRE_" + localId,
-  sprite, width: 16, height: 32, frames: frames(sprite) }, extra || {});
+  sprite }, spriteSize(sprite), extra || {});
 
 // Outside. (People the story puts there are left out by ui/game.js's
 // visible() until it's their scene: Folly, Trudly and Willie; the truck
@@ -2116,7 +2124,7 @@ for (const [m, list] of [[PYRITE, SHADOW_TRAINERS.PyriteTown], [PYCAVE, SHADOW_T
 // Cipher's Peons at the Relic Stone's shrine (Skrub, with Colosseum's Shadow Hitmontop).
 const AGATE_EAGUN_DOOR = doorBelow(GCABINS[1]);
 const EAGUN_HOUSE = emeraldRoom("VerdanturfTown_House", "AgateVillage_EaguansHouse", "Agate Village",
-  [{ x: 3, y: 8, map: "AgateVillage", warp: 1 }, { x: 4, y: 8, map: "AgateVillage", warp: 1 }], [
+  [{ x: 3, y: 8, map: "AgateVillage", warp: 3 }, { x: 4, y: 8, map: "AgateVillage", warp: 3 }], [
     person(0, "EAGUN", 6, 3, "old_man_2", "face_down", "AgateVillage_EaguansHouse_EventScript_Eagun", null),
     person(1, "BELUH", 8, 4, "old_woman", "face_left", "AgateVillage_EaguansHouse_EventScript_Beluh", null),
     person(2, "AGATE_RUNNER", 3, 7, "man", "face_up", "AgateVillage_EaguansHouse_EventScript_Runner", null),

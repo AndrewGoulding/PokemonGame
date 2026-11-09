@@ -274,7 +274,10 @@ function wheel(c, x, y, r, colors = C.rust) { c.ellipse(x, y, r, r, colors[0], 2
   maps[name] = { name, title: "Realgam Tower", width: 40, height: 36, region: "orre", orrePlace: "RealgamTower_1F", type: "city", music: "em_sootopolis", top: true, collision: [], elevation: [], behavior: [], encounter: [], connections: [], signs: [], triggers: [], hidden: [], people: [], warps: [{ x: 19, y: 23, map: "RealgamTower_1F", warp: 2 }] };
   maps[name].triggers = [17, 18, 19, 20, 21, 22].map((x) => ({ x, y: 35, script: "Orre_WorldMap" }));
   const { m, c, z } = project(name, (x, y) => (x >= 17 && x <= 22 && y >= 22) || ellipse(x, y, 19.5, 26, 16, 5));
-  water(c, 24, 330, 592, 160); pave(c, 17 * 16, 23 * 16, 96, 208); c.ellipse(320, 418, 248, 56, C.stone[0], 6);
+  water(c, 24, 330, 592, 160); pave(c, 17 * 16, 23 * 16, 96, 208);
+  // (The round plaza at the tower's foot, paved where it's walked on, its stone rim around it: water only beyond.)
+  for (let y = 424 - 92; y <= 424 + 92; y++) { const half = Math.floor(268 * Math.sqrt(Math.max(0, 1 - ((y - 424) / 92) ** 2))); if (half > 0) pave(c, 320 - half, y, 2 * half, 1); }
+  c.ellipse(320, 424, 268, 92, C.stone[0], 6);
   cylinder(c, 292, 115, 56, 270, C.stone, C.gold); c.poly([[304, 88], [320, 0], [336, 88]], C.stone[0]);
   for (const [cx, cy, rx, ry] of [[320, 120, 126, 58], [177, 170, 72, 38], [463, 170, 72, 38]]) { cylinder(z, cx - 10, cy - 18, 20, 180, C.stone, C.gold); dome(z, cx, cy, rx, ry, [C.stone[3], C.stone[2], C.stone[1], C.stone[0]]); z.ellipse(cx, cy + 12, rx, ry / 2, C.gold, 3); z.line(cx, cy - ry - 30, cx, cy - ry + 4, C.gold, 3); }
   door(c, 19 * 16 + 8, 24 * 16 - 1, 26, C.dark);

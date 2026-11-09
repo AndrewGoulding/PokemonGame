@@ -23,6 +23,8 @@ module.exports = function ({ maps, changed, clone, room, drawings, block, buildi
   // (Nett's antenna dish, up on his roof.)
   z.ellipse(5 * 16 + 8, 2 * 16 - 14, 14, 7, [196, 204, 210]); z.ellipse(5 * 16 + 8, 2 * 16 - 15, 10, 4, [140, 150, 160]); z.rect(5 * 16 + 7, 2 * 16 - 10, 3, 12, [96, 100, 108]);
   U.warps.push({ x: 24, y: 3, map: "TheUnder_JunkShop_1F", warp: 0 }, { x: 5, y: 4, map: "TheUnder_NettsHideout_1F", warp: 0 });
+  // (No "The door is locked." on a door that opens: Venus's studio's, and the shacks this module opens.)
+  U.signs = U.signs.filter((g) => !U.warps.some((w) => w.x === g.x && w.y === g.y));
 
   // Venus's TV station: the stairway down at its north-west corner (a step-on warp, MB_REGULAR_WARP), and the
   // elevator at its north-east (TheUnder_Studio_EventScript_Elevator). The Under's colosseum: the door down to the
@@ -55,8 +57,12 @@ module.exports = function ({ maps, changed, clone, room, drawings, block, buildi
   // (The elevator's other end, by B1's foot of the stairway: TheUnder_Subway_B1_EventScript_Elevator.)
   tile(changed.TheUnder_Subway_B1, 8, 25, 1);
   changed.TheUnder_Subway_B1.signs = [{ x: 8, y: 25, script: "TheUnder_Subway_B1_EventScript_Elevator", text: null }];
-  changed.TheUnder_Subway_B2 = room("RusturfTunnel", "TheUnder_Subway_B2", "The Under Subway", music,
-    [{ x: 4, y: 10, map: "TheUnder_Subway_B1", warp: 2 }, { x: 29, y: 16, map: "TheUnder_Subway_Station", warp: 0 }, { x: 18, y: 20, map: "TheUnder_Subway_B1", warp: 2 }]);
+  // (B2: Granite Cave 1F's upper level, its long passage: down its ladder from B1, along past the subway's Trainers,
+  // and out of its west end to the station. Its lower level, apart, is left unused (its two ways out lead up to B1).
+  // Rusturf Tunnel's picture, used before, is drawn with the wrong tiles: a grassy route, not a tunnel.)
+  changed.TheUnder_Subway_B2 = room("GraniteCave_1F", "TheUnder_Subway_B2", "The Under Subway", music,
+    [{ x: 35, y: 3, map: "TheUnder_Subway_B1", warp: 2 }, { x: 5, y: 10, map: "TheUnder_Subway_Station", warp: 0 },
+      { x: 37, y: 12, map: "TheUnder_Subway_B1", warp: 2 }, { x: 17, y: 11, map: "TheUnder_Subway_B1", warp: 2 }]);
   changed.TheUnder_Subway_Station = room("MtChimney_CableCarStation", "TheUnder_Subway_Station", "The Under Subway", music,
     [{ x: 6, y: 11, map: "TheUnder_Subway_B2", warp: 1 }, { x: 7, y: 11, map: "TheUnder_Subway_B2", warp: 1 }]);
   for (const m of ["TheUnder_Subway_B1", "TheUnder_Subway_B2", "TheUnder_Subway_Station"]) changed[m].showName = true;
@@ -77,7 +83,7 @@ module.exports = function ({ maps, changed, clone, room, drawings, block, buildi
   // (The Shadow Liner, at the top of the station.)
   changed.TheUnder_Subway_Station.signs.push({ x: 6, y: 3, script: "TheUnder_Subway_Station_EventScript_Train", text: null });
   // (The subway's four Trainers, from the town above.)
-  const SUB = { SHADOW_LONIA: [6, 8, "face_left"], SHADOW_FRENA: [14, 4, "face_down"], SHADOW_LIAKS: [24, 5, "face_up"], SHADOW_NELIS: [30, 9, "face_left"] };
+  const SUB = { SHADOW_LONIA: [7, 7, "face_left"], SHADOW_FRENA: [20, 3, "face_down"], SHADOW_LIAKS: [30, 4, "face_down"], SHADOW_NELIS: [11, 9, "face_left"] };
   let id = 0;
   for (const [key, [x, y, facing]] of Object.entries(SUB)) {
     const p = U.people.find((q) => q.localId === "LOCALID_ORRE_" + key);

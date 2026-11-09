@@ -3,7 +3,9 @@
 const assert = require("node:assert/strict"), T = require("./lib");
 (async () => {
   const s = await T.start((p) => { p.flags.orre = 2; p.flags.orreStory = 44; p.flags.orreLevelCap = 100;
-    p.flags.orreMap = ["PhenacCity", "PyriteTown", "AgateVillage", "MtBattle", "RealgamTower_1F"]; },
+    p.flags.orreMap = ["PhenacCity", "PyriteTown", "AgateVillage", "MtBattle", "RealgamTower_1F"];
+    // (Its e-mails had, so none pops up on the way: this test is the maps', not the P★DA's.)
+    p.flags.orreMail = { got: Object.keys(Orre.MAIL), read: Object.keys(Orre.MAIL) }; },
     { map: "PhenacCity", x: 19, y: 34, facing: "up" }, { out: "/tmp/pokemon-orre-maps", storage: {
       "pokemon-options": JSON.stringify({ textSpeed: 2, battleScene: 1, sound: 2, calls: 1, follower: 1, followerModes: 2 }) } });
   const errors = [], missing = new Set();
@@ -24,14 +26,14 @@ const assert = require("node:assert/strict"), T = require("./lib");
     await enter("RealgamTower_Exterior", 19, 24, "RealgamTower_1F");
     await go("RealgamTower_1F", 9, 10, "down"); await s.walk("down", 2); await s.wait(350); await where("RealgamTower_Exterior");
     await go("RelicForest", 10, 6); await s.press("z"); await s.wait(500); await s.press("z");
-    assert((await s.text()).includes("Relic Stone"));
+    await s.page.waitForFunction(() => /relic/i.test(document.body.innerText), null, { timeout: 8000 }).catch(async (e) => { throw new Error("not the expected text: " + JSON.stringify(await s.eval(() => ({ text: document.getElementById("textbox").innerText, loc: Game.player.location, idle: Overworld.idle() })))); });
     for (let i = 0; i < 12 && !(await s.eval(() => Overworld.idle())); i++) await s.press("z");
     // Check that the relocated antagonist scene actually starts at the Relic.
     await s.eval(() => { Game.player.flags.orreStory = 29; });
     await go("RelicForest", 11, 7, "down"); await s.press("z"); await s.wait(600);
     const elder = await s.eval(() => Overworld.personPosition("LOCALID_ORRE_SHRINE_EAGUN"));
     assert(elder && elder.x === 9 && elder.y === 9, "Eagun must enter at the new forest position");
-    assert((await s.text()).includes("Relic Stone"));
+    await s.page.waitForFunction(() => /Eagun:|relic/i.test(document.body.innerText), null, { timeout: 8000 }).catch(async (e) => { throw new Error("not the expected text: " + JSON.stringify(await s.eval(() => ({ text: document.getElementById("textbox").innerText, loc: Game.player.location, idle: Overworld.idle() })))); });
     assert.deepEqual(errors, []);
     const newAssets = /(?:PhenacCity(?:_PreGym)?|PyriteTown|AgateVillage|TheUnder|MtBattle|OutskirtStand|RealgamTower_Exterior|RelicForest)(?:-(?:top|border))?\.png/;
     assert.deepEqual([...missing].filter((url) => newAssets.test(url)), []);

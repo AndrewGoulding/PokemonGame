@@ -7,7 +7,13 @@ module.exports = function ({ maps, changed, clone, room }) {
   const agate = changed.AgateVillage || clone(maps.AgateVillage), NAME = "AgateVillage_DayCare";
   let index = agate.warps.findIndex((w) => w.map === NAME);
   if (index < 0) { index = agate.warps.length; agate.warps.push({ x: 7, y: 22, map: NAME, warp: 0 }); }
+  // (The cottage's door was a locked door's sign before the Day-Care moved in: the door now, not the sign.)
+  agate.signs = (agate.signs || []).filter((s) => !(s.x === 7 && s.y === 22));
   changed.AgateVillage = agate;
+  // (Eagun's house's way out: back to its own door on the village's north terrace, not to the west path's arrow.)
+  const house = changed.AgateVillage_EaguansHouse || clone(maps.AgateVillage_EaguansHouse);
+  const door = agate.warps.findIndex((w) => w.map === house.name);
+  if (door >= 0) { house.warps.forEach((w) => { w.warp = door; }); changed[house.name] = house; }
   changed[NAME] = room("Route117_PokemonDayCare", NAME, "Agate Village", agate.music,
     [{ x: 2, y: 8, map: "AgateVillage", warp: index }, { x: 3, y: 8, map: "AgateVillage", warp: index }]);
 };

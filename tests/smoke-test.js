@@ -3354,6 +3354,31 @@ if (window.JOHTO_TOWN_MAP) {
     assert.deepStrictEqual(Object.keys(Orre.MAIL).filter((k) => !Orre.MAIL_WHEN[k]).sort(), ["EMERGENCY", "TROUBLE_IN_UNDER"]);
     for (const m of Object.values(Orre.MAIL)) for (const page of [].concat(m.body)) for (const line of page.split("\n")) assert(line.length <= 37, line);
     assert(Orre.LAB.doorShut && Orre.LAB.DOORS);
+    // (The lab walked from the garage with both keys: every one of the nine DNA Sample spots, and Ein's room once the
+    // DNA door's open, can be reached round its people; no one stands in the only way into a corner.)
+    {
+      const walk = (flags) => {
+        const vis = (p) => { const v = Orre.visible(p, flags); return v === undefined ? true : v; };
+        const seen = new Set(["ShadowLab_1F:7,8"]), q = [{ map: "ShadowLab_1F", x: 7, y: 8 }];
+        while (q.length) {
+          const c = q.shift();
+          for (const d of ["up", "down", "left", "right"]) {
+            const r = World.step({ map: c.map, x: c.x, y: c.y }, d);
+            const n = r.warp ? { map: r.warp.map, x: r.warp.x, y: r.warp.y } : r.ok && r.map === c.map ? { map: c.map, x: r.x, y: r.y } : null;
+            if (!n || !n.map.startsWith("ShadowLab_") || (r.warp && Orre.LAB.doorShut("enter:" + n.map, flags))) continue;
+            if (!r.warp && WORLD_MAPS[c.map].people.some((p) => vis(p) && p.x === n.x && p.y === n.y)) continue;
+            const k = n.map + ":" + n.x + "," + n.y;
+            if (!seen.has(k)) { seen.add(k); q.push(n); }
+          }
+        }
+        return seen;
+      };
+      const all = { orreStory: 38, orreLabCardKey: true, orreLabDownSt: true, orreLabDNA: { spots: [0, 1, 2, 3, 4, 5, 6, 7, 8], got: [], done: false } };
+      const seen = walk(all), beside = (m, x, y) => [[0, 1], [0, -1], [1, 0], [-1, 0]].some(([dx, dy]) => seen.has(m + ":" + (x + dx) + "," + (y + dy)));
+      for (const s of Orre.LAB.DNA_SPOTS) assert(beside(s.map, s.x, s.y), "DNA Sample spot " + s.i + " can be reached");
+      assert(!walk(all).has("ShadowLab_EinsRoom:4,7") && walk(Object.assign({}, all, { orreLabDNA: { spots: [0, 1, 2], got: [0, 1, 2], done: true } })).has("ShadowLab_EinsRoom:4,7"), "Ein's room, through the DNA door once it's open");
+      assert(!walk({ orreStory: 38, orreLabDNA: all.orreLabDNA }).has("ShadowLab_Main1F:5,7"), "the main wing, shut without the Card Key");
+    }
     // The Under Subway, as in Colosseum: down from Venus's TV station (its stairway, and its elevator's two ends), no
     // door in the town itself; and the door between the subway's B1 and The Under's colosseum, both ways.
     {
