@@ -34,7 +34,7 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [x] Pal Park catching show, source scoring and safe offline PC practice
 - [ ] Remaining optional challenges
 - [x] Poffin cooking/feeding, source shop and Beauty evolution
-- [ ] Super Contests, dress-up accessories and contest rewards
+- [x] Super Contests, source dress-up accessories/backdrops, practice, ribbons and contest rewards
 - [ ] Battle Tower, Factory, Arcade, Castle and Hall
 - [x] Offline Underground, source mining/fossils, Spheres, Secret Bases and Spiritomb
 - [ ] Remaining cross-feature collection rewards and trophies

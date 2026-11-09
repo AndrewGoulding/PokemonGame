@@ -4,7 +4,7 @@ const root = path.join(__dirname, "..");
 global.window = global;
 global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g)) {
-  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna|galactic|midgame|finale|sidequests|legends|towns|expeditions|daily|gadgets|services|seals|villa|leisure|underground|park|poffins)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
+  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna|galactic|midgame|finale|sidequests|legends|towns|expeditions|daily|gadgets|services|seals|villa|leisure|underground|park|poffins|contests)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
 }
 function fixture(choice = "Turtwig") {
   let p = Player.create("TEST"); p.location = { map: "SandgemTown_RowansLab", x: 6, y: 4, facing: "up" };

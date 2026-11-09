@@ -5943,6 +5943,7 @@
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
     saveCheckpoint: async()=>{tick();Save.write(player);},
+    contestDevice: async(stage,index)=>{Screen.say("");show("scene");clearMenu();try{const fn={visual:'dress',dance:'dance',acting:'acting',results:'results',photo:'photo'}[stage];return await SinnohContestDevice[fn](scene,player,stage==='photo'?index:async()=>{tick();Save.write(player);});}finally{show("world");await Overworld.resume();}},
     choosePoffinBerries: async()=>{Screen.say("");show("scene");clearMenu();try{return await SinnohPoffinDevice.ingredients(scene,player);}finally{show("world");await Overworld.resume();}},
     cookPoffin: async berries=>{Screen.say("");show("scene");clearMenu();try{return await SinnohPoffinDevice.cook(scene,berries);}finally{show("world");await Overworld.resume();}},
     openPoffinCase: async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohPoffinDevice.openCase(scene,player);}finally{show("world");await Overworld.resume();}},
