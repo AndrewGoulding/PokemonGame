@@ -64,7 +64,8 @@
   };
 
   const frames = (sprite) => (/^(orre_|em_)/.test(sprite) ? 9 : sprite === "biker" ? 20 : 10);
-  const localIdOf = (script) => "LOCALID_ORRE_COLO_" + script.replace(/^.*EventScript_/, "").toUpperCase();
+  // (By map and name: the same Trainer can stand in more than one place.)
+  const localIdOf = (script) => "LOCALID_ORRE_COLO_" + script.replace(/_EventScript_(Colo_)?/, "_").toUpperCase();
 
   // Each Trainer, placed on its map, visible while its first stage is reached (and before `until`, and `when`).
   function addTrainers(list) {

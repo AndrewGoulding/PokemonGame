@@ -3266,6 +3266,30 @@ if (window.JOHTO_TOWN_MAP) {
     // (A later battle brings back a Shadow Pokémon never snagged; one snagged stays gone.)
     assert(Orre.team("Ein@Realgam").some((r) => r.species === "Raikou" && r.shadow) && !Orre.team("Ein@Realgam", ["Raikou"]).some((r) => r.species === "Raikou"));
     assert.deepStrictEqual(Orre.snaggable("Biden"), ["Smeargle"]);
+    // Colosseum's other Trainers (game/orre-trainers*.js): each on a walkable tile of its map, no two in one place,
+    // every party real, every stage with Colosseum's words; and the Shadow Pokémon Trainers' later parties.
+    {
+      const all = Object.values(Orre.COLO_TRAINERS);
+      assert(all.length >= 83, all.length + " of Colosseum's other Trainers");
+      const ids = new Set();
+      for (const tr of all) {
+        const m = WORLD_MAPS[tr.map];
+        assert(m, tr.script + "'s map");
+        const p = m.people.find((q) => q.localId === tr.localId);
+        assert(p && !ids.has(tr.map + tr.localId), tr.script + " placed once");
+        ids.add(tr.map + tr.localId);
+        assert(!m.collision[p.y * m.width + p.x] && !m.people.some((q) => q !== p && q.x === p.x && q.y === p.y), tr.script + " on a free tile");
+        assert(fs.existsSync(path.join(root, "assets/world/sprites/" + p.sprite + ".png")) && fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + tr.pic + ".png")), tr.script + "'s pictures");
+        for (const s of tr.stages) {
+          assert(s.team.length && s.team.every(([sp, lv]) => DEX[sp] && lv >= 20 && lv <= 70), tr.script);
+          assert([].concat(s.intro || tr.before || [], s.defeat || [], s.after || []).length, tr.script + " says something");
+        }
+      }
+      for (const [script, list] of Object.entries(Orre.REMATCHES)) {
+        assert(Orre.SHADOW_TRAINERS[script], script);
+        for (const s of list) assert(s.team.every(([sp]) => DEX[sp]), script);
+      }
+    }
     // The Mystery Troop in Phenac after the Mayor's house, till one's beaten; the other two after the game in the
     // Snagem Hideout; Tanie in Ein's lab; the four Admins' ID Badges at Realgam.
     {
@@ -3327,8 +3351,10 @@ if (window.JOHTO_TOWN_MAP) {
         const p = at(map, key);
         assert(p && Orre.visible(p, { orreStory: 44 }) && Orre.visible(p, { orreStory: 43 }) === false, key);
       }
-      const ag = at("TheUnder_DeepColosseum", "SHADOW_AGNOL");
-      assert(!Orre.visible(ag, { orreStory: 44 }) && Orre.visible(ag, { orreStory: 44, orreTourney: { deep: 1 } }), "Agnol after the Deep Colosseum");
+      // (Deep King Agnol: the Deep Colosseum's last round, as in Colosseum, with his Shadow Shuckle till it's snagged.)
+      assert.strictEqual(Orre.DEEP_ROUNDS.length, 5);
+      const last = Orre.DEEP_ROUNDS[4][Orre.DEEP_ROUNDS[4].length - 1];
+      assert(last.name === "Deep King Agnol" && Orre.roundTeam(last, {}).team.some((r) => r.species === "Shuckle" && r.shadow), "Agnol, the Deep Colosseum's last");
       for (const tr of ["Biden", "Agrev", "Fein", "Agnol"]) assert(Orre.shadowOf(tr).length, tr);
     }
     for (const pl of ["MtBattle", "ShadowLab_1F", "RealgamTower_1F"]) assert(Orre.PLACES.some((p) => p.map === pl), pl + " on Orre's map");

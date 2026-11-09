@@ -3223,8 +3223,8 @@ may not obey. It's **26** for the whole prologue (Snagem's tests), the level Col
 and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
 
 **Colosseum's story proper**, from the break with Team Snagem on, is told in Colosseum's own words (its lines from
-`assets/text/colosseum.json`, put into this game's message box by `tools/colosseum-say.js`; only the prologue above, Prof.
-Oak's calls and a few bridging lines are this game's own), and its Trainers battle with Colosseum's own parties
+`assets/text/colosseum.json`, put into this game's message box by `tools/colosseum-say.js`; only the prologue above (and
+this game's own prompts and level-cap messages) isn't Colosseum's), and its Trainers battle with Colosseum's own parties
 (`Orre.TEAMS`, `Orre.team(key, snagged)` in `game/orre.js`, from altissimo1's Colosseum guide): Willie's two Zigzagoon
 (Lv. 24), Folly alone at Phenac, Team Snagem's Wakin outside the Mayor's house, Folly and Trudly inside it after Miror B.
 leaves, then the **Mystery Troop** blocking Phenac's way out (Verde, Rosso and Bluno; beat one, `orreTroop`, and the
@@ -3238,8 +3238,7 @@ Pokémon back if it was never snagged), whose four ID Badges open the way to the
   Machines from Cipher, snags strong Pokémon for them, and that Cipher shuts the door to those Pokémon's hearts to make
   Shadow Pokémon; tomorrow the hideout's big Snag Machine starts snagging for Cipher in earnest. That night you set it
   running until it overloads: the hideout blows up, Gonzap shouts "TRAITOR!", and you're out in the canyon with the Snag
-  Machine still on your arm. The hideout's people are gone from then on, Orre's level cap is 30, and Prof. Oak calls:
-  keep the Snag Machine, and use it to snag back Cipher's Shadow Pokémon, and only those.
+  Machine still on your arm. The hideout's people are gone from then on, and Orre's level cap is 30.
 - **The Outskirt Stand.** Folly and Trudly's truck is back. They come out of the diner pleased with "a great big catch"
   for their boss, recognise you, and drive off with the sack in the back, which moves. Then **Rider Willie** runs out
   after you ("Yo! Wait! Wait up!") and battles you with two Zigzagoon (Lv. 24); afterwards he points you to
@@ -3310,7 +3309,7 @@ Pokémon back if it was never snagged), whose four ID Badges open the way to the
   (Shadow Skarmory, Lv. 47); then the four Admins in the domes, Miror B., Dakim, Venus and Ein, each giving an ID Badge
   when beaten (`orreRealgamAdmins`), the four opening the Colosseum's door; in its Colosseum Bodybuilder Jomas (Miltank), Rider Delan (Absol) and Peons Nella
   (Houndoom) and Ston (Tropius), and **Nascour** (Shadow Metagross, Lv. 50); at the top, **Evice**, the head of Cipher,
-  who is Phenac's Mayor Es Cade (Shadow Tyranitar, Lv. 55). Beat him and Cipher's finished; Prof. Oak calls. Cap 55.
+  who is Phenac's Mayor Es Cade (Shadow Tyranitar, Lv. 55). Beat him and Cipher's finished. Cap 55.
   That's Colosseum's story told through (`orreStory` 44); every one of its Shadow Pokémon, but for the after-the-game
   ones (Smeargle, Ursaring, Shuckle, Togetic) and Rui's Celebi, is in Orre with its Trainer.
 - In a tag battle, snagging the second Trainer's Pokémon now gets you that Pokémon (the engine lists the partner's
@@ -3331,8 +3330,22 @@ Pokémon back if it was never snagged), whose four ID Badges open the way to the
 - **After the game** (`orreStory` 44 on): Team Snagem is back in its rebuilt hideout, Biden (Shadow Smeargle, Lv. 45)
   and Agrev (Shadow Ursaring, Lv. 45) in the yard; at the Outskirt Stand Fein, a Cipher Peon passing himself off as
   the hero who saved Orre (Shadow Togetic, Lv. 20), with Ancha the reporter who believes him; and in The Under's middle
-  shack the **Deep Colosseum** (Emerald's Battle Arena lobby), its own four-round tournament (Lv. 52 on; first prize a
-  Focus Band), after which Deep King Agnol (Shadow Shuckle, Lv. 45, with Forretress, Steelix and Scizor) takes you on.
+  shack the **Deep Colosseum** (Emerald's Battle Arena lobby): Colosseum's five rounds (`Orre.DEEP_ROUNDS`), each four
+  battles ending with an Admin (Miror B., Dakim, Venus, Ein) and the fifth with Deep King Agnol (Shadow Shuckle, Lv. 45,
+  and five more, Lv. 66-70); an Admin's Shadow Pokémon never snagged comes back there. In the hideout too: the two
+  Mystery Troop members you didn't battle in Phenac (one there, the other then in Ein's lab), Cipher's Peons and
+  Admins' people back with Colosseum's later parties, and Gonzap in his office.
+- **Colosseum's other Trainers** (`game/orre-trainers.js`, and `game/orre-trainers-early.js`, `-pyrite.js`,
+  `-middle.js`, `-late.js` place by place): all 83 of its Trainers without Shadow Pokémon, where Colosseum puts them, with
+  Colosseum's parties and words: Phenac's Drig and Kaib and the **Pre Gym** (Botan, Liqui, Dugo and Gwin, then Justy,
+  once four Shadow Pokémon are snagged: the White Herb and TM27 Return); Pyrite's Calda, Emok and Hader, the Pyrite
+  Building's and Pyrite Cave's Trainers; Agate's Skof and Dury and the Peons on the way to the Relic Stone; Mt. Battle's
+  and The Under's; the lab's Researchers; Realgam's halls; the rebuilt Snagem Hideout. Each battles with the party of
+  the stage the story's at (Colosseum's later parties after Miror B., Dakim and Evice: `stages`, `player.flags.orreColo`),
+  and the Shadow Pokémon Trainers likewise once theirs is snagged (`Orre.addRematches`, `orreColoRematch`); a later
+  battle brings back a Shadow Pokémon never snagged. Who says which of Colosseum's unnamed lines follows the game's own
+  numbering: a Trainer's lines come just before their named line in the battle text. Map sprites and battle pictures go
+  by class and gender (`Orre.SPRITES`).
 - **Colosseum's Shadow Pokémon** (`Orre.SHADOW` in `game/orre.js`): all 48 of them, in Colosseum's order, each with its
   level, its Trainer, where you meet them, its held item and Colosseum's four moves (Shadow Rush in the first one's place
   till it's purified, when it gets that move back; only a Shadow Pokémon can be snagged from a Trainer who has one) (Trudly's Makuhita, Lv. 30, at the Mayor's house; Rogue Cail's Furret,

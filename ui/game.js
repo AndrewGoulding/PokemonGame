@@ -352,6 +352,7 @@
     get orreTournament() { return orreTournament; },
     get orreTrainer() { return orreTrainer; },
     get coloTrainer() { return coloTrainer; },
+    get preGymJusty() { return preGymJusty; },
     get orreTravel() { return orreTravel; },
     get outOfCenterHeal() { return outOfCenterHeal; },
     get outOfDoorway() { return outOfDoorway; },
@@ -3518,7 +3519,7 @@
       "PyriteTown_EventScript_Zeke", "PyriteTown_EventScript_Rina", "AgateVillage_EventScript_Ted", "AgateVillage_EventScript_Sue",
       "PyriteCave_EventScript_Dex", "PyriteCave_EventScript_Taro",
       "arrive:PhenacCity", "enter:PhenacCity", "enter:PhenacCity_MayorsHouse", "PhenacCity_EventScript_Truck", "PhenacCity_EventScript_Folly",
-      "PhenacCity_EventScript_Trudly", "PhenacCity_MayorsHouse_EventScript_EsCade",
+      "PhenacCity_EventScript_Trudly", "PhenacCity_MayorsHouse_EventScript_EsCade", "PhenacCity_PreGym_EventScript_Justy",
       "arrive:PyriteTown", "enter:PyriteTown", "PyriteTown_DukingsHouse_EventScript_Duking", "PyriteTown_DukingsHouse_EventScript_Marcia",
       "PyriteTown_DukingsHouse_EventScript_Secc", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", "enter:PyriteTown_PyriteBuilding_4F",
       "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS), ...Object.keys(Orre.COLO_TRAINERS),
@@ -6502,24 +6503,17 @@
   const ORRE_STORY_CAP = 30;
   async function snagemBreak() {
     const f = player.flags;
-    await say(["Grunt: There you are, rookie! Master\nGonzap's ready for you.", "Through the gate. Don't keep the boss\nwaiting!"]);
+    // (Colosseum opens on its hideout blowing up, a scene with no words; Gonzap's, from D4_tower_2F #21717 and #21718,
+    // where he tells it at Realgam Tower.)
     Screen.say("");
     await Overworld.fadeToBlack();
     music(null);
-    await say(["Gonzap: Gwahaha! So you're the rookie\nwho passed all five tests!", "I'm Gonzap, the boss of Team Snagem.\nAnd don't you forget it!",
-      "Let me tell you a secret, rookie. We\nwere just thieves before we got hold of\nthe Snag Machines.",
-      "And where did we get them?\nFrom Cipher.", "What they wanted was this: go snag\nsuperior-grade Pokémon from Trainers\neverywhere!",
-      "Cipher pays big for 'em. They've got a\nway of shutting the door to a\nPokémon's heart.",
-      "Turns 'em into fighting machines.\nShadow Pokémon, they call 'em.",
-      "Downstairs is the big Snag Machine.\nTomorrow we fire it up, and Team\nSnagem snags for Cipher in earnest!",
-      "And you're in on it, rookie! Now get\nsome sleep. Big day tomorrow! Gwahaha!"]);
-    await say(["(So that's it. Team Snagem steals\nPokémon, and Cipher turns them into\nShadow Pokémon.)", "(Prof. Oak was right. This has to\nstop, tonight.)"]);
-    await say(["That night, when the hideout was quiet,\n{PLAYER} crept down to the big Snag\nMachine…", "…and set it running, faster and faster,\nuntil it overloaded!"]);
+    await say(["Gonzap: I'm Gonzap, the boss of Team\nSnagem. And don't you forget it!",
+      "Gonzap: We were just thieves before\nwe got hold of the Snag Machines. And\nwhere did we get them? From Cipher.",
+      "Gonzap: What they wanted was this: Go\nSnag superior-grade Pokémon from\ntrainers everywhere!"]);
+    Screen.say("");
     sfx("se_m_explosion");
     await Overworld.shake(16, { x: 3, y: 3, delay: 2 });
-    await say(["KA-BOOOOOM!"]);
-    await say(["Gonzap: WHAT?! The Snag Machine!", "…Where's that rookie?! TRAITOR!\nAfter that kid! Don't let 'em get away!"]);
-    await say(["{PLAYER} ran out through the smoke,\nthe Snag Machine still worn on one arm…"]);
     f.orreStory = 18;
     f.orreLevelCap = Math.max(f.orreLevelCap | 0, ORRE_STORY_CAP);
     player.party.forEach(Party.heal);
@@ -6528,14 +6522,7 @@
     music(window.WORLD_MAPS.SnagemHideout.music);
     sfx("se_m_explosion");
     await Overworld.shake(8, { x: 2, y: 2, delay: 3 });
-    await say(["Behind {PLAYER}, smoke poured out of\nTeam Snagem's hideout."]);
     await say("Your Pokémon can now grow up to\nLv. " + ORRE_STORY_CAP + " in Orre!");
-    await persist();
-    await gear.storyCall(["Prof. Oak: {PLAYER}! Are you all right?\nThere's news of an explosion in Orre,\nin Eclo Canyon!",
-      "Team Snagem snags Pokémon for Cipher,\nand Cipher makes Shadow Pokémon of\nthem? Then it's worse than I feared.",
-      "Listen, {PLAYER}. Keep that Snag\nMachine. Use it to snag back the Shadow\nPokémon Cipher has made…",
-      "…and only those! A Pokémon whose heart\nhas been shut can be opened again, I'm\nsure of it.",
-      "Find out what Cipher is up to. The\nOutskirt Stand, in the desert, would\nbe a good place to start.", "Good luck, {PLAYER}!"].map((p) => fill(p)));
     await persist();
   }
   // At the Outskirt Stand (orreStory 18): Folly and Trudly come out of the diner and drive off with their sack; Willie
@@ -6587,22 +6574,20 @@
     sfx("se_door");
     Overworld.removeObject(ORRE("WILLIE"));
     Overworld.refreshPeople();
-    if (!won) await say(["(Willie went back into the diner.)"]);
   }
   // Willie's battle (Colosseum's words): won?
   async function willieBattle() {
     await say(["Willie: Yeeeeeeaaaah! I'm burning\nnow! I'm on fire! It's full-throttle\ntime!", "Willie: Vrum! Vrooom! Let's roll!"]);
     const outcome = await battle("trainer", { foe: { name: "Rider Willie", team: Orre.willieTeam(), pic: "rider_willie" },
-      double: true, prizeClass: "Rider", noBlackout: true, music: "mus_rs_vs_trainer", defeatText: ["Whoa! You're the real deal!"] });
+      double: true, prizeClass: "Rider", noBlackout: true, music: "mus_rs_vs_trainer", defeatText: ["Tch… Wiped out.\nI still need seasoning."] });
     show("world");
     await Overworld.resume();
     music((window.WORLD_MAPS[player.location.map] || {}).music);
-    if (outcome !== "won") { await say(["Willie: Hah! Not bad, but not good\nenough. Come find me any time!"]); await persist(); return false; }
-    // (S1_out #20805, and a word of this game's own on the truck.)
+    if (outcome !== "won") { await persist(); return false; }
+    // (S1_out #20805.)
     await say(["Willie: But, yeah, you're tough. Real\ntough. You did a real number on us.",
       "Willie: Hey, I know. Why not test\nyour skills in Phenac City? It's out\nwest of here.",
-      "Willie: You'll find trainers who are\nway better than me there. You should", "go out there and get some battling\nin.",
-      "Willie: Those two in the truck were\nheaded that way too. In a real hurry."]);
+      "Willie: You'll find trainers who are\nway better than me there. You should", "go out there and get some battling\nin."]);
     player.flags.orreStory = Math.max(player.flags.orreStory | 0, 19);
     Orre.unlock(player.flags, "PhenacCity");
     await persist();
@@ -6616,6 +6601,23 @@
       await say(["Willie: Yeahah! That's the spirit!"]);
       await willieBattle();
       Overworld.refreshPeople();
+      return;
+    }
+    // (Colosseum's later battles with him: once you've reached Pyrite, and once all 48 Shadow Pokémon are snagged.)
+    // (Orre.WILLIE_STAGES, game/orre-trainers-early.js; player.flags.orreColo's "Willie": the one beaten last.)
+    const f = player.flags, stages = Orre.WILLIE_STAGES || [];
+    let index = -1;
+    stages.forEach((st, i) => { if (typeof st.from === "function" ? st.from(f) : (f.orreStory | 0) >= st.from) index = i; });
+    if (index >= 0) {
+      const stage = stages[index], beaten = ((f.orreColo || {}).Willie ?? -1) >= index;
+      if (!beaten) await coloStageBattle({ name: "Rider Willie", cls: "Rider", pic: "rider_willie" }, stage, index, "orreColo", "Willie");
+      else await say(stage.after);
+      return;
+    }
+    // (S1_out #20794: after Team Snagem's come looking for you in Phenac.)
+    if ((f.orreStory | 0) >= 20) {
+      await say(["Willie: Oh, hey, it's you! I was\nworried about you.", "Willie: Some rough-looking characters\ncame around asking about you. It made\nme worried.",
+        "Willie: Those guys, they looked like\nthey're from Team Snagem."]);
       return;
     }
     // (S1_out #20790, its first words, and #20791.)
@@ -6652,7 +6654,7 @@
     show("world");
     await Overworld.resume();
     music(window.WORLD_MAPS.PhenacCity.music);
-    if (outcome !== "won") { await say(["Folly: Hah! Not so tough without your\nhideout, are you?"]); await persist(); return; }
+    if (outcome !== "won") { await persist(); return; }
     // (M1_out #20109, #20100, #20111, and Trudly's #20103.)
     await say(["Folly: You took out my Whismur…\nYou're no ordinary trainer, are you?!", "Folly: Huh? Wait a sec… That face…\nMight you be… Team Snagem's…"]);
     await say(["Trudly: Hey, what are you doing? Get\na grip, man!"]);
@@ -6673,7 +6675,7 @@
   // Folly and Trudly's truck at Phenac: the sack, and Rui.
   async function phenacTruck(person) {
     const f = player.flags;
-    if ((f.orreStory | 0) !== 19 || !f.orreFT) { await say((person && person.text) || ["It's a beat-up old truck."]); return; }
+    if ((f.orreStory | 0) !== 19 || !f.orreFT) { if (person && person.text) await say(person.text); return; }
     // (Colosseum's words, M1_out: #20815, #20224, #20225; Rui, #20191, #20193, #20195; a passer-by, #20207; Rui,
     // #20197, #20198, #20196, #21799, #20199.)
     await say(["There's something squirming in the\nsack!", "The sack's mouth is firmly closed\nwith a tightly knotted rope."]);
@@ -6804,7 +6806,7 @@
     show("world");
     await Overworld.resume();
     music(window.WORLD_MAPS.PhenacCity_MayorsHouse.music);
-    if (outcome === "lost") { await say(["Trudly: Hah! How'd you like that?"]); await lost(F, T); return; }
+    if (outcome === "lost") { await lost(F, T); return; }
     const snagged = (opts.snagged || []).includes(shadow.species);
     // (Colosseum's words: M1_houseA_1F #20099 or #20101, Rui's #20266 or #20265; M1_out #23668 to #23671; Folly's
     // #21806, Trudly's #20103; then Rui's #23672, or #20253 if it got away.)
@@ -6850,8 +6852,8 @@
     await say(["Grunt: The Snag Machine's built for\ntrainers. When a trainer puts the", "Snag Machine on, their Poké Balls are\nconverted.",
       "Grunt: Ordinary Poké Balls are turned\ninto Snag Balls that can steal", "Pokémon from their trainers in\nbattle."]);
     await say(["Rui: No way! Is it true, {PLAYER}?"]);
-    await say(["Grunt: That's right, pretty lady!\n{PLAYER}'s from Team Snagem, just\nlike us!",
-      "Grunt: But no ordinary member. A\nSnagger. The best in Team Snagem at\nSnagging Pokémon without fail!"]);
+    await say(["Grunt: That's right, pretty lady!\nHe's from Team Snagem, just like us!",
+      "Grunt: But he's no ordinary member.\nHe's a Snagger. He's the best in Team", "Snagem at Snagging Pokémon without\nfail!"]);
     await say(["Wakin: Hey, you blabbermouth! Keep\nthat stuff secret!"]);
     await say(["Rui: I get it, {PLAYER}. That's why\nthese creeps are chasing after you."]);
     await say(["Wakin: Creeps? What do you mean by\ncreeps?", "Wakin: Gah, this is getting us\nnowhere! If you won't give it up", "willingly, we'll take it back by\nforce!"]);
@@ -6865,7 +6867,7 @@
       await Overworld.act([W, G].map((who) => ({ who, moves: ["walk_fast_down", "walk_fast_down", "walk_fast_down", "set_invisible"] })));
       Overworld.removeObject(W); Overworld.removeObject(G);
     };
-    if (outcome !== "won") { await say(["Wakin: Hand it over next time, or\nelse!"]); await go(); player.party.forEach(Party.heal); await persist(); return; }
+    if (outcome !== "won") { await go(); player.party.forEach(Party.heal); await persist(); return; }
     await say(["Rui: Aiyeeeeh! Help! Please, someone,\nhelp! It's Team Snagem! Team Snagem's\nhere!"]);
     await say(["Wakin: Wha… Stop that! Quit\nscreaming! I said quit it!"]);
     await say(["Man: What, what?! What's going on out\nhere?!"]);
@@ -6934,11 +6936,11 @@
     heartSteps = 0;
     for (const r of player.party) if (r.shadow && r.heart > 0) {
       r.heart--;
-      if (!r.heart) return { type: "heart-open", text: Party.displayName(r) + "'s heart has opened!\nThe Relic Stone can purify it now." };
+      // (Colosseum's words, its Summary's for a heart about to open.)
+      if (!r.heart) return { type: "heart-open", text: "The door to " + Party.displayName(r) + "'s heart is\nabout to open. Undo the final lock!" };
     }
     return null;
   }
-  const heartWords = (h) => (h <= 0 ? "open" : h <= 25 ? "nearly open" : h <= 60 ? "opening, little by little" : "still shut tight");
   async function relicStone() {
     const f = player.flags, shadows = player.party.filter((r) => r.shadow);
     // (Colosseum's words for the Relic, and for a heart not yet ready or ready to open.)
@@ -6947,7 +6949,9 @@
     if (shadows.some((r) => !((r.heart | 0) > 0))) await say(["There's a Pokémon that may open the\ndoor to its heart!"]);
     for (const r of shadows) {
       const name = Party.displayName(r);
-      if ((r.heart | 0) > 0) { await say(["The door to " + name + "'s heart\ncan't be opened yet.", "(Its heart is " + heartWords(r.heart) + ".)"]); continue; }
+      // (Colosseum's words, and its Summary's for how far the door is open.)
+      const h = r.heart | 0, door = h > 80 ? "tightly shut." : h > 60 ? "starting to open." : h > 40 ? "opening up." : h > 20 ? "opening wider." : h > 10 ? "nearly open." : "almost fully open.";
+      if (h > 0) { await say(["The door to that Pokémon's heart\ncan't be opened yet.", "The door to its heart is\n" + door]); continue; }
       if (!(await confirm("Purify " + name + " at the\nRelic Stone?"))) continue;
       await Overworld.flash();
       sfx("se_m_reflect");
@@ -6976,17 +6980,22 @@
     if (player.party.filter((r) => !r.egg).length < 2) { await say(["You'll need at least two Pokémon to\nenter. These are double battles!"]); return; }
     if (!(await confirm("Enter the tournament?"))) { await say(["Please come again!"]); return; }
     const top = Math.max(...player.party.filter((r) => !r.egg).map((r) => r.level));
-    const draw = Orre.tournamentDraw(t, top, Player.levelCap(player)), heal = () => player.party.forEach(Party.heal);
+    // (The Deep Colosseum's, Colosseum's own five rounds, t.rounds: each win takes you on to the next.)
+    const draw = t.rounds ? t.rounds[Math.min(wins[t.key] | 0, t.rounds.length - 1)] : Orre.tournamentDraw(t, top, Player.levelCap(player)), heal = () => player.party.forEach(Party.heal);
     heal();
     await say(["Your Pokémon have been restored to\nfull health.", "The entrants are ready. Please, step\nthis way!"]);
     for (let round = 0; round < 4; round++) {
       const e = draw[round];
       await say([round === 3 ? "The final! Your opponent: " + e.name + "!" : "Round " + (round + 1) + "! Your opponent:\n" + e.name + "!"]);
+      if (e.intro) await say(e.intro);
       Screen.say("");
-      const outcome = await storyBattle({ foe: { name: e.name, team: teamOf(e.team), pic: e.pic }, prizeClass: e.cls, noBlackout: true,
-        defeatText: [pickOne(["You're as tough as they said!", "Argh! I was so close!", "Well fought. Go win the\nwhole thing!", "Not bad… not bad at all."])] });
+      const made = t.rounds ? Orre.roundTeam(e, f) : { team: teamOf(e.team), snag: [] };
+      const opts = { foe: { name: e.name, team: made.team, pic: e.pic }, prizeClass: e.cls, noBlackout: true, snag: made.snag,
+        defeatText: e.defeat || [pickOne(["You're as tough as they said!", "Argh! I was so close!", "Well fought. Go win the\nwhole thing!", "Not bad… not bad at all."])] };
+      const outcome = await storyBattle(opts);
+      if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
       heal();
-      if (outcome !== "won") { await say(["Oh, what a shame! You're out of the\ntournament.", "Your Pokémon have been healed. Please\ntry again!"]); await persist(); return; }
+      if (outcome !== "won") { if (e.lost) await say(e.lost); await say(["Oh, what a shame! You're out of the\ntournament.", "Your Pokémon have been healed. Please\ntry again!"]); await persist(); return; }
       if (round < 3) await say(["Congratulations! On to the next\nround!", "Your Pokémon have been restored to\nfull health."]);
     }
     const firstTime = !wins[t.key], item = firstTime ? t.first : pickOne(t.items);
@@ -7120,7 +7129,7 @@
     }
     await say(story >= 33 ? (player.flags.orreCelebi
       ? ["Eagun: Ah, Rui! And {PLAYER}! It's\ngood to see you back!", "Eagun: It would be useful if one\ncould summon Celebi whenever one\ndesired.", "But that, of course, isn't possible.",
-        "Eagun: Luckily, as it is inscribed on\nthe Small Tablet, the Relic is imbued\nwith Celebi's power.", "Eagun: If a Shadow Pokémon is ready\nto throw open its heart's door, you\nmust visit the Relic."]
+        "Eagun: Luckily, as it is inscribed on\nthe Small Tablet, the Relic in the\nRelic Forest is imbued with Celebi's", "power.", "Eagun: If a Shadow Pokémon is ready\nto throw open its heart's door, you\nmust visit the Relic."]
       : ["Eagun: Ah, Rui! And {PLAYER}! It's\ngood to see you back!", "Eagun: Hmhm… I see! So Vander\nconferred the Time Flute upon you.",
         "Eagun: Then, what are you waiting\nfor? Depart for the Relic Forest and\nsummon Celebi at once.", "Eagun: I wonder what will happen. I\nfind it quite exciting."])
       : story >= 31 ? ["Eagun: Mt. Battle is to the north.\nYou can see it in the distance once\nyou leave the village. Hurry, Rui!"]
@@ -7219,7 +7228,6 @@
     await say(["Eagun: The Relic must have some\neffect on Shadow Pokémon.", "Eagun: I will leave that for you to\ndetermine for yourselves."]);
     await persist();
     // (Duking's e-mail, Colosseum's, as a call on your Pokégear.)
-    await say(["Rui: Oh, {PLAYER}. Your Pokégear just\nrang."]);
     await gear.storyCall(["Duking: Emergency!!!", "Duking: {PLAYER}, we've got big\ntrouble! I just got word from our\npeople that Mt. Battle's under attack",
       "by a mysterious group of thugs.\nPlease, can you go help?", "We think it's the same group as the\none Miror B. belonged to. We're\ncounting on you!"].map((p) => fill(p)));
     await say(["Rui: Whaaat?! Those crooks are loose\non Mt. Battle now?! That's awful!", "Rui: We can't let this go on!\n{PLAYER}, let's go! …Oh, wait."]);
@@ -7273,7 +7281,7 @@
     if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
     await say(["Dakim: The way you handled those\nPokémon with your audacious skill…\nWho are you?"]);
     await say(["Skrub: Master Dakim!"]);
-    await say(["Dakim: Ah, Skrub. You were hopelessly\noutclassed against this one. You had\nzero chance of winning.", "Dakim: I'm pulling out for now. You\ngo to Ein's Lab and help out there."]);
+    await say(["Dakim: Ah, Skrub. You were hopelessly\noutclassed against him. You had zero\nchance of winning.", "Dakim: I'm pulling out for now. You\ngo to Ein's Lab and help out there."]);
     await say(["Skrub: As you wish, sir!"]);
     await say(["Dakim: This isn't over yet. Stronger\nPokémon are being made even now.", "Dakim: You'd better get serious about\ntraining your Pokémon for our next\nmeeting. Daahahah!"]);
     Screen.say("");
@@ -7295,9 +7303,9 @@
     f.orreStory = 33;
     Overworld.refreshPeople();
     await persist();
-    // (This game's own call; its middle in Colosseum's words, Secc's and a Pyrite local's.)
-    await gear.storyCall(["Duking: {PLAYER}! It's Duking.", "People from The Under have been\nsaying they've seen a suspicious\nPokémon over there.",
-      "Deep beneath this town is another\ntown that goes by the name The Under.", "The stairs down are in the old shack\nat the bottom left of town."].map((p) => fill(p)));
+    // (Duking's e-mail, Colosseum's, "Trouble in Under?", as a call on your Pokégear.)
+    await gear.storyCall(["Duking: Trouble in Under?", "Duking: Hi, big guy. We've been\nhearing about Shadow Pokémon from\npeople visiting The Under from Pyrite.",
+      "A lot of the visitors have seen the\nShadow Pokémon. Nett in The Under\nshould have more information for you."].map((p) => fill(p)));
     await persist();
   }
   // ---------- Orre: Colosseum's story, The Under, Ein's lab and Realgam Tower (orreStory 33 to 44) ----------
@@ -7334,18 +7342,30 @@
     await say(["Resident: Welcome to The Under!", "Resident: Oh! Wait a second. It has\nbeen a long time since anyone has\ncome down here."]);
     await say(["Announcer: Hello, ladies and\ngentlemen, boys and girls! It's time\nfor The Under Time again!", "Announcer: Lady Venus, please!"]);
     await say(["Venus: Hi, everyone! It's me, your\nVenus! Everyone's Venus, that's me!", "Venus: I have something terribly\nimportant to share with you today.",
-      "Venus: It's horrid. There are spies\nright here in The Under. Can you\nimagine?", "Venus: Everyone, please, I'm counting\non you! We need you to get lots of\ninformation for us!"]);
+      "Venus: It's horrid. There are spies\nright here in The Under. Can you\nimagine?", "Venus: We don't really know all the\ndetails, but if you see anyone\nsuspicious, please let us know.", "Venus: Everyone, please, I'm counting\non you! We need you to get lots of\ninformation for us!"]);
     await say(["Rui: No way… They know that we came\nhere already?", "Rui: {PLAYER}, we're going to have to\nbe cautious."]);
     player.flags.orreStory = 34;
     await raiseCap(ORRE_UNDER_CAP);
     await persist();
   }
+  // (Colosseum's words: Kloak's, M4_out #22033, #22036 and #22044; then Cipher Peon Dagur, who says Colosseum's
+  // #22015 and #22029, battles too, with Colosseum's party. player.flags.orreKloak: Kloak beaten, Dagur still to go.)
   async function underKloak() {
-    await say(["Kloak: Hold on, you two! You're not\nfrom around these parts, are you,\nnow?", "Kloak: I get it! You two are spies!"]);
-    if (!(await bossBattle("Kloak", "Cipher Peon Kloak", "cipher_peon_f", ["We're out of our league against\nthis guy!"], { prizeClass: "Team Rocket" }))) return;
-    await say(["Kloak: We're out of our league\nagainst this guy!"]);
+    const f = player.flags;
+    if (!f.orreKloak) {
+      await say(["Kloak: Who might you be? If you're\ntourists, you're getting in our way.\nGo on, scram.",
+        "Kloak: Hold on, you two! You're not\nfrom around these parts, are you,\nnow?", "Kloak: I get it! You came to rescue\nyour pal here! You two are spies,\ntoo!"]);
+      if (!(await bossBattle("Kloak", "Cipher Peon Kloak", "cipher_peon_f", ["We're out of our league against\nthis guy!"], { prizeClass: "Team Rocket" }))) return;
+      f.orreKloak = true;
+      await persist();
+    }
+    await say(["Dagur: Don't be too hasty about\nrelaxing! I'm up next!"]);
+    const outcome = await storyBattle({ foe: { name: "Cipher Peon Dagur", team: [["Ariados", 38], ["Gloom", 39], ["Illumise", 40]].map(([sp, lv]) => Party.create(sp, lv)),
+      pic: "cipher_peon" }, double: true, prizeClass: "Team Rocket", noBlackout: true, defeatText: ["We're out of our league against\nthis guy!"] });
+    if (outcome !== "won") return;
     await goAway("KLOAK", ["walk_fast_right", "walk_fast_down", "walk_fast_down"]);
-    player.flags.orreStory = 35;
+    delete f.orreKloak;
+    f.orreStory = 35;
     await persist();
   }
   async function underVenus() {
@@ -7360,10 +7380,9 @@
     if (!(await bossBattle("Venus", "Cipher Admin Venus", "beauty", ["Aiyeeeeh! How dare you!"]))) {
       await say(["Venus: Ohohoho! It serves you right!"]); return;
     }
-    await say(["Venus: Aiyeeeeh! How dare you! How\ncould I get bested by a mere kid?", "Venus: Remember this! I'll get you\nback for this!"]);
-    await say(["Venus: Before that horrible kid can\nmeddle anymore, I'll link up with Ein\nat the Shadow Pokémon Lab!"]);
+    await say(["Venus: Aiyeeeeh! How dare you! How\ncould I get bested by a mere boy?", "Venus: Remember this! I'll get you\nback for this!"]);
+    await say(["Venus: Before that horrible boy can\nmeddle anymore, I'll link up with Ein\nat the Shadow Pokémon Lab!"]);
     await goAway("VENUS", ["walk_fast_down", "walk_fast_down", "walk_fast_down"]);
-    await say(["Rui: The Shadow Pokémon Lab… That's\nwhere Dakim sent Skrub, too!\n{PLAYER}, let's go!"]);
     player.flags.orreStory = 36;
     Orre.unlock(player.flags, "ShadowLab_1F");
     await say("The Shadow Pokémon Lab was marked on\nthe Orre Map!");
@@ -7372,8 +7391,7 @@
   // (Colosseum's words from here on, the lab's and Realgam Tower's: D1_labo_B3, D4_tower_1F_1, D4_tower_2F,
   // D4_dome_*, D4_casino_colo. The Mystery Troop's met in Phenac City now, as in Colosseum, not in the lab.)
   async function labArrival() {
-    // (This game's own: Colosseum's lab has its own way in, its garage and its keys.)
-    await say(["Rui: So this is where they make Shadow\nPokémon… It's so cold in here.", "Let's find Ein, {PLAYER}, and stop this!"]);
+    // (Colosseum's lab has its own way in, its garage and its keys, and no word for coming in: none here either.)
     player.flags.orreStory = 38;
     await raiseCap(ORRE_LAB_CAP);
     await persist();
@@ -7386,14 +7404,12 @@
     await say(["Ein: Waah! How did you get in without\nmy notice?", "Ein: Ah, I see. You must be the\nmuch-talked-about {PLAYER}. Little\ndid I expect to see you here.",
       "Ein: I am Ein. I am in charge of this\nShadow Pokémon Lab.", "Ein: No one must be allowed to\ninterfere with our Shadow Pokémon\nplan. I won't allow it.",
       "Ein: Let me acquaint you with the\npower of my Shadow Pokémon!"]);
-    if (!(await bossBattle("Ein", "Cipher Admin Ein", "scientist", ["Urrrgh… What unbelievable power…"]))) {
+    if (!(await bossBattle("Ein", "Cipher Admin Ein", "scientist", ["This power… It… It defies\nbelief!"]))) {
       await say(["Ein: Wahaha! You impress me with your\nguts! Such fortitude!", "Ein: But guts alone will not let you\nwin battles!"]); return;
     }
     await say(["Ein: Humph! Your struggle to get here\nwas all in vain!", "Ein: The Shadow Pokémon we produced\nhave already been moved elsewhere.",
       "Ein: And that, of course, includes\nthe ultimate Shadow Pokémon I created\nfor the boss! Wahahahah!"]);
     await goAway("EIN", ["walk_fast_left", "walk_fast_down", "walk_fast_down"]);
-    // (This game's own: Colosseum gets you to Realgam Tower another way.)
-    await say(["Rui: The ultimate Shadow Pokémon…\nfor their boss. {PLAYER}, it has to be\nat Realgam Tower, by the sea!"]);
     player.flags.orreStory = 40;
     Orre.unlock(player.flags, "RealgamTower_1F");
     await say("Realgam Tower was marked on\nthe Orre Map!");
@@ -7421,12 +7437,13 @@
       f.orreGonzapMet = true;
     }
     await say(["Gonzap: We've got a little score to\nsettle here. It's time you paid up\nfor wrecking our Hideout and wiping", "out Team Snagem!", "Gonzap: Don't get any ideas about\nbeating me! Gwaahahah!"]);
-    if (!(await bossBattle("Gonzap", "Snagem Head Gonzap", "biker", ["Humph."]))) {
+    if (!(await bossBattle("Gonzap", "Snagem Head Gonzap", "biker", ["You've grown a lot better,\n{PLAYER}."]))) {
       await say(["Gonzap: Gwaahahah! Well, aren't you\nthe pushover, {PLAYER}!", "Gonzap: I tell you, it makes me sad\nto think my organization got trashed\nby someone so wimpy.",
         "Gonzap: Come on, boy! I'll be happy\nto lay a licking on you as often as\nyou want!"]); return;
     }
-    await say(["Gonzap: What do you say, {PLAYER}?\nWhy don't you and me team up again?\nJust like old times.", "Gonzap: You, me, and the Snag\nMachine… We can do whatever we\nplease. The world will be ours, hey?"]);
-    await say((await confirm("Team up with Gonzap again?")) ? ["Gonzap: Humph. I can tell when you're\njust joshing me. But that doesn't\nmatter anymore."]
+    // (Colosseum's own question, #21721, and its Yes / No.)
+    await say(["Gonzap: What do you say, {PLAYER}?\nWhy don't you and me team up again?\nJust like old times."]);
+    await say((await confirm("Gonzap: You, me, and the Snag\nMachine… We can do whatever we\nplease. The world will be ours, hey?")) ? ["Gonzap: Humph. I can tell when you're\njust joshing me. But that doesn't\nmatter anymore."]
       : ["Gonzap: Humph. I figured you'd say\nthat. But that doesn't matter\nanymore."]);
     await say(["Gonzap: There's no going back for you\nnow. Get going."]);
     await goAway("GONZAP", ["walk_fast_left", "walk_fast_down", "walk_fast_down", "walk_fast_down"]);
@@ -7469,7 +7486,7 @@
         "Nascour: We'll have you battle as\npayment towards the huge losses you\ninflicted on us.", "Nascour: I expect to see spectacular\nbattling out of you. After all,\nyou're here to entertain! Waahahahah!",
         "Nascour: …I will destroy you in\nbattle right now. You will know the\nhumiliation of total domination", "before this crowd!"]);
     f.orreNascourMet = true;
-    if (!(await bossBattle("Nascour", "Cipher Admin Nascour", "gentleman", ["Gaaaah! It's not over, {PLAYER}!"]))) {
+    if (!(await bossBattle("Nascour", "Cipher Admin Nascour", "gentleman", ["N-No! There's no… This can't\nbe happening!"]))) {
       await say(["Nascour: I expect to see spectacular\nbattling out of you. After all,\nyou're here to entertain! Waahahahah!"]); return;
     }
     await say(["Nascour: Gaaaah! It's not over,\n{PLAYER}! Come on, we shall battle…"]);
@@ -7492,10 +7509,10 @@
       "Es Cade: Now, are you prepared to be\ndevastated once again?"]);
     await say(["Evice: How dare you meddle in our\naffairs so thoroughly!", "Evice: The Shadow Pokémon plan, we\ncan resurrect from the start. But you\ntwo… You'll never be forgiven!",
       "Evice: I'll destroy you utterly so\nyou may never again rise against me!"]);
-    if (!(await bossBattle("Evice", "Cipher Head Evice", "gentleman", ["Blast you! Don't you forget what\nyou've done, {PLAYER}!"]))) {
+    if (!(await bossBattle("Evice", "Cipher Head Evice", "gentleman", ["Nooooooooh! Even my ultimate\nPokémon!"]))) {
       await say(["Evice: Hahah! I'll happily humiliate\nyou as often as you're willing!"]); return;
     }
-    await say(["Evice: It won't end this way next\ntime! I will ruin you the next time,\nI promise you that!", "Evice: Waahahah! Let us meet again!",
+    await say(["Evice: Blast you! Don't you forget\nwhat you've done, {PLAYER}!", "Evice: It won't end this way next\ntime! I will ruin you the next time,\nI promise you that!", "Evice: Waahahah! Let us meet again!",
       "Evice: Our bid to take over the world\nusing Shadow Pokémon hasn't ended\nyet!"]);
     await say(["Rui: No! He's trying to escape with\nthat helicopter!"]);
     await say(["Sherles: Halt! Stop where you are!\nThere's no getting away this time!", "Sherles: Evice! You and your cronies\nare under arrest!"]);
@@ -7512,10 +7529,8 @@
     await say(["Duking: Cipher's finished! The Shadow\nPokémon plan ends now!"]);
     await say(["Rui: {PLAYER}. I guess it's finally\nover.", "Rui: We faced a lot of challenges,\nbut thanks to you, {PLAYER},\neverything has been resolved.",
       "Rui: {PLAYER}, thank you. You were\nstrong. You answered the call. And\nyou were cool!"]);
+    // (Colosseum ends there, with no call: none here either.)
     f.orreStory = 44;
-    await persist();
-    await gear.storyCall(["Prof. Oak: {PLAYER}! The news from Orre\nis everywhere! Cipher, defeated!", "Snagem and Cipher, both stopped, and the\nShadow Pokémon being saved…",
-      "I sent you there as an undercover agent.\nYou've come back a hero!", "Take all the time you need in Orre.\nI'm proud of you, {PLAYER}!"].map((p) => fill(p)));
     await persist();
   }
   // ---------- Orre: Colosseum's story, Pyrite Town (orreStory 21 to 28) ----------
@@ -7542,18 +7557,30 @@
   async function coloStageBattle(t, stage, index, store, script) {
     const f = player.flags;
     await say(stage.intro);
-    const opts = { foe: { name: t.name, team: stage.team.map(([sp, lv]) => Party.create(sp, lv)), pic: t.pic }, prizeClass: t.cls,
-      double: !t.single, defeatText: stage.defeat };
+    // (`shadow`: whose Shadow Pokémon, if it was never snagged, comes back in the first one's place, to be snagged, as
+    // Colosseum's later battles have it.)
+    const team = stage.team.map(([sp, lv]) => Party.create(sp, lv));
+    const back = stage.shadow ? Orre.shadowOf(stage.shadow).filter((s) => !(f.orreShadowSnagged || []).includes(s.species)) : [];
+    if (back.length) team.splice(0, back.length, ...back.map(Orre.shadowMon));
+    const opts = { foe: { name: t.name, team, pic: t.pic }, prizeClass: t.cls,
+      double: !t.single, defeatText: stage.defeat, snag: back.map((s) => s.species) };
     const outcome = await storyBattle(opts);
+    if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
     if (outcome !== "won") { if (stage.lost) await say(stage.lost); return false; }
     (f[store] = f[store] || {})[script] = index;
-    if (stage.after) await say(stage.after);
+    // (Said once, on winning: `won`; then a gift, `item`, the first time that stage is won.)
+    if (stage.won) await say(stage.won);
+    if (stage.item) {
+      Player.addItem(player, stage.item);
+      await sayWithJingle("mus_obtain_item", "{PLAYER} obtained " + article(Bag.name(stage.item)) + "!");
+    }
+    if (stage.after && !stage.won) await say(stage.after);
     await persist();
     return true;
   }
   async function coloTrainer(script) {
     const t = Orre.COLO_TRAINERS[script], s = Orre.coloStage(script, player.flags);
-    if (!s || !s.stage) return;
+    if (!s || !s.stage) { if (t && t.before) await say(t.before); return; }
     if (s.beaten) { await say(s.stage.after); return; }
     await coloStageBattle(t, s.stage, s.index, "orreColo", script);
   }
@@ -7573,13 +7600,53 @@
     const snagged = (opts.snagged || []).filter((sp) => shadows.some((s) => s.species === sp));
     if (snagged.length) { (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...snagged); done.push(script); }
     if (outcome === "won" && script === "PyriteTown_EventScript_Shadow_CAIL" && (f.orreStory | 0) < 23) {
-      // (Colosseum's words: Cail's, then Rui's; the last line, to Duking's, this game's own.)
+      // (Colosseum's words: Cail's #20523, then Rui's #20692 and #20693.)
       await say(["Cail: Bah! That was it? That lying\nMiror B.!", "Cail: He came up with that fancy\ntough-sounding name, Shadow Pokémon,\nbut it was no big deal!",
         "Cail: You guys be careful, too. Don't\nbe played for a sucker.", "Cail: That's about all they'll give\nyou if you win at the Colosseum."]);
       await say(["Rui: Shadow Pokémon? That's what it's\ncalled? A Shadow Pokémon? That\nPokémon with the black aura…", "Rui: It looks like the Colosseum has\na secret.",
-        "Rui: Duking runs the Colosseum. His\nhouse is at the top of town, on the\nleft. Let's ask him, {PLAYER}!"]);
+        "Rui: I guess there's no choice but to\ntake part in a battle challenge\nthere!"]);
       f.orreStory = 23;
     } else if (outcome === "won") await say(snagged.length ? d.after : d.kept);
+    await persist();
+  }
+  // Phenac's Pre Gym: Justy, its leader (Colosseum's words, M1_gym_1F). Beat his four Trainers
+  // (game/orre-trainers-early.js) and he gives you a White Herb; with six Pokémon, and four Shadow Pokémon snagged
+  // (as Colosseum has it), he battles you himself, and gives you TM27 Return. (player.flags.orrePreGym.)
+  const PRE_GYM = ["BOTAN", "LIQUI", "DUGO", "GWIN"].map((k) => "PhenacCity_PreGym_EventScript_Colo_" + k);
+  async function preGymJusty() {
+    const f = player.flags, pg = (f.orrePreGym = f.orrePreGym || {}), beaten = f.orreColo || {};
+    if (!PRE_GYM.every((s) => beaten[s] != null)) {
+      await say(["Justy: Hello! I'm Justy. I'm in\ncharge of running the Pre Gym.", "Justy: Judging by your appearance,\nI'd say that you're traveling, the\ntwo of you.",
+        "Justy: Hey, you're already here. You\nshould try battling our trainers."]);
+      return;
+    }
+    if (!pg.herb) {
+      await say(["Justy: Whoa, that was inspiring! You\nshowed me a great battle!", "Justy: It deserves a gift! I want you\nto have this."]);
+      Player.addItem(player, "white-herb");
+      await sayWithJingle("mus_obtain_item", "{PLAYER} obtained a White Herb!");
+      pg.herb = true;
+      await persist();
+    }
+    if (pg.justy) { await say(["Justy: Honestly, our battle was\nfantastic. I will never forget the\nbattle we had!"]); return; }
+    if (player.party.filter((r) => !r.egg).length < 6) {
+      await say(["Justy: You don't have a full party of\nPokémon yet. When you get six of", "them, I'd like you to come see me\nagain.",
+        "Justy: That's when I will be your\nopponent. I'll be looking forward to\nit!"]);
+      return;
+    }
+    if ((f.orreShadowSnagged || []).length < 4) { await say(["Justy: If you're in the mood for\nbattling, feel free to visit us.\nYou're always welcome."]); return; }
+    await say(["Justy: Oh, hello! I guess you finally\ngot your sixth Pokémon for your\nparty.", "Justy: Well, then. Would you like to\nbattle against me?"]);
+    if (!(await confirm("Battle Justy?"))) { await say(["Justy: Oh, okay. Well, if you get in\nthe mood for it, be sure to visit.", "Justy: I'll always be waiting for\nyou."]); return; }
+    await say(["Justy: Okay, let's get this battle\nunder way. Show me a great battle!"]);
+    if (f.orreRui) await say(["Rui: {PLAYER}, go for it! I'll be\nrooting for you!"]);
+    const team = [["Sandshrew", 41], ["Cacnea", 41], ["Gligar", 41], ["Sunflora", 40], ["Azumarill", 40], ["Nosepass", 42]].map(([sp, lv]) => Party.create(sp, lv));
+    const outcome = await storyBattle({ foe: { name: "Pregymleader Justy", team, pic: "cooltrainer_m" }, prizeClass: "Leader", double: true, defeatText: ["Wha-What?"] });
+    if (outcome !== "won") return;
+    await say(["Justy: Wow, that was one challenging\nand satisfying battle.", "Justy: Look at this. My palms are\ndrenched with sweat.",
+      "Justy: There's no shame in this loss!\nI'm one lucky guy for being a part of\nthis spectacular battle.", "Justy: I'm glad that I got the\nopportunity to battle with you.",
+      "Justy: I want you to have this.\nConsider it a memento of our battle!"]);
+    Player.addItem(player, "tm27");
+    await sayWithJingle("mus_obtain_item", "{PLAYER} obtained " + article(Bag.name("tm27")) + "!");
+    pg.justy = true;
     await persist();
   }
   async function pyriteArrival() {
@@ -7619,9 +7686,9 @@
     if (story !== 23) { await say(["Duking: The name's Duking. I run the\nColosseum here.", "Duking: Sorry, but I'm busy. You'll\nhave to excuse me."]); return; }
     // (Silva in the doorway, then Marcia.)
     const S = ORRE("SILVA"), door = window.WORLD_MAPS.PyriteTown_DukingsHouse.warps[0];
+    // (Colosseum's words, all of the scene's: #20379, #20383, #20386; Silva #20760, #20383, #20762; Marcia #20763, #20764;
+    // Rui #20573, #20579.)
     await say(["Duking: The name's Duking. I run the\nColosseum here."]);
-    // (Rui's question, this game's own; Duking's silence, Colosseum's.)
-    await say(["Rui: Mr. Duking, are Shadow Pokémon\nbeing given away at your Colosseum?"]);
     await say(["Duking: …", "Duking: Sorry, but I'm busy. You'll\nhave to excuse me."]);
     sfx("se_door");
     Overworld.addObject(S, { x: door.x, y: door.y - 1, facing: "up" });
@@ -7636,10 +7703,7 @@
     Overworld.removeObject(S);
     const M = ORRE("MARCIA");
     await Overworld.act([{ who: M, moves: ["walk_right", "face_right"] }]);
-    await say(["Marcia: The man that went out is\nSilva. He's Duking's friend.", "Marcia: But he was really angry. His\nface looked all scary.",
-      "Marcia: Big lady! My papa… Papa's\nPokémon was taken away by Miror B. as\na prisoner!", "Marcia: It's Papa's Plusle. I'm so\nworried that they might be mean to\nit…"]);
-    // (Where, this game's own words.)
-    await say(["Marcia: They're in the Pyrite\nBuilding, at the top of town, on the\nright."]);
+    await say(["Marcia: Big lady! My papa… Papa's\nPokémon was taken away by Miror B. as\na prisoner!", "Marcia: It's Papa's Plusle. I'm so\nworried that they might be mean to\nit…"]);
     await say(["Rui: He did what?! Miror B. used a\ndirty move like that?", "Rui: We have to rescue Duking's\nPlusle and put a stop to Miror B."]);
     await Overworld.act([{ who: M, moves: ["walk_left", "face_right"] }]);
     f.orreStory = 24;
@@ -7649,15 +7713,18 @@
   async function pyriteNore() {
     const f = player.flags, story = f.orreStory | 0;
     const shadows = Orre.shadowOf("Nore");
-    // (Colosseum's words, Nore's and Duking's and Rui's, in Colosseum's order.)
-    if (story < 24) { await say(["Peon: What do you think you're doing\nhere?!"]); return; }
-    await say(["Nore: Wh-What? That same guy who\nmessed with us in Phenac City?", "Nore: Gaaah! I didn't know that when\nI let him in here! I'll boot you back\nout!"]);
+    // (Colosseum's words, Nore's and Duking's and Rui's, in Colosseum's order: Nore's #20427, #20429 (or #20430 when
+    // you're back after losing), #20431 beaten, #20432 after.)
+    if (story < 24) { await say(["Nore: Right, I'm back with our latest\nchallenge champion.", "Nore: Let's present our lucky winner\nwith a Shadow Pokémon and watch chaos\nunleashed! Fufufu…"]); return; }
+    await say(f.orreNoreMet ? ["Nore: Huh, what?! You're back again?!", "Nore: I'll fix you so you never come\nback again!"]
+      : ["Nore: Wh-What? That same guy who\nmessed with us in Phenac City?", "Nore: Gaaah! I didn't know that when\nI let him in here! I'll boot you back\nout!"]);
+    f.orreNoreMet = true;
     const opts = { foe: { name: "Cipher Peon Nore", team: Orre.team("Nore"), pic: "cipher_peon" },
-      prizeClass: "Team Rocket", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["It's useless! I don't stand a\nchance of winning!"] };
+      prizeClass: "Team Rocket", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["It's no surprise now how you\nmanaged to win the tournament."] };
     const outcome = await storyBattle(opts);
-    if (outcome !== "won") { await say(["Nore: I'll fix you so you never come\nback again!"]); return; }
+    if (outcome !== "won") return;
     if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
-    await say(["Nore: Gah! I'm out of here!"]);
+    await say(["Nore: It's useless! I don't stand a\nchance of winning!"]);
     Screen.say("");
     const N = ORRE("NORE");
     await Overworld.act([{ who: N, moves: ["walk_fast_up", "set_invisible"] }]);
@@ -7700,25 +7767,25 @@
     await say(["Silva: Grr… Wh-Where's Miror B.? I'm\ntaking him down!"]);
     await say(["Reath: Take him down? After the\nbeating you took? That's too funny!\nAhahah!"]);
     await say(["Silva: You wait, I'm going to drive\nall of you out of this town!"]);
-    await say(["Ferma: Ahahah! Ooh, such a feisty\nboy!", "Ferma: Don't tell me we have to take\nyour Pokémon hostage to make you\nsettle down. Like we did with Duking."]);
+    // (Who says which: Colosseum's unnamed lines #23188–#23191 come just before Reath's named #23192/#23193, so they're
+    // hers; #23257–#23258 just before Ferma's #23260, so hers; #23261 hers after, then Reath's #23195, "Righto, Ferma!")
+    await say(["Reath: Ahahah! Ooh, such a feisty\nboy!", "Reath: Don't tell me we have to take\nyour Pokémon hostage to make you\nsettle down. Like we did with Duking."]);
     sfx("se_pin");
     await Overworld.act([{ who: R, moves: ["emote_exclamation_mark", "face_right"] }, { who: F, moves: ["face_right"] }]);
     await say(["Reath: Oh? We seem to be getting a\nlot of unexpected company today.", "Reath: But that's no excuse for being\na bad host!"]);
-    await say(["Ferma: Hello, welcome! …You didn't\nreally expect me to say that and mean\nit?"]);
+    await say(["Reath: Hello, welcome! …You didn't\nreally expect me to say that and mean\nit?"]);
+    await say(["Ferma: Darling, aren't you one of\nDuking's people?", "Ferma: What made you think that you\ncould simply waltz in here? Such a\nsilly boy.",
+      "Ferma: Were you hired by Duking as\nhis bodyguards?", "Ferma: Let me warn you, if you mess\nwith us, you'd better be prepared for\nthe consequences!"]);
     const shadowsR = Orre.shadowOf("Reath"), shadowsF = Orre.shadowOf("Ferma");
     const opts = {
       foe: { name: "Miror B. Peon Reath", team: Orre.team("Reath"), pic: "cipher_peon_f" },
-      foe2: { name: "Miror B. Peon Ferma", team: Orre.team("Ferma"), pic: "cipher_peon_f", prizeClass: "Team Rocket", defeatText: ["Aiyeeeeh!"] },
+      foe2: { name: "Miror B. Peon Ferma", team: Orre.team("Ferma"), pic: "cipher_peon_f", prizeClass: "Team Rocket", defeatText: ["What just happened?!\nUnbelievable 2!"] },
       prizeClass: "Team Rocket", noBlackout: true, snag: shadowsR.concat(shadowsF).map((s) => s.species),
-      defeatText: ["My Pokémon couldn't muster a\nthing! You're no ordinary trainer!"] };
+      defeatText: ["How did that happen?\nUnbelievable!"] };
     const outcome = await storyBattle(opts);
-    if (outcome !== "won") {
-      // (This game's own: Colosseum has no words for losing here.)
-      await say(["Miror B.: Fuhohoho! Run along home,\ndarlings!"]);
-      [M, R, F, S].forEach((w) => Overworld.removeObject(w));
-      return;
-    }
+    if (outcome !== "won") { [M, R, F, S].forEach((w) => Overworld.removeObject(w)); return; }
     if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
+    await say(["Reath: My Pokémon couldn't muster\na thing! You're no ordinary trainer!"]);
     await say(["Ferma: Reath, let's make ourselves\nscarce for the time being!"]);
     await say(["Reath: Righto, Ferma!", "Reath: Ultra-super fire dash!"]);
     Screen.say("");
@@ -7744,7 +7811,6 @@
     Overworld.removeObject(S);
     f.orreStory = 26;
     applyPatches("PyriteCave");
-    await say(["(Pyrite Cave's far north end has been\ndug open: the way to Miror B.'s hideout.)"]);
     await persist();
   }
   // Miror B.'s hideout (26): the battle, then Plusle and Duking.
@@ -7758,7 +7824,7 @@
       "Miror B.: Let the music play!"]);
     const shadows = Orre.shadowOf("Miror B.");
     const opts = { foe: { name: "Cipher Admin Miror B.", team: Orre.team("Miror B."), pic: "rocker" },
-      prizeClass: "Leader", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["How, how, how dare you!"] };
+      prizeClass: "Leader", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["I can't keep up with the tempo!\nOh, no, no, what a no-no!"] };
     const outcome = await storyBattle(opts);
     if (outcome !== "won") { await say(["Miror B.: Fwohohoho! My dancing is\nsheer perfection today!"]); return; }
     if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
