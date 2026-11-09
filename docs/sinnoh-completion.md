@@ -23,11 +23,13 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [ ] Remaining cave trainers, special encounters and access audit (route parties and full mapped encounter tables imported)
 - [x] Mira/Wayward Cave and Marley/Victory Road escort stories
 - [ ] Town quests and remaining HM/item rewards (gifts, four trades, shard tutors and reminder implemented)
-- [ ] Swarm broadcasts, lottery, ribbons and remaining daily town services
-- [ ] Veilstone Game Corner, Ball Seals and Resort/Ribbon services
+- [x] Swarm broadcasts, lottery, ribbons, massages and time-based trainers
+- [x] Veilstone Game Corner and Ribbon Syndicate
+- [ ] Ball Seals/Capsules and Resort villa
 - [x] Solaceon Day-Care, breeding and Lost Tower
 - [x] Honey trees, Trophy Garden and Great Marsh daily encounters
 - [x] Pokétch, Poké Radar, roaming route tracker/flee AI and Defog/Flash integration
+- [ ] Pal Park catching show, Amity Square and remaining optional challenges
 - [ ] Super Contests, accessories, Poffins and contest rewards
 - [ ] Battle Tower, Factory, Arcade, Castle and Hall
 - [ ] Underground, fossils and collection rewards

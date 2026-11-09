@@ -318,7 +318,8 @@
     const alt = s.alt && rng() < 0.5;
     const kinds = (alt ? [s.alt, s.altMorning, s.altNight] : [s.species, s.morning, s.night]).filter((k, i, all) => k && all.indexOf(k) === i);
     const time = m.region === "sinnoh" && window.Player ? Player.gameTime().timeOfDay : null;
-    const species = time ? (time === "morning" ? s.morning : time === "night" ? s.night : s.species) || s.species : kinds.length > 1 ? kinds[Math.floor(rng() * kinds.length)] : kinds[0];
+    let species = time ? (time === "morning" ? s.morning : time === "night" ? s.night : s.species) || s.species : kinds.length > 1 ? kinds[Math.floor(rng() * kinds.length)] : kinds[0];
+    if (m.region==="sinnoh" && window.Game && window.Game.player && window.SinnohServices && (!table || t.slots.length===12)) species=SinnohServices.swarmFor(window.Game.player,m.name,slot)||species;
     // (`slot`: which one, for Tanoby's Unown, whose letter goes by it.)
     return { species, level: s.min + Math.floor(rng() * (s.max - s.min + 1)), slot };
   }

@@ -148,6 +148,7 @@
     const s = state(player), run=s.league;
     if (!run || !run.active || run.step !== 4) return null;
     const f=player.flags;
+    for(const m of player.party)if(!m.egg){if(!Array.isArray(m.ribbons))m.ribbons=[];if(!m.ribbons.includes("champ-sinnoh"))m.ribbons.push("champ-sinnoh");}
     const entry={number:(f.hofCount||0)+1,region:"sinnoh",playTimeMs:player.playTimeMs||0,trainer:{name:player.name,id:player.trainerId},team:player.party.filter(r=>!r.egg).slice(0,6).map(r=>({species:r.species,nickname:r.nickname||null,level:r.level,gender:r.gender||"",shiny:!!r.shiny,form:Party.form(r)||undefined,personality:r.personality,ot:r.ot||{name:player.name,id:player.trainerId}}))};
     f.hofCount=entry.number;(f.hallOfFame||(f.hallOfFame=[])).push(entry);while(f.hallOfFame.length>League.MAX_TEAMS)f.hallOfFame.shift();
     const q=quests(player);for(const sp of ["azelf","uxie","heatran","mesprit"])if(!q[sp+"Caught"]){const defeated=!!q[sp+"Defeated"];delete q[sp+"Defeated"];if(sp==="mesprit"&&q.mespritReleased&&defeated){q.mespritRoaming=true;delete q.mespritRecord;}}

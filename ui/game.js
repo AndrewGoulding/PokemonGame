@@ -1784,7 +1784,7 @@
       await message(expShareOn() ? "The Exp. Share was turned on. Your whole party will gain Exp. Points from battles."
         : "The Exp. Share was turned off. Only Pokémon that battle will gain Exp. Points.");
     } else if (item === "town-map") await townMap();
-    else if (item === "coin-case") await message("Your Coins:\n" + plainCoins(coins()));
+    else if (item === "coin-case") await message(Sinnoh.owns(player.location.map)?"Sinnoh Coins:\n"+plainCoins(SinnohServices.coins(player)):"Your Coins:\n"+plainCoins(coins()));
     // (The Unown Report: the letters caught, ui/johto-alph.js.)
     else if (item === "unown-report") await alphOverlay((c) => JohtoAlph.report(c, player.flags.unownCaught, { frame: GameOptions.get().frame, sfx,
       level: +johto.getVar("VAR_UNOWN_REPORT_LEVEL") || 0, name: player.name }));
@@ -3622,7 +3622,7 @@
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
   // (or, once you're Champion, the Fighting Dojo wants its rematch: dojoRematch())
-  const trainerWaiting = (person) => !!(person.trainer && person.trainer.id &&
+  const trainerWaiting = (person) => !!(person.trainer && person.trainer.id && SinnohServices.trainerActive(player,person.trainer.id) &&
     (!player.flags[person.trainer.id] || dojoRematch(person.trainer.id)));
 
   const T = (label) => window.WORLD_TEXT[label];
@@ -3697,6 +3697,7 @@
   // they don't come after you.
   async function trainerBattle(person, approach, facing) {
     if (person.pyramid != null) return pyramidFight(person, approach, facing);
+    if(!SinnohServices.trainerActive(player,person.trainer.id)){await say(/POLICEMAN/.test(person.trainer.id)?"I’m off duty. Come back at night.":"I train in the morning. Come back then.");return;}
     const t = person.trainer, data = window.WORLD_TRAINERS[t.id];
     const who = "#" + person.id;
     if (t.double && approach == null && !canDouble()) {
@@ -5930,8 +5931,9 @@
 
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say, confirm, showPicture, hidePicture, canBattle, battle, sfx, forgetMove: chooseMoveToForget,
-    chooseParty: choosePartyFor, learnMove, tradeFor, daycareLady: () => fourIslandDayCareLady("sinnoh"), daycareMan: () => fourIslandDayCareMan("sinnoh"),
-    choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name }))),
+    chooseParty: choosePartyFor, learnMove, enterText, tradeFor, daycareLady: () => fourIslandDayCareLady("sinnoh"), daycareMan: () => fourIslandDayCareMan("sinnoh"),
+    choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name })).concat([{label:"Cancel",value:null}])),
+    playCasinoSlots: async id=>{Screen.say("");const value=await window.SlotMachine.play({machineId:id,coins:SinnohServices.coins(player),maxCoins:50000,sfx,fanfare});SinnohServices.setCoins(player,value);show("world");await Overworld.resume();},
     showWorld: () => show("world"), resume: () => Overworld.resume(),
     refreshPeople: () => Overworld.refreshPeople(), teleport: (to) => Overworld.teleport(to),
     refreshMap: () => { applyPatches(player.location.map); Overworld.refreshPeople(); },
