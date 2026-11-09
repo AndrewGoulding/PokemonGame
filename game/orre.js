@@ -215,146 +215,231 @@
     "PyriteCave_EventScript_Filler_REX": {"name": "Cooltrainer Rex", "cls": "Cooltrainer", "pic": "cooltrainer_m", "team": [["Machoke", 25], ["Vibrava", 25]], "intro": ["Training in the dark sharpens the mind.\nLet's see how sharp yours is!"], "defeat": ["Sharp indeed!"], "after": ["Push your Pokémon hard, but never\nfurther than they can go."]},
     "PyriteCave_EventScript_Filler_BOULDER": {"name": "Hiker Boulder", "cls": "Hiker", "pic": "hiker", "team": [["Steelix", 26], ["Golem", 26]], "intro": ["Name's Boulder. Hardest Hiker in Orre!\nNobody passes without a battle!"], "defeat": ["Crumbled! Me!"], "after": ["Rowe's just round there. Tough old\nfellow. Tougher Gligar."]}};
 
-  // Colosseum's Shadow Pokémon, in its order: [species, level, Trainer class, Trainer, where you meet them]. Colosseum's
-  // story proper gives each Trainer theirs (Orre.shadowOf(trainer): [{ species, level, cls, trainer, place }]), so they
-  // match the game; this game's own Orre before it (the prologue) keeps clear of these Trainers' names.
+  // Colosseum's Shadow Pokémon, all 48 in its order: { species, level, cls, trainer, place, item, moves }. `moves` are
+  // the four it knows (as altissimo1's Colosseum guide gives them): while it's a Shadow Pokémon the first is Shadow
+  // Rush, and it gets that first one back when purified. Orre.shadowOf(trainer) gives a Trainer's; this game's own
+  // Orre before Colosseum's story (the prologue) keeps clear of these Trainers' names.
   const SHADOW = [
-    ["Makuhita", 30, "Miror B. Peon", "Trudly", "Phenac City (the Mayor's house)"],
-    ["Bayleef", 30, "Cipher Peon", "Verde", "Phenac City"],
-    ["Quilava", 30, "Cipher Peon", "Rosso", "Phenac City"],
-    ["Croconaw", 30, "Cipher Peon", "Bluno", "Phenac City"],
-    ["Furret", 33, "Rogue", "Cail", "Pyrite Town"],
-    ["Misdreavus", 30, "Rider", "Vant", "Pyrite Town"],
-    ["Noctowl", 30, "Rider", "Nover", "Pyrite Town"],
-    ["Flaaffy", 30, "St. Performer", "Diogo", "Pyrite Town"],
-    ["Skiploom", 30, "Rider", "Leba", "Pyrite Town"],
-    ["Quagsire", 30, "Bandana Guy", "Divel", "Pyrite Town"],
-    ["Slugma", 30, "Roller Boy", "Lon", "Pyrite Town"],
-    ["Yanma", 33, "Cipher Peon", "Nore", "Pyrite Building"],
-    ["Remoraid", 20, "Miror B. Peon", "Reath", "Pyrite Building"],
-    ["Mantine", 33, "Miror B. Peon", "Ferma", "Pyrite Building"],
-    ["Qwilfish", 33, "Hunter", "Doken", "Pyrite Town"],
-    ["Meditite", 33, "Rider", "Twan", "Pyrite Cave"],
-    ["Dunsparce", 33, "Rider", "Sosh", "Pyrite Cave"],
-    ["Swablu", 33, "Hunter", "Zalo", "Pyrite Cave"],
-    ["Sudowoodo", 35, "Cipher Admin", "Miror B.", "Miror B.'s Hideout"],
-    ["Hitmontop", 38, "Cipher Peon", "Skrub", "Agate Village"],
-    ["Entei", 40, "Cipher Admin", "Dakim", "Mt. Battle"],
-    ["Ledian", 40, "Cipher Peon", "Kloak", "The Under"],
-    ["Suicune", 40, "Cipher Admin", "Venus", "The Under"],
-    ["Gligar", 43, "Hunter", "Frena", "The Under Subway"],
-    ["Stantler", 43, "Chaser", "Liaks", "The Under Subway"],
-    ["Piloswine", 43, "Bodybuilder", "Lonia", "The Under Subway"],
-    ["Sneasel", 43, "Rider", "Nelis", "The Under Subway"],
-    ["Aipom", 43, "Cipher Peon", "Cole", "the Shadow Pokémon Lab"],
-    ["Murkrow", 43, "Cipher Peon", "Lare", "the Shadow Pokémon Lab"],
-    ["Forretress", 43, "Cipher Peon", "Vana", "the Shadow Pokémon Lab"],
-    ["Ariados", 43, "Cipher Peon", "Lesar", "the Shadow Pokémon Lab"],
-    ["Vibrava", 43, "Cipher Peon", "Remil", "the Shadow Pokémon Lab"],
-    ["Raikou", 40, "Cipher Peon", "Rosso", "the Shadow Pokémon Lab"],
-    ["Delibird", 45, "Cipher Peon", "Arton", "Realgam Tower"],
-    ["Sunflora", 45, "Cipher Peon", "Baila", "Realgam Tower"],
-    ["Heracross", 45, "Cipher Peon", "Dioge", "Realgam Tower"],
-    ["Skarmory", 47, "Snagem Head", "Gonzap", "Realgam Tower"],
-    ["Miltank", 48, "Bodybuilder", "Jomas", "Realgam Tower's Colosseum"],
-    ["Absol", 48, "Rider", "Delan", "Realgam Tower's Colosseum"],
-    ["Houndoom", 48, "Cipher Peon", "Nella", "Realgam Tower's Colosseum"],
-    ["Tropius", 49, "Cipher Peon", "Ston", "Realgam Tower's Colosseum"],
-    ["Metagross", 50, "Cipher Admin", "Nascour", "Realgam Tower's Colosseum"],
-    ["Tyranitar", 55, "Cipher Head", "Evice", "Realgam Tower's Colosseum"],
-    ["Smeargle", 45, "Team Snagem", "Biden", "the Snagem Hideout (after the game)"],
-    ["Ursaring", 45, "Team Snagem", "Agrev", "the Snagem Hideout (after the game)"],
-    ["Shuckle", 45, "Deep King", "Agnol", "the Deep Colosseum (after the game)"],
-    ["Togetic", 20, "Fake Hero", "Fein", "the Outskirt Stand (after the game)"]
-  ].map(([species, level, cls, trainer, place]) => ({ species, level, cls, trainer, place }));
-  // A Trainer's Shadow Pokémon (Rosso has two), and one as a record ready to battle: a Shadow Pokémon (record.shadow)
-  // knowing Shadow Rush.
+    ["Makuhita", 30, "Miror B. Peon", "Trudly", "Phenac City (the Mayor's house)", "", ["Foresight", "Focus Energy", "Vital Throw", "Cross Chop"]],
+    ["Bayleef", 30, "Mystery Troop", "Verde", "Phenac City", "miracle-seed", ["Sunny Day", "Synthesis", "Razor Leaf", "Body Slam"]],
+    ["Quilava", 30, "Mystery Troop", "Rosso", "Phenac City", "charcoal", ["Sunny Day", "Smokescreen", "Dig", "Flame Wheel"]],
+    ["Croconaw", 30, "Mystery Troop", "Bluno", "Phenac City", "mystic-water", ["Rain Dance", "Scary Face", "Bite", "Surf"]],
+    ["Misdreavus", 30, "Rider", "Vant", "Pyrite Town", "spell-tag", ["Psybeam", "Confuse Ray", "Mean Look", "Shadow Ball"]],
+    ["Noctowl", 30, "Rider", "Nover", "Pyrite Town", "", ["Steel Wing", "Hypnosis", "Reflect", "Fly"]],
+    ["Flaaffy", 30, "St. Performer", "Diogo", "Pyrite Town", "", ["Thunderbolt", "Thunder Wave", "Cotton Spore", "Thunder Shock"]],
+    ["Skiploom", 30, "Rider", "Leba", "Pyrite Town", "", ["Synthesis", "Sleep Powder", "Cotton Spore", "Mega Drain"]],
+    ["Quagsire", 30, "Bandana Guy", "Divel", "Pyrite Town", "", ["Mud Shot", "Amnesia", "Slam", "Surf"]],
+    ["Slugma", 30, "Roller Boy", "Lon", "Pyrite Town", "", ["Sunny Day", "Yawn", "Rock Throw", "Flamethrower"]],
+    ["Furret", 33, "Rogue", "Cail", "Pyrite Town", "", ["Iron Tail", "Helping Hand", "Quick Attack", "Strength"]],
+    ["Yanma", 33, "Cipher Peon", "Nore", "the Pyrite Building", "", ["Detect", "Supersonic", "Sonic Boom", "Uproar"]],
+    ["Remoraid", 20, "Miror B. Peon", "Reath", "the Pyrite Building", "", ["Bubble Beam", "Lock-On", "Psybeam", "Aurora Beam"]],
+    ["Mantine", 33, "Miror B. Peon", "Ferma", "the Pyrite Building", "", ["Wing Attack", "Supersonic", "Bubble Beam", "Take Down"]],
+    ["Qwilfish", 33, "Hunter", "Doken", "the Pyrite Building", "poison-barb", ["Pin Missile", "Minimize", "Poison Sting", "Surf"]],
+    ["Meditite", 33, "Rider", "Twan", "Pyrite Cave", "twisted-spoon", ["Detect", "Calm Mind", "Confusion", "High Jump Kick"]],
+    ["Dunsparce", 33, "Rider", "Sosh", "Pyrite Cave", "", ["Spite", "Glare", "Yawn", "Take Down"]],
+    ["Swablu", 33, "Hunter", "Zalo", "Pyrite Cave", "", ["Mirror Move", "Sing", "Safeguard", "Fly"]],
+    ["Sudowoodo", 35, "Cipher Admin", "Miror B.", "Miror B.'s Hideout", "hard-stone", ["Flail", "Block", "Low Kick", "Rock Slide"]],
+    ["Hitmontop", 38, "Cipher Peon", "Skrub", "Agate Village (the Relic Stone)", "black-belt", ["Agility", "Focus Energy", "Triple Kick", "Rapid Spin"]],
+    ["Entei", 40, "Cipher Admin", "Dakim", "Mt. Battle", "", ["Sunny Day", "Leer", "Bite", "Fire Blast"]],
+    ["Ledian", 40, "Cipher Peon", "Kloak", "The Under", "", ["Baton Pass", "Safeguard", "Supersonic", "Comet Punch"]],
+    ["Suicune", 40, "Cipher Admin", "Venus", "The Under", "", ["Rain Dance", "Leer", "Gust", "Surf"]],
+    ["Gligar", 43, "Hunter", "Frena", "The Under Subway", "", ["Feint Attack", "Sand Attack", "Poison Sting", "Slash"]],
+    ["Stantler", 43, "Chaser", "Liaks", "The Under Subway", "", ["Astonish", "Hypnosis", "Leer", "Take Down"]],
+    ["Piloswine", 43, "Bodybuilder", "Lonia", "The Under Subway", "soft-sand", ["Endure", "Odor Sleuth", "Dig", "Blizzard"]],
+    ["Sneasel", 43, "Rider", "Nelis", "The Under Subway", "", ["Feint Attack", "Screech", "Fury Swipes", "Icy Wind"]],
+    ["Aipom", 43, "Cipher Peon", "Cole", "the Shadow Pokémon Lab", "", ["Baton Pass", "Tickle", "Fury Swipes", "Swift"]],
+    ["Murkrow", 43, "Cipher Peon", "Lare", "the Shadow Pokémon Lab", "", ["Feint Attack", "Mean Look", "Night Shade", "Fly"]],
+    ["Forretress", 43, "Cipher Peon", "Vana", "the Shadow Pokémon Lab", "", ["Explosion", "Protect", "Bide", "Rapid Spin"]],
+    ["Vibrava", 43, "Cipher Peon", "Remil", "the Shadow Pokémon Lab", "dragon-fang", ["Crunch", "Screech", "Sand Tomb", "Dragon Breath"]],
+    ["Ariados", 43, "Cipher Peon", "Lesar", "the Shadow Pokémon Lab", "silver-powder", ["Spider Web", "Scary Face", "Leech Life", "Sludge Bomb"]],
+    ["Granbull", 43, "Cipher Peon", "Tanie", "the Shadow Pokémon Lab", "", ["Bite", "Scary Face", "Roar", "Strength"]],
+    ["Raikou", 40, "Cipher Admin", "Ein", "the Shadow Pokémon Lab", "", ["Rain Dance", "Leer", "Quick Attack", "Thunder"]],
+    ["Delibird", 45, "Cipher Peon", "Arton", "Realgam Tower", "never-melt-ice", ["Blizzard", "Attract", "Present", "Fly"]],
+    ["Sunflora", 45, "Cipher Peon", "Baila", "Realgam Tower", "", ["Sunny Day", "Growth", "Ingrain", "Solar Beam"]],
+    ["Heracross", 45, "Cipher Peon", "Dioge", "Realgam Tower", "", ["Reversal", "Endure", "Counter", "Brick Break"]],
+    ["Skarmory", 47, "Snagem Head", "Gonzap", "Realgam Tower", "sharp-beak", ["Drill Peck", "Metal Sound", "Air Cutter", "Steel Wing"]],
+    ["Miltank", 48, "Bodybuilder", "Jomas", "Realgam Tower's Colosseum", "", ["Milk Drink", "Defense Curl", "Rollout", "Body Slam"]],
+    ["Absol", 48, "Rider", "Delan", "Realgam Tower's Colosseum", "", ["Perish Song", "Swords Dance", "Slash", "Feint Attack"]],
+    ["Houndoom", 48, "Cipher Peon", "Nella", "Realgam Tower's Colosseum", "", ["Feint Attack", "Howl", "Smog", "Flamethrower"]],
+    ["Tropius", 49, "Cipher Peon", "Ston", "Realgam Tower's Colosseum", "", ["Solar Beam", "Synthesis", "Magical Leaf", "Fly"]],
+    ["Metagross", 50, "Cipher Admin", "Nascour", "Realgam Tower's Colosseum", "metal-coat", ["Hyper Beam", "Iron Defense", "Metal Claw", "Psychic"]],
+    ["Tyranitar", 55, "Cipher Head", "Evice", "Realgam Tower's Colosseum", "nugget", ["Crunch", "Thunder", "Rock Slide", "Blizzard"]],
+    ["Smeargle", 45, "Team Snagem", "Biden", "the Snagem Hideout (after the game)", "", ["Sketch", "Tail Whip", "Double Slap", "Iron Tail"]],
+    ["Ursaring", 45, "Team Snagem", "Agrev", "the Snagem Hideout (after the game)", "", ["Feint Attack", "Fake Tears", "Lick", "Slash"]],
+    ["Shuckle", 45, "Deep King", "Agnol", "the Deep Colosseum (after the game)", "", ["Safeguard", "Encore", "Rest", "Bide"]],
+    ["Togetic", 20, "Cipher Peon", "Fein", "the Outskirt Stand (after the game)", "", ["Metronome", "Charm", "Sweet Kiss", "Yawn"]]
+  ].map(([species, level, cls, trainer, place, item, moves]) => ({ species, level, cls, trainer, place, item, moves }));
+
+  // Colosseum's story Trainers' parties, as in Colosseum (altissimo1's guide, from the game's data), each in its own
+  // order: [species, level]; the Trainer's Shadow Pokémon (SHADOW) among them. A key with "@" is a later battle of
+  // the same Trainer. Orre.team(key, snagged) gives the records to battle (a Shadow Pokémon already snagged left out).
+  const TEAMS = {
+    // the Outskirt Stand
+    "Willie": [["Zigzagoon", 24], ["Zigzagoon", 24]],
+    // Phenac City, by the truck
+    "Folly": [["Whismur", 24], ["Whismur", 25]],
+    // Phenac City
+    "Wakin": [["Corphish", 25], ["Koffing", 27]],
+    // the Mayor's house
+    "Folly@Mayor": [["Whismur", 26], ["Lotad", 25]],
+    // the Mayor's house
+    "Trudly": [["Duskull", 25], ["Spinarak", 25], ["Makuhita", 30]],
+    // Phenac City
+    "Verde": [["Bayleef", 30], ["Grimer", 26], ["Spoink", 24]],
+    // Phenac City
+    "Rosso": [["Quilava", 30], ["Grimer", 26], ["Spoink", 24]],
+    // Phenac City
+    "Bluno": [["Croconaw", 30], ["Grimer", 26], ["Spoink", 24]],
+    // Pyrite Town
+    "Cail": [["Furret", 33], ["Ralts", 29], ["Seedot", 29], ["Machop", 29]],
+    // Pyrite Town's Duel Square
+    "Vant": [["Misdreavus", 30], ["Skitty", 28], ["Zigzagoon", 28]],
+    "Nover": [["Noctowl", 30], ["Ledyba", 27], ["Wingull", 27]],
+    "Diogo": [["Flaaffy", 30], ["Shroomish", 26]],
+    "Leba": [["Skiploom", 30], ["Oddish", 26], ["Dustox", 26]],
+    "Divel": [["Quagsire", 30], ["Psyduck", 29]],
+    "Lon": [["Slugma", 30], ["Azurill", 27], ["Igglybuff", 28], ["Swablu", 27]],
+    // the Pyrite Building
+    "Nore": [["Yanma", 33], ["Pineco", 32], ["Nincada", 31], ["Surskit", 32]],
+    "Reath": [["Remoraid", 20], ["Spinarak", 33], ["Luvdisc", 32]],
+    "Ferma": [["Mantine", 33], ["Aipom", 32], ["Furret", 31], ["Yanma", 33]],
+    "Doken": [["Qwilfish", 33], ["Goldeen", 33], ["Linoone", 33]],
+    // Pyrite Cave
+    "Twan": [["Meditite", 33], ["Bagon", 33], ["Numel", 32]],
+    "Sosh": [["Dunsparce", 33], ["Mareep", 34], ["Cacnea", 34]],
+    "Zalo": [["Swablu", 33], ["Lotad", 31], ["Beldum", 32], ["Lombre", 32]],
+    "Miror B.": [["Sudowoodo", 35], ["Ludicolo", 29], ["Ludicolo", 30], ["Ludicolo", 28], ["Ludicolo", 31]],
+    // Agate Village
+    "Skrub": [["Hitmontop", 38], ["Clamperl", 36], ["Geodude", 36], ["Wynaut", 37]],
+    "Kass": [["Baltoy", 35], ["Ralts", 35], ["Kirlia", 35]],
+    // Mt. Battle
+    "Turo": [["Trapinch", 35], ["Numel", 34], ["Sandshrew", 35]],
+    "Berin": [["Geodude", 36], ["Geodude", 36], ["Sandslash", 38]],
+    "Dakim": [["Entei", 40], ["Metang", 37], ["Marshtomp", 36], ["Golem", 38], ["Camerupt", 38]],
+    // The Under
+    "Kloak": [["Ledian", 40], ["Spinarak", 39], ["Volbeat", 38]],
+    "Venus": [["Suicune", 40], ["Delcatty", 45], ["Vileplume", 44], ["Banette", 45], ["Steelix", 45]],
+    "Frena": [["Teddiursa", 37], ["Jigglypuff", 36], ["Shroomish", 35], ["Gligar", 43]],
+    "Liaks": [["Stantler", 43], ["Gloom", 38], ["Kirlia", 37], ["Roselia", 38]],
+    "Lonia": [["Piloswine", 43], ["Dunsparce", 39], ["Octillery", 38], ["Masquerain", 39]],
+    "Nelis": [["Sneasel", 43], ["Seviper", 40], ["Corsola", 41], ["Loudred", 41]],
+    // the Shadow Pokémon Lab
+    "Cole": [["Furret", 37], ["Remoraid", 39], ["Castform", 41], ["Aipom", 43]],
+    "Lare": [["Carvanha", 38], ["Nuzleaf", 38], ["Houndour", 38], ["Murkrow", 43]],
+    "Vana": [["Forretress", 43], ["Zubat", 40], ["Swablu", 40], ["Pupitar", 40]],
+    "Lesar": [["Ariados", 43], ["Rhyhorn", 40], ["Grovyle", 40]],
+    "Remil": [["Vibrava", 43], ["Swellow", 43], ["Kecleon", 43], ["Kadabra", 42]],
+    "Tanie": [["Granbull", 43], ["Linoone", 38], ["Vigoroth", 39]],
+    "Ein": [["Raikou", 40], ["Lanturn", 47], ["Altaria", 46], ["Huntail", 47], ["Golbat", 48]],
+    // Realgam Tower (their Shadow Pokémon too, if it wasn't snagged)
+    "Miror B.@Realgam": [["Armaldo", 43], ["Ludicolo", 44], ["Ludicolo", 45], ["Golduck", 45], ["Loudred", 46]],
+    "Dakim@Realgam": [["Houndoom", 47], ["Flygon", 46], ["Forretress", 45], ["Whiscash", 46], ["Claydol", 46]],
+    "Venus@Realgam": [["Milotic", 48], ["Bellossom", 47], ["Raichu", 48], ["Wigglytuff", 48], ["Misdreavus", 47]],
+    "Ein@Realgam": [["Manectric", 50], ["Starmie", 49], ["Rhydon", 50], ["Pelipper", 49], ["Crobat", 48]],
+    // Realgam Tower
+    "Arton": [["Delibird", 45], ["Piloswine", 42], ["Glalie", 42]],
+    "Baila": [["Sunflora", 45], ["Gloom", 41], ["Jumpluff", 42]],
+    "Dioge": [["Masquerain", 42], ["Ariados", 41], ["Heracross", 45]],
+    "Gonzap": [["Skarmory", 47], ["Crawdaunt", 52], ["Pinsir", 52], ["Hariyama", 53], ["Shiftry", 53]],
+    // Realgam Tower's Colosseum
+    "Jomas": [["Miltank", 48], ["Zangoose", 45], ["Porygon2", 45]],
+    "Delan": [["Absol", 48], ["Mightyena", 46], ["Sharpedo", 47]],
+    "Nella": [["Houndoom", 48], ["Torkoal", 47], ["Magcargo", 46]],
+    "Ston": [["Tropius", 49], ["Vileplume", 48], ["Cradily", 48], ["Cacturne", 49]],
+    "Nascour": [["Metagross", 50], ["Gardevoir", 55], ["Xatu", 54], ["Dusclops", 55], ["Walrein", 56], ["Blaziken", 54]],
+    "Evice": [["Tyranitar", 55], ["Salamence", 60], ["Machamp", 61], ["Scizor", 60], ["Slaking", 60], ["Slowking", 61]],
+    // after the game: the Snagem Hideout
+    "Biden": [["Smeargle", 45], ["Smeargle", 50], ["Smeargle", 51], ["Smeargle", 52]],
+    "Agrev": [["Machoke", 52], ["Marshtomp", 55], ["Shiftry", 50], ["Ursaring", 45]],
+    // (the Mystery Troop's other two, there too)
+    "Verde@Hideout": [["Bayleef", 30], ["Muk", 55], ["Grumpig", 54], ["Sharpedo", 53]],
+    "Rosso@Hideout": [["Quilava", 30], ["Muk", 55], ["Grumpig", 54], ["Breloom", 53]],
+    "Bluno@Hideout": [["Croconaw", 30], ["Muk", 55], ["Grumpig", 54], ["Camerupt", 53]],
+    // the Outskirt Stand
+    "Fein": [["Togetic", 20], ["Armaldo", 68], ["Milotic", 68], ["Manectric", 68], ["Houndoom", 68], ["Gyarados", 68]],
+    // the Deep Colosseum
+    "Agnol": [["Shuckle", 45], ["Girafarig", 68], ["Sableye", 69], ["Skarmory", 66], ["Shedinja", 68], ["Kingdra", 70]]
+  };
+
+  // A Trainer's Shadow Pokémon (by SHADOW's trainer), and one as a record ready to battle: a Shadow Pokémon
+  // (record.shadow) with Colosseum's moves, Shadow Rush in the first one's place (kept in record.purifyMoves for
+  // when it's purified), holding Colosseum's item.
   const shadowOf = (trainer) => SHADOW.filter((s) => s.trainer === trainer);
   function shadowMon(s) {
-    const r = window.Party.create(s.species, s.level);
+    const moves = s.moves && s.moves.length ? ["Shadow Rush"].concat(s.moves.slice(1)) : null;
+    const r = window.Party.create(s.species, s.level, moves ? { moves } : undefined);
+    if (!moves) r.moves = [{ name: "Shadow Rush", pp: 5 }].concat(r.moves.filter((m) => m.name !== "Shadow Rush").slice(0, 3));
     r.shadow = true;
-    r.moves = [{ name: "Shadow Rush", pp: 5 }].concat(r.moves.filter((m) => m.name !== "Shadow Rush").slice(0, 3));
+    if (s.moves) r.purifyMoves = s.moves.slice();
+    if (s.item) r.item = s.item;
     return r;
   }
+  // A TEAMS party as records to battle: its Shadow Pokémon (the Trainer's, by the key's name before "@") as Shadow
+  // Pokémon, unless already snagged (`snagged`: species, e.g. player.flags.orreShadowSnagged), the rest as themselves.
+  // A later battle (a key with "@") brings back the Trainer's Shadow Pokémon if it was never snagged, as Colosseum does.
+  function team(key, snagged) {
+    const list = TEAMS[key];
+    if (!list) throw new Error("No Colosseum team: " + key);
+    const trainer = key.split("@")[0], got = new Set(snagged || []), mine = shadowOf(trainer);
+    const out = [];
+    for (const [species, level] of list) {
+      const s = mine.find((x) => x.species === species && x.level === level);
+      if (s) { if (!got.has(species)) out.push(shadowMon(s)); }
+      else out.push(window.Party.create(species, level));
+    }
+    if (key.includes("@") && !/@Hideout/.test(key)) for (const s of mine) if (!got.has(s.species) && !list.some(([sp]) => sp === s.species)) out.unshift(shadowMon(s));
+    return out.slice(0, 6);
+  }
+  // The species in a team that may be snagged (its Shadow Pokémon, not yet snagged).
+  const snaggable = (key, snagged) => team(key, snagged).filter((r) => r.shadow).map((r) => r.species);
 
   // Colosseum's story's Trainers with Shadow Pokémon (this game's own words; their Shadow Pokémon Colosseum's, SHADOW),
   // by script: `trainer` (as in SHADOW), their name and class, battle picture, the rest of their team ([species, level]),
   // and what they say: before, beaten (but their Shadow Pokémon not snagged: they'll battle again), and once snagged.
-  const T = (trainer, name, cls, pic, partners, intro, kept, after) => ({ trainer, name, cls, pic, partners, intro: [intro], kept: [kept], after: [after] });
+  const T = (trainer, name, cls, pic, intro, kept, after) => ({ trainer, name, cls, pic, intro: [].concat(intro), kept: [].concat(kept), after: [].concat(after) });
   const SHADOW_TRAINERS = {
     // (After the game, as in Colosseum: Team Snagem back in its rebuilt hideout, Biden and Agrev; Fein, the "hero"
     // who's been telling everyone at the Outskirt Stand he saved Orre; Deep King Agnol, in The Under's Deep Colosseum.)
-    SnagemHideout_EventScript_Shadow_BIDEN: T("Biden", "Snagem Biden", "Team Rocket", "snagem_grunt", [["Mightyena", 44], ["Golbat", 44]],
-      "Well, well. The traitor comes home!\nWe rebuilt this place without you,\nand Cipher left us a little gift.", "Ha! Smeargle stays with Snagem!",
+    SnagemHideout_EventScript_Shadow_BIDEN: T("Biden", "Snagem Biden", "Team Rocket", "snagem_grunt", "Well, well. The traitor comes home!\nWe rebuilt this place without you,\nand Cipher left us a little gift.", "Ha! Smeargle stays with Snagem!",
       "Snagem's finished… again. Should've\nstuck to honest snagging."),
-    SnagemHideout_EventScript_Shadow_AGREV: T("Agrev", "Snagem Agrev", "Team Rocket", "snagem_grunt", [["Sneasel", 44], ["Houndoom", 44]],
-      "You wrecked the old hideout and ran\noff with the Snag Machine! Payback\ntime!", "Grr! Get out of our hideout!",
+    SnagemHideout_EventScript_Shadow_AGREV: T("Agrev", "Snagem Agrev", "Team Rocket", "snagem_grunt", "You wrecked the old hideout and ran\noff with the Snag Machine! Payback\ntime!", "Grr! Get out of our hideout!",
       "Gonzap's gonna hear about this…"),
-    OutskirtStand_EventScript_Shadow_FEIN: T("Fein", "Hero Fein", "Team Rocket", "cipher_peon", [["Zubat", 22], ["Ekans", 22]],
-      "Ah, a fan! Yes, it's me, Fein: the\nhero who brought down Cipher!\nWant to see how I did it?", "See? Heroic, through and through!",
+    OutskirtStand_EventScript_Shadow_FEIN: T("Fein", "Hero Fein", "Team Rocket", "cipher_peon", "Ah, a fan! Yes, it's me, Fein: the\nhero who brought down Cipher!\nWant to see how I did it?", "See? Heroic, through and through!",
       "Ancha: Wait… the real hero was YOU?\nWhat a scoop! Fein, you fraud!"),
-    TheUnder_DeepColosseum_EventScript_Shadow_AGNOL: T("Agnol", "Deep King Agnol", "Leader", "super_nerd", [["Forretress", 46], ["Steelix", 46], ["Scizor", 46]],
-      "So you're the one who beat my Deep\nColosseum. I am Agnol, its king.\nFace my Shuckle, if you dare!", "My reign goes on!",
+    TheUnder_DeepColosseum_EventScript_Shadow_AGNOL: T("Agnol", "Deep King Agnol", "Leader", "super_nerd", "So you're the one who beat my Deep\nColosseum. I am Agnol, its king.\nFace my Shuckle, if you dare!", "My reign goes on!",
       "My Shuckle… Hmph. The Deep\nColosseum's yours, champion."),
-    PyriteTown_EventScript_Shadow_CAIL: T("Cail", "Rogue Cail", "Rogue", "burglar", [["Mightyena", 31]],
-      "Hey, you. I won this Furret in a\nchallenge at the Colosseum. Wanna\nsee what it can do?", "Heh. My Furret's still mine.",
+    PyriteTown_EventScript_Shadow_CAIL: T("Cail", "Rogue Cail", "Rogue", "burglar", "Hey, you. I won this Furret in a\nchallenge at the Colosseum. Wanna\nsee what it can do?", "Heh. My Furret's still mine.",
       "My prize Furret… Ah, forget it. It\nwas scary anyway. Bit people."),
-    PyriteTown_EventScript_Shadow_VANT: T("Vant", "Rider Vant", "Rider", "biker", [["Golbat", 29]],
-      "My Misdreavus never laughs anymore.\nIt just fights. Kinda cool, huh?", "Ha! Still mine!", "It used to giggle at night…\nI miss that, actually."),
-    PyriteTown_EventScript_Shadow_NOVER: T("Nover", "Rider Nover", "Rider", "biker", [["Swellow", 29]],
-      "Rev it up! My Noctowl's got a mean\nstreak since I won it!", "Vroom! Can't catch me!", "Huh. Maybe it'll calm down with you."),
-    PyriteTown_EventScript_Shadow_DIOGO: T("Diogo", "St. Performer Diogo", "St. Performer", "juggler", [["Spinda", 29]],
-      "Step right up! Watch my Flaaffy's\nterrifying new act!", "The show goes on!", "My Flaaffy's act was a little too\nwild anyway."),
-    PyriteTown_EventScript_Shadow_LEBA: T("Leba", "Rider Leba", "Rider", "biker", [["Nuzleaf", 29]],
-      "My Skiploom doesn't float around\nanymore. It attacks! Want to see?", "Ha! Back off!", "Bye, Skiploom. Be nicer with them."),
-    PyriteTown_EventScript_Shadow_DIVEL: T("Divel", "Bandana Guy Divel", "Bandana Guy", "rocker", [["Marill", 29]],
-      "Quagsire used to be such a lazybones.\nNow it never stops!", "Still mine, pal!", "Take care of the big guy, will ya?"),
-    PyriteTown_EventScript_Shadow_LON: T("Lon", "Roller Boy Lon", "Roller Boy", "youngster", [["Numel", 29]],
-      "Check out my Slugma! It's hot-headed\nnow. Like, really hot-headed!", "Wheee! Still mine!", "Aw… My Slugma…"),
-    PyriteTown_EventScript_Shadow_DOKEN: T("Doken", "Hunter Doken", "Hunter", "cooltrainer_m", [["Carvanha", 31]],
-      "A Hunter knows a good catch. My\nQwilfish is the best in Pyrite!", "You'll never land it!", "Snagged… by a kid. Unbelievable."),
-    PyriteCave_EventScript_Shadow_TWAN: T("Twan", "Rider Twan", "Rider", "biker", [["Machoke", 31]],
-      "Miror B.'s boys gave me this\nMeditite. Nobody gets past!", "Hah! Not today!", "Miror B. won't be pleased…"),
-    PyriteCave_EventScript_Shadow_SOSH: T("Sosh", "Rider Sosh", "Rider", "biker", [["Linoone", 31]],
-      "This cave's off-limits! My Dunsparce\nsays so!", "Back off!", "Fine, go on. I'm done here."),
-    TheUnder_EventScript_Shadow_FRENA: T("Frena", "Hunter Frena", "Hunter", "cooltrainer_f", [["Crawdaunt", 42]],
-      "Waiting for the train? So am I. Let's\nkill time with a battle!", "Ha! Next stop: your defeat!", "My Gligar… Well. The train's late anyway."),
-    TheUnder_EventScript_Shadow_LIAKS: T("Liaks", "Chaser Liaks", "Chaser", "camper", [["Kecleon", 42]],
-      "I chase down the best battles in Orre.\nYou look like one!", "Not today!", "Chased down and snagged. Ha. Fair enough."),
-    TheUnder_EventScript_Shadow_LONIA: T("Lonia", "Bodybuilder Lonia", "Bodybuilder", "black_belt", [["Hariyama", 42]],
-      "My Piloswine and I lift weights all day!\nWanna test our strength?", "Still the strongest!", "I'll lift heavier. You'll see."),
-    TheUnder_EventScript_Shadow_NELIS: T("Nelis", "Rider Nelis", "Rider", "biker", [["Mightyena", 42]],
-      "The tunnels are my road. My Sneasel's\nthe sharpest rider down here!", "Vroom! Can't touch me!", "Ride safe, Sneasel."),
-    ShadowLab_1F_EventScript_Shadow_COLE: T("Cole", "Cipher Peon Cole", "Team Rocket", "cipher_peon", [["Golbat", 42]],
-      "Intruders in the lab?! Get them!", "Hah! Out you go!", "Dr. Ein's going to have my hide…"),
-    ShadowLab_1F_EventScript_Shadow_LARE: T("Lare", "Cipher Peon Lare", "Team Rocket", "cipher_peon_f", [["Mightyena", 42]],
-      "This is Cipher's lab! Not a museum!", "Get lost!", "How did they get this far?!"),
-    ShadowLab_B1F_EventScript_Shadow_VANA: T("Vana", "Cipher Peon Vana", "Team Rocket", "cipher_peon", [["Magneton", 42]],
-      "The specimens down here are not for\nyour eyes!", "Hah!", "So much for security…"),
-    ShadowLab_B1F_EventScript_Shadow_LESAR: T("Lesar", "Cipher Peon Lesar", "Team Rocket", "cipher_peon_f", [["Crobat", 42]],
-      "You walked right into our web!", "Caught you!", "The web's torn…"),
-    ShadowLab_B1F_EventScript_Shadow_REMIL: T("Remil", "Cipher Peon Remil", "Team Rocket", "cipher_peon", [["Claydol", 42]],
-      "One more test subject for Dr. Ein!", "Hah! Specimen secured!", "My data's ruined!"),
-    RealgamTower_Dome_EventScript_Shadow_ARTON: T("Arton", "Cipher Peon Arton", "Team Rocket", "cipher_peon", [["Glalie", 44]],
-      "Welcome to Realgam Tower! You won't\nbe leaving!", "Hah!", "Cipher's grand plan… crumbling…"),
-    RealgamTower_Dome_EventScript_Shadow_BAILA: T("Baila", "Cipher Peon Baila", "Team Rocket", "cipher_peon_f", [["Bellossom", 44]],
-      "Master Evice's guests are not to go any\nfurther!", "Turn back!", "I can't stop you…"),
-    RealgamTower_Dome_EventScript_Shadow_DIOGE: T("Dioge", "Cipher Peon Dioge", "Team Rocket", "cipher_peon", [["Pinsir", 44]],
-      "You've come a long way. This is where\nit ends!", "Ha!", "Unbelievable…"),
-    RealgamTower_Colosseum_EventScript_Shadow_JOMAS: T("Jomas", "Bodybuilder Jomas", "Bodybuilder", "black_belt", [["Hariyama", 47]],
-      "The tower's Colosseum is mine! My Miltank\nnever loses!", "Still the champ!", "Lost my Miltank and my title. Rough day."),
-    RealgamTower_Colosseum_EventScript_Shadow_DELAN: T("Delan", "Rider Delan", "Rider", "biker", [["Manectric", 47]],
-      "My Absol brings disaster to everyone it\nbattles!", "Disaster! For you!", "Maybe the disaster was me."),
-    RealgamTower_Colosseum_EventScript_Shadow_NELLA: T("Nella", "Cipher Peon Nella", "Team Rocket", "cipher_peon_f", [["Ninetales", 47]],
-      "Master Nascour said to burn anyone who\ncame this far!", "Burn!", "Doused…"),
-    RealgamTower_Colosseum_EventScript_Shadow_STON: T("Ston", "Cipher Peon Ston", "Team Rocket", "cipher_peon", [["Rhydon", 48]],
-      "You're not getting past this Colosseum!", "Hah!", "Master Evice… forgive me…"),
-    PyriteCave_EventScript_Shadow_ZALO: T("Zalo", "Hunter Zalo", "Hunter", "cooltrainer_m", [["Golbat", 31]],
-      "My Swablu doesn't sing anymore. It\nhunts! Let's go!", "My catch stays mine!", "Huh. It never did like the dark.")
+    PyriteTown_EventScript_Shadow_VANT: T("Vant", "Rider Vant", "Rider", "biker", "My Misdreavus never laughs anymore.\nIt just fights. Kinda cool, huh?", "Ha! Still mine!", "It used to giggle at night…\nI miss that, actually."),
+    PyriteTown_EventScript_Shadow_NOVER: T("Nover", "Rider Nover", "Rider", "biker", "Rev it up! My Noctowl's got a mean\nstreak since I won it!", "Vroom! Can't catch me!", "Huh. Maybe it'll calm down with you."),
+    PyriteTown_EventScript_Shadow_DIOGO: T("Diogo", "St. Performer Diogo", "St. Performer", "juggler", "Step right up! Watch my Flaaffy's\nterrifying new act!", "The show goes on!", "My Flaaffy's act was a little too\nwild anyway."),
+    PyriteTown_EventScript_Shadow_LEBA: T("Leba", "Rider Leba", "Rider", "biker", "My Skiploom doesn't float around\nanymore. It attacks! Want to see?", "Ha! Back off!", "Bye, Skiploom. Be nicer with them."),
+    PyriteTown_EventScript_Shadow_DIVEL: T("Divel", "Bandana Guy Divel", "Bandana Guy", "rocker", "Quagsire used to be such a lazybones.\nNow it never stops!", "Still mine, pal!", "Take care of the big guy, will ya?"),
+    PyriteTown_EventScript_Shadow_LON: T("Lon", "Roller Boy Lon", "Roller Boy", "youngster", "Check out my Slugma! It's hot-headed\nnow. Like, really hot-headed!", "Wheee! Still mine!", "Aw… My Slugma…"),
+    PyriteTown_EventScript_Shadow_DOKEN: T("Doken", "Hunter Doken", "Hunter", "cooltrainer_m", "A Hunter knows a good catch. My\nQwilfish is the best in Pyrite!", "You'll never land it!", "Snagged… by a kid. Unbelievable."),
+    PyriteCave_EventScript_Shadow_TWAN: T("Twan", "Rider Twan", "Rider", "biker", "Miror B.'s boys gave me this\nMeditite. Nobody gets past!", "Hah! Not today!", "Miror B. won't be pleased…"),
+    PyriteCave_EventScript_Shadow_SOSH: T("Sosh", "Rider Sosh", "Rider", "biker", "This cave's off-limits! My Dunsparce\nsays so!", "Back off!", "Fine, go on. I'm done here."),
+    TheUnder_EventScript_Shadow_FRENA: T("Frena", "Hunter Frena", "Hunter", "cooltrainer_f", "Waiting for the train? So am I. Let's\nkill time with a battle!", "Ha! Next stop: your defeat!", "My Gligar… Well. The train's late anyway."),
+    TheUnder_EventScript_Shadow_LIAKS: T("Liaks", "Chaser Liaks", "Chaser", "camper", "I chase down the best battles in Orre.\nYou look like one!", "Not today!", "Chased down and snagged. Ha. Fair enough."),
+    TheUnder_EventScript_Shadow_LONIA: T("Lonia", "Bodybuilder Lonia", "Bodybuilder", "black_belt", "My Piloswine and I lift weights all day!\nWanna test our strength?", "Still the strongest!", "I'll lift heavier. You'll see."),
+    TheUnder_EventScript_Shadow_NELIS: T("Nelis", "Rider Nelis", "Rider", "biker", "The tunnels are my road. My Sneasel's\nthe sharpest rider down here!", "Vroom! Can't touch me!", "Ride safe, Sneasel."),
+    ShadowLab_1F_EventScript_Shadow_COLE: T("Cole", "Cipher Peon Cole", "Team Rocket", "cipher_peon", "Intruders in the lab?! Get them!", "Hah! Out you go!", "Dr. Ein's going to have my hide…"),
+    ShadowLab_1F_EventScript_Shadow_LARE: T("Lare", "Cipher Peon Lare", "Team Rocket", "cipher_peon_f", "This is Cipher's lab! Not a museum!", "Get lost!", "How did they get this far?!"),
+    ShadowLab_B1F_EventScript_Shadow_VANA: T("Vana", "Cipher Peon Vana", "Team Rocket", "cipher_peon", "The specimens down here are not for\nyour eyes!", "Hah!", "So much for security…"),
+    ShadowLab_B1F_EventScript_Shadow_LESAR: T("Lesar", "Cipher Peon Lesar", "Team Rocket", "cipher_peon_f", "You walked right into our web!", "Caught you!", "The web's torn…"),
+    ShadowLab_B1F_EventScript_Shadow_REMIL: T("Remil", "Cipher Peon Remil", "Team Rocket", "cipher_peon", "One more test subject for Dr. Ein!", "Hah! Specimen secured!", "My data's ruined!"),
+    RealgamTower_Dome_EventScript_Shadow_ARTON: T("Arton", "Cipher Peon Arton", "Team Rocket", "cipher_peon", "Welcome to Realgam Tower! You won't\nbe leaving!", "Hah!", "Cipher's grand plan… crumbling…"),
+    RealgamTower_Dome_EventScript_Shadow_BAILA: T("Baila", "Cipher Peon Baila", "Team Rocket", "cipher_peon_f", "Master Evice's guests are not to go any\nfurther!", "Turn back!", "I can't stop you…"),
+    RealgamTower_Dome_EventScript_Shadow_DIOGE: T("Dioge", "Cipher Peon Dioge", "Team Rocket", "cipher_peon", "You've come a long way. This is where\nit ends!", "Ha!", "Unbelievable…"),
+    RealgamTower_Colosseum_EventScript_Shadow_JOMAS: T("Jomas", "Bodybuilder Jomas", "Bodybuilder", "black_belt", "The tower's Colosseum is mine! My Miltank\nnever loses!", "Still the champ!", "Lost my Miltank and my title. Rough day."),
+    RealgamTower_Colosseum_EventScript_Shadow_DELAN: T("Delan", "Rider Delan", "Rider", "biker", "My Absol brings disaster to everyone it\nbattles!", "Disaster! For you!", "Maybe the disaster was me."),
+    RealgamTower_Colosseum_EventScript_Shadow_NELLA: T("Nella", "Cipher Peon Nella", "Team Rocket", "cipher_peon_f", "Master Nascour said to burn anyone who\ncame this far!", "Burn!", "Doused…"),
+    RealgamTower_Colosseum_EventScript_Shadow_STON: T("Ston", "Cipher Peon Ston", "Team Rocket", "cipher_peon", "You're not getting past this Colosseum!", "Hah!", "Master Evice… forgive me…"),
+    PyriteCave_EventScript_Shadow_ZALO: T("Zalo", "Hunter Zalo", "Hunter", "cooltrainer_m", "My Swablu doesn't sing anymore. It\nhunts! Let's go!", "My catch stays mine!", "Huh. It never did like the dark.")
   };
 
-  // Rider Willie's two Zigzagoon (Lv. 25 and 26: met at the start of Colosseum's story proper).
-  const willieTeam = () => [window.Party.create("Zigzagoon", 25), window.Party.create("Zigzagoon", 26)];
+  // Rider Willie's two Zigzagoon (Lv. 24, as in Colosseum: met at the start of its story proper).
+  const willieTeam = () => team("Willie");
 
 
   // ---------- The Pyrite Colosseum and Phenac Stadium (Colosseum's tournaments; this game's own entrants) ----------
@@ -494,5 +579,5 @@
     throw new Error("No safe position in " + at.map);
   }
 
-  window.Orre = { correctLocation, SHADOW, TOURNAMENTS, tournamentDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
+  window.Orre = { correctLocation, SHADOW, TEAMS, team, snaggable, TOURNAMENTS, tournamentDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
 })();

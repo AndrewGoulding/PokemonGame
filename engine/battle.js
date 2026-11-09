@@ -2770,7 +2770,11 @@
       this.ended = true; this.phase = "ended"; this.winner = null;
     }
 
-    snaggable(mon) { return !!(this.snag && !this.wild && mon && !mon.fainted && mon.side.id === "p2" && this.snag.includes(mon.baseSpecies)); }
+    // (Where the trainer has Shadow Pokémon, only those: Biden's Shadow Smeargle, not his three others.)
+    snaggable(mon) {
+      return !!(this.snag && !this.wild && mon && !mon.fainted && mon.side.id === "p2" && this.snag.includes(mon.baseSpecies)
+        && (mon.shadow || !mon.side.pokemon.some((p) => p.shadow)));
+    }
 
     throwBall(mon, ball) {
       const snagging = this.snag && !this.wild;

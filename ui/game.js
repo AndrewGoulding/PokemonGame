@@ -6217,14 +6217,14 @@
       snagged: ["Give my Aipom back, thief!"],
       won: ["Leave Agate, Snagem! And don't come\nback!"], lost: ["My partners and I won't be beaten\nby a Snagem!"] },
     // (Mt. Battle's, in Colosseum's story: two of its Trainers, and Cipher's Peons Turo and Berin on the slopes.)
-    MtBattle_EventScript_Trainer1: { name: "Black Belt Garo", cls: "Black Belt", pic: "black_belt", team: () => [Party.create("Hariyama", 35), Party.create("Machoke", 35)],
+    MtBattle_EventScript_Trainer1: { name: "Hunter Drovic", cls: "Hunter", pic: "cooltrainer_m", team: [["Swinub", 35], ["Baltoy", 36], ["Larvitar", 37]],
       intro: ["Mt. Battle's training grounds are\nclosed! Purple goons everywhere! But\nI'll still battle you!"], defeat: ["Oof!"],
       after: ["Area Leader Vander's up at the summit.\nThose crooks went after him!"] },
-    MtBattle_EventScript_Trainer2: { name: "Cooltrainer Mira", cls: "Cooltrainer", pic: "cooltrainer_f", team: () => [Party.create("Kirlia", 35), Party.create("Grovyle", 36)],
+    MtBattle_EventScript_Trainer2: { name: "Cipher Peon Kison", cls: "Team Rocket", pic: "cipher_peon", team: [["Houndour", 37], ["Kirlia", 36], ["Koffing", 37], ["Duskull", 36]],
       intro: ["I came to train, not to run from\ncrooks! Let's battle!"], defeat: ["You're strong!"], after: ["Go on up. Show those crooks!"] },
-    MtBattle_EventScript_Turo: { name: "Cipher Peon Turo", cls: "Team Rocket", pic: "cipher_peon", team: () => [Party.create("Graveler", 37), Party.create("Golbat", 36)],
+    MtBattle_EventScript_Turo: { name: "Rider Turo", cls: "Rider", pic: "biker", team: () => Orre.team("Turo"),
       intro: ["No one goes up the mountain! Master\nDakim's orders!"], defeat: ["Urrgh… Master Dakim will have my\nhead…"], after: ["Master Dakim's at the summit. He'll\ncrush you!"] },
-    MtBattle_EventScript_Berin: { name: "Cipher Peon Berin", cls: "Team Rocket", pic: "cipher_peon", team: () => [Party.create("Mightyena", 37), Party.create("Sealeo", 37)],
+    MtBattle_EventScript_Berin: { name: "Cipher Peon Berin", cls: "Team Rocket", pic: "cipher_peon", team: () => Orre.team("Berin"),
       intro: ["You beat Turo? Don't get a swelled\nhead!"], defeat: ["Tch!"], after: ["Master Dakim will deflate your pride\nreal quick!"] },
     PyriteCave_EventScript_Rowe: { name: "Hiker Rowe", cls: "Hiker", pic: "hiker", team: () => [Party.create("Gligar", 23), Party.create("Graveler", 22)],
       before: ["I've been digging in this cave for\nthirty years. Found all kinds of\nthings!"],
@@ -6607,8 +6607,7 @@
   }
   async function phenacFTBattle() {
     const outcome = await battle("trainer", {
-      foe: { name: "Folly", team: [Party.create("Whismur", 25), Party.create("Baltoy", 25)], pic: FOLLY_PIC },
-      foe2: { name: "Trudly", team: [Party.create("Lotad", 25), Party.create("Zigzagoon", 25)], pic: TRUDLY_PIC, prizeClass: "Team Rocket", defeatText: ["Awww, no!"] },
+      foe: { name: "Shady Guy Folly", team: Orre.team("Folly"), pic: FOLLY_PIC }, double: true,
       prizeClass: "Team Rocket", noBlackout: true, music: "mus_vs_trainer", defeatText: ["Wha…?!"] });
     show("world");
     await Overworld.resume();
@@ -6730,7 +6729,7 @@
     if ((f.orreMayor | 0) === 2) {
       await comeIn(F, T);
       await say(["Folly: You, you, you! The last time, you\ncaught me off guard!", "That's not gonna happen again!"]);
-      const outcome = await battle("trainer", { foe: { name: "Folly", team: [Party.create("Loudred", 27), Party.create("Baltoy", 27)], pic: FOLLY_PIC },
+      const outcome = await battle("trainer", { foe: { name: "Miror B. Peon Folly", team: Orre.team("Folly@Mayor"), pic: FOLLY_PIC },
         double: true, prizeClass: "Team Rocket", noBlackout: true, music: "mus_vs_trainer", defeatText: ["Awww, blast it!\nI got tripped up again!"] });
       show("world");
       await Overworld.resume();
@@ -6751,7 +6750,7 @@
       "Please, snag that poor Pokémon back from\nthose horrible thugs!", "You can… No. Only you can do it!"]);
     // (His Shadow Pokémon, Colosseum's: Orre.SHADOW.)
     const shadow = Orre.shadowOf("Trudly")[0];
-    const opts = { foe: { name: "Trudly", team: [Orre.shadowMon(shadow), Party.create("Zigzagoon", 28)], pic: TRUDLY_PIC }, double: true, prizeClass: "Team Rocket",
+    const opts = { foe: { name: "Miror B. Peon Trudly", team: Orre.team("Trudly"), pic: TRUDLY_PIC }, double: true, prizeClass: "Team Rocket",
       noBlackout: true, snag: [shadow.species], music: "mus_vs_trainer", defeatText: ["Darn it, but you're good!"] };
     const outcome = await battle("trainer", opts);
     show("world");
@@ -6816,7 +6815,10 @@
   function purify(r) {
     r.shadow = false;
     delete r.heart;
-    r.moves = Party.create(r.species, r.level).moves;   // (the moves it would know at its level)
+    // (Colosseum's: the four moves it had, its first back in Shadow Rush's place; an older record without them, the
+    // moves it would know at its level.)
+    r.moves = r.purifyMoves ? r.purifyMoves.map((name) => ({ name, pp: Party.maxPp ? Party.maxPp(name) : (window.MOVES[name] || {}).pp || 10 })) : Party.create(r.species, r.level).moves;
+    delete r.purifyMoves;
     (player.flags.orrePurified = player.flags.orrePurified || []).push(r.species);
   }
 
@@ -7003,8 +7005,7 @@
     await say(["Skrub: Hah! Out of the way, old man.\nCipher wants a good look at this rock.",
       "…And who are you? Oh, the brat who's\nbeen snagging our Pokémon! Perfect!"]);
     const shadows = Orre.shadowOf("Skrub");
-    const opts = { foe: { name: "Cipher Peon Skrub", team: shadows.map(Orre.shadowMon).concat(teamOf([["Golbat", 36]])), pic: "cipher_peon" },
-      foe2: { name: "Cipher Peon", team: teamOf([["Mightyena", 36], ["Weezing", 36]]), pic: "cipher_peon_f", prizeClass: "Team Rocket", defeatText: ["Eek!"] },
+    const opts = { foe: { name: "Cipher Peon Skrub", team: Orre.team("Skrub"), pic: "cipher_peon" }, double: true,
       prizeClass: "Team Rocket", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["Gah! Not again!"] };
     const outcome = await storyBattle(opts);
     if (outcome !== "won") { await say(["Skrub: Hah! Go home, kid."]); Overworld.removeObject(E); return; }
@@ -7059,7 +7060,7 @@
     await say(["Dakim: Dahahaha! So you're the pests\nwho've been snagging our Pokémon!", "That fool Vander wouldn't hand over the\nTime Flute without a fuss. Now look at\nhim.",
       "The mighty Dakim will crush you too!"]);
     const shadows = Orre.shadowOf("Dakim");
-    const opts = { foe: { name: "Cipher Admin Dakim", team: shadows.map(Orre.shadowMon).concat(teamOf([["Golem", 38], ["Claydol", 38], ["Marowak", 38]])), pic: "black_belt" },
+    const opts = { foe: { name: "Cipher Admin Dakim", team: Orre.team("Dakim"), pic: "black_belt" },
       prizeClass: "Leader", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["This can't be! The mighty Dakim\nloses?!"] };
     const outcome = await storyBattle(opts);
     if (outcome !== "won") { await say(["Dakim: Dahahaha! Come back when you're\nstronger!"]); return; }
@@ -7100,9 +7101,9 @@
     await say("Your Pokémon can now grow up to\nLv. " + cap + " in Orre!");
   };
   // A story battle with a Trainer's Colosseum Shadow Pokémon (Orre.SHADOW) and the rest of their team: won?
-  async function bossBattle(trainer, name, pic, partners, defeat, extra) {
-    const f = player.flags, shadows = Orre.shadowOf(trainer);
-    const opts = Object.assign({ foe: { name, team: shadows.map(Orre.shadowMon).concat(teamOf(partners)), pic }, prizeClass: "Leader", noBlackout: true,
+  async function bossBattle(key, name, pic, defeat, extra) {
+    const f = player.flags, team = Orre.team(key, f.orreShadowSnagged), shadows = team.filter((r) => r.shadow);
+    const opts = Object.assign({ foe: { name, team, pic }, prizeClass: "Leader", noBlackout: true,
       snag: shadows.map((s) => s.species), defeatText: defeat }, extra || {});
     const outcome = await storyBattle(opts);
     if ((opts.snagged || []).length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...opts.snagged);
@@ -7117,7 +7118,7 @@
   }
   async function underKloak() {
     await say(["Kloak: The studio's closed! Miss Venus\nis rehearsing, and she's not to be\ndisturbed!"]);
-    if (!(await bossBattle("Kloak", "Cipher Peon Kloak", "cipher_peon", [["Ninjask", 39]], ["Gah!"], { prizeClass: "Team Rocket" }))) return;
+    if (!(await bossBattle("Kloak", "Cipher Peon Kloak", "cipher_peon", ["Gah!"], { prizeClass: "Team Rocket" }))) return;
     await say(["Kloak: Miss Venus will make you sorry\nfor this!"]);
     await goAway("KLOAK", ["walk_fast_right", "walk_fast_down", "walk_fast_down"]);
     player.flags.orreStory = 35;
@@ -7126,7 +7127,7 @@
   async function underVenus() {
     await say(["Venus: Oh, visitors! How rude, barging\ninto my studio during rehearsal.", "Still, you're rather cute. Let's put on\na show for my viewers, shall we?",
       "And don't you dare go easy on me!"]);
-    if (!(await bossBattle("Venus", "Cipher Admin Venus", "beauty", [["Delcatty", 41], ["Vileplume", 41], ["Banette", 41]], ["Not my face!"]))) {
+    if (!(await bossBattle("Venus", "Cipher Admin Venus", "beauty", ["Not my face!"]))) {
       await say(["Venus: Better luck next show, darling."]); return;
     }
     await say(["Venus: Ugh, my ratings! Fine, fine.", "You want to know where the Shadow Pokémon\ncome from? Dear old Ein's lab, out in the\ndesert. He makes them there.",
@@ -7147,12 +7148,12 @@
   async function labTroop() {
     await say(["Verde: Halt! We are the Mystery Troop,\nCipher's elite!", "Bluno: You'll go no further!", "Rosso: Leave them to us!"]);
     await say(["Rui: {PLAYER}, all three of them… They\nhave Shadow Pokémon!"]);
-    const pair = await bossBattle("Verde", "Peon Verde", "cipher_peon", [["Breloom", 44]], ["Impossible!"], {
+    const pair = await bossBattle("Verde", "Peon Verde", "cipher_peon", ["Impossible!"], {
       foe2: { name: "Peon Bluno", team: Orre.shadowOf("Bluno").map(Orre.shadowMon).concat(teamOf([["Walrein", 44]])), pic: "cipher_peon", prizeClass: "Team Rocket", defeatText: ["Bah!"] },
       snag: ["Bayleef", "Croconaw"], prizeClass: "Team Rocket" });
     if (!pair) { await say(["Verde: The Mystery Troop prevails!"]); return; }
     await say(["Rosso: Pathetic! I'll handle this myself!"]);
-    if (!(await bossBattle("Rosso", "Peon Rosso", "cipher_peon", [["Magcargo", 44]], ["The Mystery Troop… defeated?!"], { prizeClass: "Team Rocket" }))) {
+    if (!(await bossBattle("Rosso", "Peon Rosso", "cipher_peon", ["The Mystery Troop… defeated?!"], { prizeClass: "Team Rocket" }))) {
       await say(["Rosso: Hah! The Mystery Troop prevails!"]); return;
     }
     await say(["Verde: Retreat! Retreat!"]);
@@ -7164,7 +7165,7 @@
   async function labEin() {
     await say(["Ein: Who let you in here? I'm in the\nmiddle of something wonderful.", "My life's work: Pokémon with their\nhearts shut tight. Perfect fighting\nmachines!",
       "And now you've been snagging my\nmasterpieces? Unforgivable!"]);
-    if (!(await bossBattle("Ein", "Cipher Admin Ein", "scientist", [["Muk", 45], ["Weezing", 45], ["Crobat", 46], ["Electrode", 45]], ["My data! My beautiful data!"]))) {
+    if (!(await bossBattle("Ein", "Cipher Admin Ein", "scientist", ["My data! My beautiful data!"]))) {
       await say(["Ein: Fascinating. You'll make a fine test\nsubject."]); return;
     }
     await say(["Ein: No matter. My finest work is already\nat Realgam Tower.", "Master Evice's grand plan will go ahead\nthere, and no one can stop it now!"]);
@@ -7183,7 +7184,7 @@
   }
   async function realgamGonzap() {
     await say(["Gonzap: Gwaahahah! Well, if it isn't my\nfavourite rookie!", "You blew up my hideout and wiped out\nTeam Snagem. Time you paid up for that!"]);
-    if (!(await bossBattle("Gonzap", "Snagem Head Gonzap", "biker", [["Crawdaunt", 46], ["Victreebel", 46], ["Golem", 46]], ["You've grown a lot better, rookie."]))) {
+    if (!(await bossBattle("Gonzap", "Snagem Head Gonzap", "biker", ["You've grown a lot better, rookie."]))) {
       await say(["Gonzap: Gwahaha! Still a rookie!"]); return;
     }
     await say(["Gonzap: Humph. Go on, then. There's no\ngoing back for you now."]);
@@ -7193,7 +7194,7 @@
   }
   async function realgamNascour() {
     await say(["Nascour: So you've come this far. Our\nShadow Pokémon plan was so near\ncompletion.", "I won't allow a pair of children to\nruin it. Prepare yourselves!"]);
-    if (!(await bossBattle("Nascour", "Cipher Admin Nascour", "gentleman", [["Alakazam", 49], ["Gardevoir", 49], ["Slaking", 49]], ["This… cannot be."]))) {
+    if (!(await bossBattle("Nascour", "Cipher Admin Nascour", "gentleman", ["This… cannot be."]))) {
       await say(["Nascour: As expected. Leave."]); return;
     }
     await say(["Nascour: Hmph. Master Evice awaits you\nat the top. Go, and see for yourselves."]);
@@ -7208,7 +7209,7 @@
     await say(["Evice: Es Cade was a convenient mask.\nI am Evice, the head of Cipher.",
       "Phenac's kindly Mayor, ordering an\n\"investigation\"… while my Shadow Pokémon\nspread across Orre. Delightful, wasn't it?",
       "With an army of Shadow Pokémon, Orre\nwould have been mine. Then the world.", "You've ruined a great deal. Now I'll ruin\nyou!"]);
-    if (!(await bossBattle("Evice", "Cipher Head Evice", "gentleman", [["Slowking", 52], ["Gengar", 52], ["Snorlax", 52], ["Gyarados", 52]], ["No… My plan…"]))) {
+    if (!(await bossBattle("Evice", "Cipher Head Evice", "gentleman", ["No… My plan…"]))) {
       await say(["Evice: As I thought. Children."]); return;
     }
     await say(["Evice: Impossible… My Shadow Pokémon…\nmy Cipher… beaten by children…", "This isn't over! I'll be back!"]);
@@ -7245,7 +7246,7 @@
     if (done.includes(script)) { await say(d.after); return; }
     const shadows = Orre.shadowOf(d.trainer);
     await say(d.intro);
-    const opts = { foe: { name: d.name, team: shadows.map(Orre.shadowMon).concat(teamOf(d.partners)), pic: d.pic }, prizeClass: d.cls,
+    const opts = { foe: { name: d.name, team: Orre.team(d.key || d.trainer), pic: d.pic }, prizeClass: d.cls,
       snag: shadows.map((s) => s.species), defeatText: ["Wh-what?!"] };
     const outcome = await storyBattle(opts);
     const snagged = (opts.snagged || []).filter((sp) => shadows.some((s) => s.species === sp));
@@ -7313,7 +7314,7 @@
     const shadows = Orre.shadowOf("Nore");
     if (story < 24) { await say(["Peon: This building's private property.\nBeat it, kid."]); return; }
     await say(["Peon: Here's our latest challenge\nchampion, is it? Wait…", "You're the brat who messed with us in\nPhenac! You're not going upstairs!"]);
-    const opts = { foe: { name: "Cipher Peon Nore", team: shadows.map(Orre.shadowMon).concat(teamOf([["Kecleon", 31]])), pic: "cipher_peon" },
+    const opts = { foe: { name: "Cipher Peon Nore", team: Orre.team("Nore"), pic: "cipher_peon" },
       prizeClass: "Team Rocket", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["It's no use! I can't win!"] };
     const outcome = await storyBattle(opts);
     if (outcome !== "won") { await say(["Nore: Hah! Get lost!"]); return; }
@@ -7356,8 +7357,8 @@
     await say(["Rui: {PLAYER}, look! Over there!\nSomeone's hurt!"]);
     const shadowsR = Orre.shadowOf("Reath"), shadowsF = Orre.shadowOf("Ferma");
     const opts = {
-      foe: { name: "Peon Reath", team: shadowsR.map(Orre.shadowMon).concat(teamOf([["Lombre", 32]])), pic: "cipher_peon_f" },
-      foe2: { name: "Peon Ferma", team: shadowsF.map(Orre.shadowMon).concat(teamOf([["Lombre", 32]])), pic: "cipher_peon_f", prizeClass: "Team Rocket", defeatText: ["Nooo!"] },
+      foe: { name: "Miror B. Peon Reath", team: Orre.team("Reath"), pic: "cipher_peon_f" },
+      foe2: { name: "Miror B. Peon Ferma", team: Orre.team("Ferma"), pic: "cipher_peon_f", prizeClass: "Team Rocket", defeatText: ["Nooo!"] },
       prizeClass: "Team Rocket", noBlackout: true, snag: shadowsR.concat(shadowsF).map((s) => s.species), defeatText: ["You're no ordinary Trainer!"] };
     const outcome = await storyBattle(opts);
     if (outcome !== "won") {
@@ -7390,7 +7391,7 @@
     await say(["Miror B.: You kept me waiting so long,\nI've worked up a little perspiration!\nFuhohoho!",
       "You've been ever so naughty, messing\nup our plans. But this is where the\nmusic stops for you!", "Let the music play! Let's get it on!"]);
     const shadows = Orre.shadowOf("Miror B.");
-    const opts = { foe: { name: "Miror B.", team: shadows.map(Orre.shadowMon).concat(teamOf([["Ludicolo", 34], ["Lombre", 33], ["Ludicolo", 34]])), pic: "rocker" },
+    const opts = { foe: { name: "Cipher Admin Miror B.", team: Orre.team("Miror B."), pic: "rocker" },
       prizeClass: "Leader", noBlackout: true, snag: shadows.map((s) => s.species), defeatText: ["How, how, how dare you!"] };
     const outcome = await storyBattle(opts);
     if (outcome !== "won") { await say(["Miror B.: Fuhohoho! Come back when\nyou've learned to dance, darlings!"]); return; }
