@@ -2,7 +2,8 @@
 
 This pass adds four saved quest chains. It builds on the campaign through
 Cynthia; it does not implement all of Platinum's optional or postgame content.
-The current combined import has 1,359 messages and 331 trainer records.
+At this milestone the import had 1,359 messages and 331 trainer records.
+[Legendary/event stories and rematches](sinnoh-legends.md) extend it.
 
 ## Iron Island and Riley
 
@@ -28,8 +29,8 @@ This uses the game's saved walking clock, not the device's real-world time.
 A failed, escaped or defeated encounter can be retried on a later night.
 Catching Rotom permanently completes the encounter.
 
-The Secret Key, appliance room and Rotom form-changing quest are still future
-work. This addition provides the haunted television encounter.
+The [next milestone](sinnoh-legends.md) adds the Secret Key, appliance annex
+and Rotom form changes. This section covers the haunted television encounter.
 
 ## The lake trio
 

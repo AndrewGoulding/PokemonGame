@@ -139,6 +139,7 @@
 (function () {
   "use strict";
 
+  const PLATE_TYPES = window.Damage.PLATE_TYPES;
   const tr = Math.trunc;
   // A Tera Raid's Pokémon's extra actions, by stars (Battle.raidCheck): the
   // HP fractions it acts at, and every how many turns it acts as well.
@@ -1180,6 +1181,7 @@
       // (Sweet Veil, Flower Veil: the holder's side.)
       if (this.runAllyHooks("SetStatus", mon, { source, effect, relay: sobj, args: [effect], breakAbility: this._breakFor(mon, effect) }) === false) return false;
       mon.status = id;
+      if(id==="frz"&&mon.species==="Shaymin-Sky"&&!mon.transformed){this.abilityForme(mon,"Shaymin-Land");mon.baseSpecies="Shaymin-Land";mon.ability=mon.baseAbility="Natural Cure";}
       mon.statusState = { source };
       if (id === "slp") mon.statusState.time = this.randInt(2, 4);
       if (id === "tox") mon.statusState.stage = 0;
@@ -1433,6 +1435,9 @@
         side.shedTail = 0;
         this.add("-start", mon, "Substitute");
       }
+      // Held-item forms determine typing and grounding before entry hazards.
+      if(!mon.transformed&&mon.species==="Arceus"&&mon.ability==="Multitype"){const type=PLATE_TYPES[mon.item]||"Normal";mon.baseTypes=[type];if(!mon.terastallized)mon.types=[type];}
+      if(!mon.transformed&&/^Giratina(?:-|$)/.test(mon.species)&&mon.item==="griseous-orb"){this.abilityForme(mon,"Giratina-Origin");mon.ability=mon.baseAbility="Levitate";}
       this.markParticipants();
       if (side.tag) this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon), this.expProgress(mon), mon.teamIndex, side.trainers[mon.owner]);
       else this.add(o.drag ? "drag" : "switch", mon, mon.species + ", L" + mon.level, this.hpStr(mon), this.expProgress(mon), mon.teamIndex);
@@ -3137,6 +3142,7 @@
       const foe = user.side.foe.active;
       // (Glaive Rush's exposure lasts until the user moves again.)
       if (user.volatiles.glaiverush && user.volatiles.glaiverush.turn < this.turn) delete user.volatiles.glaiverush;
+      if(move.id==="judgment"){move.type=PLATE_TYPES[user.item]||"Normal";move.typeOverride=true;}
       // Attacker ability tweaks the move
       const ab = window.ABILITIES[user.ability];
       if (ab && !user.volatiles.gastroacid) {
@@ -4173,6 +4179,7 @@
     }
   }
 
+  Battle.PLATE_TYPES = PLATE_TYPES;
   Battle.Pokemon = Pokemon;
   Battle.MANY_TO_AIM = MANY_TO_AIM;
   Battle.MEGA_MAP = () => { buildIndexes(); return MEGA_MAP; };

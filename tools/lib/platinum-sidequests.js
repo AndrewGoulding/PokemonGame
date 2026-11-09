@@ -6,10 +6,11 @@ const BANKS=['iron_island_b2f_left_room','old_chateau_back_middle_west_room','ac
 function build({root,source,ctx,priorMaps,person,trainer,additions,provenance,moveName,speciesName}){
  const maps={},doors=[],out=path.join(root,'assets/world/maps'),clone=x=>JSON.parse(JSON.stringify(x));
  const base=n=>maps[n]||priorMaps[n]||ctx.WORLD_MAPS[n],json=p=>JSON.parse(fs.readFileSync(path.join(source,p),'utf8'));
- function room(name,title,w=25,h=27,wood=false){const m=maps[name]={name,title,region:'sinnoh',type:wood?'indoor':'cave',music:wood?'dp_eterna_forest':'dp_oreburgh_gate',width:w,height:h,top:false,borderWidth:2,borderHeight:2,collision:[],behavior:Array(w*h).fill(0),elevation:Array(w*h).fill(3),encounter:Array(w*h).fill(0),warps:[],people:[],connections:[],signs:[],triggers:[],hidden:[],questWood:wood};for(let y=0;y<h;y++)for(let x=0;x<w;x++)m.collision.push(x<1||x>=w-1||y<2||y>=h-1?1:0);return m;}
+ function room(name,title,w=25,h=27,wood=false){const m=maps[name]={name,title,region:'sinnoh',type:wood?'indoor':'cave',music:wood?'dp_eterna_forest':'dp_oreburgh_gate',width:w,height:h,top:false,borderWidth:2,borderHeight:2,collision:[],behavior:Array(w*h).fill(0),elevation:Array(w*h).fill(3),encounter:Array(w*h).fill(0),warps:[],people:[],connections:[],signs:[],triggers:[],hidden:[],questWood:wood};for(let y=0;y<h;y++)for(let x=0;x<w;x++)m.collision.push(x<1||x>=w-1||y<2||y>=h-1?1:0);if(wood)for(const x of [2,3,w-4,w-3])for(let y=3;y<=5;y++)m.collision[y*w+x]=1;return m;}
  function draw(m){const c=canvas(m.width*16,m.height*16),wood=m.questWood;for(let y=0;y<m.height;y++)for(let x=0;x<m.width;x++){const solid=m.collision[y*m.width+x],v=(x*13+y*7)%11;const col=wood?(solid?[61,41,49]:[123+v,88+v,64+v]):solid?[55+v,49+v,64+v]:[144+v,135+v,143+v];c.rect(x*16,y*16,16,16,col);if(!solid){c.line(x*16,y*16+15,x*16+15,y*16+15,wood?[89,64,47]:[119,110,123]);if(!wood)c.line(x*16+3,y*16+5,x*16+8,y*16+3,[162,155,167]);}else if(!wood)c.line(x*16,y*16+3,x*16+15,y*16+3,[91,80,104]);}
   for(const s of m.signs){c.box(s.x*16,s.y*16,16,16,[200,171,94],[58,48,56]);text(c,'?',s.x*16+5,s.y*16+4,[52,41,57]);}
-  if(m.questWood){for(const x of [2,m.width-4]){c.box(x*16,3*16,32,48,[86,55,48]);for(let i=0;i<6;i++)c.rect(x*16+3+i*4,3*16+5,3,30,[113+i*13,84,92]);}c.box(11*16,4*16,32,32,[86,84,104]);c.rect(11*16+4,4*16+4,24,18,[137,182,174]);c.line(11*16+6,4*16+11,11*16+25,4*16+11,[213,222,180]);}
+  if(m.legendDots)for(const[x,y]of m.legendDots){c.rect(x*16,y*16,16,16,[150,141,150]);c.ellipse(x*16+8,y*16+8,5,5,[63,77,87],2);}
+  if(m.questWood){for(const x of [2,m.width-4]){c.box(x*16,3*16,32,48,[86,55,48]);for(let i=0;i<6;i++)c.rect(x*16+3+i*4,3*16+5,3,30,[113+i*13,84,92]);}if(m.questTV!==false){c.box(11*16,4*16,32,32,[86,84,104]);c.rect(11*16+4,4*16+4,24,18,[137,182,174]);c.line(11*16+6,4*16+11,11*16+25,4*16+11,[213,222,180]);}}
   if(m.questGoals)for(const[x,y]of m.questGoals)c.ellipse(x*16+8,y*16+8,7,5,[63,40,47],2);
   c.save(path.join(out,m.name+'.png'));const b=canvas(32,32);b.rect(0,0,32,32,[55,49,64]);b.save(path.join(out,m.name+'-border.png'));
  }
@@ -46,6 +47,6 @@ function build({root,source,ctx,priorMaps,person,trainer,additions,provenance,mo
  }
 
  for(const m of Object.values(maps))if(m.name.startsWith('Platinum'))draw(m);
- return{maps,doors,sidequests:{encounters,travel}};
+ return{maps,doors,sidequests:{encounters,travel},kit:{maps,room,draw,exit,link,spot,actor,base}};
 }
 module.exports=build;module.exports.banks=BANKS;

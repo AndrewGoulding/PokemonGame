@@ -1086,6 +1086,7 @@
   let lastRecord = null;   // (the last battle's record, if it was asked for: the Battle Frontier's, for the Frontier Pass)
   let battleCount = 0;   // (how many battles so far: whether a script battled)
   async function battle(kind, opts) {
+    SinnohLegends.syncForms(player);
     opts = opts || {};
     battleCount++;
     const wild = kind === "wild";
@@ -1302,6 +1303,7 @@
     }
     if (cheryl && result.outcome !== "lost") player.party.forEach(Party.heal);
     await persist();
+    SinnohLegends.syncForms(player);
     return result.outcome;
   }
 
@@ -1525,6 +1527,7 @@
   async function useItemOn(record, item) {
     const name = Party.displayName(record);
     if (record.egg) { await message("It won't have any effect."); return; }
+    if(item==="gracidea"){await message(SinnohLegends.gracidea(record,player)?Party.displayName(record)+" changed into Sky Forme!":"It won’t have any effect now.");return;}
     if (item in SCENT_HEART) { await scentOn(record, item); return; }
     if (Bag.isStone(item)) {
       const evo = Evolution.find(record, { trigger: "item", item, party: player.party });
@@ -1727,11 +1730,11 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
-  const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
+  const usableFromBag = (item) => item === "gracidea" || Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "tin-bottle-cap" || item === "zygarde-cube" ||
     item === "dynamax-candy" || item === "max-mushrooms" || !!Bag.teraShardType(item) ||
     item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item in LURE_STEPS || item === "escape-rope" ||
@@ -1744,6 +1747,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
+    if(item==="gracidea"){const mon=await choosePartyFor("Use on which {PKMN}?",item);if(mon)await useItemOn(mon,item);return;}
     if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
     if (item === "pokeblock-case") { await hoennPokeblock.menu(); return null; }   // (Hoenn's Pokéblocks: ui/hoenn-pokeblock.js)
     if (item === "berry-pouch") return (await berryPouch()) ? "escaped" : null;
@@ -2288,7 +2292,7 @@
     const ability = (window.ABILITIES[r.ability] || {}).name || r.ability;
     return {
       name: Party.displayName(r), species: Party.speciesName(r.species), dexNo: (DEX[Party.speciesName(r.species)] || dex).id,
-      level: r.level, gender: r.gender, types: dex.types, ot: ot.name, otId: ot.id & 0xffff,
+      level: r.level, gender: r.gender, types: Party.types(r), ot: ot.name, otId: ot.id & 0xffff,
       item: r.item ? Bag.name(r.item) : "", memo, hp: r.hp, maxhp: stats.hp,
       evs: Object.assign({}, r.evs), ivs: Object.assign({}, Party.trainedIvs(r)), nature: natureShown ? r.nature : null, happiness: r.happiness,
       stats: { atk: stats.atk, def: stats.def, spa: stats.spa, spd: stats.spd, spe: stats.spe },
@@ -5917,7 +5921,7 @@
   // ---------- Sinnoh: Platinum's opening chapter (ui/sinnoh-story.js) ----------
 
   const sinnohStory = SinnohStory.create({
-    player: () => player, say, confirm, showPicture, hidePicture, canBattle, battle, sfx,
+    player: () => player, say, confirm, showPicture, hidePicture, canBattle, battle, sfx, forgetMove: chooseMoveToForget,
     choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name }))),
     showWorld: () => show("world"), resume: () => Overworld.resume(),
     refreshPeople: () => Overworld.refreshPeople(), teleport: (to) => Overworld.teleport(to),
@@ -11596,6 +11600,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
+          SinnohLegends.syncForms(player);
           return sinnohStory.step() || orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
@@ -11672,7 +11677,7 @@
         // (A Max Lure on: always a horde, from the map's hordes or its own wild Pokémon (on the water, its water's).)
         else if (lureOn() === "max-lure" && !towerGhost() && wildTable(here) && await hordeBattle(at.map, terrain, wildTable(here))) { /* (fought) */ }
         // (X and Y's hordes: one grass or cave encounter in twenty, where the map has them; never on the water.)
-        else if (ev.species === "Mesprit" && here.region === "sinnoh" && ((player.flags.sinnoh || {}).sidequests || {}).mespritRoaming) await battle("wild", {foe:{name:"Wild",team:[Party.create("Mesprit",50)]},terrain,noGimmicks:true});
+        else if (Sinnoh.isRoamer(player,ev.species) && here.region === "sinnoh") await battle("wild", {foe:{name:"Wild",team:[Party.create(ev.species,ev.level)]},terrain,noGimmicks:true});
         else if (Overworld.avatar() !== "surf" && !towerGhost() && Hordes.roll(at.map) && await hordeBattle(at.map, terrain)) { /* (fought) */ }
         // (Two wild Pokémon, with two of yours able to battle: one land encounter in Hordes.DOUBLE_CHANCE; a Lure on, always.)
         else if (!towerGhost() && ableToBattle() >= 2 && wildTable(here) && (lureOn() === "lure" || (Overworld.avatar() !== "surf" && Hordes.rollDouble()))

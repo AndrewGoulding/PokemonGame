@@ -18,6 +18,7 @@ const banks = ["route_201", "sandgem_town_pokemon_research_lab", "route_202", "j
 banks.push("mt_coronet_1f_south", "hearthome_city", "hearthome_city_gym_entrance_room", "hearthome_city_gym_leader_room", "veilstone_city", "veilstone_city_gym", "veilstone_city_galactic_warehouse", "pastoria_city", "pastoria_city_gym", "route_208", "route_209", "route_209_gate_to_hearthome_city", "route_210_south", "route_215", "route_214", "route_213", "route_212_north", "route_212_south");
 banks.push(...require("./lib/platinum-finale").banks.filter(bank => fs.existsSync(path.join(source, "res/text/" + bank + ".json"))));
 banks.push(...require("./lib/platinum-sidequests").banks);
+banks.push(...require("./lib/platinum-legends").banks);
 const texts = {};
 for (const bank of banks) for (const m of json("res/text/" + bank + ".json").messages) texts[m.id] = pages(m.en_US);
 // Read the existing game's identifiers without loading UI or prior generated output.
@@ -28,8 +29,10 @@ for (const [, file] of html.matchAll(/<script src="([^"]+)"><\/script>/g)) {
 }
 const key = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 const species = Object.fromEntries(Object.keys(ctx.DEX).map((s) => [key(s), s]));
+species.wormadam="Wormadam-Plant";species.shaymin="Shaymin-Land";
 const items = Object.fromEntries(Object.keys(ctx.ITEMS).map((s) => [key(s), s]));
 const moves = Object.fromEntries(Object.keys(ctx.MOVES).map((s) => [key(s), s]));
+moves.hijumpkick = moves.highjumpkick;
 moves.faintattack = moves.feintattack; // Gen 4 spelling, renamed in Gen 6
 const convert = (value, prefix, table) => { const out = table[key(value.replace(prefix, ""))]; if (!out) throw new Error("Unknown " + value); return out; };
 const trainers = {}, sprites = new Set(["prof_rowan", "roark", "barry"]), portraits = new Set(["leader_roark", "rival"]);
@@ -117,6 +120,7 @@ Object.assign(chapter.maps, middle.maps); chapter.doors.push(...middle.doors);
 const finale = require("./lib/platinum-finale")({ root, source, ctx, person, trainer, additions, provenance, priorMaps: chapter.maps, moveName: m => convert(m, "MOVE_", moves) });
 Object.assign(chapter.maps, finale.maps); chapter.doors.push(...finale.doors);
 const quests = require("./lib/platinum-sidequests")({root,source,ctx,person,trainer,additions,provenance,priorMaps:chapter.maps,moveName:m=>convert(m,"MOVE_",moves),speciesName:s=>convert(s,"SPECIES_",species)});
+const legends=require("./lib/platinum-legends")({root,source,kit:quests.kit,person,trainer,additions,provenance,speciesName:s=>convert(s,"SPECIES_",species),moveName:m=>convert(m,"MOVE_",moves)});
 Object.assign(chapter.maps,quests.maps);chapter.doors.push(...quests.doors);
 for (const people of Object.values(additions)) for (const p of people) if (p.trainer) {
   const t = trainers[p.trainer.id]; Object.assign(p.trainer, { intro: t.intro, defeat: t.defeat, after: t.after }); p.text = t.after;
@@ -141,7 +145,7 @@ for (const name of portraits) {
   for (let y = 0; y < pic.height; y++) for (let x = 0; x < pic.width; x++) out.set(rgba(pic, x, y), (y * pic.width + x) * 4);
   writePng(path.join(root, "assets/sprites/items/key-item/works-key.png"), pic.width, pic.height, out);
 }
-for (const [icon,id] of [["secretpotion","secret-potion"],["old_charm","old-charm"],["storage_key","galactic-storage-key"],["galactic_key","galactic-key"]]) {
+for (const [icon,id] of [["gracidea","gracidea"],["secret_key","platinum-secret-key"],["lunar_wing","lunar-wing"],["member_card","member-card"],["oaks_letter","oaks-letter"],["azure_flute","azure-flute"],["secretpotion","secret-potion"],["old_charm","old-charm"],["storage_key","galactic-storage-key"],["galactic_key","galactic-key"]]) {
   const pic=readPng(path.join(source,"res/items/icons/"+icon+".png")),out=new Uint8ClampedArray(pic.width*pic.height*4);
   for(let y=0;y<pic.height;y++)for(let x=0;x<pic.width;x++)out.set(rgba(pic,x,y),(y*pic.width+x)*4);
   writePng(path.join(root,"assets/sprites/items/key-item/"+id+".png"),pic.width,pic.height,out);
@@ -152,7 +156,19 @@ for (const name of ["cheryl", "dawn_dp", "riley", "buck"]) {
   for (let y = 0; y < 80; y++) for (let x = 0; x < 80; x++) out.set(rgba(pic, x, y), (y * 80 + x) * 4);
   writePng(path.join(root, "assets/sprites/trainers/back/pt_" + name + ".png"), 80, 80, out);
 }
+// Arceus's Plate types share one species/learnset. Export Platinum's typed
+// palettes as display forms, without inventing duplicate National Dex species.
+for(const type of ["bug","dark","dragon","electric","fighting","fire","flying","ghost","grass","ground","ice","poison","psychic","rock","steel","water","fairy"]){
+ const folder=path.join(source,"res/pokemon/arceus/forms",type==="fairy"?"psychic":type);
+ for(const back of [false,true])for(const shiny of [false,true]){
+  const pic=readPng(path.join(folder,back?"back.png":"front.png")),pal=fs.readFileSync(path.join(folder,shiny?"shiny.pal":"normal.pal"),"utf8").trim().split(/\r?\n/).slice(3).map(l=>l.trim().split(/\s+/).map(Number));
+  const out=new Uint8ClampedArray(96*96*4);for(let y=0;y<80;y++)for(let x=0;x<80;x++){const index=pic.px[y*pic.width+x];out.set([...(pal[index]||[0,0,0]),index?255:0],((y+8)*96+x+8)*4);}
+  writePng(path.join(root,"assets/sprites/pokemon",back?"back":"",shiny?"shiny":"","493-"+type+".png"),96,96,out);
+ }
+ fs.copyFileSync(path.join(root,"assets/sprites/icons/493.png"),path.join(root,"assets/sprites/icons/493-"+type+".png"));
+}
+execFileSync(process.execPath,[path.join(root,"tools/build-sprite-metrics.js")],{cwd:root,stdio:"pipe"});
 const data = { source: { repository: "https://github.com/pret/pokeplatinum", commit: execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
-  scope: "Adapted Platinum campaign through the Sinnoh Champion fight; not a complete Platinum script interpreter", events: provenance }, texts, trainers, additions, gym, maps: chapter.maps, doors: chapter.doors, legendary: finale.legendary, sidequests: quests.sidequests };
+  scope: "Adapted Platinum campaign, side quests, event stories and postgame rematches; not a DS script interpreter", events: provenance }, texts, trainers, additions, gym, maps: chapter.maps, doors: chapter.doors, legendary: finale.legendary, sidequests: quests.sidequests, legends };
 fs.writeFileSync(path.join(root, "data/platinum.js"), "// Generated by tools/build-platinum.js from pret/pokeplatinum.\nwindow.PLATINUM_DATA = " + JSON.stringify(data) + ";\n");
 console.log("Imported " + Object.keys(texts).length + " messages and " + Object.keys(trainers).length + " trainer teams from Platinum");

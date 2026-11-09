@@ -44,6 +44,7 @@
 (function () {
   "use strict";
 
+  const PLATE_TYPES={"flame-plate":"Fire","splash-plate":"Water","zap-plate":"Electric","meadow-plate":"Grass","icicle-plate":"Ice","fist-plate":"Fighting","toxic-plate":"Poison","earth-plate":"Ground","sky-plate":"Flying","mind-plate":"Psychic","insect-plate":"Bug","stone-plate":"Rock","spooky-plate":"Ghost","draco-plate":"Dragon","dread-plate":"Dark","iron-plate":"Steel","pixie-plate":"Fairy"};
   const tr = Math.trunc;
   const pokeRound = (n) => (n % 1 > 0.5 ? Math.ceil(n) : Math.floor(n));
 
@@ -230,6 +231,7 @@
       if (t) move.type = t;
     }
 
+    if(move.id === "judgment") move.type = PLATE_TYPES[A.item] || "Normal";
     // Attacker ability can tweak the move (Mold Breaker, Sheer Force, ...)
     const ab = window.ABILITIES[A.ability];
     if (ab && typeof ab.onModifyMove === "function") {
@@ -859,6 +861,7 @@
   }
 
   window.Damage = {
+    PLATE_TYPES,
     calc,
     roll,
     critChance,

@@ -3603,18 +3603,24 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
   Buck’s Stark Mountain expedition through Charon’s arrest and Heatran are playable.
   Snowpoint’s postgame ferry and Buck’s guided Battle Zone travel connect the expedition.
   See [Sinnoh side quests](docs/sinnoh-sidequests.md) for locations, retries and adaptations.
+- **Legendary and event expeditions**: National Dex certification, Cresselia’s Lunar Wing
+  story, the roaming birds, Darkrai, Shaymin, Arceus, the Regi sanctuaries, Dialga/Palkia,
+  Turnback Cave and the Griseous Orb are playable. Offline event parcels provide access.
+  Rotom’s appliances, Gracidea, Plates, Battleground guests, weekend Barry and the stronger
+  League teams are supported. See [legendary stories](docs/sinnoh-legends.md) and the
+  [completion checklist](docs/sinnoh-completion.md) for remaining feature groups.
 - **Still unfinished**: the full Twinleaf opening, catching demonstration, Trainer School,
   Looker and Pokétch introduction, native Pokétch apps, optional interiors and side quests,
   Contests, the Battle Zone and postgame. The implemented main story reaches Cynthia;
   the Gyms, Mt. Coronet, Victory Road and Distortion World use explicit 2D adaptations.
-  Some optional places, including Turnback Cave's other rooms, the Secret Key/Rotom
-  room, Pal Park and the event islands, still need dedicated story work.
+  The remaining town services, regional facilities, minigames and travel audit are tracked
+  in the completion checklist; the implemented postgame is not yet all of Platinum.
 
 ### Importing Platinum's campaign data
 
 `tools/build-platinum.js` reads the public `pret/pokeplatinum` decompilation directly; no built ROM
 is needed. `data/platinum.js` records the exact source commit and the source event/script paths.
-It contains 1,359 imported messages, 331 trainer teams (including partner/starter variants), held
+It contains 1,604 imported messages, 352 trainer teams (including partner/starter variants), held
 items, authored moves and explicit placements. Imported
 character sprites and trainer portraits live under `assets/world/sprites/pt_*` and
 `assets/sprites/trainers/front/pt_*`. Rebuild with:

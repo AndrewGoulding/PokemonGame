@@ -125,7 +125,7 @@
   // Unown's letters ("b" ... "z", "exclamation", "question": 201-b.png ...),
   // and Alcremie's cream and Sweet ("ruby-cream-strawberry-sweet": 869-...;
   // the vanilla cream with a Strawberry Sweet is its own picture).
-  const form = (record) => (record.cloak && record.cloak !== "plant" ? record.cloak
+  const form = (record) => (record.species === "Arceus" && record.arceusType ? record.arceusType.toLowerCase() : record.cloak && record.cloak !== "plant" ? record.cloak
     : record.species === "Unown" && record.unown ? record.unown
     : record.species === "Alcremie" && record.alcremie && record.alcremie !== "vanilla-cream-strawberry-sweet" ? record.alcremie : "");
   // Alcremie's cream, as Sword and Shield decide it when Milcery spins:
@@ -137,6 +137,7 @@
     if (night) return clockwise ? (long ? "lemon-cream" : "matcha-cream") : (long ? "mint-cream" : "salted-cream");
     return clockwise ? (long ? "caramel-swirl" : "vanilla-cream") : (long ? "ruby-swirl" : "ruby-cream");
   }
+  const types = record => record.species === "Arceus" && window.Battle ? [Battle.PLATE_TYPES[record.item] || "Normal"] : window.DEX[record.species].types.slice();
   const displayName = (record) => record.nickname || speciesName(record.species);
   const isFainted = (record) => record.hp <= 0;
   // An Egg (game/breeding.js): it can't battle or do anything until it hatches.
@@ -220,6 +221,7 @@
 
   // Copies what changed during a battle back onto the record.
   function syncFromBattle(record, mon) {
+    if(record.species==="Shaymin-Sky"&&mon.baseSpecies==="Shaymin-Land"){record.species="Shaymin-Land";record.ability="Natural Cure";}
     record.level = mon.level;
     record.exp = mon.exp;
     record.evs = Object.assign({}, mon.evs);
@@ -324,7 +326,7 @@
   }
 
   window.Party = { SHINY_ODDS,
-    CLOAKS, STAT_KEYS, create, maxPp, trainedIvs, stats, maxHp, speciesName, displayName, form, alcremieCream, teraType, isFainted, isEgg, canFight, displayNameOrEgg, toBattleSet, friendshipOpts, adjustFriendship,
+    CLOAKS, STAT_KEYS, types, create, maxPp, trainedIvs, stats, maxHp, speciesName, displayName, form, alcremieCream, teraType, isFainted, isEgg, canFight, displayNameOrEgg, toBattleSet, friendshipOpts, adjustFriendship,
     syncFromBattle, caught, heal, teachMove, canLearnMachine, knowsMove, movesLearnedAt, expProgress
   };
 })();

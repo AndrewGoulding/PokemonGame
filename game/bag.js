@@ -257,6 +257,7 @@
   function canUseOn(record, item, opts) {
     opts = opts || {};
     if (record.egg) return false;
+    if(item==="gracidea"&&window.SinnohLegends)return SinnohLegends.canGracidea(record,window.Game&&window.Game.player);
     if (teraShardType(item)) return !/^(Ogerpon|Terapagos)/.test(record.species) && window.Party.teraType(record) !== teraShardType(item);
     if (item === "ability-capsule") return !!capsuleAbility(record);
     if (item === "ability-patch") return !!patchAbility(record);
@@ -358,11 +359,13 @@
   function give(record, item) {
     const old = record.item || "";
     record.item = item;
+    if(window.SinnohLegends)SinnohLegends.heldForm(record);
     return old;
   }
   function take(record) {
     const old = record.item || "";
     record.item = "";
+    if(window.SinnohLegends)SinnohLegends.heldForm(record);
     return old;
   }
 
