@@ -1,0 +1,121 @@
+// Import Platinum's early campaign data from pret/pokeplatinum. No ROM/build
+// required. Existing Essentials geometry is retained; placements are adapted
+// explicitly below, while dialogue, trainer parties and event provenance come
+// from Platinum. Run: node tools/build-platinum.js /path/to/pokeplatinum
+"use strict";
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+const { execFileSync } = require("child_process");
+const { readPng, writePng } = require("./lib/png");
+const source = path.resolve(process.argv[2] || process.env.POKEPLATINUM || "");
+if (!fs.existsSync(path.join(source, "res/field/maps/oreburgh_city_gym/scripts.s"))) throw new Error("Pass a pret/pokeplatinum checkout");
+const root = path.join(__dirname, "..");
+const read = (file) => fs.readFileSync(path.join(source, file), "utf8");
+const json = (file) => JSON.parse(read(file));
+const pages = (text) => [].concat(text || []).join("").replace(/[’‘]/g, "'").replace(/[“”]/g, '"').split(/[\r\f]/).map((s) => s.trim()).filter(Boolean);
+const banks = ["route_201", "sandgem_town_pokemon_research_lab", "route_202", "jubilife_city", "route_203", "oreburgh_gate_1f", "oreburgh_city", "oreburgh_mine_b2f", "oreburgh_city_gym"];
+const texts = {};
+for (const bank of banks) for (const m of json("res/text/" + bank + ".json").messages) texts[m.id] = pages(m.en_US);
+// Read the existing game's identifiers without loading UI or prior generated output.
+const ctx = { window: null }; ctx.window = ctx; vm.createContext(ctx);
+const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+for (const [, file] of html.matchAll(/<script src="([^"]+)"><\/script>/g)) {
+  if (file.startsWith("data/") && file !== "data/platinum.js") vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), ctx);
+}
+const key = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+const species = Object.fromEntries(Object.keys(ctx.DEX).map((s) => [key(s), s]));
+const moves = Object.fromEntries(Object.keys(ctx.MOVES).map((s) => [key(s), s]));
+const convert = (value, prefix, table) => { const out = table[key(value.replace(prefix, ""))]; if (!out) throw new Error("Unknown " + value); return out; };
+const trainers = {}, sprites = new Set(["prof_rowan", "roark", "barry"]), portraits = new Set(["leader_roark", "rival"]);
+function trainer(id) {
+  const name = id.replace(/^TRAINER_/, "").toLowerCase(), tid = "PT_" + id;
+  if (trainers[tid]) return tid;
+  const t = json("res/trainers/data/" + name + ".json"), cls = t.class.replace("TRAINER_CLASS_", "").toLowerCase();
+  portraits.add(cls);
+  const message = (type) => pages((t.messages.find((m) => m.type === type) || {}).en_US);
+  trainers[tid] = { name: cls === "rival" ? "Barry" : t.name, className: cls === "leader_roark" ? "Leader" : cls.split("_").map((s) => s[0].toUpperCase() + s.slice(1)).join(" "),
+    region: "sinnoh", pic: "pt_" + cls, music: "mus_encounter_boy", party: t.party.map((m) => ({ species: convert(m.species, "SPECIES_", species), level: m.level, iv: m.iv_scale,
+      ...(m.moves ? { moves: m.moves.map((s) => convert(s, "MOVE_", moves)) } : {}) })),
+    intro: message("TRMSG_PRE_BATTLE"), defeat: message("TRMSG_DEFEAT"), after: message("TRMSG_POST_BATTLE") };
+  return tid;
+}
+for (const s of ["TURTWIG", "CHIMCHAR", "PIPLUP"]) trainer("TRAINER_RIVAL_ROUTE_203_" + s);
+trainer("TRAINER_LEADER_ROARK");
+const additions = {};
+function person(map, x, y, script, sprite, extra = {}) {
+  sprites.add(sprite);
+  (additions[map] || (additions[map] = [])).push({ x, y, script: "pt:" + script, localId: "PT_" + script, sprite: "pt_" + sprite, width: 32, height: 32, frames: 3,
+    movement: "face_down", rangeX: 0, rangeY: 0, text: null, ...extra });
+}
+// Explicit adaptations to the existing maps, not a claim that their coordinate
+// systems are identical to Platinum's world matrix.
+const placements = {
+  route_202: { map: "Route202", at: [[18, 24], [16, 15], [27, 8]] },
+  route_203: { map: "Route203", at: [[10, 20], [19, 10], [42, 19], [45, 16], [48, 10]] },
+  oreburgh_gate_1f: { map: "Oreburgh_Gate", at: [[18, 20], [27, 20]] },
+  oreburgh_mine_b2f: { map: "OreburghMine", at: [[21, 45], [11, 54]] },
+  oreburgh_city_gym: { map: "OreburghCity_Gym", at: null }
+};
+const provenance = {};
+for (const [bank, def] of Object.entries(placements)) {
+  const events = json("res/field/maps/" + bank + "/events.json");
+  let i = 0;
+  for (const event of events.object_events.filter((e) => e.trainer)) {
+    const tid = trainer(event.trainer.id), t = trainers[tid], at = def.at ? def.at[i++] : [event.x, event.z];
+    if (!at) throw new Error("Missing placement: " + event.trainer.id);
+    const sprite = event.graphics_id.replace("OBJ_EVENT_GFX_", "").toLowerCase();
+    person(def.map, ...at, tid, sprite, { movement: "face_" + ({ DIR_NORTH: "up", DIR_SOUTH: "down", DIR_EAST: "right", DIR_WEST: "left" }[event.initial_dir] || "down"),
+      trainer: { id: tid, sight: Math.min(3, event.trainer.sight_range), intro: t.intro, defeat: t.defeat, after: t.after }, text: t.after });
+  }
+  provenance[bank] = { events: "res/field/maps/" + bank + "/events.json", scripts: "res/field/maps/" + bank + "/scripts.s" };
+}
+person("SandgemTown_RowansLab", 6, 3, "rowan", "prof_rowan");
+person("SandgemTown_RowansLab", 3, 10, "aide", "school_kid_f");
+person("JubilifeCity", 49, 48, "jubilife", "school_kid_f");
+person("Route203", 9, 20, "barry203", "barry");
+person("OreburghCity", 31, 18, "gym-door", "youngster");
+person("OreburghMine", 18, 45, "mine-roark", "roark");
+additions.OreburghMine.push({ x: 19, y: 45, script: "pt:mine-rock", localId: "PT_ROARK_DEMO_ROCK",
+  sprite: "rock_smash_rock", width: 16, height: 16, frames: 1, inanimate: true,
+  movement: "face_down", rangeX: 0, rangeY: 0, text: null });
+person("Oreburgh_Gate", 12, 20, "rock-smash", "hiker");
+person("OreburghCity_Gym", 5, 3, "roark", "roark");
+person("OreburghCity_Gym", 6, 23, "gym-guide", "hiker");
+// The Gym's NPC coordinates and exit are Platinum's. The room is rendered with
+// FireRed rock-Gym tiles, matching the project's 2D presentation.
+const w = 11, h = 26, collision = [], behavior = [], tiles = [];
+for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+  const wall = x === 0 || x === w - 1 || y < 2 || y === h - 1;
+  const rock = [7, 14, 20].includes(y) && [2, 8].includes(x);
+  collision.push(wall || rock ? 1 : 0); behavior.push(0);
+  tiles.push(wall ? [0, 0] : rock ? [4, 5] : [2, 4]);
+}
+collision[24 * w + 5] = 0; behavior[24 * w + 5] = 0x65; tiles[24 * w + 5] = [6, 14];
+const gym = { name: "OreburghCity_Gym", title: "Oreburgh City · Gym", region: "sinnoh", type: "indoor", width: w, height: h, music: "mus_gym", battleScene: "gym",
+  top: false, collision, behavior, elevation: Array(w * h).fill(3), encounter: Array(w * h).fill(0), connections: [], signs: [], triggers: [], hidden: [], people: [], borderWidth: 2, borderHeight: 2,
+  warps: [{ x: 5, y: 24, map: "OreburghCity", warp: 0 }] };
+const base = readPng(path.join(root, "assets/world/maps/PewterCity_Gym.png"));
+function rgba(pic, x, y) { const i = y * pic.width + x; return pic.rgba ? Array.from(pic.rgba.subarray(i * 4, i * 4 + 4)) : [...pic.palette[pic.px[i]].slice(0, 3), pic.px[i] ? 255 : 0]; }
+const pixels = new Uint8ClampedArray(w * 16 * h * 16 * 4);
+for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const [tx, ty] = tiles[y * w + x]; for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) pixels.set(rgba(base, tx * 16 + px, ty * 16 + py), ((y * 16 + py) * w * 16 + x * 16 + px) * 4); }
+writePng(path.join(root, "assets/world/maps/OreburghCity_Gym.png"), w * 16, h * 16, pixels);
+const border = new Uint8ClampedArray(32 * 32 * 4);
+for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) border.set(rgba(base, x % 16, y % 16), (y * 32 + x) * 4);
+writePng(path.join(root, "assets/world/maps/OreburghCity_Gym-border.png"), 32, 32, border);
+for (const name of sprites) {
+  const pic = readPng(path.join(source, "res/graphics/field_sprites/npc/" + name + ".png"));
+  const out = new Uint8ClampedArray(96 * 32 * 4);
+  for (let f = 0; f < 3; f++) for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) out.set(rgba(pic, x, y + f * 32), (y * 96 + f * 32 + x) * 4);
+  writePng(path.join(root, "assets/world/sprites/pt_" + name + ".png"), 96, 32, out);
+}
+for (const name of portraits) {
+  const pic = readPng(path.join(source, "res/trainers/classes/" + name + "/front.png"));
+  const out = new Uint8ClampedArray(80 * 80 * 4);
+  for (let y = 0; y < 80; y++) for (let x = 0; x < 80; x++) out.set(rgba(pic, x, y), (y * 80 + x) * 4);
+  writePng(path.join(root, "assets/sprites/trainers/front/pt_" + name + ".png"), 80, 80, out);
+}
+const data = { source: { repository: "https://github.com/pret/pokeplatinum", commit: execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
+  scope: "Adapted opening through the Coal Badge; not a complete Platinum script interpreter", events: provenance }, texts, trainers, additions, gym };
+fs.writeFileSync(path.join(root, "data/platinum.js"), "// Generated by tools/build-platinum.js from pret/pokeplatinum.\nwindow.PLATINUM_DATA = " + JSON.stringify(data) + ";\n");
+console.log("Imported " + Object.keys(texts).length + " messages and " + Object.keys(trainers).length + " trainer teams from Platinum");

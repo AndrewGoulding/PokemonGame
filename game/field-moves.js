@@ -45,6 +45,9 @@
   ];
   const inJohto = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "johto");
   const inHoenn = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "hoenn");
+  const SINNOH_BADGES = { "Cut": "forest", "Fly": "cobble", "Strength": "mine", "Surf": "fen",
+    "Rock Smash": "coal", "Waterfall": "beacon", "Rock Climb": "icicle", "Whirlpool": "beacon" };
+  const inSinnoh = (player) => (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "sinnoh");
   const info = (move) => FIELD_MOVES.find((f) => f.move === move) || null;
 
   // The machine that teaches `move`: its HM (HM01 Cut ... HM08 Rock Smash here), or else its TM (TM28 Dig).
@@ -90,7 +93,7 @@
       if (!byMachine(record, move)) return "unable";
       if (!hasMachine(player, move)) return "hm";
     }
-    const badge = inHoenn(player) ? f.hoenn : inJohto(player) ? f.johto : f.badge;
+    const badge = inSinnoh(player) ? SINNOH_BADGES[move] : inHoenn(player) ? f.hoenn : inJohto(player) ? f.johto : f.badge;
     if (badge && !player.badges.includes(badge)) return "badge";
     return null;
   }

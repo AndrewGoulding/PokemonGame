@@ -5,6 +5,8 @@
 
   function create(env) {
     function visible(person, map) {
+      const platinum = env.sinnohStory.visible(person);
+      if (platinum !== undefined) return platinum;
       if (env.isHoenn(map || env.player.location.map)) { const dv = env.deltaVisible(person); if (dv !== undefined) return dv; const b = env.hoennBerries.visible(person, map || env.player.location.map); return b !== undefined ? b : env.hoennVisible(person, map || env.player.location.map); }
       const f = env.player.flags;
       // (A Tera Raid den: glowing while its raid is on.)
@@ -280,6 +282,7 @@
       }
       const script = (ev.person || ev.sign || ev.trigger).script;
       const f = env.player.flags;
+      if (await env.sinnohStory.run(script)) return;
 
       // (Mom's deliveryman, and the Gym Leaders' numbers and Dojo rematches: ui/pokegear.js.)
       if (ev.person && await env.gear.talkPerson(ev.person, ev.map)) return;

@@ -430,6 +430,7 @@
     get silphFreed() { return silphFreed; },
     get silphRival() { return silphRival; },
     get sinnohBerries() { return sinnohBerries; },
+    get sinnohStory() { return sinnohStory; },
     get sinnohFerry() { return sinnohFerry; },
     get sinnohSailor() { return sinnohSailor; },
     get sixIslandRival() { return sixIslandRival; },
@@ -3540,6 +3541,7 @@
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
   SPECIAL.add("LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter"); SPECIAL.add("FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner");
+  for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if ((p.script || "").startsWith("pt:")) SPECIAL.add(p.script);
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
   // (or, once you're Champion, the Fighting Dojo wants its rematch: dojoRematch())
@@ -3808,6 +3810,7 @@
   // (Their moves: the last four each learns by its level, not FireRed's sets.)
   function trainerTeam(id) {
     const data = window.WORLD_TRAINERS[id];
+    if (data.region === "sinnoh") return Sinnoh.team(id); // Platinum's authored movesets
     return data.party.map((m) => Object.assign(Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255) }),
       m.item ? { item: m.item } : {}));
   }
@@ -5842,6 +5845,15 @@
   // on. (The words are this game's own: Colosseum's script isn't to hand.)
   const ORRE = (k) => "LOCALID_ORRE_" + k;
   // (The debug menu's way there: Prof. Oak's plane, without his briefing.)
+  // ---------- Sinnoh: Platinum's opening chapter (ui/sinnoh-story.js) ----------
+
+  const sinnohStory = SinnohStory.create({
+    player: () => player, say, confirm, showPicture, hidePicture, canBattle, battle, sfx,
+    choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name }))),
+    showWorld: () => show("world"), resume: () => Overworld.resume(),
+    refreshPeople: () => Overworld.refreshPeople(), teleport: (to) => Overworld.teleport(to)
+  });
+
   // ---------- Sinnoh: the S.S. Tidal's run (this game's own) ----------
   //
   // From Lilycove's harbor, with the Sinnoh Ticket (Norman's, after Hoenn's Hall of Fame): across the sea to Sinnoh,
@@ -10214,7 +10226,7 @@
           farawayStep();
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
-          return orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
+          return sinnohStory.step() || orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
         adjustWild: (mon, table) => { const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),

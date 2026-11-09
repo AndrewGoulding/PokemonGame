@@ -3483,10 +3483,49 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
   back, and Snowpoint City's boat to the Fight Area and back. Sandgem Town, which has no insides in the project,
   has copies of Jubilife's Pokémon Center and Mart and Essentials's lab for **Prof. Rowan's**, where Rowan (Prof.
   Oak's sprite in Rowan's colours) and his aide talk about Sinnoh.
-- **Not here yet**: the project has no Gyms, houses or story, and its few trainers are placeholders with no teams, so
-  there are none of those; doors into insides it hasn't are shut. The places its story opens up (the ruins behind
-  Mt. Coronet, Iron Island and Route 228, the drained Lake Valor, Turnback Cave's other rooms, Pal Park, the Seabreak
-  Path and Flower Paradise, Fullmoon and Newmoon Islands) are built but can't be reached yet.
+- **Platinum's first chapter is playable**: talk to Rowan in Sandgem's lab to choose Turtwig,
+  Chimchar or Piplup at Lv. 5 and register for Sinnoh research. Dawn gives five Poké Balls once.
+  Route 202 and Route 203, Oreburgh Gate, Oreburgh Mine and Oreburgh Gym now have Platinum's
+  early Trainers (18 imported teams, including Barry's three starter-dependent parties).
+  Beat Barry on Route 203, find Roark in the mine, then challenge his Gym: Geodude Lv. 12,
+  Onix Lv. 12 and Cranidos Lv. 14, with Platinum's authored moves. Victory gives the Coal Badge
+  and the game's Stealth Rock TM, once, and enables Rock Smash in Sinnoh. The Gate's hiker
+  gives the Rock Smash HM. Sinnoh has its own badge-based level cap (14 before Roark, 22 after),
+  independent of badges earned elsewhere. Existing parties and other regions' progress are preserved.
+- **Adaptations**: this is a chapter for a player arriving from another region. The starter is
+  chosen in Rowan's lab, rather than replaying Platinum's Twinleaf/Route 201 opening. Character
+  placements are adapted to the existing Essentials geometry. Roark's room uses FireRed rock-Gym
+  tiles with Platinum's NPC positions; it is not a rendering of Platinum's 3D Gym model. Battle
+  music currently uses the existing FireRed themes. TMs remain reusable, as elsewhere in this game.
+- **Still unfinished**: the full Twinleaf opening, catching demonstration, Trainer School,
+  Looker and Pokétch introduction, later Gyms and story (Team Galactic, Distortion World, League
+  and postgame). Most other interiors and later trainers are still absent. Existing later-region
+  maps remain available for exploration; reaching them does not imply their story is implemented.
+  Some story-opened places (the ruins behind Mt. Coronet, drained Lake Valor, Turnback Cave's
+  other rooms, Pal Park and the event islands) remain inaccessible.
+
+### Importing Platinum's campaign data
+
+`tools/build-platinum.js` reads the public `pret/pokeplatinum` decompilation directly; no built ROM
+is needed. `data/platinum.js` records the exact source commit and the source event/script paths.
+It contains 302 imported messages, the early trainer parties and explicit placements. Imported
+character sprites and trainer portraits live under `assets/world/sprites/pt_*` and
+`assets/sprites/trainers/front/pt_*`. Rebuild with:
+
+```sh
+node tools/build-platinum.js /path/to/pokeplatinum
+```
+
+`game/sinnoh.js` applies the overlay after the base Sinnoh maps load, and `ui/sinnoh-story.js`
+runs the adapted scenes through the shared event dispatcher. This is not a complete Platinum
+script interpreter. The base Essentials importer and Platinum overlay are separate so rebuilding
+base maps does not erase campaign logic. Progress lives in `player.flags.sinnoh`; trainer defeats
+use `PT_TRAINER_*`, and the Coal Badge lives in the ordinary saved badge list.
+
+`npm test` checks imported content, placement/warp validity, all three starter paths, loss/retry
+behavior, one-time rewards, regional caps, field moves and save round-trips. Run the actual-page
+chapter check with `node tests/browser/sinnoh-story.js` (supports `PLAYWRIGHT_PATH` and `CHROMIUM`).
+
 
 `tools/build-sinnoh.js` builds them from the project (it needs Ruby, to read RPG Maker's `.rxdata` files through
 `tools/lib/rmxp-dump.rb`, and uses ffmpeg, where it's installed, to make the songs smaller):

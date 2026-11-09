@@ -469,13 +469,15 @@
   const REGION_BADGES = {
     kanto: ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"],
     johto: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"],
-    hoenn: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"]
+    hoenn: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"],
+    sinnoh: ["coal", "forest", "relic", "cobble", "fen", "mine", "icicle", "beacon"]
   };
   // Each region's caps by its Badges held: the level of the next Gym Leader's ace (their highest-levelled
-  // Pokémon, as this game battles them first: FireRed's, HGSS's, Emerald's), never lower than the cap before.
+  // Pokémon, as this game battles them first: FireRed's, HGSS's, Emerald's and Platinum's), never lower than the cap before.
   const LEVEL_CAPS = {
     kanto: [14, 22, 26, 32, 47, 47, 52, 55],   // Brock, Misty, Lt. Surge, Erika, Koga, Sabrina, Blaine, Giovanni (raised: game/kanto-trainer-levels.js)
     johto: [13, 17, 19, 25, 31, 35, 35, 41],   // Falkner, Bugsy, Whitney, Morty, Chuck, Jasmine, Pryce (34), Clair
+    sinnoh: [14, 22, 26, 32, 37, 41, 44, 50], // Platinum Gym order; early campaign currently reaches Roark
     hoenn: [15, 19, 24, 29, 31, 33, 42, 46]    // Roxanne, Brawly, Wattson, Flannery, Norman, Winona, Tate & Liza, Juan
   };
   const regionOf = (map) => ((window.WORLD_MAPS && window.WORLD_MAPS[map]) || {}).region || "kanto";
