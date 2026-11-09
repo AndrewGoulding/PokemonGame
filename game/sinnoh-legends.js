@@ -6,8 +6,8 @@
  function peek(p){return(p.flags.sinnoh||{}).legends||{};}
  function nationalSeen(p){const seen=new Set(p.pokedex.seen.map(Party.speciesName));return D().regionalDex.filter(sp=>seen.has(Party.speciesName(sp))).length;}
  function activeSpecies(p){return Object.entries(peek(p).roamers||{}).filter(([,r])=>r.active&&!r.caught).map(([sp])=>sp);}
- function release(p,sp){const s=state(p),rs=s.roamers||(s.roamers={});if(rs[sp]&&rs[sp].released)return false;rs[sp]={released:true,active:true};Player.markSeen(p,sp);return true;}
- const route=p=>{const m=WORLD_MAPS[p.location.map];return m&&m.region==='sinnoh'&&/^Route\d/.test(p.location.map);};
+ function release(p,sp){const s=state(p),rs=s.roamers||(s.roamers={});if(rs[sp]&&rs[sp].released)return false;const d=D().encounters[sp];rs[sp]={released:true,active:true,record:Party.create(d.species,d.level,{moves:d.moves})};Player.markSeen(p,sp);return true;}
+ const route=p=>{const m=WORLD_MAPS[p.location.map];return m&&m.region==='sinnoh'&&SinnohRoamers.eligible(p.location.map);};
  function roamerRecord(p,record){const r=(peek(p).roamers||{})[record.species];if(!r||!r.active||!route(p))return record;if(!r.record){const d=D().encounters[record.species];r.record=Party.create(d.species,d.level,{moves:d.moves});}return JSON.parse(JSON.stringify(r.record));}
  function finishRoamer(p,mon,outcome){const r=mon&&(peek(p).roamers||{})[mon.species];if(!r||!r.active||!route(p))return;if(r.record)Party.syncFromBattle(r.record,mon);if(outcome==='caught'){r.caught=true;r.active=false;delete r.record;}else if(mon.fainted||mon.hp<=0){r.defeated=true;r.active=false;}}
  function revive(p){const s=peek(p);for(const r of Object.values(s.roamers||{}))if(r.defeated&&!r.caught){r.active=true;r.defeated=false;delete r.record;}for(const r of Object.values(s.encounters||{}))if(r.defeated&&!r.caught)r.defeated=false;}

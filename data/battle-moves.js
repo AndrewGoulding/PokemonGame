@@ -32,6 +32,14 @@
     b.addVolatile(user, "mustrecharge", user);
     return "done";
   };
+  // Mean Look, Block and Spider Web: the trap ends when the user leaves.
+  for (const id of ["meanlook", "block", "spiderweb"]) status[id] = (b,user,target) => {
+    if (target.hasType("Ghost")) return false;
+    const old=target.volatiles.trapped;
+    if(old&&old.source&&old.source.isActive&&!old.source.fainted)return false;
+    delete target.volatiles.trapped;
+    return b.addVolatile(target,"trapped",user)?"done":false;
+  };
   // Shadow Hold: the foes can't switch out or flee while the user's in (Battle.isTrapped).
   status.shadowhold = (b, user, target) => (target.volatiles.shadowhold ? false : (b.addVolatile(target, "shadowhold", user), "done"));
   // Shadow Shed: off with Reflect, Light Screen and Safeguard (and Aurora Veil), on both sides.

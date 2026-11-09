@@ -2203,8 +2203,8 @@
           sfx("se_ding_dong");
           await message("Announcer: You're out of\nSafari Balls! Game over!");
         };
-      case "-run": sfx("se_flee"); return "Got away safely!";
-      case "-runfail": return "You couldn't get away!";
+      case "-run": sfx("se_flee"); return sideOf(a) === "p2" ? "Wild " + nameOf(a) + " fled!" : "Got away safely!";
+      case "-runfail": return sideOf(a) === "p2" ? "Wild " + nameOf(a) + " couldn’t escape!" : "You couldn't get away!";
 
       case "win":
         if (a !== battle.sides.p1.name) return null; // the game layer handles losing

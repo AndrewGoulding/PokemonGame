@@ -150,29 +150,25 @@
     const f=player.flags;
     const entry={number:(f.hofCount||0)+1,region:"sinnoh",playTimeMs:player.playTimeMs||0,trainer:{name:player.name,id:player.trainerId},team:player.party.filter(r=>!r.egg).slice(0,6).map(r=>({species:r.species,nickname:r.nickname||null,level:r.level,gender:r.gender||"",shiny:!!r.shiny,form:Party.form(r)||undefined,personality:r.personality,ot:r.ot||{name:player.name,id:player.trainerId}}))};
     f.hofCount=entry.number;(f.hallOfFame||(f.hallOfFame=[])).push(entry);while(f.hallOfFame.length>League.MAX_TEAMS)f.hallOfFame.shift();
-    const q=quests(player);for(const sp of ["azelf","uxie","heatran","mesprit"])if(!q[sp+"Caught"]){delete q[sp+"Defeated"];if(sp==="mesprit"&&q.mespritReleased){q.mespritRoaming=true;delete q.mespritRecord;}}
+    const q=quests(player);for(const sp of ["azelf","uxie","heatran","mesprit"])if(!q[sp+"Caught"]){const defeated=!!q[sp+"Defeated"];delete q[sp+"Defeated"];if(sp==="mesprit"&&q.mespritReleased&&defeated){q.mespritRoaming=true;delete q.mespritRecord;}}
     if(window.SinnohLegends)SinnohLegends.revive(player);
     f.sinnohLeagueClear=true;s.champion=true;s.league={active:false,step:5,completed:true};return entry;
   }
   function isRoamer(player,species){const q=(player.flags.sinnoh||{}).sidequests||{};return species==="Mesprit"&&!!q.mespritRoaming||!!(window.SinnohLegends&&SinnohLegends.activeSpecies(player).includes(species));}
-  function roamerWild(player,mon,table,rng=Math.random){
-    const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map],active=q.mespritRoaming&&!q.mespritCaught?["Mesprit"]:[];
-    if(window.SinnohLegends)active.push(...SinnohLegends.activeSpecies(player));
-    if(mon&&active.length&&m&&m.region==="sinnoh"&&/^Route\d/.test(player.location.map)&&(table===m.wild||table===m.water)&&rng()<1/16){const species=active[Math.floor(rng()*active.length)];return{species,level:species==="Mesprit"?50:PLATINUM_DATA.legends.encounters[species].level};}
-    return mon;
-  }
+  function roamerWild(player,mon,table,rng=Math.random){return SinnohRoamers.wild(player,mon,table,rng);}
   function roamerRecord(player,record){
     if(record.species!=="Mesprit"&&window.SinnohLegends)return SinnohLegends.roamerRecord(player,record);
-    const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map];if(record.species!=="Mesprit"||!q.mespritRoaming||!m||m.region!=="sinnoh"||!/^Route\d/.test(player.location.map))return record;
+    const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map];if(record.species!=="Mesprit"||!q.mespritRoaming||!m||m.region!=="sinnoh"||!SinnohRoamers.eligible(player.location.map))return record;
     if(!q.mespritRecord){const d=D.sidequests.encounters.Mesprit;q.mespritRecord=Party.create("Mesprit",d.level,{moves:d.moves});}
     return JSON.parse(JSON.stringify(q.mespritRecord));
   }
   function finishRoamer(player,mon,outcome){
-    if(mon&&mon.species!=="Mesprit"&&window.SinnohLegends){SinnohLegends.finishRoamer(player,mon,outcome);return;}
-    const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map];if(!mon||mon.species!=="Mesprit"||!q.mespritRoaming||!m||m.region!=="sinnoh"||!/^Route\d/.test(player.location.map))return;
+    if(mon&&mon.species!=="Mesprit"&&window.SinnohLegends){SinnohLegends.finishRoamer(player,mon,outcome);SinnohRoamers.after(player,mon.species);return;}
+    const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map];if(!mon||mon.species!=="Mesprit"||!q.mespritRoaming||!m||m.region!=="sinnoh"||!SinnohRoamers.eligible(player.location.map))return;
     if(q.mespritRecord)Party.syncFromBattle(q.mespritRecord,mon);
     if(outcome==="caught"){q.mespritCaught=true;q.mespritRoaming=false;delete q.mespritRecord;}
     else if(mon.fainted||mon.hp<=0){q.mespritDefeated=true;q.mespritRoaming=false;}
+    SinnohRoamers.after(player,mon.species);
   }
   window.Sinnoh = { fog, defog, isRoamer, quests, roamerWild, roamerRecord, finishRoamer, state, owns, starters, team, text, clockTrainers, patches, forestPartner, forestBattle, cyclingRequired, cyclingAllowed, hauntShape, darkness, visit, flySpots, transition, snowballStopped, distortionSwitch, recordChampion };
 })();

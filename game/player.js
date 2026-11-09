@@ -136,6 +136,7 @@
   function markCaught(player, species) {
     markSeen(player, species);
     if (window.DEX[species] && !player.pokedex.caught.includes(species)) player.pokedex.caught.push(species);
+    if (window.SinnohGadgets) SinnohGadgets.caught(player,species);
   }
   const hasCaught = (player, species) => player.pokedex.caught.includes(species);
   // The Pokédex is the National Pokédex from the moment Oak hands it over

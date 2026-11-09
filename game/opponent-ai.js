@@ -221,6 +221,7 @@
       return { type: "switch", index: best };
     }
     if (req.phase !== "move") return null;
+    if (battle.roamer && sideId === "p2" && req.active.canRun) return {type:"run"};
     if (req.active.forced) return { type: "move", move: 0 };
     if (req.active.struggle) return { type: "move", move: "Struggle" };
 

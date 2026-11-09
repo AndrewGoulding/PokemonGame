@@ -20,13 +20,14 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [x] Oak's roaming birds
 - [x] Secret Key and Rotom appliances
 - [x] Battleground, Barry and League rematches
-- [ ] Remaining route/cave trainers and source wild encounters
+- [ ] Remaining cave trainers, special encounters and access audit (route parties and full mapped encounter tables imported)
 - [x] Mira/Wayward Cave and Marley/Victory Road escort stories
 - [ ] Town quests and remaining HM/item rewards (gifts, four trades, shard tutors and reminder implemented)
+- [ ] Swarm broadcasts, lottery, ribbons and remaining daily town services
 - [ ] Veilstone Game Corner, Ball Seals and Resort/Ribbon services
 - [x] Solaceon Day-Care, breeding and Lost Tower
 - [x] Honey trees, Trophy Garden and Great Marsh daily encounters
-- [ ] Pokétch, roaming route tracker/flee AI and regional field conveniences
+- [x] Pokétch, Poké Radar, roaming route tracker/flee AI and Defog/Flash integration
 - [ ] Super Contests, accessories, Poffins and contest rewards
 - [ ] Battle Tower, Factory, Arcade, Castle and Hall
 - [ ] Underground, fossils and collection rewards

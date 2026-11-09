@@ -1098,6 +1098,7 @@
     }
     const foe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
     if(wild&&foe.team.length===1)foe.team[0]=Sinnoh.roamerRecord(player,foe.team[0]);
+    if(wild && foe.team.length === 1 && SinnohRoamers.eligible(player.location.map) && Sinnoh.isRoamer(player,foe.team[0].species)) opts = {...opts,roamer:true};
     const foe2 = !wild && opts.foe2 || null;
     // (Two wild Pokémon, opts.wildDouble: Black and White's wild double battle, this game's own way: game/hordes.js.)
     const wildDouble = wild && !!opts.wildDouble && foe.team.length > 1;
@@ -1159,7 +1160,7 @@
       teraOrb,
       safari: opts.safari ? Object.assign({ balls: player.flags.safari.balls, hgss: !!(player.flags.safari.hgss || player.flags.safari.sinnoh), ...(player.flags.safari.sinnoh ? { fleeRate: PLATINUM_DATA.daily.flee[foe.team[0].species] || 0 } : {}) },
         player.flags.safari.hoenn ? { hoenn: true, pokeblocks: () => hoennPokeblock.blocks().map(HoennPokeblock.name), usePokeblock: (i) => hoennPokeblock.blocks().splice(i, 1)[0] } : {}) : undefined,
-      wild, weather: opts.weather,
+      wild, roamer: !!opts.roamer, weather: opts.weather,
       exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
       arena: !!opts.arena, palace: !!opts.palace,   // (the Battle Frontier's Arena and Palace rules: engine/battle.js)
       record: !!opts.record,   // (the choices and seed kept, to play it back: a Frontier battle's)
@@ -1174,7 +1175,7 @@
       bagPockets: opts.bag ? () => bagPockets(opts.bag).filter((p) => p.items.length || p.name === "Poké Balls") : bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s), fishing: !!opts.fishing },
       // (A Tera Raid's Pokémon, or a wild Tera Pokémon, battles as a trainer's does, and Terastallizes.)
-      opponent: horde || wildDouble ? (b) => b.randomChoice("p2") : wild && !opts.raid && !wildTera ? randomMove : (b) => OpponentAI.choose(b, "p2"),
+      opponent: opts.roamer ? (b) => OpponentAI.choose(b,"p2") : horde || wildDouble ? (b) => b.randomChoice("p2") : wild && !opts.raid && !wildTera ? randomMove : (b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
       // (the record caught up with the battle first: level, moves, PP).
       forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(own[i], mon), move),
@@ -1303,6 +1304,7 @@
       }
     }
     if (cheryl && result.outcome !== "lost") player.party.forEach(Party.heal);
+    SinnohRadar.finish(player,result.outcome,!!opts.radar);
     await persist();
     SinnohLegends.syncForms(player);
     return result.outcome;
@@ -1731,7 +1733,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -1748,6 +1750,8 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
+    if(item==="poke-radar"){fieldAction=async()=>{show("world");await Overworld.resume();const text=SinnohRadar.use(player,Overworld.avatar());sfx("se_m_reflect");await say(text);};return "escaped";}
+    if(item==="poketch"){fieldAction=async()=>{show("scene");clearMenu();try{await SinnohPoketch.open(scene,{player,sfx});}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="gracidea"){const mon=await choosePartyFor("Use on which {PKMN}?",item);if(mon)await useItemOn(mon,item);return;}
     if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
     if (item === "pokeblock-case") { await hoennPokeblock.menu(); return null; }   // (Hoenn's Pokéblocks: ui/hoenn-pokeblock.js)
@@ -5925,7 +5929,7 @@
   // ---------- Sinnoh: Platinum's opening chapter (ui/sinnoh-story.js) ----------
 
   const sinnohStory = SinnohStory.create({
-    player: () => player, say, confirm, showPicture, hidePicture, canBattle, battle, sfx, forgetMove: chooseMoveToForget,
+    player: () => player, avatar:()=>Overworld.avatar(), wildMon, say, confirm, showPicture, hidePicture, canBattle, battle, sfx, forgetMove: chooseMoveToForget,
     chooseParty: choosePartyFor, learnMove, tradeFor, daycareLady: () => fourIslandDayCareLady("sinnoh"), daycareMan: () => fourIslandDayCareMan("sinnoh"),
     choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name }))),
     showWorld: () => show("world"), resume: () => Overworld.resume(),
@@ -11563,6 +11567,7 @@
   }
 
   async function explore() {
+    SinnohDaily.correctLocation(player);
     Orre.correctLocation(player);
     World.setDynamicWarp(player.flags.dynamicWarp);
     for (;;) {
@@ -11586,7 +11591,7 @@
         canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
         iceBlockStopped: def => { if (Sinnoh.snowballStopped(player, def, Overworld.personPosition(def.localId))) { applyPatches(player.location.map); Overworld.removePerson(def); } },
-        darkness: (map) => Sinnoh.darkness(map) || (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); },
+        darkness: (map) => Sinnoh.darkness(map) || (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); SinnohRadar.draw(g,map,x,y,player); },
         faced: (map, x, y, surfing) => johtoSafari.faced(map, x, y, surfing),
         boulderFell: (def) => {
           // (3F's boulder through the hole: it's on 2F now.)
@@ -11598,7 +11603,7 @@
         weather: (map) => (Sinnoh.fog(map, player) ? "fog_horizontal" : isHoenn(map) ? hoennWeatherNow() : Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
         // (Off the water: on foot, or back on the Bicycle on Cycling Road, where you can't walk.)
         landAvatar: () => (onCyclingRoad() ? "bike" : "walk"),
-        onAvatar: (mode) => music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music),
+        onAvatar: (mode) => {if(mode!=="walk")SinnohRadar.clear(player);music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music);},
         onStep: () => {
           Player.advanceClock(player);   // (the game's clock: Player.gameTime)
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); DayCare.step(player.flags.johtoDayCare); DayCare.step(player.flags.sinnohDayCare); friendshipStep();
@@ -11609,9 +11614,10 @@
           SinnohLegends.syncForms(player);
           return sinnohStory.step() || orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()),
-        adjustWild: (mon, table) => { SinnohDaily.apply(player); const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !Sevii.tanobyLocked(player.flags, player.location.map) &&
+        adjustWild: (mon, table) => { SinnohDaily.apply(player); const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !SinnohRadar.suppresses(player) && !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {
+          SinnohRoamers.onMap(player,m); SinnohRadar.onMap(player,m);
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
           if (m !== "VermilionCity") ticketChecked = false;
           if (m !== tempFlagsMap) strengthOn = false;
@@ -11681,10 +11687,10 @@
         // Ruins of Alph's, a letter its solved puzzles have woken.)
         // (The Battle Pike's hall of wild Pokémon: your challenge's three fight it, and the room's own scripts see how it went.)
         else if (at.map === "BattleFrontier_BattlePikeRoomWildMons" || at.map === PYRAMID_FLOOR) await pikeWildBattle(ev);
+        else if (Sinnoh.isRoamer(player,ev.species) && here.region === "sinnoh") await battle("wild", {foe:{name:"Wild",team:[Party.create(ev.species,ev.level)]},terrain,noGimmicks:true});
         // (A Max Lure on: always a horde, from the map's hordes or its own wild Pokémon (on the water, its water's).)
         else if (lureOn() === "max-lure" && !towerGhost() && wildTable(here) && await hordeBattle(at.map, terrain, wildTable(here))) { /* (fought) */ }
         // (X and Y's hordes: one grass or cave encounter in twenty, where the map has them; never on the water.)
-        else if (Sinnoh.isRoamer(player,ev.species) && here.region === "sinnoh") await battle("wild", {foe:{name:"Wild",team:[Party.create(ev.species,ev.level)]},terrain,noGimmicks:true});
         else if (Overworld.avatar() !== "surf" && !towerGhost() && Hordes.roll(at.map) && await hordeBattle(at.map, terrain)) { /* (fought) */ }
         // (Two wild Pokémon, with two of yours able to battle: one land encounter in Hordes.DOUBLE_CHANCE; a Lure on, always.)
         else if (!towerGhost() && ableToBattle() >= 2 && wildTable(here) && (lureOn() === "lure" || (Overworld.avatar() !== "surf" && Hordes.rollDouble()))

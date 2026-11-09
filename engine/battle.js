@@ -549,6 +549,7 @@
       this.capNoted = new Set();
       this.expShare = !!opts.expShare;
       this.wild = !!opts.wild;
+      this.roamer = this.wild && !!opts.roamer && !opts.safari && !["doubles","horde"].includes(opts.format);
       // (The Battle Arena, opts.arena: three-turn bouts judged on Mind, Skill and Body, no switching; the Battle
       // Palace, opts.palace: each Pokémon picks its own moves by its nature. ARENA / PALACE below.)
       this.arena = !!opts.arena; this.palace = !!opts.palace; this.arenaTurn = -1;
@@ -1811,8 +1812,8 @@
       if (sh && sh.source && sh.source.isActive && !sh.source.fainted) mon.trapped = true;
       if (mon.volatiles.noretreat) mon.trapped = true;
       // (Shadow Hold: while the Shadow Pokémon that used it is still in.)
-      const hold = mon.volatiles.shadowhold;
-      if (hold && hold.source && hold.source.isActive && !hold.source.fainted) mon.trapped = true;
+      for (const hold of [mon.volatiles.shadowhold,mon.volatiles.trapped])
+        if (hold && hold.source && hold.source.isActive && !hold.source.fainted) mon.trapped = true;
       // (Gen 9: Dondozo with a Tatsugiri in its mouth, and that Tatsugiri, can't leave.)
       if (mon.volatiles.commanded || mon.volatiles.commanding) mon.trapped = true;
       const pt = mon.volatiles.partiallytrapped;
@@ -1861,7 +1862,7 @@
       base.active.trapped = this.isTrapped(mon);
       base.active.canCatch = sideId === "p1" && (this.wild || this.snaggable(side.foe.active));
       base.active.canCall = sideId === "p1" && !!side.active.shadow;
-      base.active.canRun = this.wild && sideId === "p1" &&
+      base.active.canRun = this.wild && (sideId === "p1" || this.roamer && sideId === "p2") &&
         (!base.active.trapped || mon.item === "smoke-ball" || mon.hasAbility("Run Away"));
       base.switches = base.active.trapped || this.arena ? [] : side.pokemon.map((p, i) => (!p.fainted && p !== side.active ? i : -1)).filter((i) => i >= 0);
       return base;
@@ -2418,7 +2419,7 @@
           : [[s.choice, s.active]];
         for (const [c, mon] of entries) {
           if (c.type === "run" || c.type === "ball" || c.type === "item" || c.type === "call") {
-            actions.push({ order: 0, type: c.type, ball: c.ball, item: c.item, target: c.target, move: c.move,
+            actions.push({ order: c.type === "run" && this.roamer && s.id === "p2" ? 3 : 0, type: c.type, ball: c.ball, item: c.item, target: c.target, move: c.move,
               mon, side: s, priority: 0, speed: this.getSpeed(mon) });
           }
           else if (c.type === "switch") actions.push({ order: 1, type: "switch", mon, side: s, index: c.index, priority: 0, speed: this.getSpeed(mon) });
@@ -2799,6 +2800,10 @@
     // Escape chance: always if faster, otherwise (speed x 128 / foe speed + 30 x attempts) / 256.
     tryRun(mon) {
       if (mon.fainted) return;
+      if(this.roamer && mon.side.id === "p2") {
+        if(this.isTrapped(mon)) {this.add("-runfail",mon);return;}
+        this.add("-run",mon);this.escaped=true;this.ended=true;this.phase="ended";this.winner=null;return;
+      }
       this.runAttempts++;
       const foe = this.doubles ? this.foesOf(mon)[0] : mon.side.foe.active;
       let escaped = this.ghost || mon.item === "smoke-ball" || mon.hasAbility("Run Away") || !foe || foe.fainted;

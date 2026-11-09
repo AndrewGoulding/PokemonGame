@@ -93,7 +93,7 @@
   // own clicks (A on a menu choice) aren't real ones, so they go through.
   document.addEventListener("click", (e) => {
     if (!e.isTrusted || !e.target.closest) return;
-    if (e.target.closest(".gamepad, input, label, select, textarea, a[download]")) return;
+    if (e.target.closest(".gamepad, .pt-device, input, label, select, textarea, a[download]")) return;
     e.preventDefault();
     e.stopImmediatePropagation();
   }, true);

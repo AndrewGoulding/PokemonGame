@@ -13,5 +13,6 @@
  function news(p){const s=state(p),day=Player.gameTime(p).day;if(!s.news||s.news.day!==day){const pool=PLATINUM_DATA.legends.regionalDex.filter(sp=>p.pokedex.seen.includes(sp));s.news={day,species:pool.length?pool[((p.trainerId>>>0)+day*7)%pool.length]:'Starly',done:false};}return s.news;}
  function completeNews(p,rng=Math.random){const n=news(p);if(n.done||!p.party.some(m=>!m.egg&&m.species===n.species))return null;const ball=BALLS[Math.floor(rng()*BALLS.length)];Player.addItem(p,ball,3);Player.addItem(p,'heart-scale');n.done=true;return ball;}
  function drifloon(p){const day=Player.gameTime(p).day;return!!(Sinnoh.state(p).mars||p.badges.includes('forest'))&&Player.gameTime(p).weekday===5&&peek(p).drifloonDay!==day;}
- window.SinnohDaily={peek,state,specialTrees,tree,slather,consume,garden,marsh,apply,news,completeNews,drifloon};
+ function correctLocation(p){if(!/^GreatMarsh(?:Entrance)?$/.test(p.location.map))return false;delete p.flags.safari;p.location={...data().marshExit};return true;}
+ window.SinnohDaily={correctLocation,peek,state,specialTrees,tree,slather,consume,garden,marsh,apply,news,completeNews,drifloon};
 })();
