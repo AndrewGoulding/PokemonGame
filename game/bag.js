@@ -23,6 +23,7 @@
 
   const SPECIAL_NAMES = {
     "poke-ball": "Poké Ball", "kings-rock": "King's Rock", "up-grade": "Up-Grade", "hp-up": "HP Up",
+    "lab-card-key": "Card Key", "down-st-key": "Down St. Key", "data-rom": "Data ROM", "dna-sample": "DNA Sample",   // (Orre's Shadow Pokémon Lab)
     "pp-up": "PP Up", "pp-max": "PP Max", "never-melt-ice": "Never-Melt Ice", "exp-share": "Exp. Share", "oaks-parcel": "Oak's Parcel", "ss-ticket": "S.S. Ticket", "gs-ball": "GS Ball", "vs-seeker": "VS Seeker", "poke-flute": "Poké Flute", "guard-spec": "Guard Spec.",
     "x-accuracy": "X Accuracy", "x-attack": "X Attack", "x-defense": "X Defense", "x-speed": "X Speed",
     "x-sp-atk": "X Sp. Atk", "x-sp-def": "X Sp. Def", "poke-doll": "Poké Doll", "oddish-ball": "Oddish Ball",
@@ -33,6 +34,7 @@
   // Gen 6 Poké Mart prices. Items sell for half. Anything else can't be bought or sold.
   const PRICES = {
     "poke-ball": 200, "great-ball": 600, "ultra-ball": 1200, "net-ball": 1000, "nest-ball": 1000,
+    "joy-scent": 600, "excite-scent": 800, "vivid-scent": 1200,   // (Agate Village's, in Colosseum)
     "dusk-ball": 1000, "quick-ball": 1000, "timer-ball": 1000, "repeat-ball": 1000, "dive-ball": 1000,
     "luxury-ball": 1000, "heal-ball": 300, "premier-ball": 200,
     "x-attack": 500, "x-defense": 550, "x-sp-atk": 350, "x-sp-def": 350, "x-speed": 350, "x-accuracy": 950, "stardust": 2000,

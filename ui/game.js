@@ -276,6 +276,10 @@
     get labArrival() { return labArrival; },
     get labEin() { return labEin; },
     get labTroop() { return labTroop; },
+    get labObject() { return labObject; },
+    get labDoor() { return labDoor; },
+    get labDoorShut() { return labDoorShut; },
+    get realgamTournament() { return realgamTournament; },
     get leaderRematch() { return leaderRematch; },
     get leafMegaTeam() { return leafMegaTeam; },
     get leafPewter() { return leafPewter; },
@@ -352,8 +356,10 @@
     get orreTournament() { return orreTournament; },
     get orreTrainer() { return orreTrainer; },
     get coloTrainer() { return coloTrainer; },
+    get pyriteExtra() { return pyriteExtra; },
     get preGymJusty() { return preGymJusty; },
     get orreTravel() { return orreTravel; },
+    get orreMail() { return orreMail; }, get orreMailDue() { return orreMailDue; }, get orreMailWaiting() { return !!(orreMailPending && orreMailPending.length); },
     get outOfCenterHeal() { return outOfCenterHeal; },
     get outOfDoorway() { return outOfDoorway; },
     get outskirtLena() { return outskirtLena; },
@@ -390,6 +396,8 @@
     get rejuvenator() { return rejuvenator; },
     get relearnable() { return relearnable; },
     get relicForestShrine() { return relicForestShrine; },
+    get cologneGirl() { return cologneGirl; },
+    get agateMart() { return agateMart; },
     get relicStone() { return relicStone; },
     get rivalLabBattle() { return rivalLabBattle; },
     get rockSmash() { return rockSmash; },
@@ -494,6 +502,10 @@
     get underArrival() { return underArrival; },
     get underKloak() { return underKloak; },
     get underVenus() { return underVenus; },
+    get junkShopOwner() { return junkShopOwner; }, get junkShopPerr() { return junkShopPerr; }, get underBitt() { return underBitt; },
+    get nettsHideout() { return nettsHideout; }, get nettsHideoutPerson() { return nettsHideoutPerson; }, get subwayShut() { return subwayShut; },
+    get subwayDoorShut() { return subwayDoorShut; }, get subwayStation() { return subwayStation; }, get subwayB1() { return subwayB1; },
+    get subwayFan() { return subwayFan; }, get shadowLiner() { return shadowLiner; }, get nettsDoorShut() { return nettsDoorShut; }, get nettsDoor() { return nettsDoor; },
     get usedMove() { return usedMove; },
     get vendingMachine() { return vendingMachine; },
     get vermilionSeagallop() { return vermilionSeagallop; },
@@ -1184,8 +1196,18 @@
     }
     // (A tag battle: only the three you chose; your partner's are theirs.)
     const leveledUp = [], critical = [];
+    const opened = [];
     DoubleBattle.syncBack(player.party, chosen, b.sides.p1.pokemon, (record, mon) => {
       Party.syncFromBattle(record, mon);
+      // (Colosseum's heart gauge: a Shadow Pokémon's heart opens a little for each battle it's sent out in, and for
+      // each time it's called out of Hyper Mode; the Exp. Points it earns are kept for it, record.shadowExp.)
+      if (record.shadow) {
+        const was = record.heart | 0;
+        if (mon.wasOut) record.heart = Math.max(0, (record.heart | 0) - SHADOW_HEART_BATTLE);
+        if (mon.calls) record.heart = Math.max(0, (record.heart | 0) - SHADOW_HEART_CALL * mon.calls);
+        if (was > 0 && !record.heart) opened.push(record);
+        if (mon.storedExp) record.shadowExp = (record.shadowExp || 0) + mon.storedExp;
+      }
       if (mon.leveledUp) leveledUp.push(record);
       if (mon.critsLanded) critical.push([record, mon.critsLanded]);
     });
@@ -1259,8 +1281,8 @@
     } else if (result.outcome === "lost" || !canBattle()) {
       await blackout(wild ? null : foe);
     } else {
-      // (A Shadow Pokémon's heart opens a little with each battle it's along for.)
-      for (const r of player.party) if (r.shadow && r.heart > 0) r.heart = Math.max(0, r.heart - SHADOW_HEART_BATTLE);
+      // (Colosseum's Summary words for a heart about to open.)
+      for (const r of opened) await message("The door to " + Party.displayName(r) + "'s heart is\nabout to open. Undo the final lock!");
       for (const record of leveledUp) {
         const evo = Evolution.find(record, { trigger: "level", party: player.party, coins: coins() });
         if (evo) await evolve(record, evo, true);
@@ -1496,6 +1518,7 @@
   async function useItemOn(record, item) {
     const name = Party.displayName(record);
     if (record.egg) { await message("It won't have any effect."); return; }
+    if (item in SCENT_HEART) { await scentOn(record, item); return; }
     if (Bag.isStone(item)) {
       const evo = Evolution.find(record, { trigger: "item", item, party: player.party });
       if (!evo) { await message("It won't have any effect."); return; }
@@ -1704,7 +1727,8 @@
   const usableFromBag = (item) => Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "tin-bottle-cap" || item === "zygarde-cube" ||
     item === "dynamax-candy" || item === "max-mushrooms" || !!Bag.teraShardType(item) ||
-    item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item in LURE_STEPS || item === "escape-rope";
+    item === "rare-candy" || !!ItemUse.effect(item) || KEY_ITEM_USES.includes(item) || item in REPEL_STEPS || item in LURE_STEPS || item === "escape-rope" ||
+    item === "joy-scent" || item === "excite-scent" || item === "vivid-scent";
   // TMs and HMs work like key items: they can't be held, tossed or sold.
   const holdable = (item) => !Bag.isBall(item) && !Bag.isMachine(item) && !Bag.isKeyItem(item);
   const expShareOn = () => Player.itemCount(player, "exp-share") > 0 && !player.flags.expShareOff;
@@ -3177,6 +3201,7 @@
     bag: "Equipped with pockets for storing items\nyou bought, received, or found.",
     card: "Check your money and other game data.",
     gear: "Use the Pokégear's phone, map and radio.",   // (the PokéNav's, once it is one: navName)
+    mail: "Read received e-mail.",   // (Colosseum's P★DA: pda_menu #14040)
     save: "Save your game with a complete record\nof your progress to take a break.",
     option: "Adjust various game settings such as text\nspeed, game rules, etc.",
     exit: "Close this menu window.",
@@ -3231,6 +3256,8 @@
       if (player.party.length) items.push({ key: "party", label: "Pokémon" });
       if (!contest) items.push({ key: "bag", label: "Bag" });
       if (gear.has()) items.push({ key: "gear", label: hasPokenav() ? "PokéNav" : "Pokégear" });   // (HGSS's, once you have it: ui/pokegear.js)
+      // (In Orre, once an e-mail's come: Colosseum's P★DA e-mail, to read again.)
+      if (Orre.inOrre(player.location) && Orre.mailList && Orre.mailList(player.flags).length) items.push({ key: "mail", label: "E-mail" });
       // (Emerald's Frontier Pass, once Scott's gate has issued it: it holds the Trainer Card, your Battle Points,
       // Symbols and the battle recorded on it; opened from your name, as the Trainer Card is.)
       const pass = isHoenn(player.location.map) && hoenn.flag("FLAG_SYS_FRONTIER_PASS");
@@ -3260,6 +3287,7 @@
       else if (v === "bag") { if ((await bagScreen()) === "escaped") return; }
       else if (v === "dex") await pokedex();
       else if (v === "gear") await gear.open();
+      else if (v === "mail") await mailbox();
       else if (v === "card") { if ((await (pass ? frontierPass() : trainerCard())) === "battled") return; }
       else if (v === "option") { if ((await optionActions()) === "battled") return; continue; }
       else if (v === "save") {
@@ -3528,14 +3556,19 @@
       "PhenacCity_EventScript_Trudly", "PhenacCity_MayorsHouse_EventScript_EsCade", "PhenacCity_PreGym_EventScript_Justy",
       "arrive:PyriteTown", "enter:PyriteTown", "PyriteTown_DukingsHouse_EventScript_Duking", "PyriteTown_DukingsHouse_EventScript_Marcia",
       "PyriteTown_DukingsHouse_EventScript_Secc", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", "enter:PyriteTown_PyriteBuilding_4F",
-      "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS), ...Object.keys(Orre.COLO_TRAINERS),
+      "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS), ...Orre.PYRITE_SCRIPTS, ...Object.keys(Orre.COLO_TRAINERS),
       "enter:AgateVillage_EaguansHouse", "AgateVillage_EaguansHouse_EventScript_Eagun", "AgateVillage_EaguansHouse_EventScript_Beluh",
-      "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone", "RelicForest_EventScript_Shrine", ...Object.keys(Orre.TOURNAMENTS), "MtBattle_EventScript_Challenge",
+      "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone", "RelicForest_EventScript_Shrine",
+      "AgateVillage_EventScript_CologneGirl", "AgateVillage_EventScript_MartClerk", ...Object.keys(Orre.TOURNAMENTS), "MtBattle_EventScript_Challenge",
       "arrive:MtBattle", "enter:MtBattle", "MtBattle_EventScript_Dakim", "MtBattle_EventScript_SummitSkrub", "MtBattle_EventScript_Vander",
       "MtBattle_EventScript_Trainer1", "MtBattle_EventScript_Trainer2", "MtBattle_EventScript_Turo", "MtBattle_EventScript_Berin",
       "MtBattle_PokemonCenter_1F_EventScript_Nurse", "TheUnder_PokemonCenter_1F_EventScript_Nurse",
       "arrive:TheUnder", "enter:TheUnder", "TheUnder_EventScript_Kloak", "enter:TheUnder_Studio", "TheUnder_Studio_EventScript_Venus",
+      "TheUnder_EventScript_Bitt", "enter:TheUnder_NettsHideout_1F", "TheUnder_JunkShop_1F_EventScript_Owner", "TheUnder_JunkShop_B1_EventScript_Perr", "enter:TheUnder_NettsHideout_B1",
+      "TheUnder_NettsHideout_B1_EventScript_Nett", "TheUnder_NettsHideout_B1_EventScript_Megg", "TheUnder_NettsHideout_B1_EventScript_Bitt",
+      "enter:TheUnder_Subway_B1", "enter:TheUnder_Subway_Station", "TheUnder_Subway_B1_EventScript_Fan", "TheUnder_Subway_Station_EventScript_Train",
       "arrive:ShadowLab_1F", "enter:ShadowLab_1F", "enter:ShadowLab_B1F", "ShadowLab_B1F_EventScript_Troop", "enter:ShadowLab_EinsRoom",
+      ...Orre.LAB.scripts, ...Object.keys(Orre.LAB.DOORS), "RealgamTower_Colosseum_EventScript_Host",
       "ShadowLab_EinsRoom_EventScript_Ein", "arrive:RealgamTower_1F", "enter:RealgamTower_1F", "RealgamTower_Dome_EventScript_Gonzap",
       "RealgamTower_Colosseum_EventScript_Nascour", "enter:RealgamTower_Top", "RealgamTower_Top_EventScript_Evice",
       "PyriteTown_PokemonCenter_1F_EventScript_Nurse", "AgateVillage_PokemonCenter_1F_EventScript_Nurse",
@@ -6089,7 +6122,56 @@
     }
     return r && r.map !== here ? r : null;
   }
+  // ---------- Orre: Colosseum's e-mail (game/orre-mail.js) ----------
+  //
+  // An e-mail arriving (Colosseum's notice, then it's read: its subject and sender, then its words), and the ones
+  // received, to read again (the Start menu's E-MAIL while in Orre; the newest first, a "*" on any not read yet).
+  async function readMail(key) {
+    const m = Orre.MAIL[key], first = !((player.flags.orreMail || {}).read || []).includes(key);
+    await say([m.subject + "\nFrom: " + m.from].concat(m.body));
+    Orre.mailRead(player.flags, key);
+    if (first && m.after) await say(m.after);
+  }
+  async function receiveMail(key) {
+    Orre.mailReceive(player.flags, key);
+    sfx("se_pin");
+    await say("The P★DA received an e-mail!");   // (M3_houseC_1F #20849)
+    await say("{PLAYER} read the e-mail.");   // (#20854)
+    await readMail(key);
+    await persist();
+  }
+  // (Those due as you come into an Orre map: ui/story-events.js's special() hands them over, orreMailPending.)
+  let orreMailPending = null;
+  const orreMailDue = (script) => {
+    const map = String(script || "").replace(/^\w+:/, "");
+    if (!Orre.mailDue || !Orre.inOrre({ map })) return false;
+    // (One at a time, as Colosseum's come: the next waits for the next map.)
+    orreMailPending = Orre.mailDue(player.flags, map).slice(0, 1);
+    return orreMailPending.length > 0;
+  };
+  async function orreMail() {
+    const due = orreMailPending || [];
+    orreMailPending = null;
+    for (const k of due) await receiveMail(k);
+  }
+  async function mailbox() {
+    for (let cursor = 0; ;) {
+      const list = Orre.mailList(player.flags);
+      if (!list.length) { await say("There's no e-mail."); return; }
+      const i = await multichoice("Which e-mail will you read?", 0, 0, list.map((e) => (e.read ? " " : "*") + e.subject).concat(["CANCEL"]), { shown: 6, cursor });
+      Screen.say("");
+      if (i < 0 || i >= list.length) return;
+      cursor = i;
+      await readMail(list[i].key);
+      await persist();
+    }
+  }
   async function orreTravel() {
+    // (Out of Ein's lab, the first time, having come by the Shadow Liner: as in Colosseum, it's on Orre's map from then on.)
+    if (/^ShadowLab/.test(player.location.map) && !Orre.isOpen(player.flags, "ShadowLab_1F")) {
+      Orre.unlock(player.flags, "ShadowLab_1F");
+      await say("The Shadow Pokémon Lab was marked on\nthe Orre Map!");
+    }
     // (Out of Phenac City, the Mystery Troop in the way till you've beaten one of them: phenacTroop, the nearest.)
     if (player.location.map === "PhenacCity" && (player.flags.orreStory | 0) === 21 && !player.flags.orreTroop) {
       const x = player.location.x, near = TROOP.map((n, i) => [n, Math.abs([17, 19, 22][i] - x)]).sort((a, b) => a[1] - b[1])[0][0];
@@ -6929,13 +7011,19 @@
     TROOP.forEach((n, i) => { person("PhenacCity", 962 + i, [17, 19, 22][i], 33, "up", "PHENAC_" + n.toUpperCase(), "orre_peon_m", TROOP_SCRIPT(n)); SPECIAL.add(TROOP_SCRIPT(n)); });
     person("PhenacCity_MayorsHouse", 965, 8, 3, "down", "MAYOR_MIROR_B", "rocker");
   }
-  // ---------- Orre: Shadow Pokémon's hearts, and the Relic Stone (this game's own, after Colosseum's heart gauge) ----------
+  // ---------- Orre: Shadow Pokémon's hearts, and the Relic Stone (Colosseum's heart gauge) ----------
   //
-  // A Shadow Pokémon you snag comes with its heart shut tight (record.heart, SHADOW_HEART). Walking with it and
-  // battling with it opens it little by little (a point every 8 steps; SHADOW_HEART_BATTLE for each battle won).
-  // Once it's open, Agate Village's Relic Stone can purify it (from orreStory 30, when Eagun's family tablet has told
-  // you how): it's a Shadow Pokémon no more, and its Shadow moves give way to the moves it would know at its level.
-  const SHADOW_HEART = 100, SHADOW_HEART_BATTLE = 6, HEART_STEPS = 8;
+  // A Shadow Pokémon you snag comes with the door to its heart shut tight (record.heart, SHADOW_HEART). As in
+  // Colosseum, the door opens little by little: walking with it (a point every HEART_STEPS steps), battling with it
+  // (SHADOW_HEART_BATTLE for each battle it's sent out in), calling it out of Hyper Mode (SHADOW_HEART_CALL a call:
+  // engine/battle.js's callMon) and massaging it with a Scent from the Cologne Case (SCENT_HEART: Joy a tiny bit,
+  // Excite a little, Vivid a lot, as Colosseum's words say). Colosseum documents no numbers for these: they're this
+  // game's own. The Exp. Points it earns meanwhile are kept for it (record.shadowExp) and given back when it's purified.
+  // Once the door's open, Agate's Relic Stone purifies it (from orreStory 30, when Eagun's family tablet has told you
+  // how): it regains its own first move (Colosseum's: Shadow Rush gives way to it), its Exp. Points, and a Ribbon.
+  const SHADOW_HEART = 100, SHADOW_HEART_BATTLE = 6, SHADOW_HEART_CALL = 8, HEART_STEPS = 8;
+  const SCENT_HEART = { "joy-scent": 4, "excite-scent": 8, "vivid-scent": 16 };
+  const SCENT_SAYS = { "joy-scent": "a JOY SCENT", "excite-scent": "an EXCITE SCENT", "vivid-scent": "a VIVID SCENT" };
   let heartSteps = 0;
   function heartStep() {
     if (++heartSteps < HEART_STEPS) return null;
@@ -6947,6 +7035,21 @@
     }
     return null;
   }
+  // The door to a heart, in Colosseum's Summary's words (pocket_menu #11225-#11231).
+  const heartDoor = (h) => "The door to its heart is" + (h > 80 ? "\ntightly shut." : h > 60 ? "\nstarting to open." : h > 40 ? "\nopening up." : h > 20 ? "\nopening wider."
+    : h > 10 ? "\nnearly open." : h > 0 ? "\nalmost fully open." : " about\nto open. Undo the final lock!");
+  // A Scent (Colosseum's Cologne Massage, from the Cologne Case): Colosseum's words (common_rel#1 #15094-#15098, #17013,
+  // #17014, #10856).
+  async function scentOn(record, item) {
+    const name = Party.displayName(record);
+    if (!record.shadow || !(record.heart > 0)) { await message("It won't have any effect."); return; }
+    Player.removeItem(player, item);
+    await message(player.name + " massaged " + name + "\nusing " + SCENT_SAYS[item] + ".");
+    const n = SCENT_HEART[item];
+    record.heart = Math.max(0, record.heart - n);
+    await message("The door to " + name + "'s heart\n" + (n <= 4 ? "opened a tiny bit!" : n <= 8 ? "opened up a little!" : "opened up a lot!"));
+    if (!record.heart) await message("The door to " + name + "'s heart is\nabout to open. Undo the final lock!");
+  }
   async function relicStone() {
     const f = player.flags, shadows = player.party.filter((r) => r.shadow);
     // (Colosseum's words for the Relic, and for a heart not yet ready or ready to open.)
@@ -6954,32 +7057,52 @@
     if ((f.orreStory | 0) < 30 || !shadows.length) return;
     if (shadows.some((r) => !((r.heart | 0) > 0))) await say(["There's a Pokémon that may open the\ndoor to its heart!"]);
     for (const r of shadows) {
-      const name = Party.displayName(r);
-      // (Colosseum's words, and its Summary's for how far the door is open.)
-      const h = r.heart | 0, door = h > 80 ? "tightly shut." : h > 60 ? "starting to open." : h > 40 ? "opening up." : h > 20 ? "opening wider." : h > 10 ? "nearly open." : "almost fully open.";
-      if (h > 0) { await say(["The door to that Pokémon's heart\ncan't be opened yet.", "The door to its heart is\n" + door]); continue; }
-      if (!(await confirm("Purify " + name + " at the\nRelic Stone?"))) continue;
+      if ((r.heart | 0) > 0) { await say(["The door to that Pokémon's heart\ncan't be opened yet.", heartDoor(r.heart | 0)]); continue; }
       await Overworld.flash();
       sfx("se_m_reflect");
-      const regained = r.purifyMoves && r.purifyMoves[0];
-      purify(r);
-      await sayWithJingle("mus_heal", [name + " opened the door to its\nheart!"].concat(regained ? [name + " regained the move\n" + regained + "!"] : []));
+      await purifyWithWords(r);
       await persist();
     }
   }
+  // Purified at the Relic Stone, or by Celebi: Colosseum's words for it (M3_shrine_1F_rl #15120, #15115, #17614, #15116,
+  // #15117).
+  async function purifyWithWords(r) {
+    const name = Party.displayName(r), got = purify(r);
+    await sayWithJingle("mus_heal", [name + " opened the door to its\nheart!"].concat(got.move ? [name + " regained the move\n" + got.move + "!"] : []));
+    if (got.exp) await say(name + " regained " + got.exp + "\nEXP Points!");
+    if (got.level) await say(name + " was elevated to Lv. " + got.level + ".");
+    await say(name + " obtained a RIBBON!");
+    if (!r.nickname && await confirm("Would you like to give a nickname\nto " + name + "?")) {
+      const typed = await enterText(name + "'s nickname?", name, 10);
+      if (typed && typed !== name) r.nickname = typed;
+    }
+  }
+  // Purified: no longer a Shadow Pokémon. It regains its moves (Colosseum's four, its first back in Shadow Rush's place;
+  // an older record without them, the moves it would know at its level), the Exp. Points kept for it (levelling up, as
+  // far as Orre's level cap), and Colosseum's Ribbon (record.nationalRibbon). Returns { move, exp, level }.
   function purify(r) {
+    const got = { move: r.purifyMoves && r.purifyMoves[0], exp: r.shadowExp | 0, level: 0 };
     r.shadow = false;
     delete r.heart;
-    // (Colosseum's: the four moves it had, its first back in Shadow Rush's place; an older record without them, the
-    // moves it would know at its level.)
     r.moves = r.purifyMoves ? r.purifyMoves.map((name) => ({ name, pp: Party.maxPp ? Party.maxPp(name) : (window.MOVES[name] || {}).pp || 10 })) : Party.create(r.species, r.level).moves;
     delete r.purifyMoves;
+    if (got.exp) {
+      const E = window.Experience, rate = E.growthRate(r.species), cap = Math.min(100, Player.levelCap(player));
+      r.exp = Math.min((r.exp | 0) + got.exp, E.expForLevel(rate, Math.max(cap, r.level)));
+      const lv = Math.max(r.level, Math.min(cap, E.levelForExp(rate, r.exp)));
+      if (lv > r.level) { const before = Party.maxHp(r); r.level = lv; got.level = lv; r.hp = Math.max(0, (r.hp | 0) + Party.maxHp(r) - before); }
+    }
+    delete r.shadowExp;
+    r.nationalRibbon = true;
     (player.flags.orrePurified = player.flags.orrePurified || []).push(r.species);
+    return got;
   }
 
   // The Pyrite Colosseum's and Phenac Stadium's tournaments (Orre.TOURNAMENTS): enter at the counter, four double
   // battles in a row, healed between rounds; win all four for the prize. (player.flags.orreTourney: wins by key.)
   async function orreTournament(script) {
+    // (The Pyrite Colosseum's and Phenac Stadium's desks: Colosseum's own, the story's challenge too: colosseumDesk.)
+    if (script === "PyriteTown_Colosseum_EventScript_Receptionist" || script === "PhenacCity_Stadium_EventScript_Receptionist") { await colosseumDesk(script); return; }
     const t = Orre.TOURNAMENTS[script], f = player.flags, wins = (f.orreTourney = f.orreTourney || {});
     if ((f.orreStory | 0) < t.from) { await say(t.closed); return; }
     await say(["Welcome to the " + t.name + "!", "Today's tournament: four double\nbattles in a row. Win them all and\nyou're the champion of the day!"]);
@@ -7074,21 +7197,41 @@
     await persist();
   }
 
-  // The Relic Forest's shrine (west of Agate): play the Time Flute there and Celebi comes across time and opens the
-  // heart of every Shadow Pokémon with you at once, however shut, as in Colosseum. The flute's song is spent then: it
-  // crumbles away, and Celebi goes back to its own time.
+  // Agate's Cologne Massage (game/orre-trainers-middle.js places them): the girl with the spare Cologne Case, after
+  // Dakim (M3_out #22291-#22296), and the Poké Mart's clerk, who sells the Scents only to those with a case (#15645).
+  async function cologneGirl() {
+    if (Player.itemCount(player, "cologne-case")) { await say(["Give your Pokémon Cologne Massages\nwith different Scents. That will make\nthem more friendly."]); return; }
+    await say(["I came to this village so I could\nlearn more about becoming closer to\nPokémon.", "All I know is the Cologne Massage\nmethod for making Pokémon friendly."]);
+    if (await confirm("Do you know about Cologne\nMassages?")) await say(["Yup! All Pokémon love being treated\nto Cologne Massages!"]);
+    await say(["Pokémon get very happy if you\nmassage them with different kinds of\nScents.", "Actually, I have an extra Cologne\nCase with me. You can have it."]);
+    Player.addItem(player, "cologne-case", 1);
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} obtained the Cologne Case.");
+    await say(["Put a Scent in that Cologne Case\nand give your Pokémon a massage. I'm\nsure that it will be delighted."]);
+    await persist();
+  }
+  async function agateMart() {
+    const caseIn = Player.itemCount(player, "cologne-case") > 0;
+    await mart(Orre.AGATE_MART.concat(caseIn ? Orre.SCENTS : []));
+    if (!caseIn) await say(["I'm terribly sorry, but I can't sell\nyou a Scent since you don't have a\nCologne Case."]);
+  }
+
+  // The Relic in the Relic Forest (west of Agate, through the Relic Cave): the Relic Stone, and, as in Colosseum, where
+  // the Time Flute brings Celebi (Senilor's words: "That is all one needs to bring Celebi to the Relic Forest. Celebi
+  // will surely cause darkness to flee from the hearts of any Pokémon"; Ein's report, "Celebi's Power": "If a Shadow
+  // Pokémon encounters a Celebi, it recalls how its heart was before being closed, and reverts to its original form").
+  // So every Shadow Pokémon with you is purified at once, however shut its heart, with the Relic's words. The flute
+  // can call Celebi only once: it's gone then (orreCelebi). With no Shadow Pokémon with you, "It cannot be used now."
   async function relicForestShrine() {
     const f = player.flags;
     if ((f.orreStory | 0) === 29) { await agateShrine(); return; }
     await relicStone();
-    if (f.orreCelebi) { await say(["Something gentle seems to watch over\nthe forest still."]); return; }
-    if (!Player.itemCount(player, "time-flute")) return;
+    if (f.orreCelebi || !Player.itemCount(player, "time-flute")) return;
+    if (!(await confirm("Use the Time Flute?"))) return;
     const shadows = player.party.filter((r) => r.shadow);
-    if (!shadows.length) { await say(["The Time Flute stirs in your bag…", "But you have no Shadow Pokémon with\nyou. Better save its song for them."]); return; }
-    if (!(await confirm("Play the Time Flute?"))) return;
+    if (!shadows.length) { await say(["It cannot be used now."]); return; }
     Screen.say("");
     const at = Object.assign({}, player.location), CELEBI = "LOCALID_RELIC_CELEBI";
-    await say(["{PLAYER} played the Time Flute.", "A strange, faraway melody drifts\nthrough the trees…"]);
+    await say(["{PLAYER} used the Time Flute."]);
     Screen.say("");
     Overworld.follower.hide(true);   // (your Pokémon back in its ball: Celebi comes where it stood)
     await Overworld.act([{ who: "player", moves: ["walk_down", "face_up"] }]);
@@ -7096,21 +7239,19 @@
     await Overworld.flash();
     Overworld.addObject(CELEBI, { x: at.x, y: at.y, facing: "down" }, { sprite: "follow/251", width: 32, height: 32, frames: 9, offsetX: -8 });
     cry("Celebi");
-    await sleep(600);
-    await say(["Celebi appeared from across time!"]);
-    Screen.say("");
-    await Overworld.flash();
-    sfx("se_m_reflect");
-    for (const r of shadows) purify(r);
-    await sayWithJingle("mus_heal", shadows.map((r) => Party.displayName(r) + "'s heart opened all the way!\n" + Party.displayName(r) + " is a Shadow Pokémon no more!"));
+    await sleep(1200);
+    Player.removeItem(player, "time-flute", 1);
+    f.orreCelebi = true;
+    for (const r of shadows) {
+      await Overworld.flash();
+      sfx("se_m_reflect");
+      await purifyWithWords(r);
+    }
     cry("Celebi");
     await Overworld.act([{ who: CELEBI, moves: ["walk_up", "set_invisible"] }]);
     Overworld.removeObject(CELEBI);
     Overworld.follower.hide(false);
-    Player.removeItem(player, "time-flute", 1);
-    f.orreCelebi = true;
     music((window.WORLD_MAPS[player.location.map] || {}).music);
-    await say(["Celebi went back to its own time…", "The Time Flute crumbled away to\nnothing."]);
     await persist();
   }
 
@@ -7233,12 +7374,12 @@
       "A heart imprisoned by shadows\nIts last door shall be opened\nBy the power within.\""]);
     await say(["Eagun: The Relic must have some\neffect on Shadow Pokémon.", "Eagun: I will leave that for you to\ndetermine for yourselves."]);
     await persist();
-    // (Duking's e-mail, Colosseum's, as a call on your Pokégear.)
-    await gear.storyCall(["Duking: Emergency!!!", "Duking: {PLAYER}, we've got big\ntrouble! I just got word from our\npeople that Mt. Battle's under attack",
-      "by a mysterious group of thugs.\nPlease, can you go help?", "We think it's the same group as the\none Miror B. belonged to. We're\ncounting on you!"].map((p) => fill(p)));
+    // (Duking's e-mail, Colosseum's, on the P★DA: game/orre-mail.js.)
+    await receiveMail("EMERGENCY");
     await say(["Rui: Whaaat?! Those crooks are loose\non Mt. Battle now?! That's awful!", "Rui: We can't let this go on!\n{PLAYER}, let's go! …Oh, wait."]);
     await say(["Rui: Grandpa, where is Mt. Battle,\nanyway?"]);
     await say(["Eagun: Mt. Battle is to the northeast.\nYou can see it in the distance once\nyou leave the village. Hurry, Rui!"]);
+    await say("{PLAYER} gave the P★DA number to\nEagun.");   // (M3_houseC_1F #20862: his e-mail comes later, GREETINGS)
     f.orreStory = 31;
     Orre.unlock(f, "MtBattle");
     await persist();
@@ -7309,10 +7450,8 @@
     f.orreStory = 33;
     Overworld.refreshPeople();
     await persist();
-    // (Duking's e-mail, Colosseum's, "Trouble in Under?", as a call on your Pokégear.)
-    await gear.storyCall(["Duking: Trouble in Under?", "Duking: Hi, big guy. We've been\nhearing about Shadow Pokémon from\npeople visiting The Under from Pyrite.",
-      "A lot of the visitors have seen the\nShadow Pokémon. Nett in The Under\nshould have more information for you."].map((p) => fill(p)));
-    await persist();
+    // (Colosseum's e-mail "TROUBLE IN UNDER?", on the P★DA: game/orre-mail.js.)
+    await receiveMail("TROUBLE_IN_UNDER");
   }
   // ---------- Orre: Colosseum's story, The Under, Ein's lab and Realgam Tower (orreStory 33 to 44) ----------
   //
@@ -7389,15 +7528,215 @@
     await say(["Venus: Aiyeeeeh! How dare you! How\ncould I get bested by a mere boy?", "Venus: Remember this! I'll get you\nback for this!"]);
     await say(["Venus: Before that horrible boy can\nmeddle anymore, I'll link up with Ein\nat the Shadow Pokémon Lab!"]);
     await goAway("VENUS", ["walk_fast_down", "walk_fast_down", "walk_fast_down"]);
+    // (She runs for the Under Subway, and the Shadow Liner to Ein's lab: underSubway*. The lab's on Orre's map only
+    // once you've been there, as in Colosseum: orreTravel.)
     player.flags.orreStory = 36;
-    Orre.unlock(player.flags, "ShadowLab_1F");
-    await say("The Shadow Pokémon Lab was marked on\nthe Orre Map!");
     await persist();
+  }
+
+  // ---------- The Under's Kids Grid and the Under Subway (Colosseum's: M4_junk_1F, M4_junk_B1, M4_out, M4_labo_B1,
+  // M4_subway_B1, M4_subway_B3, M4_train_1F) ----------
+  //
+  // In The Under (34) Perr, in the Junk Shop's basement, asks you to take the Powerup Part to Nett (orreKidsGrid 1);
+  // Bitt, waiting outside Nett's house (the one with the big rotating antenna dish), takes you in (2); downstairs Nett
+  // gets the Kids Grid back up, and Megg takes your P★DA number (3): then Kloak and Dagur come out to guard Venus's
+  // studio. Beaten (36), Venus runs down the Under Subway (its door by the rails, open from then on) to the Shadow
+  // Liner's station, and gets away with its key (orreSubway 1); Ein comes for her on B1, and there on the ground is
+  // the Subway Key (2). With it, the Shadow Liner takes you to Ein's lab (orreSubwayRidden), any time.
+  async function junkShopOwner() {
+    await say(player.flags.orreSubwayRidden ? ["Oh? You've ridden that Subway?", "Now that brings back memories… I\ndidn't know it was still running.\nWhy, I often drove it in my youth.",
+      "Track all clear! All aboard!"] : ["It appears my grandchild\nrecently joined something called the\nKids Grid.", "Since then, I get this feeling\nthat parts have been slowly\ndisappearing from the shop…"]);
+  }
+  async function junkShopPerr() {
+    const f = player.flags, step = f.orreKidsGrid | 0;
+    if (step >= 3) {
+      await say(f.orrePerrThanked ? ["Perr: Cipher are those outrageous\ncrooks who are trying to take over", "the world using Shadow Pokémon,\nright?",
+        "Perr: {PLAYER} and Rui, you're taking\nthose people on, huh? That's\nmind-blowing."]
+        : ["Perr: Hi, I'm sorry I asked you for\nthat favor without explaining\nanything before.", "Perr: Thanks to you, the Kids Grid is\nback in operation. Thanks, {PLAYER}.",
+          "Perr: I'll do what I can to gather\nintelligence for you."]);
+      f.orrePerrThanked = true;
+      await persist();
+      return;
+    }
+    if (step >= 1) { await say(["Perr: Nett's house is the one with\nthe big, rotating antenna dish.", "You'll know which one it is as soon\nas you see it."]); return; }
+    if ((f.orreStory | 0) < 34) { await say(["Oh, sheesh, what should I do… I\nhave to make a delivery, but I'm\nstill not done cleaning…"]); return; }
+    await say(["Oh, sheesh, what should I do… I\nhave to make a delivery, but I'm\nstill not done cleaning…"]);
+    await say(["Perr: Hey, wait! Wow! Aren't you\n{PLAYER} and Rui?"]);
+    await say(["Rui: Huh? How do you know who we are?"]);
+    await say(["Perr: I thought so! This makes things\neasy. Please, can I get you to\ndeliver this part to Nett's house?"]);
+    await say(["Rui: But… Wait…"]);
+    await say(["Perr: Just tell Nett that it's from\nPerr. He'll tell you the details.", "Perr: Nett's house is the one with\nthe big, rotating antenna dish.",
+      "You'll know which one it is as soon\nas you see it."]);
+    Player.addItem(player, "powerup-part", 1);
+    await sayWithJingle("mus_obtain_key_item", fill("{PLAYER} obtained the Powerup Part."));
+    f.orreKidsGrid = 1;
+    await persist();
+  }
+  // Bitt, outside Nett's house: waiting for the part; with it, in he goes, and you after him.
+  async function underBitt() {
+    const f = player.flags;
+    if ((f.orreKidsGrid | 0) < 1 || !Player.itemCount(player, "powerup-part")) { await say(["Bitt: What's the holdup? It should be\nhere by now…"]); return; }
+    await say(["Bitt: You brought me the Powerup Part\nfrom Perr? Great! I was waiting for\nthat!", "Bitt: Huh? Are you… Are you \"the\"\n{PLAYER} and Rui?",
+      "Bitt: Oh, wow, this is too awesome!\nCome on, you have to get inside.\nQuick, quick!"]);
+    await goAway("UNDER_BITT", ["walk_up"]);
+    sfx("se_door");
+    f.orreKidsGrid = 2;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Nett's door, before Bitt's taken you in: he stops you (or, with the part, takes you in).
+  const nettsDoorShut = () => (player.flags.orreStory | 0) >= 34 && (player.flags.orreKidsGrid | 0) < 2;
+  async function nettsDoor() {
+    const door = window.WORLD_MAPS.TheUnder.warps.find((w) => w.map === "TheUnder_NettsHideout_1F");
+    player.location = { map: "TheUnder", x: door.x, y: door.y + 1, facing: "right" };
+    await Overworld.teleport(player.location);
+    await underBitt();
+    if ((player.flags.orreKidsGrid | 0) < 2) return;
+    const inside = window.WORLD_MAPS.TheUnder_NettsHideout_1F.warps[0];
+    player.location = { map: "TheUnder_NettsHideout_1F", x: inside.x, y: inside.y - 1, facing: "up" };
+    await Overworld.teleport(player.location);
+  }
+  // Downstairs at Nett's: the Powerup Part handed over, the first time; then Nett, Megg and Bitt as the story goes on.
+  async function nettsHideout() {
+    const f = player.flags;
+    if ((f.orreKidsGrid | 0) !== 2) return;
+    await say(["Bitt: Megg! Nett! You won't believe\nwho just dropped in for a visit!\nWe've got some shocking company!"]);
+    await say(["Megg: Shocking company?"]);
+    await say(["Bitt: Try not to be too shocked when\nyou hear it! It's {PLAYER} and Rui!"]);
+    await say(["Megg: No! Really?!"]);
+    await say(["Nett: Bitt, is that true? Is that\n{PLAYER} really here?!"]);
+    await say(["Bitt: Heheh. See for yourself."]);
+    await say(["Nett: Hi, I'm Nett! Secc in Pyrite\nhas told me about what you've been\ndoing so far."]);
+    Player.removeItem(player, "powerup-part", 1);
+    await say(["{PLAYER} handed the Powerup Part to\nNett."]);
+    await say(["Nett: Oh, this is from Perr. Great,\nthis is all that I needed to get the\nKids Grid back up and running again.",
+      "Nett: I better explain. A little\nwhile ago, we somehow lost access to\nthe Kids Grid.", "Nett: We think it's caused by a\njamming signal that's interfering",
+      "with the Kids Grid. It's probably\nVenus's doing.", "Nett: But this Powerup Part you\ndelivered will let me boost up our\nequipment.",
+      "Nett: When we get the Kids Grid back\nup, I'll try to hack their computers\nfor useful data."]);
+    await say(["Megg: This is like a dream come true!\n{PLAYER}, Rui, I'm so glad to meet\nyou. I'm Megg!", "Megg: The Kids Grid is bringing\ntogether kids from faraway towns.",
+      "Megg: My big brother Nett managed to\nget a little bit of data out of\nCipher's computers.", "Megg: The data says there is a Lab\nsomewhere that makes Shadow Pokémon."]);
+    await say(["Megg: Oh, {PLAYER}, wait, please.", "Megg: May I have your P★DA number?\nWe'll contact you just as soon as we\ndiscover anything."]);
+    await say(["{PLAYER} gave the P★DA number to\nMegg."]);
+    await say(["Megg: Thank you! We'll do our best to\ngather useful information for you."]);
+    f.orreKidsGrid = 3;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  async function nettsHideoutPerson(script) {
+    const f = player.flags, story = f.orreStory | 0;
+    if (/Megg$/.test(script)) {
+      await say(story >= 40 ? ["Megg: I'm so glad! That's my hero!\nYou're so inspiring!"] : story >= 38 ? ["Megg: Oh, {PLAYER}! Did you go to the\nLab? Are both of you okay?"]
+        : story >= 36 ? ["Megg: Oh, {PLAYER}! Everyone in town\nis saying that you beat that Venus!\nIt's the talk of the town!", "Megg: That's so amazing! I'm in awe!"]
+        : ["Megg: Thank you! We'll do our best to\ngather useful information for you."]);
+      return;
+    }
+    if (/Bitt$/.test(script)) {
+      await say(f.orreDataRom ? ["Bitt: Nett is a genius. He's been\ngathering all sorts of data on those\ncrooks."]
+        : ["Bitt: {PLAYER}, you two are, like,\ntotally famous on the Kids Grid.", "Bitt: Every kid in The Under knows\nthat you're the hero who's taking on\nCipher."]);
+      return;
+    }
+    // Nett: the Data ROM from Ein's desk, if you've brought it (Colosseum's: then he e-mails what he finds).
+    if (Player.itemCount(player, "data-rom")) {
+      await say(["Nett: Oh, {PLAYER}. How did it go?\nDid you find any data?"]);
+      Player.removeItem(player, "data-rom", 1);
+      await say(["{PLAYER} handed the Data Rom to Nett."]);
+      await say(["Nett: Oh, now this looks interesting!\nLet's scope it out right away!", "Nett: Oh, hey! This Data Rom appears\nto contain a list of Shadow Pokémon\nthat have been made so far!",
+        "Nett: Awww, but no! It looks like\nthey've wiped the data.", "Nett: {PLAYER}. Please leave this\nwith me."]);
+      await say(["Bitt: {PLAYER}, you two are, like,\ntotally famous on the Kids Grid.", "Bitt: Every kid in The Under knows\nthat you're the hero who's taking on\nCipher."]);
+      await say(["Nett: I'll somehow try retrieving\ninformation from this Data Rom, even", "if it means going over it little by\nlittle.",
+        "Nett: {PLAYER}, as soon as I discover\nanything, I'll e-mail your P★DA."]);
+      await say(["Bitt: Nett is a genius. He's been\ngathering all sorts of data on those\ncrooks."]);
+      f.orreDataRom = true;
+      await persist();
+      return;
+    }
+    if (f.orreDataRom) { await say(["Nett: Like I wrote in my e-mail,\nyou'll be getting information from\nall sorts of people from now on."]); return; }
+    if (story >= 38) { await say(["Nett: Oh, {PLAYER}. How did it go?\nDid you find any data?"]); return; }
+    if (story >= 36) {
+      await say(f.orreNettLab ? ["Nett: Oh, you can tell me. You're\ngoing to the Lab, aren't you?"] : ["Nett: Oh, {PLAYER}. Thanks to you, we\ngot the Kids Grid back up and\nrunning. Honestly, thank you.",
+        "Nett: Huh? The Subway goes out to the\nShadow Pokémon Lab? So, that's how\nthey did it!", "Nett: {PLAYER}, you're going to go\nout to the Lab, aren't you?"]);
+      await say(["Nett: For sure, the Lab will have\nimportant data on Shadow Pokémon.", "Nett: It doesn't matter what it is;\nif you find any sort of data, please\nbe sure to bring it back here."]);
+      f.orreNettLab = true;
+      await persist();
+      return;
+    }
+    await say(["Nett: {PLAYER}! I'll alert you\nimmediately if I hear anything new."]);
+  }
+  // The Under Subway's door by the rails: shut till Venus runs down it (36).
+  const subwayShut = () => (player.flags.orreStory | 0) < 36;
+  async function subwayDoorShut() {
+    await say(["The door is locked."]);
+    const back = window.WORLD_MAPS.TheUnder.warps.find((w) => w.map === "TheUnder_Subway_B1");
+    player.location = { map: "TheUnder", x: back.x, y: back.y + 1, facing: "down" };
+    await Overworld.teleport(player.location);
+  }
+  // The station: Venus, with the Shadow Liner's key, the first time.
+  async function subwayStation() {
+    const f = player.flags;
+    if ((f.orreStory | 0) !== 36 || f.orreSubway) return;
+    const V = ORRE("STATION_VENUS");
+    Overworld.addObject(V, { x: 6, y: 4, facing: "up" });
+    await say(["Venus: Before that horrible boy can\nmeddle anymore, I'll link up with Ein\nat the Shadow Pokémon Lab!"]);
+    sfx("se_pin");
+    await Overworld.act([{ who: V, moves: ["face_down", "emote_exclamation_mark"] }]);
+    await say(["Venus: Eek! Eek! Oh, why did you have\nto chase me here?! It's so unfair!", "Venus: …Tch. This isn't good. I can't\nlead them to the Lab…"]);
+    await say(["Venus: Ohohoho! You are so easy to\ndupe!", "Venus: See? The Key for the Shadow\nLiner is right here.", "Venus: You didn't think I would\nreally let you take our train? Beh!",
+      "Venus: Bye-bye, and this time I mean\nit! Don't you dare forget about me!"]);
+    Screen.say("");
+    const me = player.location, side = me.x <= 6 ? 1 : -1;
+    const path = [side > 0 ? "walk_fast_right" : "walk_fast_left"].concat(Array(Math.max(1, me.y - 4)).fill("walk_fast_down"), ["set_invisible"]);
+    await Overworld.act([{ who: V, moves: path }]);
+    Overworld.removeObject(V);
+    f.orreSubway = 1;
+    await persist();
+  }
+  // Back on B1: Ein comes for Venus, and the Subway Key's dropped where they stood.
+  async function subwayB1() {
+    const f = player.flags;
+    if ((f.orreSubway | 0) !== 1) return;
+    const E = ORRE("SUBWAY_EIN"), V = ORRE("SUBWAY_VENUS");
+    Overworld.addObject(E, { x: 6, y: 21, facing: "down" }); Overworld.addObject(V, { x: 7, y: 21, facing: "left" });
+    await say(["Ein: Come. Back to the Lab."]);
+    await say(["Venus: Yes, sir!"]);
+    Screen.say("");
+    await Overworld.act([{ who: E, moves: ["walk_fast_down", "walk_fast_down", "walk_fast_down", "walk_fast_down", "set_invisible"] },
+      { who: V, moves: ["walk_fast_down", "walk_fast_down", "walk_fast_down", "walk_fast_down", "set_invisible"] }]);
+    Overworld.removeObject(E); Overworld.removeObject(V);
+    Player.addItem(player, "subway-key", 1);
+    await say(["Look! It's the Subway Key on the\nground!"]);
+    await sayWithJingle("mus_obtain_key_item", fill("{PLAYER} obtained the Subway Key."));
+    f.orreSubway = 2;
+    await persist();
+  }
+  async function subwayFan() {
+    const story = player.flags.orreStory | 0;
+    await say(story >= 38 ? ["I've been waiting for Lady Venus\nhere ever since. Am I being too\npatient?"]
+      : ["A little while ago, I saw Lady\nVenus running down the hallway. She\nmust be one busy lady.", "So, I've decided I'll just have\nto be patient and wait for Lady Venus\nto come by right here."]);
+  }
+  // The Shadow Liner: with the Subway Key, out to the Shadow Pokémon Lab.
+  async function shadowLiner() {
+    const f = player.flags;
+    if (!Player.itemCount(player, "subway-key")) { await say(["The Key is missing! The train can't\nbe moved.", "It appears as if this train was used\nfor transporting Shadow Pokémon."]); return; }
+    await say(["It appears as if this train was used\nfor transporting Shadow Pokémon."]);
+    if (!(await confirm("Ride the Shadow Liner?"))) return;
+    await say([fill("{PLAYER} inserted the Subway Key and\nturned it.")]);
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    sfx("se_truck_move");
+    await sleep(900);
+    f.orreSubwayRidden = true;
+    const arrive = (Orre.PLACES.find((p) => p.map === "ShadowLab_1F") || {}).arrive || { x: 7, y: 8, facing: "up" };
+    player.location = { map: "ShadowLab_1F", x: arrive.x, y: arrive.y, facing: arrive.facing || "up" };
+    await Overworld.teleport(player.location);
+    await persist();
+    if ((f.orreStory | 0) === 36) await labArrival();
   }
   // (Colosseum's words from here on, the lab's and Realgam Tower's: D1_labo_B3, D4_tower_1F_1, D4_tower_2F,
   // D4_dome_*, D4_casino_colo. The Mystery Troop's met in Phenac City now, as in Colosseum, not in the lab.)
   async function labArrival() {
-    // (Colosseum's lab has its own way in, its garage and its keys, and no word for coming in: none here either.)
+    // (Colosseum's words in the garage: Rui checks the cargo, D1_garage_1F #21065. Then its keys: labObject, labDoor.)
+    await say(["Rui: {PLAYER}. I'm going to check the\ncargo here.", "Rui: {PLAYER}, can you check the\nback, please?"]);
+    Orre.LAB.dna(player.flags);
     player.flags.orreStory = 38;
     await raiseCap(ORRE_LAB_CAP);
     await persist();
@@ -7405,6 +7744,75 @@
   // (An older save at 37 was to meet the Mystery Troop on B1F: on to Ein.)
   async function labTroop() {
     if ((player.flags.orreStory | 0) === 37) { player.flags.orreStory = 38; await persist(); }
+  }
+  // The lab's things (game/orre-lab.js): a DNA Sample, the DNA analyzer, the shutter switch, and after Ein his Data
+  // ROM and TM26. (Colosseum's words: D1_labo_B1, D1_labo_1F, D1_labo_B3; the counts and "Take it?", our own.)
+  async function labObject(script) {
+    const f = player.flags, lab = Orre.LAB, dna = lab.dna(f);
+    const spot = lab.DNA_SPOTS.find((s) => s.script === script);
+    if (spot) {
+      dna.got.push(spot.i);
+      Player.addItem(player, "dna-sample");
+      Overworld.refreshPeople();
+      await sayWithJingle("mus_obtain_key_item", "{PLAYER} found a DNA Sample!");
+      await persist();
+      return;
+    }
+    if (script === "ShadowLab_EventScript_Analyzer") {
+      await say("It's a DNA analyzer!");
+      if (dna.done || (f.orreStory | 0) >= 40) return;
+      if (dna.got.length < 3) { await say("(DNA Samples: " + dna.got.length + " of 3)"); return; }
+      for (const i of dna.got) await say("This DNA Sample was that of\n" + lab.DNA_SPOTS[i].species + ".");
+      Player.removeItem(player, "dna-sample", Player.itemCount(player, "dna-sample"));
+      dna.done = true;
+      sfx("se_door");
+      await say("The door's lock was released!");
+      await persist();
+      return;
+    }
+    if (script === "ShadowLab_EventScript_Shutter") {
+      if (f.orreLabShutter) return;
+      if (!(await confirm("Here's the shutter switch! Press it?"))) return;
+      f.orreLabShutter = true;
+      sfx("se_click");
+      await say("{PLAYER} pressed the switch.");
+      await persist();
+      return;
+    }
+    if (script === "ShadowLab_EventScript_DataROM") {
+      await say("It's a Data ROM.");
+      if (!(await confirm("Take it?"))) { await say(["Rui: Are you sure, {PLAYER}? It may\nbe something important. Don't you\nthink we should take it?"]); return; }
+      f.orreLabDataROM = true;
+      Player.addItem(player, "data-rom");
+      Overworld.refreshPeople();
+      await sayWithJingle("mus_obtain_key_item", "{PLAYER} obtained the Data ROM.");
+      await persist();
+      return;
+    }
+    if (script === "ShadowLab_EventScript_TM26") {
+      f.orreLabTM26 = true;
+      Player.addItem(player, "tm26");
+      Overworld.refreshPeople();
+      await sayWithJingle("mus_obtain_item", "{PLAYER} found " + Bag.name("tm26") + "!");
+      await persist();
+    }
+  }
+  // Into a room behind one of the lab's locked doors (Orre.LAB.DOORS): with its key, used (Colosseum's words for the
+  // Card Key's, D1_labo_1F #21085; the Down St. Key's alike); without, Colosseum's words for the door, and back out.
+  const labDoorShut = (script) => Orre.LAB.doorShut(script, player.flags);
+  async function labDoor(script) {
+    if (!labDoorShut(script)) return;
+    const d = Orre.LAB.DOORS[script], f = player.flags;
+    if (d.key && Player.itemCount(player, d.key) > 0) {
+      f[d.flag] = true;
+      await say("{PLAYER} used the " + Bag.name(d.key) + ".");
+      await persist();
+      return;
+    }
+    await say(d.key ? "The " + Bag.name(d.key) + " is needed to open\nthis door." : "The door is locked.");
+    Screen.say("");
+    player.location = Object.assign({}, d.back);
+    await Overworld.teleport(player.location);
   }
   async function labEin() {
     await say(["Ein: Waah! How did you get in without\nmy notice?", "Ein: Ah, I see. You must be the\nmuch-talked-about {PLAYER}. Little\ndid I expect to see you here.",
@@ -7485,13 +7893,49 @@
     player.location = { map: "RealgamTower_Dome", x: 6, y: 3, facing: "down" };
     await Overworld.teleport(player.location);
   }
+  // A round of Realgam Tower's Colosseum (Orre.REALGAM_ROUNDS): a Trainer's words, their party (their Shadow Pokémon
+  // to be snagged, or what's in its place once it has been), won?
+  async function realgamRound(script, words) {
+    const f = player.flags, d = Orre.SHADOW_TRAINERS[script];
+    await say(words || d.intro);
+    const team = Orre.realgamRoundTeam(d.trainer, f.orreShadowSnagged), shadows = team.filter((r) => r.shadow).map((r) => r.species);
+    const opts = { foe: { name: d.name, team, pic: d.pic }, prizeClass: d.cls, noBlackout: true, snag: shadows, defeatText: d.defeat || d.kept };
+    const outcome = await storyBattle(opts);
+    const snagged = (opts.snagged || []).filter((sp) => shadows.includes(sp));
+    if (snagged.length) {
+      (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...snagged);
+      const done = (f.orreShadowDone = f.orreShadowDone || []);
+      if (!done.includes(script)) done.push(script);
+    }
+    await persist();
+    return outcome === "won";
+  }
+  const realgamHeal = async () => { player.party.forEach(Party.heal); await say("Your Pokémon were restored to\nfull health."); };
+  // Realgam Tower's Colosseum (orreStory 42), as in Colosseum: Nascour's words (D4_casino_colo #21722), then four
+  // rounds before the crowd, Jomas, Delan, Nella and Ston (orreRealgamRound: those won; lose one and it's back to the
+  // first), then, healed, Nascour himself (#21725).
   async function realgamNascour() {
     const f = player.flags;
-    await say(f.orreNascourMet ? ["Nascour: I will destroy you in battle\nright now. You will know the\nhumiliation of total domination", "before this crowd!"]
-      : ["Nascour: What kept you, {PLAYER}? I\nworried that perhaps Gonzap had\nbeaten you.", "Nascour: The time has come for you to\npay off some debts.",
-        "Nascour: We'll have you battle as\npayment towards the huge losses you\ninflicted on us.", "Nascour: I expect to see spectacular\nbattling out of you. After all,\nyou're here to entertain! Waahahahah!",
-        "Nascour: …I will destroy you in\nbattle right now. You will know the\nhumiliation of total domination", "before this crowd!"]);
-    f.orreNascourMet = true;
+    if (!f.orreNascourMet) {
+      await say(["Nascour: What kept you, {PLAYER}? I\nworried that perhaps Gonzap had\nbeaten you.", "Nascour: The time has come for you to\npay off some debts.",
+        "Nascour: We'll have you battle as\npayment towards the huge losses you\ninflicted on us.", "Nascour: I expect to see spectacular\nbattling out of you. After all,\nyou're here to entertain! Waahahahah!"]);
+      f.orreNascourMet = true;
+    }
+    while ((f.orreRealgamRound | 0) < Orre.REALGAM_ROUNDS.length) {
+      if (!(await realgamRound(Orre.REALGAM_ROUNDS[f.orreRealgamRound | 0]))) {
+        f.orreRealgamRound = 0;
+        await say(["Nascour: I expect to see spectacular\nbattling out of you. After all,\nyou're here to entertain! Waahahahah!"]);
+        await persist(); return;
+      }
+      f.orreRealgamRound = (f.orreRealgamRound | 0) + 1;
+      await persist();
+    }
+    await realgamHeal();
+    await say(f.orreNascourBravo ? ["Nascour: I will destroy you in battle\nright now. You will know the", "humiliation of total domination\nbefore this crowd!"]
+      : ["Nascour: Bravo! Bravo! Well done!", "Nascour: Why not become a Cipher\nshow-battle trainer? Would you even\nconsider it?", "Nascour: I'll vouch that you will\nbecome a top star in no time.",
+        "Nascour: …I wouldn't have minded\nmaking that proposition, but I'm\nafraid I'm not that bighearted.", "Nascour: I will destroy you in battle\nright now. You will know the",
+        "humiliation of total domination\nbefore this crowd!"]);
+    f.orreNascourBravo = true;
     if (!(await bossBattle("Nascour", "Cipher Admin Nascour", "gentleman", ["N-No! There's no… This can't\nbe happening!"]))) {
       await say(["Nascour: I expect to see spectacular\nbattling out of you. After all,\nyou're here to entertain! Waahahahah!"]); return;
     }
@@ -7503,8 +7947,34 @@
     f.orreStory = 43;
     await persist();
   }
+  // After the game, Realgam Tower's Colosseum again as a tournament (as in Colosseum): its four rounds, then Nascour
+  // and Evice, healed before each of them; a Shadow Pokémon not yet snagged is still theirs, one snagged replaced
+  // (Orre.realgamRoundTeam). Lose one and you're out. (The host's question, and the win, our own words.)
+  async function realgamTournament() {
+    if (!(await confirm("Take on the Realgam Tower\nColosseum's six in a row?"))) return;
+    await realgamHeal();
+    const rounds = Orre.REALGAM_ROUNDS.map((s) => [s]).concat([
+      ["RealgamTower_Colosseum_Nascour", ["Nascour: I will destroy you in battle\nright now. You will know the", "humiliation of total domination\nbefore this crowd!"], "Nascour", "Cipher Admin Nascour", "gentleman", ["N-No! There's no… This can't\nbe happening!"]],
+      ["RealgamTower_Colosseum_Evice", ["Es Cade: Now, are you prepared to be\ndevastated once again?"], "Evice", "Cipher Head Evice", "gentleman", ["Nooooooooh! Even my ultimate\nPokémon!"]]]);
+    for (const [script, words, trainer, name, pic, defeat] of rounds) {
+      if (!trainer) { if (!(await realgamRound(script))) return; continue; }
+      await realgamHeal();
+      await say(words);
+      const f = player.flags, team = Orre.realgamRoundTeam(trainer, f.orreShadowSnagged), shadows = team.filter((r) => r.shadow).map((r) => r.species);
+      const opts = { foe: { name, team, pic }, prizeClass: "Leader", noBlackout: true, snag: shadows, defeatText: defeat };
+      const outcome = await storyBattle(opts);
+      const snagged = (opts.snagged || []).filter((sp) => shadows.includes(sp));
+      if (snagged.length) (f.orreShadowSnagged = f.orreShadowSnagged || []).push(...snagged);
+      await persist();
+      if (outcome !== "won") return;
+    }
+    await say("You won all six of Realgam Tower\nColosseum's battles!");
+    await persist();
+  }
   async function realgamEvice() {
     const f = player.flags;
+    // (Colosseum heals your Pokémon before Evice too.)
+    if ((f.orreStory | 0) === 43) await realgamHeal();
     if (!f.orreEviceMet) {
       await say(["Rui: Huh? Mr. Mayor? Why are you\nhere?"]);
       await say(["Es Cade: My, my. That certainly was a\nbattle worth seeing.", "Es Cade: I must be honest with you. I\nnever imagined that you would get\nthis far.",
@@ -7580,7 +8050,10 @@
     if (stage.won) await say(stageWords(stage.won));
     if (stage.item) {
       Player.addItem(player, stage.item);
-      await sayWithJingle("mus_obtain_item", "{PLAYER} obtained " + article(Bag.name(stage.item)) + "!");
+      // (`itemText`: the game's own words for it, Myron's Card Key; `afterItem`: what's said then, Rui's.)
+      await sayWithJingle(window.ITEMS[stage.item] && window.ITEMS[stage.item].category === "key-items" ? "mus_obtain_key_item" : "mus_obtain_item",
+        stage.itemText || "{PLAYER} obtained " + article(Bag.name(stage.item)) + "!");
+      if (stage.afterItem) await say(stageWords(stage.afterItem));
     }
     if (stage.after && !stage.won) await say(stageWords(stage.after));
     await persist();
@@ -7657,8 +8130,298 @@
     pg.justy = true;
     await persist();
   }
+  // ---------- Orre: Pyrite's windmill, its Colosseum's knockout challenge, Fateen; Phenac Stadium (game/orre-pyrite.js) ----------
+  //
+  // Colosseum's words throughout (M2_windmill_1F, M2_out, M2_enter_1F, M2_uranai_1F, M2_guild_1F_1, M1_stadium_1F): the
+  // ids are by each line. After Silva storms out of Duking's house he rips a gear out of the windmill (orreGear 1); the
+  // Chief asks you to find it; it's in town (two worn gears are junk) (2); back at the windmill Duking's tending the
+  // Chief, the gear goes in and Duking asks you to win the Colosseum's knockout challenge (3); win it and Nore, "for
+  // Miror B.'s gorgeous gift", leads you into the Pyrite Building (4, orreStory 24). After Miror B., Fateen stops you
+  // in town and sends you north to Agate (28). Phenac Stadium's first visit comes before Wakin (orreStadium).
+  const WINDMILL_GEAR_PLEA = ["Owowowow… That Silva's gone too\nfar this time.", "He ripped out and ripped off one\nof the gears.", "The Colosseum's going to be\nwithout power!"];
+  async function pyriteExtra(script, ev) {
+    const f = player.flags, story = f.orreStory | 0, gear = f.orreGear | 0;
+    const chief = (pages) => say(pages.map((p, i) => (i ? p : "Chief: " + p)));
+    switch (script) {
+      // (The windmill: #20504-#20509 the Chief's plea; then the gear brought back.)
+      case "enter:PyriteTown_Windmill": {
+        if (gear === 1 && !f.orreWindmill) {
+          await chief(WINDMILL_GEAR_PLEA);
+          await chief(["Yeah, the only thing bruised is my\npride. It was only Silva, so I wasn't\nexpecting any trouble."]);
+          await chief(["That's what I want to know. He was\nranting about how the Colosseum can\njust shut down or something."]);
+          await chief(["Sorry to worry you younglings.\nThanks. I'll be fine now.", "But I need to ask for a favor.\nWill you hear me out?"]);
+          while (!(await confirm("Hear the Chief out?"))) await chief(["Oh, now, don't be that way. Hear\nme out."]);
+          await chief(["If the Colosseum loses power, the\nwhole town suffers.", "I need you to find that Gear Silva\nran off with. I'm counting on you\nyounglings!"]);
+          f.orreWindmill = true;
+          await persist();
+          return;
+        }
+        if (gear !== 2) return;
+        const D = ORRE("WINDMILL_DUKING");
+        Overworld.addObject(D, { x: 6, y: 8, facing: "left" }, { sprite: "black_belt", width: 16, height: 32, frames: 10 });
+        await say(["Worker: Oh! That Gear! That's the\nstolen Gear!", "Please! Quickly! Give it to the\nChief!"]);
+        await say(["Duking: Terribly sorry, Chief. You're\nsure you're okay?"]);
+        await chief(["Ayup. I'm fine. There's no need\nfor all the worrying."]);
+        await say(["Duking: Good. That's good… But Silva…\nThis is an outrage…"]);
+        await chief(["No, no. I reckon he agonized over\nthis and did it because he thought it\nright. I can't blame the man for that.",
+          "Enough about that, Duking.\nInstead, I think you should look over\nthere."]);
+        await Overworld.act([{ who: D, moves: ["face_down"] }]);
+        await say(["Duking: Wha… You people?", "Duking: Th-That's the Gear! You found\nit for us? What amazing luck!"]);
+        await chief(["Hehe. I reckon you might be saying\nthanks, Duking.", "All right. I'll get you to slot\nthat Gear snugly back in that gap\nwhere it belongs."]);
+        Screen.say("");
+        sfx("se_pin");
+        await Overworld.shake(4, { x: 1, y: 0, delay: 3 });
+        await say(["Worker: Thank you! The power should\nbe restored at the Colosseum now."]);
+        await say(["Duking: I'll ask you to excuse me for\nmy behavior earlier. You seem to be\npeople who are worthy of trust.", "Duking: You have my sincere thanks."]);
+        await say(["Duking: I can tell that you're a man\nof courage and honor. I have a favor\nto ask. Will you hear me out?"]);
+        while (!(await confirm("Hear Duking out?"))) await say(["Duking: I have no one else to turn\nto. Please, hear me out."]);
+        await say(["Duking: I'm grateful. I want you to\nenter the next Colosseum battle.", "Duking: I need you to win the\nknockout challenge and find out what\nis going on there.",
+          "Duking: I can tell from a glance that\nyou're no ordinary trainer."]);
+        Screen.say("");
+        await Overworld.act([{ who: D, moves: ["walk_down", "walk_down", "walk_left", "set_invisible"] }]);
+        Overworld.removeObject(D);
+        f.orreGear = 3;
+        await persist();
+        return;
+      }
+      case "PyriteTown_Windmill_EventScript_Chief":
+        if (story >= 27) { await chief(["That Miror B.'s a bad parasite. If\nonly someone'd stomp that pest…\nWahaha!"]); return; }
+        if (gear >= 3) { await chief(["Wahaha! This is the way it ought\nto be. Things are fine now."]); return; }
+        if (gear >= 1) { await chief(f.orreWindmill ? ["If the Colosseum loses power, the\nwhole town suffers.", "I need you to find that Gear Silva\nran off with. I'm counting on you\nyounglings!"] : WINDMILL_GEAR_PLEA); return; }
+        await chief(pickOne([["Wahaha! Not to disappoint you, but\nthis isn't a job that anyone can just\npick up.", "Give it another twenty years, then\ncome back. Wahaha!"],
+          ["Wahaha! No doubt, no doubt!", "I've been doing this for thirty\nyears! Only I can do this! Wahaha!"]]));
+        return;
+      case "PyriteTown_Windmill_EventScript_Worker":
+        await say(story >= 27 ? ["Hi, folks! The Windmill's\noperating perfectly, and it's all\nthanks to you!"]
+          : story >= 25 ? ["Oh, so Miror B. was holding\nDuking's Pokémon hostage?", "So that was the problem! What a\nterrible thing to do."]
+            : gear >= 3 ? ["Thank you! The power should be\nrestored at the Colosseum now."]
+              : ["This Windmill generates\nelectricity for powering the\nColosseum.", "It may look a little worse for\nwear, but it's still going strong in\nactive service."]);
+        return;
+      case "PyriteTown_Windmill_EventScript_Gears":
+        await say(gear === 1 || gear === 2 ? ["One of the gears is missing!"] : ["Large gears are rotating.", "It appears to be a power supply."]);
+        return;
+      case "PyriteTown_EventScript_WindmillMan":
+        await say(["S-Someone… There's trouble… H-Help\nme…", "The Chief's inside! Silva came\nand…"]);
+        return;
+      case "PyriteTown_EventScript_Gear":
+        if (gear !== 1) return;
+        Overworld.removeObject(ORRE("GEAR_REAL"));
+        await sayWithJingle("mus_obtain_key_item", "{PLAYER} found the Gear for the\nWindmill!");
+        f.orreGear = 2;
+        await persist();
+        return;
+      case "PyriteTown_EventScript_JunkGear":
+        await say(["A worn gear is on the floor. It\nappears to be junk."]);
+        return;
+      // (Fateen's fortune-telling chamber.)
+      case "PyriteTown_FortuneHouse_EventScript_Fateen": {
+        const fate = (pages) => say(pages.map((p) => "Fateen: " + p));
+        if (story >= 36) { await fate(["Find what you seek, be it an\nobject, person, or luck. Welcome to\nFateen's Fortune-Telling Chamber."]); return; }
+        if (story >= 33) { await fate(["I see… I see it…", "Deep under the ground… A\nswirling black cloud… I see it\nclearly!", "That black whirlpool of smoke\nis a new enemy. Go with caution. This\none won't be easy."]); return; }
+        if (story >= 30) {
+          await fate(["Have you visited Agate\nVillage?"]);
+          await fate((await confirm("Have you visited Agate?")) ? ["Agate is now home to many\nformer trainers who were skilled in\ntheir heyday.", "It is best to confer with the\nexperts when it comes to Pokémon."]
+            : ["Agate is now home to many\nformer trainers who were skilled in\ntheir heyday.", "Come to think of it… A man\nonce considered the mythical trainer\nnow lives there."]);
+          return;
+        }
+        if (story >= 28) { await fate(["The key for lifting the black\naura from Pokémon… It appears to be\nin the north.", "You should visit Agate Village\nwhere the girl's grandfather lives."]); return; }
+        if (story >= 24) { await fate(["You've been crowned as the\nwinner in the battle challenge. Well\ndone. You've impressed me.", "Oh? I see a small Pokémon\ncrying troubled tears somewhere.\nQuickly, you must save it."]); return; }
+        if (gear === 1) {
+          await fate(["Fwofwofwo. You seek what is\nmissing before you enter the\nColosseum, yes?", "Or, have you sought me to\nhave your fortune read?"]);
+          await fate(["However, you've come at a\nmost inconvenient time. I am busy\nwith this customer, as you can see.", "This time, you must find what\nyou seek yourself. Fwofwofwo."]);
+          await fate(["Good, good, that's the\nspirit. I'll leave you to your own\ndevices to find what you seek.\nFwofwofwo."]);
+          return;
+        }
+        if (gear === 2) { await fate(["My. I see you've found what\nyou sought without my help. Well\ndone!"]); return; }
+        await fate(["Find what you seek, be it an\nobject, person, or luck. Welcome to\nFateen's Fortune-Telling Chamber.", "I am Fateen. If ever a\nproblem clouds your brow, you shall\ncome to me.",
+          "Whatever your problem may be,\nmy fortune-telling shall lead to the\nsolution. Fwofwofwo."]);
+        await fate(["Oh, dear me. A problem vexes\nyou?", "If you so wish, I shall solve\nit for you with my fortune-telling.\nFwofwofwo."]);
+        if (!(await confirm("Have your fortune told?"))) { await fate(["Fwofwofwo. Come back if you\nhave a change of heart. No harm will\ncome from what I do."]); return; }
+        await fate(["Very well. Your trust will\nnot be betrayed. Let me begin."]);
+        await fate(["Oh! Oh! What is the meaning\nof this?", "Hmm… You are at the center of\na monumental incident, it seems.", "It is pointless for me to say\nany more about it. You must make your\nway to the Colosseum.",
+          "Your fortune has been told.\nAnd it requires you to win at the\nColosseum. Go, and do your best."]);
+        return;
+      }
+      case "PyriteTown_FortuneHouse_EventScript_Customer":
+        await say(story >= 27 ? ["People call Fateen the Mother\nof Pyrite. Her ability as a\nfortune-teller is highly regarded.", "Why, just a while ago, she\ntold me that the lottery tickets I\nbought were all duds before the draw.\nSob…"]
+          : ["People call Fateen the Mother\nof Pyrite. Her ability as a\nfortune-teller is highly regarded.", "Why, just a while ago, she\neven determined where my wife is\nliving since she left me… Sob…"]);
+        return;
+      case "PyriteTown_FortuneHouse_EventScript_Helper":
+        await say(["Find what you seek, be it an\nobject, person, or luck. Welcome to\nFateen's Fortune-Telling Chamber.", "Oh, wait. These aren't my\nlines, they're Fateen's. Ehehe."]);
+        return;
+      // (The Pyrite Building: locked till Nore leads you in, #15295.)
+      case "enter:PyriteTown_PyriteBuilding_1F": {
+        await say(["The door is locked."]);
+        const door = window.WORLD_MAPS.PyriteTown.warps.find((w) => w.map === "PyriteTown_PyriteBuilding_1F");
+        player.location = { map: "PyriteTown", x: door.x, y: door.y + 1, facing: "down" };
+        await Overworld.teleport(player.location);
+        return;
+      }
+      // (The Colosseum's lobby.)
+      case "PyriteTown_Colosseum_EventScript_Fan":
+        await say(gear >= 4 ? ["Wow, really. So you really went\nand won it all. It'll be my turn\nnext!"]
+          : ["Hehehe. Here's my chance to win\nthe knockout challenge and score\nmyself an awesome Pokémon…", "Oh, sheesh, what am I saying? You\nhave to keep that a secret! Pretend\nyou never heard me, okay?"]);
+        return;
+      case "PyriteTown_Colosseum_EventScript_Kid":
+        if (story >= 27) { await say(["Drat. It sounds like you can't get\none of those awesome Pokémon if Miror\nB.'s not around.", "I'll just have to toughen up my\nPokémon with the TMs you get for\nwinning challenges, so it can beat\nthose awesome Pokémon."]); return; }
+        if (gear >= 4) {
+          await say(["Oh, hey! Champ! Did they really\ngive you an awesome Pokémon?"]);
+          await say((await confirm("Did they?")) ? ["Awwwww, dude! I want one, too!\nYes, I do!"] : ["Hah? No kidding? So that was just\na bogus rumor…"]);
+          return;
+        }
+        await say(["Tch! I didn't get here in time to\nmake the registration.", "I've heard rumors that if you win\nthe challenge, you get an awesome\nPokémon like that Cail did…",
+          "Oh, sheesh, what am I saying? You\nhave to keep that a secret! Pretend\nyou never heard me, okay?"]);
+        if (story === 22 && !f.orreLobby) {
+          await say(["Rui: {PLAYER}! Wasn't Cail that guy\nwho was hanging around the town's\nentrance?", "Rui: We should ask him. He might know\nsomething."]);
+          f.orreLobby = true;
+          await persist();
+        }
+        return;
+      // (Phenac Stadium: its first visit, after the Mayor's heard Rui out, comes before Wakin.)
+      case "enter:PhenacCity_Stadium":
+        f.orreStadium = true;
+        await persist();
+        return;
+      case "PhenacCity_Stadium_EventScript_Fan":
+        await say(story >= 44 ? ["I think they've finally started\nregistering trainers for the next\nchallenge. If you want to join,\nhurry!"]
+          : ["Isn't this city's Stadium amazing?", "Oh, I wish I could soon battle at\na Stadium as fabulous as this one!"]);
+        return;
+      case "PhenacCity_Stadium_EventScript_Man":
+        if (story >= 44) {
+          await say(["Hi, there! Did you two come to\nregister for the next challenge?"]);
+          await say((await confirm("Here to register?")) ? ["Is that right? Actually, I came to\nenter the challenge, too.", "I intend to go all the way and\nscore that big cash prize. Just watch\nme!"]
+            : ["Oh. Is that right. Don't you two\nhave any ambition?"]);
+          return;
+        }
+        await say(["Hi! Are you here to take part in\nthe challenge, too?"]);
+        await say((await confirm("Here to take part?")) ? ["Oh, yeah? Well, me, too. I came\nhere hoping to participate in the\nchallenge.", "But I was disappointed. By the\ntime I arrived, the challenge had\nalready started.",
+          "I wanted to win this knockout\nchallenge. I would've liked to win\nthe cash prize and the Technical\nMachine (TM)."]
+          : ["Oh, so you must be here to watch\nthe battles. It's great to see some\nawesome Pokémon moves in a live\nsetting.", "The winner gets cash and a TM,\nwhich is short for Technical Machine.",
+            "A TM is used for teaching a move to a\nPokémon, so it's important."]);
+        return;
+    }
+  }
+  // After Miror B. (27): coming back into Pyrite, Fateen stops you two (M2_out #23290-#23293, Rui #23387-#23389).
+  async function fateenOutside() {
+    const f = player.flags, F = ORRE("FATEEN_OUT"), me = player.location;
+    Overworld.addObject(F, { x: me.x, y: me.y - 3, facing: "down" });
+    await Overworld.act([{ who: F, moves: ["walk_down", "walk_down"] }, { who: "player", moves: ["face_up"] }]);
+    await say(["Fateen: Oh? Yoohoo, you two there.\nWhere are you bound in such haste?"]);
+    await say(["Fateen: Ahhhhh… I might be imagining\nit, but the town's air feels somewhat\nless dirty.", "Fateen: But not all is well. I can\nfeel the presence of black auras\ncoming from Shadow Pokémon."]);
+    await say(["Fateen: There is but nothing that\neludes the notice of my\nfortune-telling. Fwofwofwo.", "Fateen: The key to freeing Pokémon\nfrom that black aura… It is in the\nnorth."]);
+    await say(["Rui: Wow! Fateen, nothing escapes\nyour notice.", "Rui: Up north… That's where my\ngrandpa lives, too…"]);
+    await say(["Fateen: Fwofwofwo. That being north\nmay be no mere coincidence. Your\nanswer may be there."]);
+    await say(["Rui: Oh! My grandpa was a famous\ntrainer when he was young.", "Rui: Maybe my grandpa would know\nsomething. Let's go see him,\n{PLAYER}."]);
+    Screen.say("");
+    await Overworld.act([{ who: F, moves: ["walk_up", "walk_up", "set_invisible"] }]);
+    Overworld.removeObject(F);
+    f.orreStory = 28;
+    Orre.unlock(f, "AgateVillage");
+    await persist();
+  }
+  // The Pyrite Colosseum's and Phenac Stadium's desks (Colosseum's own words): the story's knockout challenge at
+  // Pyrite (the gear back, orreGear 3: win it and Nore leads you to the Pyrite Building), and both as Colosseum's
+  // repeatable challenges after (Pyrite's once Miror B.'s gone, 27; Phenac's after the game, 44).
+  const DESK = {
+    PyriteTown_Colosseum_EventScript_Receptionist: {
+      welcome: ["Hello! Welcome to the Pyrite\nColosseum! Would you like to join a\nknockout challenge?"], party: ["Okay! Will you be entering with\nthe Pokémon that you have in your\nparty now?"],
+      rules: ["Colosseum battles are held in the\nDouble-Battle style with two Pokémon\nout from each party.", "You will win the challenge if you\ncan defeat four trainers in a row.",
+        "The challenge winner will receive\nnot only a big cash prize, but a\nTechnical Machine (TM) as well!"],
+      go: ["I hope you give it your best and\naim for victory."], declined: ["Oh, that's too bad. I hope you\nwill take part in the next challenge."],
+      reparty: ["Please switch your party Pokémon\nto the one you want to enter using\nthe PC."],
+      won: (money) => ["Congratulations! You're the\nchampion! You battled fabulously!", "Please accept your cash prize of\n¥" + money + "!"],
+      prize: (item) => ["And, as a victory prize, please\nalso accept this " + item + "!"], lost: ["It's too bad things didn't work\nout for you this time. Please enter\nagain!"],
+      bye: ["We'll be looking forward to your\nnext entry."] },
+    PhenacCity_Stadium_EventScript_Receptionist: {
+      welcome: ["Hello! Welcome to Phenac Stadium!\nWould you like to enter the knockout\nchallenge?"], party: ["Okay, so you will participate with\nthe Pokémon that you have in your\nparty now?"],
+      rules: ["The Stadium battles are all played\nin Double-Battle style with the\ntrainers putting two Pokémon out each.", "You win the challenge if you\ndefeat four trainers in a row.",
+        "The challenge champion wins not\nonly a cash prize, but also a TM\n(Technical Machine) with a Pokémon\nmove."],
+      shadow: ["Rui: Hey, {PLAYER}… Do you think\nmaybe using Shadow Pokémon here won't\nbe a good idea?", "Rui: I think you should use only\nordinary Pokémon for this challenge."],
+      go: ["Okay, please enter the Stadium\nthrough the doors to the right or\nleft side.", "I hope you give it your best\neffort and go for victory!"],
+      declined: ["Oh. That's too bad. I hope you'll\njoin us for the next challenge!"],
+      reparty: ["Please assemble the Pokémon party\nthat you wish to enter. If you need,\nuse the PC to switch the party\nPokémon in and out."],
+      won: (money) => ["Congratulations! You're the\nchampion! Your battles were\nfantastic!", "The victory means you have won the\n¥" + money + " cash prize!"],
+      prize: (item) => ["And, as a championship prize, you\nhave also won a " + item + "!"], lost: ["Too bad you couldn't win this\ntime! Please try again!"],
+      bye: ["I hope you will participate again!"] }
+  };
+  async function colosseumDesk(script) {
+    const t = Orre.TOURNAMENTS[script], w = DESK[script], f = player.flags, story = f.orreStory | 0, gear = f.orreGear | 0;
+    const pyrite = script === "PyriteTown_Colosseum_EventScript_Receptionist";
+    if (!pyrite && story < 44) {
+      await say(["Welcome to Phenac Stadium.", "This is where we register trainers\nfor challenges.", "However, the current challenge has\nalready started. So, we are no longer\naccepting trainers for this\nchallenge.",
+        "Please come back and enter the\nnext challenge."]);
+      return;
+    }
+    const storyRun = pyrite && story < 27;
+    if (storyRun) {
+      if (gear >= 4) { await say(["Your winning streak was amazing! I\nhope you will participate again!"]); return; }
+      if (gear === 1 || gear === 2) { await say(["We have a terrible problem! The\nColosseum doors suddenly stopped\nworking. They won't open!", "Oh, I don't know what to do! We\ncan't hold battles this way."]); return; }
+      if (gear !== 3) {
+        await say(story >= 23 ? ["Oh, good. You see, the challenge\nhas already started.", "Please take part in the next\nchallenge."] : ["I'm sorry, but the current\nchallenge is already under way.", "Please wait for the next\nchallenge's registration."]);
+        return;
+      }
+      if (!f.orrePower) { await say(["Thank you for your patience! The\npower has been turned back on. I'll\nbe happy to accept registrations for\nthe next challenge."]); f.orrePower = true; }
+      await say(["Welcome to Pyrite Colosseum! Are\nyou here to register for entry?"]);
+    } else await say(w.welcome);
+    const wins = (f.orreTourney = f.orreTourney || {});
+    if (!(await confirm("Enter the challenge?"))) { await say(w.declined); return; }
+    if (!wins[t.key]) await say(w.rules);
+    await say(w.party);
+    if (!(await confirm("Enter with this party?"))) { await say(w.reparty); return; }
+    if (player.party.filter((r) => !r.egg).length < 2) { await say(w.reparty); return; }
+    if (w.shadow && f.orreRui && player.party.some((r) => r.shadow)) await say(w.shadow);
+    await say(w.go);
+    const top = Math.max(...player.party.filter((r) => !r.egg).map((r) => r.level));
+    const draw = Orre.tournamentDraw(t, top, Player.levelCap(player)), heal = () => player.party.forEach(Party.heal);
+    heal();
+    for (let round = 0; round < 4; round++) {
+      const e = draw[round];
+      await say([round === 3 ? "The final! Your opponent: " + e.name + "!" : "Round " + (round + 1) + "! Your opponent:\n" + e.name + "!"]);
+      Screen.say("");
+      const outcome = await storyBattle({ foe: { name: e.name, team: teamOf(e.team), pic: e.pic }, prizeClass: e.cls, noBlackout: true,
+        defeatText: [pickOne(["You're as tough as they said!", "Argh! I was so close!", "Well fought. Go win the\nwhole thing!", "Not bad… not bad at all."])] });
+      heal();
+      if (outcome !== "won") { await say(w.lost); await persist(); return; }
+    }
+    const firstTime = !wins[t.key], item = firstTime ? t.first : pickOne(t.items);
+    wins[t.key] = (wins[t.key] | 0) + 1;
+    Player.addMoney(player, t.prize);
+    Player.addItem(player, item, 1);
+    if (storyRun) {
+      // (#20378 and #20727: the story's challenge won.)
+      await say(["{PLAYER}, congratulations! You\nhave won the knockout challenge!", "You have won the ¥" + t.prize + " cash prize and\nthe top " + Bag.name(item) + " prize!"]);
+      await sayWithJingle(itemJingle(item), ["{PLAYER} obtained ¥" + t.prize + "!", "{PLAYER} obtained the " + Bag.name(item) + "!"]);
+      await pyriteChampion();
+      return;
+    }
+    await sayWithJingle("mus_obtain_badge", w.won(t.prize));
+    await say(w.prize(Bag.name(item)));
+    await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
+    await say(w.bye);
+    await persist();
+  }
+  // The challenge's "gorgeous gift" (M2_out #20357): Nore leads you into the Pyrite Building (M2_building_1F #20427).
+  async function pyriteChampion() {
+    const f = player.flags, N = ORRE("LOBBY_NORE"), door = window.WORLD_MAPS.PyriteTown_Colosseum.warps[0];
+    Overworld.addObject(N, { x: door.x, y: door.y - 1, facing: "up" }, { sprite: "orre_peon_m", width: 16, height: 32, frames: 9 });
+    await Overworld.act([{ who: N, moves: ["walk_up"] }, { who: "player", moves: ["face_down"] }]);
+    await say(["???: Hi, there! You must be the superb\ntrainer who has emerged triumphant in\nour latest battle challenge.",
+      "???: Miror B., the town's true mover\nand shaker, wishes you to have a\ngorgeous gift.", "???: Now, follow me."]);
+    Screen.say("");
+    await Overworld.fadeToBlack();
+    Overworld.removeObject(N);
+    f.orreGear = 4;
+    f.orreStory = Math.max(f.orreStory | 0, 24);
+    player.location = { map: "PyriteTown_PyriteBuilding_1F", x: 14, y: 3, facing: "up" };
+    await Overworld.teleport(player.location);
+    await Overworld.fadeFromBlack();
+    await say(["Nore: Right, I'm back with our latest\nchallenge champion.", "Nore: Let's present our lucky winner\nwith a Shadow Pokémon and watch chaos\nunleashed! Fufufu…"]);
+    await persist();
+    await pyriteNore();
+  }
   async function pyriteArrival() {
     const f = player.flags;
+    if ((f.orreStory | 0) === 27) { await fateenOutside(); return; }
     // (Colosseum's words: the townsman at the way in, then Rui.)
     await say(["Man: This is Pyrite, the town of\nearth, wind, and money.", "Man: You appear to be outsiders. You\nhad best beware. There are many\nne'er-do-well sorts here."]);
     await say(["Rui: {PLAYER}… It was here in this\nsquare that I saw that strange\nPokémon.", "Rui: I tried to leave town\nafterwards, and that's when those\ncreeps grabbed me.",
@@ -7691,11 +8454,15 @@
         "Duking: {PLAYER}. I'm counting on\nyou."]);
       return;
     }
+    // (While the windmill's gear is gone, #20390; back in, #23483; after the challenge, he's out.)
+    const gear = f.orreGear | 0;
+    if (story === 23 && (gear === 1 || gear === 2)) { await say(["Duking: What?! Silva cut the power to\nthe Colosseum? Grrr…"]); return; }
+    if (story === 23 && gear === 3) { await say(["Duking: I know you can win! I'm\nsorry, but help me."]); return; }
     if (story !== 23) { await say(["Duking: The name's Duking. I run the\nColosseum here.", "Duking: Sorry, but I'm busy. You'll\nhave to excuse me."]); return; }
-    // (Silva in the doorway, then Marcia.)
+    // (Silva in the doorway; gone, he rips the windmill's gear out: orreGear 1, game/orre-pyrite.js.)
     const S = ORRE("SILVA"), door = window.WORLD_MAPS.PyriteTown_DukingsHouse.warps[0];
-    // (Colosseum's words, all of the scene's: #20379, #20383, #20386; Silva #20760, #20383, #20762; Marcia #20763, #20764;
-    // Rui #20573, #20579.)
+    // (Colosseum's words, all of the scene's: #20379, #20383, #20386; Silva #20760, #20383, #20762. Marcia's #20763 and
+    // #20764 are in the Pyrite Building, M2_building_1F: pyriteNore.)
     await say(["Duking: The name's Duking. I run the\nColosseum here."]);
     await say(["Duking: …", "Duking: Sorry, but I'm busy. You'll\nhave to excuse me."]);
     sfx("se_door");
@@ -7709,12 +8476,8 @@
     await Overworld.act([{ who: S, moves: ["walk_fast_down", "walk_fast_down", "set_invisible"] }]);
     sfx("se_door");
     Overworld.removeObject(S);
-    const M = ORRE("MARCIA");
-    await Overworld.act([{ who: M, moves: ["walk_right", "face_right"] }]);
-    await say(["Marcia: Big lady! My papa… Papa's\nPokémon was taken away by Miror B. as\na prisoner!", "Marcia: It's Papa's Plusle. I'm so\nworried that they might be mean to\nit…"]);
-    await say(["Rui: He did what?! Miror B. used a\ndirty move like that?", "Rui: We have to rescue Duking's\nPlusle and put a stop to Miror B."]);
-    await Overworld.act([{ who: M, moves: ["walk_left", "face_right"] }]);
-    f.orreStory = 24;
+    f.orreGear = 1;
+    Overworld.refreshPeople();
     await persist();
   }
   // The Pyrite Building: Nore on the stairs; then Duking.
@@ -7746,12 +8509,19 @@
     await say(["Duking: Shadow Pokémon? Those\nferocious Pokémon that even attack\npeople?!"]);
     await say(["Rui: Yes! They're giving away Shadow\nPokémon to thugs for some reason. It\ndoesn't look good."]);
     await say(["Duking: Grrr… They were using the\nColosseum to do that?!", "Duking: It's humiliating. But with\nPlusle in their filthy hands, my own\nhands are tied…"]);
+    // (Marcia runs in: Colosseum's M2_building_1F #20763, #20764; Rui's #20573, then #20576 and #23076.)
+    const MA = ORRE("BUILDING_MARCIA");
+    sfx("se_door");
+    Overworld.addObject(MA, { x: door.x + 1, y: door.y - 1, facing: "up" }, { sprite: "little_girl", width: 16, height: 32, frames: 10 });
+    await say(["Marcia: Big lady! My papa… Papa's\nPokémon was taken away by Miror B. as\na prisoner!", "Marcia: It's Papa's Plusle. I'm so\nworried that they might be mean to\nit…"]);
+    await say(["Rui: He did what?! Miror B. used a\ndirty move like that?"]);
     await say(["Rui: He's not getting away with this!\nThat rotten Miror B.!", "Rui: But we're here now! We'll get\nPlusle back for you! Right, {PLAYER}?"]);
+    await say(["Rui: Duking, it's dangerous inside\nthis building. You've got to get\neveryone out to safety."]);
     await say(["Duking: Thanks for everything… I have\nto depend on you. I have no choice.", "Duking: Be careful always! Miror B.\nmight look like a clown, but his\nbattling is all business!"]);
     await say(["Rui: Giggle! I know I can always\ncount on you, {PLAYER}!"]);
     Screen.say("");
-    await Overworld.act([{ who: D, moves: ["walk_down", "set_invisible"] }]);
-    Overworld.removeObject(D);
+    await Overworld.act([{ who: D, moves: ["walk_down", "set_invisible"] }, { who: MA, moves: ["walk_down", "set_invisible"] }]);
+    Overworld.removeObject(D); Overworld.removeObject(MA);
     f.orreStory = 25;
     Overworld.refreshPeople();
     await persist();
@@ -7859,10 +8629,8 @@
     f.orreStory = 27;
     Overworld.refreshPeople();
     await Overworld.fadeFromBlack();
-    await say(["Rui: Miror B. got away, but things\nwill be back to normal here.", "Rui: Oh, no! I forgot! I was on my\nway to visit Grandpa!", "Rui: He lives in Agate Village.\nThat's north of here.",
-      "Rui: Oh! My grandpa was a famous\ntrainer when he was young.", "Rui: Maybe my grandpa would know\nsomething. Let's go see him,\n{PLAYER}."]);
-    f.orreStory = 28;
-    Orre.unlock(f, "AgateVillage");
+    await say(["Rui: Miror B. got away, but things\nwill be back to normal here."]);
+    // (Back in town, Fateen stops you and points you north: fateenOutside, orreStory 28.)
     await persist();
   }
   // Es Cade, at home.

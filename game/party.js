@@ -201,7 +201,8 @@
       gmax: !!record.gmax,
       teraType: teraType(record), personality: record.personality,
       teraAce: !!record.teraAce,   // (a trainer's ace, which Terastallizes as soon as it can)
-      shadow: !!record.shadow   // (one of Orre's Shadow Pokémon)
+      shadow: !!record.shadow,   // (one of Orre's Shadow Pokémon)
+      heart: record.shadow ? (record.heart | 0) : 0   // (how shut its heart still is: Colosseum's Hyper Mode)
     };
   }
 

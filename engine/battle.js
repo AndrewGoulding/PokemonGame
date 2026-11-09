@@ -142,6 +142,10 @@
   const tr = Math.trunc;
   // A Tera Raid's Pokémon's extra actions, by stars (Battle.raidCheck): the
   // HP fractions it acts at, and every how many turns it acts as well.
+  // (Colosseum's Hyper Mode, battle.hyperMode: the chance, as it's about to act, that a Shadow Pokémon whose heart is
+  // shut tight goes into it (less as its heart opens); how often it does as it's told in it; and how far it raises
+  // Shadow Rush's critical-hit stage. Colosseum documents no numbers for these: this game's own.)
+  const HYPER_CHANCE = 0.2, HYPER_OBEY = 0.5, HYPER_CRIT = 2;
   const RAID_THRESHOLDS = [[], [], [0.5], [0.5], [0.66, 0.33], [0.75, 0.5, 0.25]];
   const RAID_EVERY = [0, 0, 0, 5, 4, 3];
   const RAID_FAINT_TURNS = 2;
@@ -329,6 +333,11 @@
       // (Ogerpon's is its mask's, Terapagos's Stellar, whatever was set.)
       // (Orre's Shadow Pokémon: what Shadow moves do to it, and Shadow Sky's.)
       this.shadow = !!set.shadow;
+      // (Colosseum's Hyper Mode: one of your Shadow Pokémon may go into it, its heart still shut (set.heart, 0-100);
+      // calling its name brings it back, and opens its heart a little: this.calls.)
+      this.heart = set.heart | 0;
+      this.hyper = false;
+      this.calls = 0;
       this.teraType = /^(Ogerpon|Terapagos)/.test(speciesKey) ? Battle.defaultTeraType(speciesKey) : set.teraType || Battle.defaultTeraType(speciesKey, set.personality);
       this.terastallized = null;
       this.teraAce = !!set.teraAce;
@@ -1392,6 +1401,7 @@
       side.actives[slot] = mon;
       mon.slot = slot;
       mon.isActive = true;
+      mon.wasOut = true;   // (it battled: a Shadow Pokémon's heart opens a little for it)
       mon.activeTurns = 0;
       mon.movesUsed = new Set();
       mon.lastMove = "";
@@ -1832,6 +1842,7 @@
       if (forced) { base.switches = []; return base; }
       base.active.trapped = this.isTrapped(mon);
       base.active.canCatch = sideId === "p1" && (this.wild || this.snaggable(side.foe.active));
+      base.active.canCall = sideId === "p1" && !!side.active.shadow;
       base.active.canRun = this.wild && sideId === "p1" &&
         (!base.active.trapped || mon.item === "smoke-ball" || mon.hasAbility("Run Away"));
       base.switches = base.active.trapped || this.arena ? [] : side.pokemon.map((p, i) => (!p.fainted && p !== side.active ? i : -1)).filter((i) => i >= 0);
@@ -1875,6 +1886,9 @@
         } else if (choice && choice.type === "run") {
           if (!req.active.canRun) return { ok: false, error: "You can't escape!" };
           side.choice = { type: "run" };
+        } else if (choice && choice.type === "call") {
+          if (!req.active.canCall) return { ok: false, error: "You can't do that." };
+          side.choice = { type: "call" };
         } else if (choice && choice.type === "move" && choice.palaceIdle) {
           side.choice = { type: "move", palaceIdle: true };   // (the Palace: it couldn't bring itself to, palaceChoice)
         } else if (choice && choice.type === "move") {
@@ -2033,6 +2047,8 @@
     itemError(side, choice) {
       const target = side.pokemon[choice.target];
       if (!target || !window.ItemUse || !window.ItemUse.effect(choice.item)) return "You can't use that here.";
+      // (Colosseum's: a Pokémon in Hyper Mode takes no item.)
+      if (target.hyper) return target.name + " is in HYPER MODE!\nIt won't accept an item!";
       if (!window.ItemUse.canUse(this.itemView(target), choice.item, { inBattle: true, move: choice.move })) return "It won't have any effect.";
       return null;
     }
@@ -2131,6 +2147,7 @@
         r.switches = r.trapped ? [] : side.bench(slot);
         // (A ball only while one wild Pokémon is left, as in Gen 5+.)
         r.canCatch = side.id === "p1" && ((this.wild && this.foesOf(mon).length === 1) || this.foesOf(mon).some((f) => this.snaggable(f)));
+        r.canCall = side.id === "p1" && !!mon.shadow;
         r.canRun = this.wild && side.id === "p1" && (!r.trapped || mon.item === "smoke-ball" || mon.hasAbility("Run Away"));
         return r;
       });
@@ -2193,6 +2210,9 @@
         } else if (c.type === "run") {
           if (!a.canRun) return err("You can't escape!");
           partial[slot] = { type: "run" };
+        } else if (c.type === "call") {
+          if (!a.canCall) return err("You can't do that.");
+          partial[slot] = { type: "call" };
         } else if (c.type === "move" && c.palaceIdle) {
           partial[slot] = { type: "move", palaceIdle: true };
         } else if (c.type === "move") {
@@ -2379,7 +2399,7 @@
         const entries = this.doubles ? s.choice.map((c, i) => [c, s.actives[i]]).filter(([c, m]) => c && m && !m.fainted)
           : [[s.choice, s.active]];
         for (const [c, mon] of entries) {
-          if (c.type === "run" || c.type === "ball" || c.type === "item") {
+          if (c.type === "run" || c.type === "ball" || c.type === "item" || c.type === "call") {
             actions.push({ order: 0, type: c.type, ball: c.ball, item: c.item, target: c.target, move: c.move,
               mon, side: s, priority: 0, speed: this.getSpeed(mon) });
           }
@@ -2635,6 +2655,8 @@
         const amount = E.gain({ species: foe.baseSpecies, level: foe.level, trainer: !this.wild,
           participants: divisor, luckyEgg: mon.item === "lucky-egg" });
         if (mon.level >= E.MAX_LEVEL) { unused += amount; return; }
+        // (Colosseum's: a Shadow Pokémon's Exp. Points are kept for it, mon.storedExp, and given back when it's purified.)
+        if (mon.shadow && mon.side.id === "p1") { mon.storedExp = (mon.storedExp || 0) + amount; return; }
         // (At the level cap: no Exp. Points, and it's said once a battle.)
         if (mon.level >= this.levelCap) {
           if (!this.capNoted.has(mon)) { this.capNoted.add(mon); this.add("-expcap", mon, this.levelCap, mon.teamIndex); }
@@ -2905,6 +2927,7 @@
         case "run": this.tryRun(a.mon); break;
         case "ball": this.throwBall(a.mon, a.ball); break;
         case "item": this.useItem(a.side, a.item, a.target, a.move); break;
+        case "call": this.callMon(a.mon); break;
         default: break;
       }
     }
@@ -2954,6 +2977,13 @@
         return;
       }
       const o = { slot: a.slot, forced: a.forced, secondTurn: a.forced && a.forced.secondTurn };
+      // (Colosseum's Hyper Mode: one of your Shadow Pokémon, its emotions running high, may go into it, and then may
+      // do as it pleases instead.)
+      if (!a.forced && mon.side.id === "p1" && mon.shadow && move.id !== "struggle") {
+        const r = this.hyperMode(mon, move, o);
+        if (r === false) return;
+        if (r) move = r;
+      }
       // Disobedience (FireRed's IsMonDisobedient): one of yours over the level
       // cap may not do as it's told.
       if (!a.forced && mon.side.id === "p1" && move.id !== "struggle" && mon.level > this.levelCap) {
@@ -2975,6 +3005,43 @@
       if (this.arena && mon.arena) mon.arena.mind += arenaMindRating(move);
       this.execMove(mon, move, o);
       if (this.arena && mon.arena) mon.arena.skill += this.arenaSkill(at, move);
+    }
+
+    // Colosseum's Hyper Mode (its Strategy Memo, "HYPER MODE": a Shadow Pokémon may behave abnormally at times,
+    // ignoring orders, even turning on its own trainer; it raises Shadow Rush's critical ratio and won't take items;
+    // calling its name dispels it, and loosens the door of its heart). Entering it: as it's about to act, a chance
+    // that grows with how shut its heart is (HYPER_CHANCE at a heart shut tight). In it, it obeys HYPER_OBEY of the
+    // time; else it does one of Colosseum's abnormal things (fight_common's messages, "-hyper"). Returns the move it
+    // uses instead, false for none this turn, or null to use its own.
+    hyperMode(mon, move, o) {
+      if (!mon.hyper) {
+        if (this.random() >= HYPER_CHANCE * Math.max(0, Math.min(100, mon.heart)) / 100) return null;
+        mon.hyper = true;
+        this.add("-hyper", mon, "start");
+      } else this.add("-hyper", mon, "in");
+      if (this.random() < HYPER_OBEY) return null;
+      const r = this.randInt(0, 8);
+      if (r === 0) {
+        const usable = mon.moves.map((m, i) => ({ m, i })).filter(({ m }) => m.pp > 0 && !m.disabled);
+        if (!usable.length) { this.add("-hyper", mon, "ignore"); return false; }
+        const pick = usable[this.randInt(0, usable.length - 1)];
+        this.add("-hyper", mon, "selfish", pick.m.name);
+        o.slot = pick.i;
+        return this.getActiveMove(pick.m.name);
+      }
+      if (r === 1) { this.add("-hyper", mon, "self"); this.confusionDamage(mon); return false; }
+      const what = ["foetrainer", "trainer", "confused", "ignore", "notlisten", "ball", mon.item ? "item" : "noitem"][r - 2];
+      this.add("-hyper", mon, what);
+      return false;
+    }
+    // The CALL command: "{trainer} called {mon}!" In Hyper Mode it comes to its senses (and its heart opens a little:
+    // this.calls); asleep, it fails to hear; else it eagerly responds.
+    callMon(mon) {
+      if (!mon || mon.fainted || !mon.isActive) return;
+      this.add("-call", mon);
+      if (mon.hyper) { mon.hyper = false; mon.calls++; this.add("-hyper", mon, "end"); }
+      else if (mon.status === "slp") this.add("-call", mon, "deaf");
+      else this.add("-call", mon, "eager");
     }
 
     // FireRed's IsMonDisobedient, for a Pokémon over the level cap (its
@@ -3609,7 +3676,8 @@
         let crit = false;
         if (!luckyChant && !(move.id === "counter")) {
           const chance = window.Damage.critChance(user, move.name, { focusEnergy: !!user.volatiles.focusenergy,
-            critBoost: ((user.volatiles.gmaxchistrike || {}).layers || 0) + ((user.volatiles.dragoncheer || {}).stages || 0) });
+            critBoost: ((user.volatiles.gmaxchistrike || {}).layers || 0) + ((user.volatiles.dragoncheer || {}).stages || 0)
+              + (user.hyper && move.id === "shadowrush" ? HYPER_CRIT : 0) });
           // (Gen 7: Laser Focus, and Merciless against a poisoned target.)
           const sure = !!user.volatiles.laserfocus || (user.hasAbility("Merciless") && (target.status === "psn" || target.status === "tox"));
           crit = sure || chance >= 1 || this.random() < chance;

@@ -68,6 +68,7 @@ window.ITEM_SPRITES = {
   "cameruptite": "assets/sprites/items/mega-stone/cameruptite.png",
   "carbos": "assets/sprites/items/medicine/carbos.png",
   "card-key": "assets/sprites/items/key-item/card-key.png",
+  "lab-card-key": "assets/sprites/items/key-item/card-key.png",
   "careful-mint": "assets/sprites/items/mint/special-defense.png",
   "casteliacone": "assets/sprites/items/medicine/casteliacone.png",
   "cell-battery": "assets/sprites/items/hold-item/cell-battery.png",

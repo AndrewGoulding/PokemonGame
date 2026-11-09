@@ -31,3 +31,23 @@ window.Orre.addTrainers({
   // (#21956 / #21958; #21959-#21961 / #21963; #21964 #21965 / #21974; #17076 / #17473)
   TheUnder_EventScript_Colo_GURKS: {name: "Chaser Gurks", cls: "Chaser", map: "TheUnder", x: 8, y: 25, facing: "face_up", stages: [{from: 34, team: [["Magikarp", 36], ["Feebas", 36], ["Wailord", 40]], intro: ["The winner of a Colosseum challenge\ngets to meet Lady Venus in person and\nreceive a Shadow Pokémon.", "One day, I'm going to enter and get\nme a Shadow Pokémon.", "Before that, I'll test the opposition\nstarting with you! Here goes!"], defeat: ["Awww, shoot! I'm not giving up until\nI win at the Colosseum and get me a\nShadow Pokémon of my own!"], after: ["Awww, shoot! I'm not giving up until\nI win at the Colosseum and get me a\nShadow Pokémon of my own!"]}, {from: 36, team: [["Wailmer", 42], ["Wailmer", 42], ["Wailord", 45]], intro: ["What are you saying? You defeated\nLady Venus?", "You won't get away with it!", "Lady Venuuuuuuuus!"], defeat: ["Even if you win at the Colosseum,\nthey won't let you have a Shadow\nPokémon anymore…"], after: ["Even if you win at the Colosseum,\nthey won't let you have a Shadow\nPokémon anymore…"]}, {from: 40, team: [["Wailord", 51], ["Wailord", 51]], intro: ["What are you saying? You defeated\nMaster Ein?", "You won't get away with it!"], defeat: ["By now, Master Ein, lady Venus and\neveryone else should be settled in at\nthe Tower."], after: ["By now, Master Ein, lady Venus and\neveryone else should be settled in at\nthe Tower.", "Hold it, there. Don't even think\nabout going there if you know what's\ngood for you!"]}, {from: 44, team: [["Wailord", 56], ["Wailord", 56]], intro: ["Huh? What's that? You wanted to know\nabout a Shadow Pokémon that I'd\nbattled?", "How about we battle first? If you\nwin, I'll happily tell you about that\nShadow Pokémon's trainer."], defeat: ["So how'd it go? What I told you came\nin handy, am I right?"], after: ["So how'd it go? What I told you came\nin handy, am I right?"]}]}
 });
+
+// Agate Village's Cologne Massage, as in Colosseum: the girl east of the Pokémon Center who gives you her spare
+// Cologne Case once Dakim's beaten (M3_out #22291-#22296), and the Poké Mart's clerk (this game has no room for the
+// mart: the clerk stands at its door), who sells Colosseum's Agate stock, the three Scents among it for those with a
+// Cologne Case (pocket_menu #15645). Their icons: this game's incense pictures, and the Coin Case's for the case.
+(function () {
+  const W = window.WORLD_MAPS || {}, m = W.AgateVillage;
+  const add = (localId, x, y, facing, script, sprite, frames) => {
+    if (!m || m.people.some((p) => p.localId === localId)) return;
+    m.people.push({ id: Math.max(-1, ...m.people.map((p) => p.id)) + 1, x, y, movement: facing, rangeX: 0, rangeY: 0, script, flag: null, text: null,
+      localId, sprite, width: 16, height: 32, frames });
+  };
+  add("LOCALID_ORRE_AGATE_COLOGNE", 11, 8, "face_down", "AgateVillage_EventScript_CologneGirl", "em_woman_3", 9);
+  add("LOCALID_ORRE_AGATE_CLERK", 23, 24, "face_down", "AgateVillage_EventScript_MartClerk", "em_mart_employee", 9);
+  window.Orre.EXTRA_VISIBLE.LOCALID_ORRE_AGATE_COLOGNE = (flags) => (flags.orreStory | 0) >= 33;
+  window.Orre.AGATE_MART = ["hyper-potion", "super-potion", "full-heal", "revive", "hp-up", "protein", "iron", "carbos", "calcium", "zinc"];
+  window.Orre.SCENTS = ["joy-scent", "excite-scent", "vivid-scent"];
+  const S = window.ITEM_SPRITES || {};
+  Object.assign(S, { "joy-scent": S["pure-incense"], "excite-scent": S["rose-incense"], "vivid-scent": S["luck-incense"], "cologne-case": S["coin-case"] });
+})();

@@ -25,31 +25,33 @@
   Object.assign(Orre, { troopHideout, troopLab, labTroopMet });
 
   Orre.addTrainers({
-    ShadowLab_1F_EventScript_Colo_MYRON: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_1F_MYRON", name: "Researcher Myron", cls: "Researcher", map: "ShadowLab_1F", x: 2, y: 2, facing: "face_down",
+    ShadowLab_1F_EventScript_Colo_MYRON: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_1F_MYRON", name: "Researcher Myron", cls: "Researcher", map: "ShadowLab_GarageB1F", x: 6, y: 10, facing: "face_down",
       stages: [
       // (intro #21069+#21643, defeat #21094, after #21096)
-      { from: 37, team: [["Voltorb",38],["Voltorb",38]], intro: ["This is discrimination. Why do\nthey single me out for these extra\nassignments?","There's still packing left for\nthe move out of this Lab… Grumble…","Wha-wha-wha-who are you? You're\nsuspicious! Therefore, you must be\nintruders!"], defeat: ["What did I do to deserve this?"], after: ["Bah! I'll make you regret\nseeing me!"] }] },
-    ShadowLab_1F_EventScript_Colo_LETHCO: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_1F_LETHCO", name: "Researcher Lethco", cls: "Researcher", map: "ShadowLab_1F", x: 8, y: 3, facing: "face_down",
+      // (Beaten, he drops the Card Key: D1_garage_B1 #21076, and Rui's #21097.)
+      { from: 37, team: [["Voltorb",38],["Voltorb",38]], item: "lab-card-key", itemText: "{PLAYER} obtained the Card Key!",
+        afterItem: ["Rui: Oh! That's the Card Key! Now we\ncan get into the Lab."], intro: ["This is discrimination. Why do\nthey single me out for these extra\nassignments?","There's still packing left for\nthe move out of this Lab… Grumble…","Wha-wha-wha-who are you? You're\nsuspicious! Therefore, you must be\nintruders!"], defeat: ["What did I do to deserve this?"], after: ["Bah! I'll make you regret\nseeing me!"] }] },
+    ShadowLab_1F_EventScript_Colo_LETHCO: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_1F_LETHCO", name: "Researcher Lethco", cls: "Researcher", map: "ShadowLab_B1F_Rooms", x: 4, y: 4, facing: "face_down",
       stages: [
       // (intro #21108+#21642, defeat #21109, after #21110)
       { from: 37, team: [["Magnemite",37],["Chinchou",38],["Electrike",39]], intro: ["Okay… We can dump this data…\nLet's see now…","Waaaargh! You two! You're not Lab\nstaff!"], defeat: ["What's this? I don't have\ntime for this!"], after: ["You two! If you don't vacate\nthe premises, Master Ein will do\nterrible things to you!"] }] },
-    ShadowLab_1F_EventScript_Colo_COREN: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_1F_COREN", name: "Researcher Coren", cls: "Researcher", map: "ShadowLab_1F", x: 15, y: 7, facing: "face_left",
+    ShadowLab_1F_EventScript_Colo_COREN: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_1F_COREN", name: "Researcher Coren", cls: "Researcher", map: "ShadowLab_CorenRoom", x: 5, y: 5, facing: "face_down",
       stages: [
       // (intro #21088, defeat #21089, after #21090)
       { from: 37, team: [["Magnemite",39],["Electrode",40],["Magneton",40]], intro: ["So, you're {PLAYER}, aren't you?\nThe word is you've been wreaking\nhavoc with our plans!"], defeat: ["No havoc, please!"], after: ["Fufufu… The Shadow Pokémon\nthat were made here have been\ntransported out already.","Battle all you want. There's\nno stopping our Shadow Pokémon plan\nnow!"] }] },
-    ShadowLab_B1F_EventScript_Colo_KOTAN: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_B1F_KOTAN", name: "Researcher Kotan", cls: "Researcher", map: "ShadowLab_B1F", x: 14, y: 3, facing: "face_left",
+    ShadowLab_B1F_EventScript_Colo_KOTAN: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_B1F_KOTAN", name: "Researcher Kotan", cls: "Researcher", map: "ShadowLab_B1F_Rooms", x: 11, y: 11, facing: "face_down",
       stages: [
       // (intro #21080, defeat #21081, after #21082)
       { from: 37, team: [["Electrode",42],["Magneton",40],["Ampharos",41]], intro: ["Wh-What? What are outsiders doing\nhere? Why isn't security doing their\njob?"], defeat: ["Aww, crud! There's no way that\nI'm going to let you go!"], after: ["Wahaha! Now you're stuck!\nThere's no escaping the Lab for you!"] }] },
-    ShadowLab_B1F_EventScript_Colo_SKRUB: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_B1F_SKRUB", name: "Cipher Peon Skrub", cls: "Cipher Peon", map: "ShadowLab_B1F", x: 9, y: 5, facing: "face_down", until: 44,
+    ShadowLab_B1F_EventScript_Colo_SKRUB: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_B1F_SKRUB", name: "Cipher Peon Skrub", cls: "Cipher Peon", map: "ShadowLab_DNARoom", x: 8, y: 5, facing: "face_down", until: 44,
       stages: [
       // (intro #21068, defeat #21070)
       { from: 37, team: [["Medicham",41],["Clamperl",43],["Graveler",44],["Wobbuffet",42]], shadow: "Skrub", intro: ["Not once, not twice, but three\ntimes we meet?","Do you recall who I am? I\nshall avenge my humiliation at the\nRelic Forest!"], defeat: ["Urrrrrrggggh!"] }] },
-    ShadowLab_B1F_EventScript_Colo_ODLOW: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_B1F_ODLOW", name: "Researcher Odlow", cls: "Researcher", map: "ShadowLab_B1F", x: 1, y: 9, facing: "face_right",
+    ShadowLab_B1F_EventScript_Colo_ODLOW: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_B1F_ODLOW", name: "Researcher Odlow", cls: "Researcher", map: "ShadowLab_B2F_Room", x: 4, y: 3, facing: "face_down",
       stages: [
       // (intro #21073, defeat #21075, after #21077)
       { from: 37, team: [["Magnemite",38],["Electrode",39],["Magneton",39]], intro: ["Hey, now… You're not supposed to\nbe in the Lab without your lab coat!","…Wait a minute… Your faces aren't\nfamiliar… Intruders?!"], defeat: ["This reeks!"], after: ["You're far too late! There's\nnothing left here. Fufufu…"] }] },
-    ShadowLab_B1F_EventScript_Colo_DUBIK: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_B1F_DUBIK", name: "Researcher Dubik", cls: "Researcher", map: "ShadowLab_B1F", x: 15, y: 9, facing: "face_left",
+    ShadowLab_B1F_EventScript_Colo_DUBIK: { localId: "LOCALID_ORRE_COLO_SHADOWLAB_B1F_DUBIK", name: "Researcher Dubik", cls: "Researcher", map: "ShadowLab_B2F_Rooms", x: 13, y: 4, facing: "face_down",
       stages: [
       // (intro #21112, defeat #21113, after #21114)
       { from: 37, team: [["Electrode",37],["Electrode",37]], intro: ["What in the name of… How did you\ntwo avoid the eyes of our security\nstaff?"], defeat: ["You didn't duck from security,\nyou walked all over them!"], after: ["Do whatever you want; it's too\nlate now. We're finished with our","research. What you're doing is\nfutile."] }] },

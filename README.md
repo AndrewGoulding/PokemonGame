@@ -3278,17 +3278,23 @@ Pokémon back if it was never snagged), whose four ID Badges open the way to the
   Pokémon, and a villager runs in: strangers at the Relic Stone! At the shrine Eagun faces Cipher's Peons; beat Skrub
   (Shadow Hitmontop, Lv. 38) and his partner. Beluh finds the family's old tablet: the Relic can open the last door of a
   heart shut by shadows. Then Eagun calls: crooks have taken over Mt. Battle.
-- **Purifying Shadow Pokémon** (this game's own take on Colosseum's heart gauge: `heartStep`, `relicStone`). A
-  snagged Shadow Pokémon's heart starts shut (`record.heart`, 100); it opens a point every 8 steps you walk with it and
-  6 for each battle won with it in your party, and you're told when it's open. Then Agate's Relic Stone purifies it
-  (from `orreStory` 30): no longer a Shadow Pokémon, its Shadow moves give way to the moves it would know at its level.
-  The stone tells you how open a heart is till then. (`orrePurified` lists them.) The Summary screen's POKéMON SKILLS
-  page shows a Shadow Pokémon's **heart gauge** where its EXP would be: a purple bar, full while its heart is shut
-  tight and emptying as it opens, and how open it is.
-- **The Relic Forest and Celebi** (`relicForestShrine`; new, drawn in `tools/build-orre.js`). Through a gap in the trees
-  on Agate's west side: a quiet wood with a pond and, in a clearing, Celebi's mossy shrine. Play Vander's Time Flute
-  there with Shadow Pokémon in your party and Celebi comes from across time and purifies all of them at once, however
-  shut their hearts. The flute is spent then (`orreCelebi`).
+- **Purifying Shadow Pokémon**, as in Colosseum (`heartStep`, `relicStone`). A snagged Shadow Pokémon's heart starts
+  shut (`record.heart`, 100) and opens as you walk with it (a point every 8 steps), battle with it (6 for each battle
+  it's sent out in, won or lost), **Call** it out of Hyper Mode (8), and massage it with Colosseum's **Scents** (Joy 4,
+  Excite 8, Vivid 16; sold at Agate's mart once the girl east of the Pokémon Center has given you the Cologne Case).
+  Colosseum doesn't say how much each is worth: those amounts are this game's own. Its EXP is banked meanwhile
+  (`record.shadowExp`). Once its heart's open, Agate's **Relic Stone** purifies it with Colosseum's words: it gets back
+  the first of its four moves in Shadow Rush's place, its banked EXP (to Orre's level cap), and a National Ribbon.
+  The Summary screen shows its **heart gauge** where its EXP would be.
+- **Hyper Mode**, as in Colosseum (`engine/battle.js`): about to act, one of your Shadow Pokémon may go into Hyper Mode
+  (more often the more shut its heart). In it, it ignores your orders about half the time, in Colosseum's ways
+  (a move of its own, hurting itself, attacking you, refusing to come back…), its Shadow Rush lands critical hits more
+  easily, and it won't take an item. **CALL** (in RUN's place in a trainer battle) snaps it out and helps open its
+  heart. The odds are this game's own; Colosseum doesn't give them.
+- **Celebi**, as in Colosseum: play Vander's **Time Flute** at the Relic Stone and Celebi purifies every Shadow
+  Pokémon in your party at once. It can be used only once, and the flute is gone (`orreCelebi`).
+- **The Relic Cave and the Relic Forest**: Agate's west path goes into the Relic Cave (Cipher's Peons there at story
+  29) and through it to the Relic Forest and the Relic Stone.
 - **Mt. Battle** (`orreStory` 31 to 33; new, drawn in `tools/build-orre.js`: three rocky terraces each with a stone
   battle court, stairs up the faces, the Pokémon Center by the way in; on Orre's map in the north-east). Orre's cap goes
   up to 40. Two of the mountain's Trainers, Cipher Peons Turo and Berin on the slopes, and at the summit Cipher Admin
@@ -3298,17 +3304,25 @@ Pokémon back if it was never snagged), whose four ID Badges open the way to the
   Pyrite's bottom-left shack, lamps, tin shacks, a Pokémon Center, the subway platform and tracks, and Venus's TV
   studio). After Mt. Battle Duking calls about a creepy Pokémon on Venus's show. Cipher Peon Kloak (Shadow Ledian)
   guards the studio; inside (Emerald's Contest hall), Cipher Admin **Venus** (Shadow Suicune, Lv. 40) lets slip where
-  Shadow Pokémon are made: Ein's lab. On the subway platform, Hunter Frena (Gligar), Chaser Liaks (Stantler),
-  Bodybuilder Lonia (Piloswine) and Rider Nelis (Sneasel). Cap 45.
-- **The Shadow Pokémon Lab** (36 to 40; on Orre's map in the south-west desert; Mossdeep Space Center's floors inside,
-  its doors out to Orre's map). Its Peons Cole (Aipom), Lare (Murkrow), Vana (Forretress), Lesar (Ariados) and Remil
+  Shadow Pokémon are made: Ein's lab. Before Kloak shows himself, Colosseum's **Kids Grid** errand: Perr in the Junk
+  Shop's basement gives you the Powerup Part for Nett, and Bitt takes you into Nett's hideout under the dish
+  (`orreKidsGrid`). After Venus, the **Under Subway** (`orreSubway`): its door by the rails opens, Hunter Frena (Gligar),
+  Chaser Liaks (Stantler), Bodybuilder Lonia (Piloswine) and Rider Nelis (Sneasel) are on its B2 platform, Venus flees
+  with the Shadow Liner's key and drops the Subway Key, and the Shadow Liner takes you to the lab (on Orre's map only
+  once you've been there). Cap 45.
+- **The Shadow Pokémon Lab** (36 to 40; reached by the Under Subway, then on Orre's map in the south-west desert;
+  `game/orre-lab.js`, `tools/lib/orre-rooms-lab.js`): Colosseum's garage, main wing, B1F and B2F, with its locked doors
+  and keys: Researcher Myron's **Card Key** for the main wing, the **Down St. Key** for the cells, and the **DNA** door,
+  opened once three **DNA Samples** (picked per save) are put through the analyzer. Ein's room has the Data ROM (for
+  Nett) and TM26. Its Peons Cole (Aipom), Lare (Murkrow), Vana (Forretress), Lesar (Ariados) and Remil
   (Vibrava), Tanie (Granbull); and **Ein** (Shadow Raikou), whose life's work the Shadow Pokémon are, who boasts that Master Evice's plan goes ahead at
   Realgam Tower. Cap 48.
 - **Realgam Tower** (40 to 44; on Orre's map on the south-east coast; the Pokémon League's rooms inside). In its dome
   Peons Arton (Delibird), Baila (Sunflora) and Dioge (Heracross), and **Gonzap** at the far door, out for revenge
   (Shadow Skarmory, Lv. 47); then the four Admins in the domes, Miror B., Dakim, Venus and Ein, each giving an ID Badge
-  when beaten (`orreRealgamAdmins`), the four opening the Colosseum's door; in its Colosseum Bodybuilder Jomas (Miltank), Rider Delan (Absol) and Peons Nella
-  (Houndoom) and Ston (Tropius), and **Nascour** (Shadow Metagross, Lv. 50); at the top, **Evice**, the head of Cipher,
+  when beaten (`orreRealgamAdmins`), the four opening the Colosseum's door; in its Colosseum, in rounds as in Colosseum (`realgamRound`; lose
+  one and it's back to the first), Bodybuilder Jomas (Miltank), Rider Delan (Absol) and Peons Nella (Houndoom) and Ston
+  (Tropius), and **Nascour** (Shadow Metagross, Lv. 50); at the top, **Evice**, the head of Cipher,
   who is Phenac's Mayor Es Cade (Shadow Tyranitar, Lv. 55). Beat him and Cipher's finished. Cap 55.
   That's Colosseum's story told through (`orreStory` 44); every one of its Shadow Pokémon, but for the after-the-game
   ones (Smeargle, Ursaring, Shuckle, Togetic) and Rui's Celebi, is in Orre with its Trainer.
@@ -3319,8 +3333,17 @@ Pokémon back if it was never snagged), whose four ID Badges open the way to the
   day's tournament: four double battles in a row against Trainers drawn from each place's own entrants, your Pokémon
   healed between rounds; lose one and you're out. Win all four for prize money and an item (the first time, a Choice
   Band at Pyrite, Leftovers at Phenac). The entrants are about as strong as your strongest Pokémon (held to Orre's
-  cap, and at least Lv. 30 at Pyrite and 50 at Phenac), rising a level each round. The Colosseum opens once you've
-  reached Pyrite in the story (`orreStory` 23), the Stadium after Evice (44).
+  cap, and at least Lv. 30 at Pyrite and 50 at Phenac), rising a level each round. In the story, as in Colosseum
+  (`game/orre-pyrite.js`, `colosseumDesk`, `orreGear`): Silva makes off with the **windmill's gear**, the Colosseum has
+  no power, and its desk won't take you; find the gear (two worn-out ones lie about as junk), put it back with the
+  Chief and Duking, then win the Colosseum's challenge, and Nore leads you to the Pyrite Building (`orreStory` 24).
+  After Miror B., Pyrite's fortune teller **Fateen** sends you north to Agate (`orreStory` 28). The Colosseum's own
+  challenge stays open from then on; Phenac Stadium's after Evice (44). Phenac Stadium's first visit, after the Mayor's,
+  comes before Wakin shows up (`orreStadium`).
+- **Colosseum's e-mail** (`game/orre-mail.js`, the Start menu's **E-mail** in Orre): its P★DA e-mails, in its words,
+  arrive at its points in the story (one a map change: Duking's, Nett's, Eagun's, Bitt's, Secc's, Marcia's…) and can
+  be read again (`player.flags.orreMail`). Which sender a body belongs to is matched by content where Colosseum's
+  text doesn't link them; six e-mails whose bodies aren't in its text are left out.
 - **Mt. Battle's 100-Trainer challenge** (`mtBattleChallenge` in `ui/game.js`, `Orre.MT_BATTLE` in `game/orre.js`).
   From `orreStory` 33, the attendant by Mt. Battle's way in: ten areas of ten double battles, the tenth each area's
   Area Leader (Area 10's is Vander), levels rising from 23 to the 50s and held to Orre's cap, teams growing from two

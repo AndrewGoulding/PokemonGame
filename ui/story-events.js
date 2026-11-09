@@ -282,6 +282,8 @@
       }
       const script = (ev.person || ev.sign || ev.trigger).script;
       const f = env.player.flags;
+      // (Orre: an e-mail due as you come in, Colosseum's: special() below found it, game/orre-mail.js.)
+      if (ev.trigger && /^(arrive|enter):/.test(script || "") && env.orreMailWaiting) { await env.orreMail(); return; }
       if (await env.sinnohStory.run(script)) return;
 
       // (Mom's deliveryman, and the Gym Leaders' numbers and Dojo rematches: ui/pokegear.js.)
@@ -440,7 +442,9 @@
 
       if (Orre.FILLERS[script]) { await env.orreTrainer(script); return; }
       if (Orre.SHADOW_TRAINERS[script]) { await env.shadowTrainer(script); return; }
+      if (Orre.PYRITE_SCRIPTS.includes(script)) { await env.pyriteExtra(script, ev); return; }
       if (Orre.COLO_TRAINERS[script]) { await env.coloTrainer(script); return; }
+      if (Orre.LAB && Orre.LAB.scripts.has(script)) { await env.labObject(script); return; }
       if (script === "PhenacCity_PreGym_EventScript_Justy") { await env.preGymJusty(); return; }
       if (Orre.TOURNAMENTS[script]) { await env.orreTournament(script); return; }
       switch (script) {
@@ -1495,6 +1499,7 @@
           await env.phenacTroop(script); return;
         case "PhenacCity_MayorsHouse_EventScript_EsCade": await env.esCade(); return;
         case "arrive:PyriteTown": case "enter:PyriteTown": await env.pyriteArrival(); return;
+        case "enter:PyriteTown_Windmill": case "enter:PyriteTown_PyriteBuilding_1F": case "enter:PhenacCity_Stadium": await env.pyriteExtra(script); return;
         case "PyriteTown_DukingsHouse_EventScript_Duking": case "PyriteTown_DukingsHouse_EventScript_Marcia":
         case "PyriteTown_DukingsHouse_EventScript_Secc": await env.dukingsHouse(script); return;
         case "PyriteTown_PyriteBuilding_1F_EventScript_Nore": await env.pyriteNore(); return;
@@ -1505,15 +1510,31 @@
         case "AgateVillage_EventScript_Skrub": case "AgateVillage_EventScript_Peon": await env.agateShrine(); return;
         case "AgateVillage_EventScript_RelicStone": await env.relicStone(); return;
         case "RelicForest_EventScript_Shrine": await env.relicForestShrine(); return;
+        case "AgateVillage_EventScript_CologneGirl": await env.cologneGirl(); return;
+        case "AgateVillage_EventScript_MartClerk": await env.agateMart(); return;
         case "MtBattle_EventScript_Challenge": await env.mtBattleChallenge(); return;
         case "arrive:MtBattle": case "enter:MtBattle": await env.mtBattleArrival(); return;
         case "MtBattle_EventScript_Dakim": case "MtBattle_EventScript_SummitSkrub": case "MtBattle_EventScript_Vander": await env.mtBattleSummit(script); return;
         case "arrive:TheUnder": case "enter:TheUnder": await env.underArrival(); return;
         case "TheUnder_EventScript_Kloak": await env.underKloak(); return;
+        // (The Kids Grid's errand and the Under Subway: Colosseum's.)
+        case "TheUnder_EventScript_Bitt": await env.underBitt(); return;
+        case "TheUnder_JunkShop_1F_EventScript_Owner": await env.junkShopOwner(); return;
+        case "TheUnder_JunkShop_B1_EventScript_Perr": await env.junkShopPerr(); return;
+        case "enter:TheUnder_NettsHideout_1F": if (env.nettsDoorShut()) await env.nettsDoor(); return;
+        case "enter:TheUnder_NettsHideout_B1": await env.nettsHideout(); return;
+        case "TheUnder_NettsHideout_B1_EventScript_Nett": case "TheUnder_NettsHideout_B1_EventScript_Megg": case "TheUnder_NettsHideout_B1_EventScript_Bitt":
+          await env.nettsHideoutPerson(script); return;
+        case "enter:TheUnder_Subway_B1": if (env.subwayShut()) await env.subwayDoorShut(); else await env.subwayB1(); return;
+        case "enter:TheUnder_Subway_Station": await env.subwayStation(); return;
+        case "TheUnder_Subway_B1_EventScript_Fan": await env.subwayFan(); return;
+        case "TheUnder_Subway_Station_EventScript_Train": await env.shadowLiner(); return;
         case "enter:TheUnder_Studio": case "TheUnder_Studio_EventScript_Venus": await env.underVenus(); return;
         case "arrive:ShadowLab_1F": case "enter:ShadowLab_1F": await env.labArrival(); return;
         case "enter:ShadowLab_B1F": case "ShadowLab_B1F_EventScript_Troop": await env.labTroop(); return;
         case "enter:ShadowLab_EinsRoom": case "ShadowLab_EinsRoom_EventScript_Ein": await env.labEin(); return;
+        case "enter:ShadowLab_Main1F": case "enter:ShadowLab_Cells": case "enter:ShadowLab_DNARoom": await env.labDoor(script); return;
+        case "RealgamTower_Colosseum_EventScript_Host": await env.realgamTournament(); return;
         case "arrive:RealgamTower_1F": case "enter:RealgamTower_1F": await env.realgamArrival(); return;
         case "RealgamTower_Dome_EventScript_Gonzap": await env.realgamGonzap(); return;
         case "RealgamTower_Dome_EventScript_Admin_MIROR_B": case "RealgamTower_Dome_EventScript_Admin_DAKIM":
@@ -2074,7 +2095,11 @@
       // (Colosseum's story proper: Folly and Trudly at Phenac City; the Mayor's house's scene.)
       // (And Team Snagem's Wakin outside the Mayor's house once he's heard Rui out: orreMayor 1.)
       if ((script === "arrive:PhenacCity" || script === "enter:PhenacCity") && (env.player.flags.orreStory | 0) === 19 && !env.player.flags.orreFT) return true;
-      if ((script === "arrive:PhenacCity" || script === "enter:PhenacCity") && (env.player.flags.orreStory | 0) === 20 && (env.player.flags.orreMayor | 0) === 1) return true;
+      // (Wakin comes once you've been into Phenac Stadium and out again, as in Colosseum: orreStadium.)
+      if ((script === "arrive:PhenacCity" || script === "enter:PhenacCity") && (env.player.flags.orreStory | 0) === 20 && (env.player.flags.orreMayor | 0) === 1 && env.player.flags.orreStadium) return true;
+      // (Pyrite's windmill, the Pyrite Building locked till Nore leads you in, Phenac Stadium's first visit, Fateen after
+      // Miror B.: game/orre-pyrite.js.)
+      if (Orre.pyriteSceneDue(script, env.player.flags)) return true;
       if (script === "enter:PhenacCity_MayorsHouse" && (env.player.flags.orreStory | 0) === 20 && (env.player.flags.orreMayor | 0) !== 1) return true;
       // (Colosseum's story, Pyrite: coming to town, the Pyrite Building's top floor, Miror B.'s hideout.)
       if ((script === "arrive:PyriteTown" || script === "enter:PyriteTown") && (env.player.flags.orreStory | 0) === 21) return true;
@@ -2086,13 +2111,22 @@
         const story = env.player.flags.orreStory | 0, at = (name) => script === "arrive:" + name || script === "enter:" + name;
         if (at("TheUnder") && story === 33) return true;
         if (script === "enter:TheUnder_Studio" && story === 35) return true;
+        // (The Kids Grid: Nett's, the Powerup Part delivered; the Under Subway: shut till Venus runs down it, then her
+        // scene at the station and Ein's on B1.)
+        if (script === "enter:TheUnder_NettsHideout_1F" && env.nettsDoorShut()) return true;
+        if (script === "enter:TheUnder_NettsHideout_B1" && (env.player.flags.orreKidsGrid | 0) === 2) return true;
+        if (script === "enter:TheUnder_Subway_B1" && (story < 36 || (env.player.flags.orreSubway | 0) === 1)) return true;
+        if (script === "enter:TheUnder_Subway_Station" && story === 36 && !env.player.flags.orreSubway) return true;
         if (at("ShadowLab_1F") && story === 36) return true;
         if (script === "enter:ShadowLab_B1F" && story === 37) return true;
         if (script === "enter:ShadowLab_EinsRoom" && story === 38) return true;
+        if (Orre.LAB && Orre.LAB.doorShut(script, env.player.flags)) return true;   // (the lab's locked doors, Orre.LAB.DOORS)
         if (at("RealgamTower_1F") && story === 40) return true;
         if (script === "enter:RealgamTower_Top" && story === 43) return true;
         if (script === "enter:RealgamTower_Colosseum" && env.realgamDoorShut()) return true;   // (without the Admins' four ID Badges)
       }
+      // (Orre: else an e-mail due now, Colosseum's: game/orre-mail.js, env.orreMail().)
+      if (/^(arrive|enter):/.test(script || "") && (window.WORLD_MAPS[script.split(":")[1]] || {}).region === "orre" && env.orreMailDue && env.orreMailDue(script)) return true;
       // Orre entrance scenes above are conditional; do not let the generic
       // handler registry replay completed scenes when revisiting a building.
       if (/^(arrive|enter):/.test(script || "") && (window.WORLD_MAPS[script.split(":")[1]] || {}).region === "orre") return false;

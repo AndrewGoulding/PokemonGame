@@ -3289,6 +3289,34 @@ if (window.JOHTO_TOWN_MAP) {
     // (A later battle brings back a Shadow Pokémon never snagged; one snagged stays gone.)
     assert(Orre.team("Ein@Realgam").some((r) => r.species === "Raikou" && r.shadow) && !Orre.team("Ein@Realgam", ["Raikou"]).some((r) => r.species === "Raikou"));
     assert.deepStrictEqual(Orre.snaggable("Biden"), ["Smeargle"]);
+    // Hyper Mode (Colosseum's): your Shadow Pokémon can go into it, CALL snaps it out (and opens its heart), and it
+    // won't take an item while in it.
+    {
+      let entered = 0, calls = 0;
+      for (let seed = 1; seed <= 60; seed++) {
+        const b = new Battle({ seed, trainer: true,
+          p1: { name: "RED", team: [{ species: "Makuhita", level: 30, shadow: true, heart: 100, moves: ["Shadow Rush", "Focus Energy", "Vital Throw", "Cross Chop"] }] },
+          p2: { name: "B", team: [{ species: "Snorlax", level: 60, moves: ["Splash"] }] } });
+        b.start();
+        for (let turn = 0; turn < 8 && !b.ended; turn++) {
+          const mon = b.sides.p1.active;
+          if (mon.hyper) { assert(/HYPER MODE/.test(b.itemError(b.sides.p1, { item: "potion", target: 0 })), "no items in Hyper Mode"); b.choose("p1", { type: "call" }); }
+          else b.choose("p1", { type: "move", move: "Shadow Rush" });
+          b.choose("p2", { type: "move", move: "Splash" });
+        }
+        entered += b.events.filter((e) => e[0] === "-hyper" && e[2] === "start").length;
+        calls += b.sides.p1.pokemon[0].calls;
+      }
+      assert(entered > 0 && calls > 0, "Hyper Mode and CALL");
+    }
+    // The Scents, Colosseum's e-mails, the Lab's locked doors.
+    for (const id of ["joy-scent", "excite-scent", "vivid-scent", "cologne-case", "lab-card-key", "down-st-key", "dna-sample", "data-rom", "powerup-part", "subway-key"]) assert(ITEMS[id], id);
+    assert(ITEMS["card-key"].effect.includes("Silph"), "Kanto's Card Key is still Silph Co.'s");
+    // (Every e-mail arrives: by its condition, or, Duking's two, in their scenes.)
+    assert(Object.keys(Orre.MAIL_WHEN).every((k) => Orre.MAIL[k]));
+    assert.deepStrictEqual(Object.keys(Orre.MAIL).filter((k) => !Orre.MAIL_WHEN[k]).sort(), ["EMERGENCY", "TROUBLE_IN_UNDER"]);
+    for (const m of Object.values(Orre.MAIL)) for (const page of [].concat(m.body)) for (const line of page.split("\n")) assert(line.length <= 37, line);
+    assert(Orre.LAB.doorShut && Orre.LAB.DOORS);
     // Colosseum's other Trainers (game/orre-trainers*.js): each on a walkable tile of its map, no two in one place,
     // every party real, every stage with Colosseum's words; and the Shadow Pokémon Trainers' later parties.
     {
@@ -3330,7 +3358,7 @@ if (window.JOHTO_TOWN_MAP) {
       const at = (map, id) => WORLD_MAPS[map].people.find((p) => p.localId === id);
       const pv = { localId: "LOCALID_ORRE_PHENAC_VERDE" };
       assert(Orre.visible(pv, { orreStory: 21 }) && !Orre.visible(pv, { orreStory: 21, orreTroop: "Rosso" }) && !Orre.visible(pv, { orreStory: 20 }));
-      assert(at("ShadowLab_B1F", "LOCALID_ORRE_SHADOW_TANIE"), "Tanie in the lab");
+      assert(at("ShadowLab_B2F_Rooms2", "LOCALID_ORRE_SHADOW_TANIE"), "Tanie in the lab");
       assert(Orre.REALGAM_ADMINS.length === 4 && !Orre.realgamBadges({}) && Orre.realgamBadges({ orreRealgamAdmins: ["Miror B.", "Dakim", "Venus", "Ein"] }));
     }
     // (Every Shadow Pokémon Trainer of the story is placed in Orre, battling with theirs; every Orre warp goes somewhere.)
@@ -3381,9 +3409,15 @@ if (window.JOHTO_TOWN_MAP) {
     // the Deep Colosseum's been won; all Colosseum's, battling with their Shadow Pokémon.
     {
       const at = (map, key) => WORLD_MAPS[map].people.find((p) => p.localId === "LOCALID_ORRE_" + key);
-      for (const [map, key] of [["SnagemHideout", "SHADOW_BIDEN"], ["SnagemHideout", "SHADOW_AGREV"], ["OutskirtStand", "SHADOW_FEIN"], ["OutskirtStand", "ANCHA"]]) {
+      for (const [map, key] of [["SnagemHideout", "SHADOW_BIDEN"], ["SnagemHideout", "SHADOW_AGREV"]]) {
         const p = at(map, key);
         assert(p && Orre.visible(p, { orreStory: 44 }) && Orre.visible(p, { orreStory: 43 }) === false, key);
+      }
+      // (Fein and Ancha once every Shadow Pokémon but Togetic is snagged, as in Colosseum.)
+      const all47 = Orre.SHADOW.map((s) => s.species).filter((s) => s !== "Togetic");
+      for (const key of ["SHADOW_FEIN", "ANCHA"]) {
+        const p = at("OutskirtStand", key);
+        assert(p && !Orre.visible(p, { orreStory: 44 }) && Orre.visible(p, { orreStory: 44, orreShadowSnagged: all47 }), key);
       }
       // (Deep King Agnol: the Deep Colosseum's last round, as in Colosseum, with his Shadow Shuckle till it's snagged.)
       assert.strictEqual(Orre.DEEP_ROUNDS.length, 5);

@@ -163,7 +163,13 @@
       // (The Under, 33 to 36: Kloak at the studio door till he's beaten, Venus in it till she is; the subway's Trainers.
       // Ein's lab, 36 to 40: its Peons; the Mystery Troop till beaten (37), Ein (38). Realgam Tower, 40 on: Gonzap (41)
       // and Nascour (42) at their doors till beaten, Evice at the top (43); their halls' Trainers.)
-      case ID("KLOAK"): return story === 34;
+      // (Kloak, and Dagur after him, out to guard Venus's studio once the Kids Grid's back up, as in Colosseum.)
+      case ID("KLOAK"): return story === 34 && (flags.orreKidsGrid | 0) >= 3;
+      // (The Kids Grid and the Under Subway: Bitt at Nett's door till he takes you in; Ein and Venus only in their
+      // scenes; Lady Venus's fan on the subway's B1 from the day she ran down it.)
+      case ID("UNDER_BITT"): return story >= 34 && (flags.orreKidsGrid | 0) < 2;
+      case ID("SUBWAY_EIN"): case ID("SUBWAY_VENUS"): case ID("STATION_VENUS"): return false;
+      case ID("SUBWAY_FAN"): return story >= 36;
       case ID("VENUS"): return story === 35;
       case ID("SHADOW_FRENA"): case ID("SHADOW_LIAKS"): case ID("SHADOW_LONIA"): case ID("SHADOW_NELIS"): return story >= 34 && story < 44;   // (after the game, in the Snagem Hideout)
       case ID("SHADOW_COLE"): case ID("SHADOW_LARE"): case ID("SHADOW_VANA"): case ID("SHADOW_LESAR"): case ID("SHADOW_REMIL"): return story >= 37;
@@ -192,11 +198,15 @@
       // (Arton, Baila and Dioge leave the tower after the game: they're at the rebuilt Snagem Hideout's entrance then,
       // game/orre-trainers-late.js, with their Shadow Pokémon if it's still theirs.)
       case ID("SHADOW_ARTON"): case ID("SHADOW_BAILA"): case ID("SHADOW_DIOGE"): return story >= 41 && story < 44;
+      // (Realgam Tower's Colosseum: they come out round by round, Orre.REALGAM_ROUNDS, not standing about.)
       case ID("SHADOW_JOMAS"): case ID("SHADOW_DELAN"):
-      case ID("SHADOW_NELLA"): case ID("SHADOW_STON"): return story >= 41;
+      case ID("SHADOW_NELLA"): case ID("SHADOW_STON"): return false;
       // (After the game, 44 on: Snagem's back in its hideout; Fein and Ancha at the Outskirt Stand; Deep King Agnol
       // once you've won his Deep Colosseum's tournament.)
-      case ID("SHADOW_BIDEN"): case ID("SHADOW_AGREV"): case ID("SHADOW_FEIN"): case ID("ANCHA"): return story >= 44;
+      case ID("SHADOW_BIDEN"): case ID("SHADOW_AGREV"): return story >= 44;
+      // (Fein and Ancha, as in Colosseum: once every Shadow Pokémon but his Togetic has been snagged.)
+      case ID("SHADOW_FEIN"): case ID("ANCHA"):
+        return story >= 44 && SHADOW.filter((s) => s.species !== "Togetic").every((s) => (flags.orreShadowSnagged || []).includes(s.species));
       case ID("SHADOW_AGNOL"): return false;   // (as in Colosseum: the Deep Colosseum's last round, Orre.DEEP_ROUNDS)
       case ID("HIDEOUT_MIROR_B"): case ID("HIDEOUT_PLUSLE"): return story === 26;
       case ID("SILVA"): case ID("BUILDING_DUKING"): case ID("MIROR_B"): case ID("NASCOUR"): case ID("REATH"): case ID("FERMA"):
@@ -655,7 +665,7 @@
       m.people.push({ id: Math.max(-1, ...m.people.map((p) => p.id)) + 1, x, y, movement: facing, rangeX: 0, rangeY: 0, script, flag: null, text: null,
         localId, sprite, width: 16, height: 32, frames });
     };
-    add("ShadowLab_B1F", "LOCALID_ORRE_SHADOW_TANIE", 11, 3, "face_left", "ShadowLab_B1F_EventScript_Shadow_TANIE", "orre_peon_f", 9);
+    add("ShadowLab_B2F_Rooms2", "LOCALID_ORRE_SHADOW_TANIE", 3, 5, "face_right", "ShadowLab_B1F_EventScript_Shadow_TANIE", "orre_peon_f", 9);   // (B2F, west of the elevators)
     for (const a of REALGAM_ADMINS) add("RealgamTower_Dome", a.id, a.x, a.y, a.facing, a.script, a.sprite, a.frames);
     add("SnagemHideout", "LOCALID_ORRE_SHADOW_HIDEOUT_VERDE", 9, 6, "face_down", "SnagemHideout_EventScript_Shadow_VERDE", "orre_peon_m", 9);
     add("SnagemHideout", "LOCALID_ORRE_SHADOW_HIDEOUT_ROSSO", 12, 6, "face_down", "SnagemHideout_EventScript_Shadow_ROSSO", "orre_peon_m", 9);

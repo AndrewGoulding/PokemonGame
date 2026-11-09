@@ -838,7 +838,18 @@ window.ITEMS = {
   "aurora-ticket": { name: "aurora-ticket", category: "gameplay", effect: "Allows passage to Birth Island to obtain Deoxys. (ORAS only)" },
   // --- Diamond and Pearl's Underground (added): the Explorer Kit and treasures dug up with it ---
   "hoenn-ticket": { name: "hoenn-ticket", category: "key-items", effect: "A ticket for the Fast Ship S.S. Aqua's run from Olivine City to Slateport City in Hoenn. (This game's own.)" },
+  "lab-card-key": { name: "lab-card-key", category: "key-items", effect: "The key for getting into the Lab. (Pokémon Colosseum's: the Shadow Pokémon Lab.)" },
+  "down-st-key": { name: "down-st-key", category: "key-items", effect: "The key for opening the Lab's underground door. (Pokémon Colosseum's: the Shadow Pokémon Lab.)" },
+  "dna-sample": { name: "dna-sample", category: "key-items", effect: "A DNA sample of some sort. (Pokémon Colosseum's: for the Shadow Pokémon Lab's DNA analyzer.)" },
+  "data-rom": { name: "data-rom", category: "key-items", effect: "A data rom of some sort found on Ein's desk. (Pokémon Colosseum's.)" },
   "time-flute": { name: "time-flute", category: "key-items", effect: "An old flute from Mt. Battle, said to call a Pokémon from across time to Agate's Relic Forest. (Pokémon Colosseum's.)" },
+  // (Pokémon Colosseum's Cologne Massage: its descriptions, pocket_menu #10287-#10290.)
+  "cologne-case": { name: "cologne-case", category: "key-items", effect: "A case for carrying Scents that appeal to Pokémon. (Pokémon Colosseum's.)" },
+  "joy-scent": { name: "joy-scent", category: "scents", effect: "A Scent that slightly pleases Pokémon. (Pokémon Colosseum's: it opens the door to a Shadow Pokémon's heart a tiny bit.)" },
+  "excite-scent": { name: "excite-scent", category: "scents", effect: "A Scent that pleases Pokémon. (Pokémon Colosseum's: it opens the door to a Shadow Pokémon's heart a little.)" },
+  "vivid-scent": { name: "vivid-scent", category: "scents", effect: "A Scent that greatly pleases Pokémon. (Pokémon Colosseum's: it opens the door to a Shadow Pokémon's heart a lot.)" },
+  "powerup-part": { name: "powerup-part", category: "key-items", effect: "A part to be delivered to Nett from Perr. (Pokémon Colosseum's.)" },
+  "subway-key": { name: "subway-key", category: "key-items", effect: "The operating key for The Under's subway. (Pokémon Colosseum's.)" },
   "snag-machine": { name: "snag-machine", category: "key-items", effect: "Team Snagem's machine, worn on the arm: it turns Poké Balls into Snag Balls that can catch another Trainer's Pokémon. (Pokémon Colosseum's.)" },
   "sinnoh-ticket": { name: "sinnoh-ticket", category: "key-items", effect: "A ticket for the S.S. Tidal's run to the Sinnoh region, from Lilycove. (This game's own.)" },
   "explorer-kit": { name: "explorer-kit", category: "key-items", effect: "A bag of tools for exploring. Used in a cave, it lets you dig in the walls for buried treasure." },

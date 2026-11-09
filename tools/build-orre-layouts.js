@@ -316,7 +316,7 @@ function wheel(c, x, y, r, colors = C.rust) { c.ellipse(x, y, r, r, colors[0], 2
     showName: false, allowEscaping: false, connections: [], triggers: [], hidden: [], signs: [], wild: null, warps, people: [] });
   const lib = path.join(__dirname, "lib");
   for (const f of fs.readdirSync(lib).filter((f) => /^orre-rooms-.+\.js$/.test(f)).sort())
-    require(path.join(lib, f))({ maps, changed, clone, room, emerald: em.window.WORLD_MAPS, vm, fs, path, root });
+    require(path.join(lib, f))({ maps, changed, clone, room, emerald: em.window.WORLD_MAPS, vm, fs, path, root, drawings, block, building, A });
 }
 
 // Persist exact adaptation choices and references alongside the generated maps.

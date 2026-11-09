@@ -1772,6 +1772,23 @@
       case "-clearboost": return fill("{who}'s stat changes were removed!", a);
       // Over the level cap (FireRed's disobedience): "won't obey", or ignoring
       // orders (another move follows), loafing, a nap, or hurting itself.
+      // Colosseum's Hyper Mode and CALL (fight_common's words: #30468-#30494).
+      case "-hyper": {
+        const who = (s) => fill(s, a);
+        if (b === "start") return who("{who}'s emotions rose to\na fever pitch!\nIt entered HYPER MODE!");
+        if (b === "end") return who("{who} came to its senses\nfrom the trainer's call!");
+        if (b === "selfish") return who("{who} selfishly used\n" + c + " without orders!");
+        const trainer = battle.sides.p1.name;
+        return who({ in: "{who} is in HYPER MODE!", self: "{who} is in HYPER MODE!\nIt attacked itself!", confused: "{who} is in HYPER MODE!\nIt's too confused to do anything!",
+          foetrainer: "{who} ignored orders and\nattacked the opposing trainer!", trainer: "Unbelievable!\n{who} ignored orders and\nattacked " + trainer + "!",
+          ignore: "It's no good!\nIt's ignoring orders!", notlisten: "It's no good!\nIt's not listening!",
+          ball: "{who} tried to return to its\nBALL without permission!\nBut it doesn't know how!",
+          item: "{who} tried to use its item\nwithout permission!\nBut it didn't know how!", noitem: "{who} tried to use its item\nwithout permission!\nBut it's not holding anything!" }[b] || "{who} is in HYPER MODE!");
+      }
+      case "-call":
+        if (b === "deaf") return fill("{who} failed to hear!", a);
+        if (b === "eager") return fill("{who} eagerly responded to\nthe call!", a);
+        return fill(battle.sides.p1.name + " called {who}!", a);
       case "-disobey":
         return fill({ ignored: "{who} ignored orders!", nap: "{who} began to nap!", hurt: "{who} won't obey!", loaf: "{who} is loafing around!",
           turnaway: "{who} turned away!", notice: "{who} pretended not to notice!" }[b] || "{who} won't obey!", a);
@@ -2473,7 +2490,10 @@
       clearMenu();
       // (Your box bobs while you choose: DoBounceEffect(BOUNCE_HEALTHBOX, 7, 1).)
       hb[pos].bounce = true; hb[pos].bounceIdx = 128;
-      const a = await window.GbaMenus.battleAction(overlay(), { name: active.name, cursor: actionCursor, frame: frame(), canBack: !!(dbl && dbl.back) });
+      // (Colosseum's CALL, for one of your Shadow Pokémon: in a Trainer battle, where RUN does nothing, in its place.)
+      const call = !!active.canCall && !battle.wild;
+      const a = await window.GbaMenus.battleAction(overlay(), { name: active.name, cursor: actionCursor, frame: frame(), canBack: !!(dbl && dbl.back),
+        labels: call ? ["FIGHT", "BAG", "POKéMON", "CALL"] : undefined });
       hb[pos].bounce = false;
       actionCursor = a.cursor;
       if (a.action === "back") return "back";
@@ -2566,6 +2586,7 @@
         if (!req.switches.length) { await message("There's no one else to switch in!"); continue; }
         const c = await chooseSwitch(req, true, dbl && dbl.taken); if (c) return c; continue;
       }
+      if (a.action === "run" && call) return { type: "call" };
       if (a.action === "run") {
         if (!battle.wild) { await message("No! There's no running\nfrom a Trainer battle!"); continue; }
         if (!active.canRun) { await message("Can't escape!"); continue; }
