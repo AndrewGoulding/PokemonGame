@@ -214,6 +214,7 @@
         s.steps = Math.max(0, s.steps - 1);
         return s.steps === 0 ? { type: "safari-over", hoenn: true } : null;
       }
+      if (s.sinnoh) { if (!/^PlatinumMarsh[1-6]$/.test(env.player.location.map)) return null; s.steps = Math.max(0, s.steps - 1); return s.steps === 0 ? { type: "safari-over" } : null; }
       if (!/^SafariZone_/.test(env.player.location.map)) return null;
       s.steps = Math.max(0, s.steps - 1);
       return s.steps === 0 ? { type: "safari-over", text: "SafariZone_Text_TimesUp" } : null;
@@ -268,6 +269,7 @@
     // counter and on your way out. `walkIn`: the last Safari Ball missed in a
     // battle (FireRed's ExitWalkIn: you come in a step first).
     async function safariOver(text, walkIn) {
+      if (env.player.flags.safari && env.player.flags.safari.sinnoh) { await env.sinnohMarshExit(); return; }
       if (text) { env.sfx("se_ding_dong"); await env.say(env.T(text)); }
       Screen.say("");
       delete env.player.flags.safari;

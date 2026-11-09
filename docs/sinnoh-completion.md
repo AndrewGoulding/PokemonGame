@@ -25,7 +25,7 @@ and validated. This checklist is deliberately broader than the main campaign.
 - [ ] Town quests and remaining HM/item rewards (gifts, four trades, shard tutors and reminder implemented)
 - [ ] Veilstone Game Corner, Ball Seals and Resort/Ribbon services
 - [x] Solaceon Day-Care, breeding and Lost Tower
-- [ ] Honey trees, Trophy Garden and Great Marsh daily encounters
+- [x] Honey trees, Trophy Garden and Great Marsh daily encounters
 - [ ] Pokétch, roaming route tracker/flee AI and regional field conveniences
 - [ ] Super Contests, accessories, Poffins and contest rewards
 - [ ] Battle Tower, Factory, Arcade, Castle and Hall

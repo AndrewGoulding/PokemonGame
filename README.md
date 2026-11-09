@@ -3645,7 +3645,8 @@ chapter checks with `node tests/browser/sinnoh-story.js`,
 
 
 Platinum town services, escorts and optional-route imports are documented in
-[Sinnoh town content](docs/sinnoh-towns.md); remaining systems are tracked in
+[Sinnoh town content](docs/sinnoh-towns.md) and
+[Sinnoh daily activities](docs/sinnoh-daily.md); remaining systems are tracked in
 [the Sinnoh completion checklist](docs/sinnoh-completion.md).
 
 `tools/build-sinnoh.js` builds them from the project (it needs Ruby, to read RPG Maker's `.rxdata` files through

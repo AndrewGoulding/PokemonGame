@@ -72,7 +72,7 @@
 
   // A Safari battle starting (BattleStartClearSetData; HGSS's: both stages 6; Emerald's: escape factor 3).
   function encounter(species, opts) {
-    if (opts && opts.hgss) return { species, hgss: true, catchStage: 6, fleeStage: 6, fleeRate: hgssFleeRate(species) };
+    if (opts && opts.hgss) return { species, hgss: true, catchStage: 6, fleeStage: 6, fleeRate: opts.fleeRate != null ? opts.fleeRate : hgssFleeRate(species) };
     if (opts && opts.hoenn) return { species, hoenn: true, catchFactor: baseCatchFactor(species), escapeFactor: 3, bait: 0, rock: 0, pkbl: 0, near: 0 };
     const escape = Math.floor((FLEE_RATES[species] || 0) * 100 / 1275);
     return { species, catchFactor: baseCatchFactor(species), escapeFactor: escape <= 1 ? 2 : escape, bait: 0, rock: 0 };

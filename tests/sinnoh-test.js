@@ -4,7 +4,7 @@ const root = path.join(__dirname, "..");
 global.window = global;
 global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g)) {
-  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna|galactic|midgame|finale|sidequests|legends|towns|expeditions)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
+  if (!file.startsWith("ui/") || /^ui\/sinnoh-(story|eterna|galactic|midgame|finale|sidequests|legends|towns|expeditions|daily)\.js$/.test(file)) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
 }
 function fixture(choice = "Turtwig") {
   let p = Player.create("TEST"); p.location = { map: "SandgemTown_RowansLab", x: 6, y: 4, facing: "up" };
@@ -109,7 +109,7 @@ async function main() {
     assert.equal(f.calls.at(-1).foe2.team.length, 1);
     const battles = f.calls.length; await f.story.run("pt:jubilife-galactic"); assert.equal(f.calls.length, battles);
     f.p.location = { map: "ValleyWindworks", x: 19, y: 15 };
-    assert.deepEqual(Sinnoh.patches("ValleyWindworks", f.p), ["locked"]);
+    assert.deepEqual(Sinnoh.patches("ValleyWindworks", f.p).filter(k=>!k.startsWith("honey")), ["locked"]);
     await f.story.run("pt:wind-door"); assert(!s.worksOpen);
     f.outcome("lost"); await f.story.run("pt:wind-guard"); assert(!s.windGuard);
     f.outcome("won"); await f.story.run("pt:wind-guard"); assert(s.windGuard);
@@ -120,7 +120,7 @@ async function main() {
     assert.equal(f.calls.length, before + 1); assert(s.worksKey);
     assert.equal(Player.itemCount(f.p, "works-key"), 1); assert.equal(Player.itemCount(f.p, "honey"), 10);
     await f.story.run("pt:meadow-grunts"); assert.equal(Player.itemCount(f.p, "honey"), 10);
-    await f.story.run("pt:wind-door"); assert(s.worksOpen); assert.deepEqual(Sinnoh.patches("ValleyWindworks", f.p), []);
+    await f.story.run("pt:wind-door"); assert(s.worksOpen); assert.deepEqual(Sinnoh.patches("ValleyWindworks", f.p).filter(k=>!k.startsWith("honey")), []);
     f.p.location = { map: "ValleyWindworks_Building", x: 19, y: 7 };
     f.outcome("lost"); await f.story.run("pt:mars"); assert(!s.mars);
     f.outcome("won"); await f.story.run("pt:mars"); assert(s.mars);

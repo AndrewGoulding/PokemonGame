@@ -3,7 +3,7 @@
 (function () {
   "use strict";
   function create(env) {
-    const quests = SinnohSidequests.create(env), legends = SinnohLegendScenes.create(env), towns = SinnohTownScenes.create(env), expeditions = SinnohExpeditionScenes.create(env);
+    const quests = SinnohSidequests.create(env), legends = SinnohLegendScenes.create(env), towns = SinnohTownScenes.create(env), expeditions = SinnohExpeditionScenes.create(env), daily = SinnohDailyScenes.create(env);
     const next = SinnohEterna.create(env), galactic = SinnohGalactic.create(env), middle = SinnohMidgame.create(env), finale = SinnohFinale.create(env);
     const player = () => env.player();
     const state = () => Sinnoh.state(player());
@@ -117,6 +117,7 @@
       await env.say(player().badges.includes("coal") ? "The Coal Badge lets you use\nRock Smash here in Sinnoh." : "You can teach Rock Smash now.\nEarn the Coal Badge to use it\noutside battle here in Sinnoh.");
     }
     function visible(person) {
+      const activity = daily.visible(person); if(activity !== undefined)return activity;
       const expedition = expeditions.visible(person); if(expedition !== undefined)return expedition;
       const legendary = legends.visible(person); if(legendary !== undefined)return legendary;
       const optional = quests.visible(person); if (optional !== undefined) return optional;
@@ -131,6 +132,7 @@
       return undefined;
     }
     function step() {
+      const activity = daily.step(); if(activity)return activity;
       const expedition = expeditions.step(); if(expedition)return expedition;
       const legendary = legends.step(); if(legendary)return legendary;
       const optional = quests.step(); if (optional) return optional;
@@ -148,7 +150,7 @@
     }
     async function run(script) {
       if (!script || !script.startsWith("pt:") || script.startsWith("pt:PT_TRAINER_")) return false;
-      if (await expeditions.run(script) || await towns.run(script) || await legends.run(script) || await quests.run(script) || await finale.run(script) || await middle.run(script) || await galactic.run(script) || await next.run(script)) return true;
+      if (await daily.run(script) || await expeditions.run(script) || await towns.run(script) || await legends.run(script) || await quests.run(script) || await finale.run(script) || await middle.run(script) || await galactic.run(script) || await next.run(script)) return true;
       switch (script.slice(3)) {
         case "rowan": await rowan(); break;
         case "aide": await aide(); break;

@@ -52,11 +52,10 @@
       .replace(/\{[^}]*\}/g, ""));
   }
   const clockTrainers = ["PT_TRAINER_LASS_CAROLINE", "PT_TRAINER_AROMA_LADY_JENNA", "PT_TRAINER_AROMA_LADY_ANGELA"];
-  function patches(map, player) {
+  function storyPatches(map, player) {
     const m = WORLD_MAPS[map];
     if (map === "SnowpointCity_Gym") return ["snow" + (state(player).snowballs | 0)];
     if (m && m.gear != null) return ["gear" + ((state(player).gears || [])[m.gear] || 0)];
-    if(m&&m.legendDoorPatches)return m.legendDoorPatches;
     if (m && m.legendDots) {const mask=((SinnohLegends.peek(player).regiDots||{})[map.replace("PlatinumLegend","")]|0);return m.legendDots.flatMap((_,i)=>mask&(1<<i)?["dot"+i]:[]);}
     if (map === "StarkMountain") return ["questDoor"];
     if (map === "EternaForest_2") return ["chateau"];
@@ -75,6 +74,7 @@
     if (map === "EternaCity_Gym") return ["clock" + (player.badges.includes("forest") ? 3 : Math.min(3, s.gardeniaClock | 0))];
     return null;
   }
+  function patches(map, player) {const keys=storyPatches(map,player),extra=(WORLD_MAPS[map]||{}).legendDoorPatches;return extra?[...new Set([...(keys||[]),...extra])]:keys;}
   function forestPartner(player) {
     const map=player.location.map;
     if(!["PlatinumIronIsland","PlatinumStarkInterior","EternaForest_2","PlatinumExpWayward","PlatinumExpMarley"].includes(map))return null;
@@ -154,10 +154,7 @@
     if(window.SinnohLegends)SinnohLegends.revive(player);
     f.sinnohLeagueClear=true;s.champion=true;s.league={active:false,step:5,completed:true};return entry;
   }
-  function isRoamer(player,species){const q=(player.flags.sinnoh||{}).sidequests||{};
-    const l=(player.flags.sinnoh||{}).legends||{};
-    if(map==="PlatinumExpWayward"&&l.miraJoined&&!l.miraEscorted)return{name:"Mira",team:team("PT_TRAINER_MIRA_WAYWARD_CAVE"),pic:"pt_mira"};
-    if(map==="PlatinumExpMarley"&&l.marleyJoined&&!l.marleyEscorted)return{name:"Marley",team:team("PT_TRAINER_MARLEY_VICTORY_ROAD"),pic:"pt_marley"};return species==="Mesprit"&&q.mespritRoaming||!!(window.SinnohLegends&&SinnohLegends.activeSpecies(player).includes(species));}
+  function isRoamer(player,species){const q=(player.flags.sinnoh||{}).sidequests||{};return species==="Mesprit"&&!!q.mespritRoaming||!!(window.SinnohLegends&&SinnohLegends.activeSpecies(player).includes(species));}
   function roamerWild(player,mon,table,rng=Math.random){
     const q=(player.flags.sinnoh||{}).sidequests||{},m=WORLD_MAPS[player.location.map],active=q.mespritRoaming&&!q.mespritCaught?["Mesprit"]:[];
     if(window.SinnohLegends)active.push(...SinnohLegends.activeSpecies(player));
