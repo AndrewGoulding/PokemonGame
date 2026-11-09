@@ -3485,20 +3485,36 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
 - **Platinum's first chapter is playable**: talk to Rowan in Sandgem's lab to choose Turtwig,
   Chimchar or Piplup at Lv. 5 and register for Sinnoh research. Dawn gives five Poké Balls once.
   Route 202 and Route 203, Oreburgh Gate, Oreburgh Mine and Oreburgh Gym now have Platinum's
-  early Trainers (18 imported teams, including Barry's three starter-dependent parties).
+  early Trainers, including Barry's three starter-dependent parties.
   Beat Barry on Route 203, find Roark in the mine, then challenge his Gym: Geodude Lv. 12,
   Onix Lv. 12 and Cranidos Lv. 14, with Platinum's authored moves. Victory gives the Coal Badge
   and the game's Stealth Rock TM, once, and enables Rock Smash in Sinnoh. The Gate's hiker
   gives the Rock Smash HM. Sinnoh has its own badge-based level cap (14 before Roark, 22 after),
   independent of badges earned elsewhere. Existing parties and other regions' progress are preserved.
+- **Platinum progression continues through the Forest Badge**: return to northern Jubilife
+  after Roark for Dawn's tag battle against Team Galactic. Route 204, both sides of Route 205
+  and Eterna Forest now have imported trainers. At Valley Windworks, defeat the door guard,
+  rescue the Honey seller in Floaroma Meadow for the Works Key, unlock the building and beat
+  Mars (Zubat Lv. 15, Purugly Lv. 17). Losses do not advance the quest; completed stages and
+  one-time rewards survive save/reload. The building's remaining grunts leave after Mars.
+  Cheryl joins battles in the interior forest with her imported Lv. 20 Chansey; wild encounters
+  become doubles, and she heals the party after surviving battles. At the eastern exit she
+  gives a Soothe Bell once. Cynthia gives Cut in Eterna City. Gardenia's adapted clock Gym
+  advances through Caroline, Jenna and Angela before opening the way to Gardenia's Turtwig,
+  Cherrim and Roserade (Lv. 20, 20, 22). Victory gives the Forest Badge and reusable Grass Knot
+  TM, enables Cut in Sinnoh and raises the regional level cap to 26.
 - **Adaptations**: this is a chapter for a player arriving from another region. The starter is
   chosen in Rowan's lab, rather than replaying Platinum's Twinleaf/Route 201 opening. Character
   placements are adapted to the existing Essentials geometry. Roark's room uses FireRed rock-Gym
   tiles with Platinum's NPC positions; it is not a rendering of Platinum's 3D Gym model. Battle
-  music currently uses the existing FireRed themes. TMs remain reusable, as elsewhere in this game.
+  music currently uses the existing FireRed themes. Windworks retains Platinum's key actor
+  coordinates in a newly drawn industrial room. The clock Gym uses a fixed central hub and
+  four changing 2D walkways, rather than Platinum's animated 3D clock model. Cheryl participates
+  in battles without a walking human-follower sprite; leaving the forest suspends her battle
+  support until you return, and taking the eastern exit completes her escort. TMs remain reusable, as elsewhere in this game.
 - **Still unfinished**: the full Twinleaf opening, catching demonstration, Trainer School,
-  Looker and Pokétch introduction, later Gyms and story (Team Galactic, Distortion World, League
-  and postgame). Most other interiors and later trainers are still absent. Existing later-region
+  Looker and Pokétch introduction, later Gyms, Eterna's Galactic building/bicycle rescue, later Galactic story, Distortion World, League
+  and postgame. Most other interiors and later trainers are still absent. Existing later-region
   maps remain available for exploration; reaching them does not imply their story is implemented.
   Some story-opened places (the ruins behind Mt. Coronet, drained Lake Valor, Turnback Cave's
   other rooms, Pal Park and the event islands) remain inaccessible.
@@ -3507,7 +3523,8 @@ is the project's own: none had to be borrowed from Kanto, Johto or Hoenn, or dra
 
 `tools/build-platinum.js` reads the public `pret/pokeplatinum` decompilation directly; no built ROM
 is needed. `data/platinum.js` records the exact source commit and the source event/script paths.
-It contains 302 imported messages, the early trainer parties and explicit placements. Imported
+It contains 458 imported messages, 59 trainer teams (including partner/starter variants), held
+items, authored moves and explicit placements. Imported
 character sprites and trainer portraits live under `assets/world/sprites/pt_*` and
 `assets/sprites/trainers/front/pt_*`. Rebuild with:
 
@@ -3516,14 +3533,15 @@ node tools/build-platinum.js /path/to/pokeplatinum
 ```
 
 `game/sinnoh.js` applies the overlay after the base Sinnoh maps load, and `ui/sinnoh-story.js`
-runs the adapted scenes through the shared event dispatcher. This is not a complete Platinum
+and `ui/sinnoh-eterna.js` run the adapted scenes through the shared event dispatcher. This is not a complete Platinum
 script interpreter. The base Essentials importer and Platinum overlay are separate so rebuilding
 base maps does not erase campaign logic. Progress lives in `player.flags.sinnoh`; trainer defeats
-use `PT_TRAINER_*`, and the Coal Badge lives in the ordinary saved badge list.
+use `PT_TRAINER_*`, and the Coal and Forest Badges live in the ordinary saved badge list.
 
 `npm test` checks imported content, placement/warp validity, all three starter paths, loss/retry
 behavior, one-time rewards, regional caps, field moves and save round-trips. Run the actual-page
-chapter check with `node tests/browser/sinnoh-story.js` (supports `PLAYWRIGHT_PATH` and `CHROMIUM`).
+chapter checks with `node tests/browser/sinnoh-story.js` and
+`node tests/browser/sinnoh-eterna.js` (both support `PLAYWRIGHT_PATH` and `CHROMIUM`).
 
 
 `tools/build-sinnoh.js` builds them from the project (it needs Ruby, to read RPG Maker's `.rxdata` files through

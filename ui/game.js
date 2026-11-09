@@ -1070,6 +1070,11 @@
     opts = opts || {};
     battleCount++;
     const wild = kind === "wild";
+    const cheryl = Sinnoh.forestPartner(player);
+    if (cheryl) {
+      if (wild && !opts.foe) opts = { ...opts, foe: { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } };
+      opts = Sinnoh.forestBattle(player, kind, opts, () => wildMon(Encounters.wild(partyLevel())));
+    }
     const foe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
     const foe2 = !wild && opts.foe2 || null;
     // (Two wild Pokémon, opts.wildDouble: Black and White's wild double battle, this game's own way: game/hordes.js.)
@@ -1260,6 +1265,7 @@
         if (evo) await evolve(record, evo, true);
       }
     }
+    if (cheryl && result.outcome !== "lost") player.party.forEach(Party.heal);
     await persist();
     return result.outcome;
   }
@@ -3541,7 +3547,9 @@
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
   SPECIAL.add("LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter"); SPECIAL.add("FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner");
-  for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if ((p.script || "").startsWith("pt:")) SPECIAL.add(p.script);
+  for (const m of Object.values(window.WORLD_MAPS)) {
+    for (const p of [...m.people, ...(m.signs || [])]) if ((p.script || "").startsWith("pt:")) SPECIAL.add(p.script);
+  }
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
   // (or, once you're Champion, the Fighting Dojo wants its rematch: dojoRematch())
@@ -5851,7 +5859,8 @@
     player: () => player, say, confirm, showPicture, hidePicture, canBattle, battle, sfx,
     choose: (prompt, species) => ask(prompt, species.map((name) => ({ label: name, value: name }))),
     showWorld: () => show("world"), resume: () => Overworld.resume(),
-    refreshPeople: () => Overworld.refreshPeople(), teleport: (to) => Overworld.teleport(to)
+    refreshPeople: () => Overworld.refreshPeople(), teleport: (to) => Overworld.teleport(to),
+    refreshMap: () => { applyPatches(player.location.map); Overworld.refreshPeople(); }
   });
 
   // ---------- Sinnoh: the S.S. Tidal's run (this game's own) ----------
@@ -8325,6 +8334,7 @@
   // Which of a map's patches (WORLD_MAPS[..].patches) are on now.
   function mapPatches(map) {
     const f = player.flags;
+    const sinnoh = Sinnoh.patches(map, player); if (sinnoh) return sinnoh;
     if (map === GOLDENROD_SWITCHES) return goldenrodSw.open.map((n) => "open" + n);
     // (The Space Center's sealed door, open once the Delta Episode's done and 2F's researcher has unsealed it;
     // its observation deck's rock aglow and stars in line while you wish.)
