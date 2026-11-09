@@ -3246,7 +3246,26 @@ if (window.JOHTO_TOWN_MAP) {
     assert.deepStrictEqual(Orre.patches("PhenacCity", { orreStory: 19 }), ["truck"]);
     // Colosseum's Shadow Pokémon: all there, Trudly's his Makuhita (Lv. 30), each one battle-ready as a Shadow
     // Pokémon; and the prologue's own Trainers are none of Colosseum's Shadow Pokémon Trainers.
-    assert.strictEqual(Orre.SHADOW.length, 47);
+    assert.strictEqual(Orre.SHADOW.length, 48);
+    // Colosseum's parties: every Shadow Pokémon in its Trainer's party, every Pokémon real, every move a real move
+    // (Shadow Rush in the first's place while it's a Shadow Pokémon), every held item a real item.
+    for (const s of Orre.SHADOW) {
+      assert(Object.entries(Orre.TEAMS).some(([k, team]) => k.split("@")[0] === s.trainer && team.some(([sp, lv]) => sp === s.species && lv === s.level)), s.species + " in " + s.trainer + "'s party");
+      assert(s.moves.length === 4 && s.moves.every((m) => MOVES[m]) && (!s.item || ITEMS[s.item]), s.species);
+      const r = Orre.shadowMon(s);
+      assert.deepStrictEqual(r.moves.map((m) => m.name), ["Shadow Rush"].concat(s.moves.slice(1)));
+      assert.deepStrictEqual(r.purifyMoves, s.moves);
+    }
+    for (const [k, team] of Object.entries(Orre.TEAMS)) {
+      assert(team.length >= 2 && team.length <= 6 && team.every(([sp, lv]) => DEX[sp] && lv >= 20 && lv <= 70), k);
+      assert(Orre.team(k).length === team.length, k);
+    }
+    assert.deepStrictEqual(Orre.shadowOf("Ein").map((x) => x.species), ["Raikou"]);
+    assert.deepStrictEqual(Orre.shadowOf("Tanie").map((x) => [x.species, x.level]), [["Granbull", 43]]);
+    assert.deepStrictEqual(Orre.team("Trudly").map((r) => [r.species, r.level, !!r.shadow]), [["Duskull", 25, false], ["Spinarak", 25, false], ["Makuhita", 30, true]]);
+    // (A later battle brings back a Shadow Pokémon never snagged; one snagged stays gone.)
+    assert(Orre.team("Ein@Realgam").some((r) => r.species === "Raikou" && r.shadow) && !Orre.team("Ein@Realgam", ["Raikou"]).some((r) => r.species === "Raikou"));
+    assert.deepStrictEqual(Orre.snaggable("Biden"), ["Smeargle"]);
     // (Every Shadow Pokémon Trainer of the story is placed in Orre, battling with theirs; every Orre warp goes somewhere.)
     const orreScripts = new Set(Object.values(WORLD_MAPS).filter((m) => m.region === "orre").flatMap((m) => m.people.map((p) => p.script)));
     for (const [script, d] of Object.entries(Orre.SHADOW_TRAINERS)) assert(orreScripts.has(script) && Orre.shadowOf(d.trainer).length, script);
@@ -3355,7 +3374,7 @@ if (window.JOHTO_TOWN_MAP) {
   const back = Player.load(JSON.parse(JSON.stringify(pl))).player;
   assert.deepStrictEqual([back.name, back.look, back.bag], ["Wes", "wes", {}]);
   // Rider Willie, and the bar's stock (no Escape Rope: it would take Wes to Kanto).
-  assert.deepStrictEqual(Orre.willieTeam().map((r) => [r.species, r.level]), [["Zigzagoon", 25], ["Zigzagoon", 26]]);
+  assert.deepStrictEqual(Orre.willieTeam().map((r) => [r.species, r.level]), [["Zigzagoon", 24], ["Zigzagoon", 24]]);
   assert(Orre.SHOP.every((id) => ITEMS[id]) && !Orre.SHOP.includes("escape-rope"));
   for (const f of ["trainers/back/wes", "trainers/front/wes", "trainers/front/rider_willie"]) assert(fs.existsSync(path.join(root, "assets/sprites/" + f + ".png")), f);
   for (const k of ["", "_run", "_bike", "_surf", "_fish"]) assert(fs.existsSync(path.join(root, "assets/world/sprites/player_wes" + k + ".png")));
