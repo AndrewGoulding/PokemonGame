@@ -306,6 +306,19 @@ function wheel(c, x, y, r, colors = C.rust) { c.ellipse(x, y, r, r, colors[0], 2
     { showName: true });
 }
 
+// More of Colosseum's rooms, a module each (tools/lib/orre-rooms-*.js): each exports a function given
+// { maps, changed, clone, room, vm, fs, path, root } that adds or changes maps in `changed` (room(from, name, title,
+// music, warps): an Emerald room as an Orre one).
+{
+  const em = { window: { WORLD_MAPS: {} } }; vm.createContext(em);
+  try { vm.runInContext(fs.readFileSync(path.join(root, "data/emerald-maps.js"), "utf8"), em); } catch (e) { /* (only its maps are wanted) */ }
+  const room = (from, name, title, music, warps) => Object.assign(clone(em.window.WORLD_MAPS[from]), { name, title, image: from, region: "orre", music,
+    showName: false, allowEscaping: false, connections: [], triggers: [], hidden: [], signs: [], wild: null, warps, people: [] });
+  const lib = path.join(__dirname, "lib");
+  for (const f of fs.readdirSync(lib).filter((f) => /^orre-rooms-.+\.js$/.test(f)).sort())
+    require(path.join(lib, f))({ maps, changed, clone, room, emerald: em.window.WORLD_MAPS, vm, fs, path, root });
+}
+
 // Persist exact adaptation choices and references alongside the generated maps.
 const sources = [
   ["PhenacCity", "https://bulbapedia.bulbagarden.net/wiki/Phenac_City", "https://archives.bulbagarden.net/media/upload/2/2a/Phenac_City.png"],

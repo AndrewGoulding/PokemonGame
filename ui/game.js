@@ -7138,7 +7138,7 @@
         "Eagun: Luckily, as it is inscribed on\nthe Small Tablet, the Relic in the\nRelic Forest is imbued with Celebi's", "power.", "Eagun: If a Shadow Pokémon is ready\nto throw open its heart's door, you\nmust visit the Relic."]
       : ["Eagun: Ah, Rui! And {PLAYER}! It's\ngood to see you back!", "Eagun: Hmhm… I see! So Vander\nconferred the Time Flute upon you.",
         "Eagun: Then, what are you waiting\nfor? Depart for the Relic Forest and\nsummon Celebi at once.", "Eagun: I wonder what will happen. I\nfind it quite exciting."])
-      : story >= 31 ? ["Eagun: Mt. Battle is to the north.\nYou can see it in the distance once\nyou leave the village. Hurry, Rui!"]
+      : story >= 31 ? ["Eagun: Mt. Battle is to the northeast.\nYou can see it in the distance once\nyou leave the village. Hurry, Rui!"]
       : story >= 30 ? ["Eagun: The Relic must have some\neffect on Shadow Pokémon.", "Eagun: I will leave that for you to\ndetermine for yourselves."]
       : ["Eagun: You've finally arrived. What\nheld you up?"]);
   }
@@ -7238,7 +7238,7 @@
       "by a mysterious group of thugs.\nPlease, can you go help?", "We think it's the same group as the\none Miror B. belonged to. We're\ncounting on you!"].map((p) => fill(p)));
     await say(["Rui: Whaaat?! Those crooks are loose\non Mt. Battle now?! That's awful!", "Rui: We can't let this go on!\n{PLAYER}, let's go! …Oh, wait."]);
     await say(["Rui: Grandpa, where is Mt. Battle,\nanyway?"]);
-    await say(["Eagun: Mt. Battle is to the north.\nYou can see it in the distance once\nyou leave the village. Hurry, Rui!"]);
+    await say(["Eagun: Mt. Battle is to the northeast.\nYou can see it in the distance once\nyou leave the village. Hurry, Rui!"]);
     f.orreStory = 31;
     Orre.unlock(f, "MtBattle");
     await persist();
