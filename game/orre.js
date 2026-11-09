@@ -113,7 +113,7 @@
     { map: "AgateVillage", name: "Agate Village", x: 180, y: 44, arrive: { x: 17, y: 28, facing: "up" } },
     { map: "MtBattle", name: "Mt. Battle", x: 208, y: 30, arrive: { x: 16, y: 30, facing: "up" } },
     { map: "ShadowLab_1F", name: "Shadow Pokémon Lab", x: 40, y: 120, arrive: { x: 7, y: 8, facing: "up" } },
-    { map: "RealgamTower_1F", name: "Realgam Tower", x: 222, y: 126, arrive: { x: 9, y: 10, facing: "up" } },
+    { map: "RealgamTower_1F", name: "Realgam Tower", x: 222, y: 126, arrive: { map: "RealgamTower_Exterior", x: 19, y: 34, facing: "up" } },
     { map: "OrreAirStrip", name: "Orre Air Strip", x: 96, y: 132, arrive: { x: 21, y: 2, facing: "down" } }
   ];
   const OPEN_AT_FIRST = ["OrreAirStrip", "SnagemHideout"];
@@ -474,5 +474,25 @@
     return out;
   }
 
-  window.Orre = { SHADOW, TOURNAMENTS, tournamentDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
+  // Geometry changed, but saved map IDs did not. Rescue an old save inside
+  // a newly solid wall or water tile without resetting any story/party data.
+  function correctLocation(player) {
+    const at = player.location, m = at && (window.WORLD_MAPS || {})[at.map];
+    if (!m || !m.colosseumLayout || !m.collision[at.y * m.width + at.x]) return false;
+    const blocked = new Set(m.people.map((p) => p.x + "," + p.y));
+    const warps = new Set(m.warps.map((w) => w.x + "," + w.y));
+    const q = [[at.x, at.y]], seen = new Set();
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i], key = x + "," + y;
+      if (x < 0 || y < 0 || x >= m.width || y >= m.height || seen.has(key)) continue;
+      seen.add(key);
+      if (!m.collision[y * m.width + x] && !blocked.has(key) && !warps.has(key)) {
+        player.location = Object.assign({}, at, { x, y }); return true;
+      }
+      q.push([x, y + 1], [x - 1, y], [x + 1, y], [x, y - 1]);
+    }
+    throw new Error("No safe position in " + at.map);
+  }
+
+  window.Orre = { correctLocation, SHADOW, TOURNAMENTS, tournamentDraw, MT_BATTLE, mtBattleArea, shadowOf, shadowMon, SHADOW_TRAINERS, FILLERS, PLACES, openPlaces, isOpen, unlock, START, WES_START, PARKED, WES, WES_TEAM, SHOP, inOrre, enter, enterAsWes, leave, visible, patches, willieTeam, wesParty };
 })();

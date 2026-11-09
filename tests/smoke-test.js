@@ -3133,7 +3133,7 @@ if (window.JOHTO_TOWN_MAP) {
   }
   assert(!Object.values(WORLD_MAPS).some((m) => m.region !== "orre" && (m.connections.some((c) => [O, A, H].some((q) => c.map === q.name)) || m.warps.some((w) => [O, A, H].some((q) => w.map === q.name)))), "only the plane goes there");
   for (const pl of Orre.PLACES) {
-    const m = WORLD_MAPS[pl.map], a = pl.arrive;
+    const a = pl.arrive, m = WORLD_MAPS[a.map || pl.map];
     assert(m && !m.collision[a.y * m.width + a.x] && !m.triggers.some((t) => t.x === a.x && t.y === a.y), pl.map + ": room to come in");
     assert(pl.x > 0 && pl.x < 240 && pl.y > 0 && pl.y < 160, pl.map + " on the map");
   }

@@ -6012,7 +6012,7 @@
   // at first the Air Strip and Team Snagem's hideout). The arrows go to the nearest place that way, A sets off (your
   // icon slides across to it, then you're there, by its way in), B stays (a step back in from the edge).
   async function orreWorldMap() {
-    const here = player.location.map, places = Orre.openPlaces(player.flags);
+    const current = player.location.map, here = (window.WORLD_MAPS[current] || {}).orrePlace || current, places = Orre.openPlaces(player.flags);
     let at = Math.max(0, places.findIndex((p) => p.map === here));
     const from = places[at];
     const pos = (p) => "left:" + (p.x / 2.4) + "%;top:" + (p.y / 1.6) + "%";
@@ -6079,9 +6079,9 @@
     Overworld.setAvatar("walk");
     player.location = Object.assign({ map: to.map }, to.arrive);
     await Overworld.teleport(player.location);
-    music(window.WORLD_MAPS[to.map].music);
+    music(window.WORLD_MAPS[player.location.map].music);
     // (A scene as you get there: Folly and Trudly at the Outskirt Stand.)
-    if (special("arrive:" + to.map)) await story({ type: "trigger", trigger: { script: "arrive:" + to.map }, map: to.map });
+    if (special("arrive:" + player.location.map)) await story({ type: "trigger", trigger: { script: "arrive:" + player.location.map }, map: player.location.map });
     await persist();
   }
   // Team Snagem's guards at the hideout's gate. Talk to one and you can ask to join Team Snagem, as Prof. Oak asked:
@@ -6637,7 +6637,7 @@
     await confirm("Let Rui come along?");
     await say(["Rui: Thank you, {PLAYER}! Eheh, I\nthought you might say that!", "If you're with me, it won't matter if\nthose guys come back again!",
       "Thank you! Thanks for joining me for\na while!"]);
-    await say(["The Mayor's house is the big house\nwith the blue dome, at the top of\nthe city."]);
+    await say(["The Mayor's house has a blue dome,\non the north-west terrace of\nthe city."]);
     Screen.say("");
     await Overworld.fadeToBlack();
     Overworld.removeObject(R);
@@ -6908,7 +6908,8 @@
   // crumbles away, and Celebi goes back to its own time.
   async function relicForestShrine() {
     const f = player.flags;
-    await say(["A little shrine, old and mossy. Its\nround window glows a soft green."]);
+    if ((f.orreStory | 0) === 29) { await agateShrine(); return; }
+    await relicStone();
     if (f.orreCelebi) { await say(["Something gentle seems to watch over\nthe forest still."]); return; }
     if (!Player.itemCount(player, "time-flute")) return;
     const shadows = player.party.filter((r) => r.shadow);
@@ -6960,6 +6961,7 @@
       : story >= 30 ? ["Eagun: The Relic Stone can open a\nPokémon's heart. Use it well."] : ["Eagun: Welcome to Agate, young one."]);
   }
   async function eagunsHouseScene() {
+    if ((player.flags.orreStory | 0) !== 28) return;
     const f = player.flags, R = ORRE("EAGUN_RUI"), V = ORRE("AGATE_RUNNER"), E = ORRE("EAGUN"), B = ORRE("BELUH");
     const me = player.location;
     Overworld.addObject(R, { x: me.x + 1, y: me.y, facing: "up" });
@@ -6986,7 +6988,8 @@
   }
   async function agateShrine() {
     const f = player.flags, S = ORRE("SKRUB"), P = ORRE("AGATE_PEON"), E = ORRE("SHRINE_EAGUN");
-    Overworld.addObject(E, { x: 15, y: 7, facing: "right" });
+    const elder = window.WORLD_MAPS[player.location.map].people.find((p) => p.localId === E);
+    Overworld.addObject(E, { x: elder.x, y: elder.y, facing: "right" });
     await say(["Eagun: Get away from the Relic Stone,\nyou ruffians!"]);
     await say(["Skrub: Hah! Out of the way, old man.\nCipher wants a good look at this rock.",
       "…And who are you? Oh, the brat who's\nbeen snagging our Pokémon! Perfect!"]);
@@ -10185,6 +10188,7 @@
   }
 
   async function explore() {
+    Orre.correctLocation(player);
     World.setDynamicWarp(player.flags.dynamicWarp);
     for (;;) {
       show("world");

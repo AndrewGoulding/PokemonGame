@@ -2081,6 +2081,9 @@
         if (at("RealgamTower_1F") && story === 40) return true;
         if (script === "enter:RealgamTower_Top" && story === 43) return true;
       }
+      // Orre entrance scenes above are conditional; do not let the generic
+      // handler registry replay completed scenes when revisiting a building.
+      if (/^(arrive|enter):/.test(script || "") && (window.WORLD_MAPS[script.split(":")[1]] || {}).region === "orre") return false;
       if (script === "Orre_WorldMap") return true;   // (Orre: out of a place, its map: orreTravel())
       // Johto: its scripts (a step's, while its var has its value), its
       // Apricorn trees, and its maps' frame tables as you come in.

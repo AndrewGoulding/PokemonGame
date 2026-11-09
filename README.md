@@ -3133,6 +3133,12 @@ does. (Script warps now name their maps, so every script's warp works.)
 
 ## Orre (in progress)
 
+Orre's main exteriors now use [reference-based 2D projections of Colosseum's locations](docs/orre-maps.md),
+including circular Phenac, Pyrite's chasm and windmill, Agate's root-built terraces, The Under,
+Mt. Battle's caldera, the Outskirt Stand and Realgam's exterior. See the linked preview and
+reference list for the covered locations, adaptations and interiors still awaiting conversion.
+Run `npm run build:orre-layouts` to regenerate them without an external checkout.
+
 Orre's story is Pokémon Colosseum's, with you as yourself rather than Wes, and this game's own content to fill in
 the gaps. After Johto there are two ways on: Orre, or Hoenn with the Hoenn Ticket.
 
@@ -3259,7 +3265,7 @@ and **30** once you've broken with Team Snagem (`player.flags.orreLevelCap`).
   until you've snagged their Shadow Pokémon (`Orre.SHADOW_TRAINERS`, `shadowTrainer`; `orreShadowDone`). The words are
   this game's own telling, after Colosseum's. Cipher's Peons are Team Rocket's grunts in Cipher's purple.
 - **Agate Village** (`orreStory` 28 to 31; `eagunsHouseScene`, `agateShrine` in `ui/game.js`). In Rui's grandparents'
-  house (the cabin top right; Verdanturf's house inside) Rui tells Eagun and Beluh about the kidnapping and the Shadow
+  house (the great tree in the north; Verdanturf's house inside) Rui tells Eagun and Beluh about the kidnapping and the Shadow
   Pokémon, and a villager runs in: strangers at the Relic Stone! At the shrine Eagun faces Cipher's Peons; beat Skrub
   (Shadow Hitmontop, Lv. 38) and his partner. Beluh finds the family's old tablet: the Relic can open the last door of a
   heart shut by shadows. Then Eagun calls: crooks have taken over Mt. Battle.
@@ -3334,24 +3340,18 @@ Pokémon Ranger, a Camper, a Picnicker and a Cooltrainer (Lv. 19-22); and in Pyr
 Engineer and a Cooltrainer (Lv. 22-26). With all of them and the tests, two Pokémon sharing the Exp. reach about
 Lv. 25.
 
-**Pyrite Town** (after Colosseum's, drawn in code): the lawless town in a canyon, its dusty ground scored with tyre
-tracks and walled in by red rock: rusty tin shacks with corrugated roofs, oil drums and crates, the Pokémon Center
-(Emerald's), and at the top the **Pyrite Colosseum**, a round arena of riveted iron, where tournaments are held. In
-the east wall, the timbered mouth of **Pyrite Cave** (for now Emerald's Fiery Path, its picture and its layout, its
-north end fallen in and none of its boulders or items).
+**Pyrite Town**: the lower Duel Square and its painted Poké Ball, rusty buildings and power-station windmill,
+a chasm crossed by the bridge to the northern white-plated Colosseum, and the cave mouth in the east wall.
+The cave itself still uses Emerald's Fiery Path layout.
 
-**Agate Village** (after Colosseum's, drawn in code): the quiet village in the hills, all green, in a ring of big
-trees: a stream across the middle with a plank bridge, log cabins with red roofs, flowers, the Pokémon Center
-(Emerald's), and at the top the shrine of the **Relic Stone**, the village's holy stone. Its elder says the stone
-can heal a Pokémon whose heart is shut tight. Through a gap in the trees on the west side, the **Relic Forest**.
+**Agate Village**: grassy ledges, root-framed stone cottages, bridges, an eastern cascade and Eagun's great
+hollow tree in the north. The Pokémon Center is the north-west cottage. The western path enters the
+**Relic Forest**, where the Relic Stone, Skrub's confrontation and purification now belong.
 
-**Phenac City** (after Colosseum's, drawn in code): the city of water in the desert, all paved in sandstone, its
-white-walled buildings with flat roofs and blue trim, palms, and two channels of water running the length of it and
-falling as waterfalls over the edge of each terrace. At the top, Phenac Stadium (its arched entrance between two
-waterfalls, the Poké Ball above it; its tournaments open after Evice), the Mayor's house (its blue dome) and a house; down the stairs,
-the fountain square with its round fountain in rings of paving, the Pokémon Center (Emerald's, as at the Air Strip,
-Mauville's inside) and a house; down again, the entrance plaza, its palms and two more houses, and the way out to
-the desert. Its townspeople say Colosseum's own words (`assets/text/colosseum.json`).
+**Phenac City**: three circular terraces with enclosing water channels and waterfalls. Phenac Stadium crowns
+the northern terrace; the central Pre Gym is now enterable; the fountain is on the lower plaza.
+The Mayor's blue-domed house is north-west, and healing services occupy the west side. Its townspeople
+still use Colosseum's words (`assets/text/colosseum.json`).
 
 **The Outskirt Stand**, out in Orre's desert, opens on the map with Snagem's second test: a diner made from an old
 locomotive. The first time you get there, two men come out of the diner, **Folly** and **Trudly**. They talk about
@@ -3366,8 +3366,7 @@ In the diner:
 - The jukebox plays another song.
 - The travellers in the booths talk about the road.
 
-Colosseum is 3D, so nothing of it converts. `tools/build-orre.js` builds the
-place in the GBA games' style instead, from a
+`tools/build-orre.js` builds the base assets and applies the Colosseum layout projection, from a
 [pret/pokeemerald](https://github.com/pret/pokeemerald) checkout:
 
 ```sh

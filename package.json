@@ -3,7 +3,7 @@
   "private": true,
   "description": "A browser Pok\u00e9mon game built on a Gen 6 battle engine.",
   "scripts": {
-    "test": "node tests/smoke-test.js && node tests/kanto-story-test.js && node tests/kanto-modules-test.js && node tests/sinnoh-test.js",
+    "test": "node tests/smoke-test.js && node tests/kanto-story-test.js && node tests/kanto-modules-test.js && node tests/sinnoh-test.js && node tests/orre-maps-test.js",
     "build:evolutions": "node tools/build-evolutions.js",
     "build:item-sprites": "node tools/build-item-sprites.js",
     "build:maps": "node tools/build-maps.js",
@@ -19,6 +19,7 @@
     "build:johto": "node tools/build-johto.js",
     "build:johto-audio": "node tools/build-johto-audio.js",
     "build:breeding": "node tools/build-breeding.js",
+    "build:orre-layouts": "node tools/build-orre-layouts.js",
     "build:platinum": "node tools/build-platinum.js",
     "build:emerald-maps": "node tools/build-emerald-maps.js"
   },

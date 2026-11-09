@@ -2456,3 +2456,6 @@ fs.writeFileSync(orreFile,
     RealgamTower_1F: REALGAM_1F, RealgamTower_Dome: REALGAM_DOME, RealgamTower_Colosseum: REALGAM_COLO, RealgamTower_Top: REALGAM_TOP, AgateVillage: AGATE, AgateVillage_PokemonCenter_1F: PCG, RelicForest: RELIC_FOREST, PyriteTown_Colosseum: COLO_LOBBY, PhenacCity_Stadium: ST_LOBBY, TheUnder_DeepColosseum: DEEP }) + ");\n" + sinnohPart);
 console.log("wrote Pyrite Town (" + YW + "x" + YH + "), Pyrite Cave and Agate Village (" + GW + "x" + GH + ")");
 console.log("wrote the Outskirt Stand (" + W + "x" + H + "), its diner (" + IN_W + "x" + IN_H + ") and the Air Strip (" + AW + "x" + AH + "), the Snagem Hideout (" + HW + "x" + HH + ") and Orre's map to data/orre-maps.js and assets/");
+
+// Reapply the reference-based 2D projection after regenerating the base data.
+require("child_process").execFileSync(process.execPath, [path.join(__dirname, "build-orre-layouts.js")], { stdio: "inherit" });
