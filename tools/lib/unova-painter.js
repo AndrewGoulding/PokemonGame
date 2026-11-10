@@ -100,7 +100,7 @@ module.exports=function(root){
   if(m.unovaTheme==='ship'){c.rect(3*16,3*16,(m.width-6)*16,4,[126,149,162]);c.rect(3*16,(m.height-4)*16,(m.width-6)*16,4,[126,149,162]);}
   if(m.unovaTheme==='runway'){c.rect(11*16,3*16,7*16,(m.height-6)*16,[74,44,91]);for(let yy=4;yy<m.height-3;yy+=2)for(const xx of [10,18])c.box(xx*16,yy*16,8,8,[246,228,141],[133,101,150]);for(const xx of [4,22])for(let yy=5;yy<38;yy+=10)c.box(xx*16,yy*16,16,32,[73,82,106],[41,48,68]);}
   if(m.unovaTheme==='coaster'){for(const x of [11,20]){c.line(x*16,7*16,x*16,29*16,[64,68,81],6);c.line(x*16+6,7*16,x*16+6,29*16,[175,181,189],2);}for(let yy=8;yy<29;yy++)c.line(11*16,yy*16,20*16,yy*16,[145,117,88],3);}
-  if(m.unovaTheme==='avenue'){for(const [xx,yy]of [[4,4],[21,4],[4,14],[21,14]]){c.box(xx*16,yy*16,64,24,[175,100,83],[70,58,80]);for(let j=0;j<4;j++)c.rect(xx*16+j*16,yy*16,8,10,[239,208,142]);}for(const x of [13,17])c.line(x*16,3*16,x*16,37*16,[198,162,107],2);}
+  if(m.unovaTheme==='avenue'){for(const [xx,yy]of [[4,4],[21,4],[4,14],[21,14],[4,24],[21,24],[4,34],[21,34]]){c.box(xx*16,yy*16,64,24,[175,100,83],[70,58,80]);for(let j=0;j<4;j++)c.rect(xx*16+j*16,yy*16,8,10,[239,208,142]);}for(const x of [13,17])c.line(x*16,3*16,x*16,37*16,[198,162,107],2);}
   if(m.unovaTheme==='station'){c.box(4*16,3*16,20*16,20,[69,80,105],[32,45,66]);for(let x=5;x<24;x+=3)c.rect(x*16,3*16+5,20,6,[226,211,130]);for(const x of [4,22])c.box(x*16,11*16,24,80,[91,108,121],[43,58,78]);}
   if(stage){c.rect(3*16,11*16-3,(m.width-6)*16,3,[45,38,60]);c.line(15*16,11*16-2,18*16,11*16-2,[213,188,134],2);}
   for(const w of m.warps)if(m.behavior[w.y*m.width+w.x]===0x65)tile(c,'ViridianCity_PokemonCenter_1F',7,8,w.x,w.y);

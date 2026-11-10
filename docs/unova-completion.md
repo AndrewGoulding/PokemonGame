@@ -16,6 +16,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Castelia, five sewer chambers, Hugh tag event, Burgh, garden, early Relic Passage and city quests
 - [x] Route 4, Colress battle and Desert Resort/Relic Castle
 - [x] Nimbasa/Elesa, adapted coaster and wheel, local sports practice and starter Join Avenue ([scope](unova-nimbasa.md))
+- [x] Eight-family Join Avenue development, source goods/services/ranks and raffles ([scope](unova-avenue.md))
 - [x] Driftveil/Clay, opening PWT adaptation, Relic Passage and Chargestone Cave ([scope](unova-west.md))
 - [x] Mistralton, Celestial Tower and Skyla ([scope](unova-west.md))
 - [x] Eastern-region flight through the Champion ([scope](unova-east.md))
