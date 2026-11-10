@@ -1905,11 +1905,6 @@
   // it from Kanto's too; and Hoenn's once you've been there. Fly goes to any
   // of them, the region you're in first.
   async function townMap(opts) {
-    if(opts?.fly&&!opts.otherRegions&&Unova.owns(player.location.map)){
-      Unova.visit(player,player.location.map);
-      const pick=await ask("Fly to which town?",Unova.flySpots(player).map(spot=>({label:spot.name,value:spot})).concat([{label:"Other regions",value:"other"},{label:"Cancel",value:null}]));
-      if(pick!=="other")return pick;
-    }
     if (opts && opts.fly && !opts.otherRegions && Sinnoh.owns(player.location.map)) {
       Sinnoh.visit(player, player.location.map);
       const spots = Sinnoh.flySpots(player);
@@ -1932,6 +1927,11 @@
     const hoennHere = !!HOENN_MAP && isHoenn(map);
     const hoennMaps = HOENN_MAP && !hoennHere && beenToHoenn() ? [HOENN_MAP] : [];
     const regions = hoennHere ? [HOENN_MAP].concat(kanto, JOHTO_MAP && beenToJohto() ? [JOHTO_MAP] : []) : (johtoHere ? johto.concat(kanto) : kanto.concat(johto)).concat(hoennMaps);
+    const unovaMap=window.TOWN_MAP.unova;
+    if(Unova.owns(map))Unova.visit(player,map);
+    if(unovaMap&&(Unova.owns(map)||Unova.peek(player).visited?.length)){
+      if(Unova.owns(map))regions.unshift(unovaMap);else regions.push(unovaMap);
+    }
     const sprite = (R, x, y) => "left:" + pct(R.x0 - 4 + 8 * x, 240) + ";top:" + pct(R.y0 - 4 + 8 * y, 160);
     const cellIn = (R, sec) => {
       if (!sec) return null;
@@ -1942,6 +1942,7 @@
     // (In Johto, the square you're on: HGSS's world matrix has a square every
     // 32 tiles of a map outdoors; inside, where the building or cave is.)
     const johtoAt = (name, x, y) => {
+      if(unovaMap?.at[name]&&regions.includes(unovaMap))return{region:regions.indexOf(unovaMap),cell:unovaMap.at[name].slice(0,2)};
       // (Hoenn's: the square of its section, or, for a cave with none, of the place it's by.)
       if (HOENN_MAP && HOENN_MAP.at[name] && regions.indexOf(HOENN_MAP) >= 0) return { region: regions.indexOf(HOENN_MAP), cell: HOENN_MAP.at[name].slice(0, 2) };
       const at = JOHTO_MAP && JOHTO_MAP.at[name], R = JOHTO_MAP;
@@ -1960,7 +1961,11 @@
     // Places not on the map yet (GetDungeonMapsecUnderCursor): Cerulean Cave until it's open.
     const hiddenSection = (sec) => sec === "CERULEAN_CAVE" && !f.canLinkWithRS;
     // Fly's places: visited, with somewhere to land.
-    const flyTo = (sec) => (flying && sec && visited.includes(sec) && (T.fly || {})[sec]) || null;
+    const flyTo = (sec) => {
+      if(!flying||!sec)return null;
+      if(unovaMap&&sec in unovaMap.names){const spot=unovaMap.fly[sec];return spot&&Unova.flySpots(player).some(a=>a.map===spot.map)?spot:null;}
+      return visited.includes(sec)&&(T.fly||{})[sec]||null;
+    };
     // (A square's place to fly to: its town's, or else its cave's, Victory Road.)
     const flySec = (R, x, y) => (flyTo(R.map[y][x]) || !R.dungeon || !flyTo(R.dungeon[y][x]) ? R.map[y][x] : R.dungeon[y][x]);
     show("scene");
@@ -3044,7 +3049,8 @@
     const pic = (R) => R && { src: R.image, x: R.x0, y: R.y0, w: 8 * R.width, h: 8 * R.height };
     return [{ label: "Kanto", places: dexAreaList("kanto") }]
       .concat(JOHTO_MAP ? [{ label: "Johto", places: dexAreaList("johto"), map: pic(JOHTO_MAP) }] : [],
-        HOENN_MAP ? [{ label: "Hoenn", places: dexAreaList("hoenn"), map: pic(HOENN_MAP) }] : []);
+        HOENN_MAP ? [{ label: "Hoenn", places: dexAreaList("hoenn"), map: pic(HOENN_MAP) }] : [],
+        window.TOWN_MAP.unova ? [{label:"Unova",places:dexAreaList("unova"),map:pic(window.TOWN_MAP.unova)}] : []);
   }
   function dexAreaList(region) {
     const secs = (window.TOWN_MAP || {}).mapSections || {}, names = (window.TOWN_MAP || {}).names || {};
@@ -3058,9 +3064,10 @@
     for (const [name, m] of Object.entries(window.WORLD_MAPS)) {
       const sec = secs[name];
       // (The region's own: Johto's and Hoenn's maps have their sections too, for their Town Maps.)
-      if (!sec || (m.region || "kanto") !== region || AREA_SKIP.includes(sec) || !AREA_KINDS.some(([, k]) => m[k])) continue;
+      const habitat=region==="unova"?{wild:["grass","dark_grass","shaking_grass"].map(k=>Unova.table(player,k,name)),water:["surf","rippling_surf"].map(k=>Unova.table(player,k,name)),fishing:["fishing","rippling_fishing"].map(k=>Unova.table(player,k,name))}:m;
+      if (!sec || (m.region || "kanto") !== region || AREA_SKIP.includes(sec) || !AREA_KINDS.some(([, k]) => habitat[k])) continue;
       if (!bySec.has(sec)) bySec.set(sec, AREA_KINDS.map(() => new Set()));
-      AREA_KINDS.forEach(([, k], i) => walk(m[k], bySec.get(sec)[i]));
+      AREA_KINDS.forEach(([, k], i) => walk(habitat[k], bySec.get(sec)[i]));
     }
     return [...bySec].map(([sec, sets]) => ({
       name: names[sec] || sec, visited: visited.includes(sec),

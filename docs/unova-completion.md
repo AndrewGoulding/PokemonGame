@@ -51,4 +51,5 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Source Easy/Challenge levels and alternate teams, saved keys and local sharing ([scope](unova-modes.md))
 - [ ] Remaining version-specific geometry and campaign-event audit
 - [ ] Black / White original campaign, gyms, rivals, N ending and postgame
-- [ ] Full regional map, music coverage, final source audit and browser campaign validation
+- [x] Regional Town Map, visited Fly navigation and version/season habitat browser ([scope](unova-town-map.md))
+- [ ] Music coverage, final source audit and browser campaign validation
