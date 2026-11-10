@@ -1,0 +1,58 @@
+(function(){
+ 'use strict';
+ function create({env,fight,report,resume,checkpoint}){
+  const F=Unova,p=()=>env.player(),s=()=>F.state(p()),d=()=>F.data().nimbasa,say=x=>env.say(x),day=()=>Player.gameTime(p()).day;
+  const district=map=>map==='UnovaJoinAvenue'||map==='UnovaGearStation'||map==='UnovaBigStadium'||map==='UnovaSmallCourt'||map.startsWith('UnovaNimbasa');
+  async function move(loc){await env.teleport({...loc});await checkpoint();}
+  async function colress(){if(!s().burgh){await say('Earn Burgh’s Insect Badge first.');return;}if(!s().colress){await say('Colress: These Crustle are blocking\nthe road. Let me awaken them!\nNow, show me your Pokémon’s power.');if(await fight(d().colress)!=='won')return;s().colress=true;env.refreshPeople?.();await checkpoint();}await report(F.gift(p(),'colress-protein','protein'));await say('Colress: The road to Join Avenue\nand Nimbasa City is open.');}
+  async function daily(id,key){const dates=s().practice||(s().practice={});if(dates[key]===day()){await say('Good practice! Come back tomorrow.');return false;}if(!await env.confirm('Have a practice battle?'))return false;if(await fight(id)!=='won')return false;dates[key]=day();await checkpoint();return true;}
+  async function partner(){if(s().subwayIntro){await report(F.gift(p(),'subway-recorder','vs-recorder'));await say('Rosa and Nate: Visit Gear Station\nto watch our recorded tag battle!');return;}const name=await env.choose('Choose your tag partner',['Rosa','Nate']);if(!name)return;s().nimbasaPartner=name;await checkpoint();if(!await env.confirm('Battle Ingo and Emmet together?'))return;const t=F.data().trainers[d().bosses[1]],index=Math.max(0,F.starterNames.indexOf(s().starter));if(await fight(d().bosses[0],{double:true,record:true,partner:{name,team:F.team(d().partners[name][index]),pic:'bw2_'+name.toLowerCase()},foe2:{name:t.className+' '+t.name,team:F.team(d().bosses[1]),pic:t.pic,prizeClass:t.className,defeatText:t.defeat}})!=='won')return;s().subwayIntro=true;s().subwayRecord=env.recorded?.()||null;await checkpoint();await report(F.gift(p(),'subway-recorder','vs-recorder'));}
+  async function bird(species){if(!visible({script:'bw:weekly-'+species.toLowerCase()})){await say('No Pokémon is perched here today.');return;}if(!await env.confirm('Approach '+species+'?'))return;const r=Party.create(species,25,{moves:F.levelMoves(species,25)});r.ability=species==='Mandibuzz'?'Weak Armor':'Defiant';const result=await env.wildEncounter(r);if(['won','caught','ran','escaped'].includes(result)){(s().weeklyBirds||(s().weeklyBirds={}))[species]=day();await checkpoint();env.refreshPeople?.();}}
+  async function avenue(key){const a=s().avenue||(s().avenue={shops:[],visits:{}}),names=['Market','Florist','Salon','Café'];if(key==='avenue-manager'){if(!a.managed){const greeting=await env.choose('Choose your avenue greeting',['Welcome!','Hello!','Let’s go!']);if(!greeting)return;a.managed=true;a.greeting=greeting;await checkpoint();}await say(a.greeting+'\nRecruit four local shopkeepers,\nthen refer visitors to their shops.\nThis avenue grows with daily visits.');return;}
+   if(!a.managed){await say('Speak to the avenue manager first.');return;}const i=+key.slice(key.lastIndexOf('-')+1);if(key.startsWith('avenue-visitor-')){if(!a.shops[i]){if(!await env.confirm('Recruit a '+names[i]+' shopkeeper?'))return;a.shops[i]={visits:0};await checkpoint();await say(names[i]+' is now open!');return;}if(a.visits[i]===day()){await say('Thanks for the recommendation!\nI will visit again tomorrow.');return;}const shop=await env.choose('Where should I shop?',names.filter((n,j)=>a.shops[j]));if(!shop)return;const j=names.indexOf(shop);a.visits[i]=day();a.shops[j].visits++;await checkpoint();await say(shop+' gained a customer!\nShop rank: '+Math.min(3,1+Math.floor(a.shops[j].visits/3)));return;}
+   if(!a.shops[i]){await say('A vacant shop. Recruit its visitor\nnear the southern entrance.');return;}const rank=Math.min(3,1+Math.floor(a.shops[i].visits/3));if(i===0)await env.mart(['poke-ball','potion',...(rank>=2?['great-ball','super-potion']:[]),...(rank>=3?['ultra-ball','hyper-potion']:[])]);else if(i===1)await env.mart(['oran-berry','cheri-berry',...(rank>=2?['pecha-berry','chesto-berry']:[]),...(rank>=3?['sitrus-berry','lum-berry']:[])]);else{if(!await env.confirm((i===2?'Groom your party':'Rest your party')+' for ₽500?'))return;if(p().money<500){await say('You need ₽500.');return;}p().money-=500;if(i===2)p().party.forEach(r=>r.happiness=Math.min(255,(r.happiness||0)+10*rank));else p().party.forEach(Party.heal);await checkpoint();await say(i===2?'Your Pokémon enjoyed their grooming!':'Your Pokémon are fully rested.');}}
+  async function run(key){
+   if(key.startsWith('avenue-')){await avenue(key);return true;}
+   if(key.startsWith('coaster-switch-')){const n=+key.slice(-1);if(n&&!p().flags[d().coaster]){await say('Battle Rolan before changing\nthe upper track.');return true;}(s().coasterSwitches||(s().coasterSwitches=[]))[n]=true;await checkpoint();await say('The track switch clicked into place!');return true;}
+   if(key.startsWith('coaster-car-')){const n=+key.slice(-1);if(!s().coasterSwitches?.[n]){await say('Change the nearby track switch first.');return true;}if(await env.confirm('Ride the roller coaster?')){(s().coasterRides||(s().coasterRides=[]))[n]=true;await move({map:'UnovaNimbasaCoaster',x:n?16:16,y:n?6:15,facing:'up'});}return true;}
+   if(key.startsWith('runway-')){const n=+key.slice(-1);if(!s().coasterDone||d().models.slice(0,n).some(id=>!p().flags[id]))await say('Follow the runway in order.\nVisit the former Gym first.');else if(!p().flags[d().models[n]])await fight(d().models[n]);else await say('The next section of the runway is open!');return true;}
+   switch(key){
+    case'next-road':if(!s().burgh)await say('Earn Burgh’s Insect Badge first.');else await move(d().gate);break;
+    case'route4-locked':await say('Earn Burgh’s Insect Badge first.');await move({map:'UnovaCasteliaCity',x:28,y:7,facing:'down'});break;
+    case'colress-gate':await move(d().routeReturn);await colress();break;
+    case'colress':await colress();break;
+    case'crustle':await say('Crustle is blocking the road.\nSpeak to Colress nearby.');break;
+    case'weekly-mandibuzz':await bird('Mandibuzz');break;
+    case'weekly-braviary':await bird('Braviary');break;
+    case'route-heal':p().party.forEach(Party.heal);await checkpoint();await say('Your Pokémon are rested!');break;
+    case'desert-nurse':if(!p().flags[d().nurse]&&await fight(d().nurse)!=='won')break;p().party.forEach(Party.heal);await checkpoint();await say('Nurse Mariah healed your Pokémon.');break;
+    case'desert-guide':await say('Sandstorms buffet most Pokémon.\nThe Relic Castle entrance lies north.\nNurse Mariah can help after a battle.');break;
+    case'sand-guide':await say('Walk slowly around the quicksand.\nRunning or crossing its center\nwill drop you into the lower hall.');break;
+    case'quicksand':s().sandFalls=(s().sandFalls||0)+1;await say('The sand gives way beneath you!');await move(WORLD_MAPS.UnovaRelicCastle.unovaQuicksand.to);break;
+    case'castle-deep':await say('The deeper ruins are sealed\nduring this excavation.\nThe stairs lead back to the desert.');break;
+    case'subway-partner':await partner();break;
+    case'subway-replay':if(s().subwayRecord){if(await env.confirm('Replay your tag battle?')){await env.replay(s().subwayRecord);await resume();}}else await say('Meet Rosa and Nate outside\nfor a tag battle with Ingo and Emmet.');break;
+    case'subway-status':await say('Gear Station · Local concourse\nYour tag battle can be recorded.\nThe full Subway challenge lines\nare not operating here yet.');break;
+    case'stadium-practice':await daily(d().sports[0],'stadium');break;
+    case'court-practice':await daily(d().sports[1],'court');break;
+    case'sun-stone':await report(F.gift(p(),'nimbasa-sun','sun-stone'));break;
+    case'soothe-bell':await report(F.gift(p(),'nimbasa-bell','soothe-bell'));break;
+    case'ferris-wheel':if(await daily(d().wheel[s().nimbasaPartner==='Nate'?1:0],'wheel')){s().wheelRides=(s().wheelRides||0)+1;await say('You ride above Nimbasa’s lights.\nThe stadium and avenue stretch\nout beyond the amusement park.');await checkpoint();}break;
+    case'nimbasa-guide':await say('Visit the old roller-coaster Gym\nin the amusement park, then challenge\nElesa at the new runway Gym.\nSports practice is north of town.');break;
+    case'next-driftveil':await say('Driftveil City lies beyond Route 5.\nThe western road is being prepared.');break;
+    case'coaster-trainer':if(!p().flags[d().coaster])await fight(d().coaster);else await say('Try the upper track switch!');break;
+    case'coaster-host':if(!s().coasterRides?.every(Boolean)||s().coasterRides.length<2||!p().flags[d().coaster]){await say('Ride both tracks and battle Rolan\nbefore visiting the platform.');break;}s().coasterDone=true;await checkpoint();await report(F.gift(p(),'coaster-heal','paralyze-heal'));await say('Elesa moved to the new Gym!\nLook northeast of this building.');break;
+    case'coaster-stop':await say('Take the coaster to the next platform.');await move({map:'UnovaNimbasaCoaster',x:16,y:s().coasterRides?.[0]?19:27,facing:'up'});break;
+    case'runway-stop':{const n=d().models.findIndex(id=>!p().flags[id]);await say('Defeat the next model before\nadvancing along the runway.');await move({map:'UnovaNimbasaGym',x:14,y:34-Math.max(0,n)*10,facing:'up'});break;}
+    case'elesa-locked':await say('Visit Elesa’s former roller-coaster\nGym before entering the runway.');await move({map:'UnovaNimbasaPark',x:9,y:12,facing:'down'});break;
+    case'clyde-elesa':await report(F.gift(p(),'elesa-water','fresh-water'));await say('Elesa uses Electric types.\nClear all three runway battles\nto reach her stage.');break;
+    case'elesa':if(!s().elesa){if(!F.gymReady(p(),'elesa')){await say('Clear the old coaster and all\nthree runway models first.');break;}if(!await env.confirm('Challenge Leader Elesa?')||await fight(d().elesa)!=='won')break;}await report(F.gymWon(p(),'elesa'));await checkpoint();await say('You earned the Bolt Badge!\nVolt Switch attacks, then brings\nanother teammate into battle.');break;
+    default:return false;
+   }return true;
+  }
+  function visible(a){if(a.script==='bw:crustle')return!s().colress;if(a.script?.startsWith('bw:weekly-')){const species=a.script.endsWith('mandibuzz')?'Mandibuzz':'Braviary',t=Player.gameTime(p());return(species==='Mandibuzz'?s().version!=='white2'&&t.weekday===4:s().version==='white2'&&t.weekday===1)&&s().weeklyBirds?.[species]!==t.day;}return undefined;}
+  function step(){const a=p().location,m=WORLD_MAPS[a.map],trigger=k=>({type:'trigger',map:a.map,trigger:{script:'bw:'+k}});if(!F.owns(a.map))return null;const newer=district(a.map)||['UnovaRoute4Gate','UnovaRoute4','UnovaRoute4Ruins','UnovaDesertEntrance','UnovaDesertResort','UnovaRelicCastle','UnovaRelicCastleB1'].includes(a.map);if(newer&&!s().burgh)return trigger('route4-locked');if((district(a.map)||a.map==='UnovaRoute4'&&a.y<=17)&&!s().colress)return trigger('colress-gate');if(a.map==='UnovaNimbasaGym'){if(!s().coasterDone)return trigger('elesa-locked');if(d().models.some((id,i)=>a.y<=28-i*10&&!p().flags[id]))return trigger('runway-stop');}if(a.map==='UnovaNimbasaCoaster'&&(a.y<=18&&!s().coasterRides?.[0]||a.y<=8&&!s().coasterRides?.[1]))return trigger('coaster-stop');const q=m?.unovaQuicksand;if(q&&a.x>=q.x&&a.x<q.x+q.w&&a.y>=q.y&&a.y<q.y+q.h&&(env.dashing?.()||Math.abs(a.x-q.cx)<1&&Math.abs(a.y-q.cy)<1))return trigger('quicksand');return null;}
+  return{run,visible,step};
+ }
+ window.UnovaNimbasa={create};
+})();

@@ -645,6 +645,7 @@
 
   function finishStep() {
     const mv = me.move;
+    me.lastStepRunning = !!mv.run;
     me.move = null;
     if (mv.inPlace) return finishHopInPlace();
     if (mv.dismount) setAvatar((ctx.landAvatar && ctx.landAvatar()) || "walk");
@@ -2244,7 +2245,7 @@
     explore, hide, read: (pages) => read(pages), showAreaName, forceStep, refreshPeople: () => loadPeople(),
     act, addObject, removeObject, unbury: (def) => { for (const p of people) if (p.def.id === def.id && p.def.script === def.script) p.unburied = true; }, removePerson, teleport, battleTransition, resume, pokecenterHeal, flyOut, flyIn, escapeRopeOut, escapeRopeIn,
     fadeToBlack: fadeOut, fadeFromBlack: fadeIn, shake,
-    setAvatar, avatar: () => me.avatar, bikeFastest: () => me.avatar === "bike" && (me.bikeRun || 0) >= BIKE_SPEEDS.length - 1, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
+    lastStepRunning: () => !!me.lastStepRunning, setAvatar, avatar: () => me.avatar, bikeFastest: () => me.avatar === "bike" && (me.bikeRun || 0) >= BIKE_SPEEDS.length - 1, flash, follower: followerApi, rod: setRod, emote: (mark) => { me.emote = mark ? { mark } : null; }, isDark: () => light != null && !flashOn,
     // What's in front of you: the tile, whoever stands there, and whether
     // it's water you could start surfing on.
     ahead: () => {

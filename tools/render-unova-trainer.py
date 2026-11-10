@@ -7,7 +7,7 @@ from PIL import Image
 source, name, target = Path(sys.argv[1]), sys.argv[2], Path(sys.argv[3])
 sys.path.insert(0, str(source))
 from tools.data.nitro_cells import read_nitro
-folder = source / 'res/trainers/sprites/front' / name
+folder = source / 'res/trainers/sprites' / (sys.argv[4] if len(sys.argv) > 4 else 'front') / name
 cells = read_nitro((folder / 'cells.ncer').read_bytes())
 animations = read_nitro((folder / 'animations.nanr').read_bytes())
 multi = read_nitro((folder / 'multi_cells.nmcr').read_bytes())

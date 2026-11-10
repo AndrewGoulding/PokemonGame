@@ -1,7 +1,7 @@
 # Unova opening: Black 2 / White 2
 
-The playable Unova campaign currently runs from Aspertia City through **Burgh’s
-Insect Badge**. Talk to the regional travel researcher in Sinnoh’s Fight Area
+The playable Unova campaign currently runs from Aspertia City through **Elesa’s
+Bolt Badge**. Talk to the regional travel researcher in Sinnoh’s Fight Area
 (24,27); the researcher near Aspertia’s southern entrance returns you there.
 The next [Castelia chapter](unova-castelia.md) includes the studio, chase, ferry,
 sewers and third Gym. Your existing party, storage, money and other regions’
@@ -81,5 +81,5 @@ grass battles; `tests/browser/unova-shop.js` checks purchases and PC withdrawal.
 physical doorway entrances/returns and saved reloads.
 
 Remaining campaign and feature work is tracked in
-[the Unova checklist](unova-completion.md). The playable campaign currently ends at Burgh; the northern road and deeper
+[the Unova checklist](unova-completion.md). The playable campaign currently continues through Elesa; the northern road and deeper
 Relic Passage remain closed.

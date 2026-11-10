@@ -14,8 +14,8 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Local Centers/PCs/shops, regional travel and save integration
 - [x] Opening Pokéstar film/replay, Virbank Plasma chase and sailing to Castelia
 - [x] Castelia, five sewer chambers, Hugh tag event, Burgh, garden, early Relic Passage and city quests
-- [ ] Route 4, Colress battle and Desert Resort/Relic Castle
-- [ ] Join Avenue, Nimbasa, Elesa, amusement attractions and sports stadiums
+- [x] Route 4, Colress battle and Desert Resort/Relic Castle
+- [x] Nimbasa/Elesa, adapted coaster and wheel, local sports practice and starter Join Avenue ([scope](unova-nimbasa.md))
 - [ ] Driftveil, Clay, PWT, Relic Passage and Chargestone Cave
 - [ ] Mistralton, Celestial Tower, Skyla and eastern-region travel
 - [ ] Reversal Mountain, Undella, Lacunosa and Village Bridge

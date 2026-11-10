@@ -1091,6 +1091,7 @@
   async function battle(kind, opts) {
     SinnohLegends.syncForms(player);
     opts = opts || {};
+    if (WORLD_MAPS[player.location.map]?.unovaSandstorm && !opts.weather) opts = {...opts,weather:"sandstorm"};
     battleCount++;
     const wild = kind === "wild";
     const cheryl = Sinnoh.forestPartner(player);
@@ -1758,7 +1759,7 @@
   async function useKeyItem(item) {
     if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();try{await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}};return "escaped";}
     if(item==="white-flute"||item==="black-flute"){if(SinnohCompletion.flute(player,item)){await message("The "+Bag.name(item)+" sounded.\nWild Pokémon will appear "+(item==="white-flute"?"more":"less")+" often here.");}return;}
-    if(item==="vs-recorder"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();const rec=player.flags.sinnoh?.frontier?.lastRecord||player.flags.hoennBattleRecord;if(rec)await playRecord(rec);else await say("No local battle has been recorded yet.");};return "escaped";}
+    if(item==="vs-recorder"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();const rec=(Unova.owns(player.location.map)&&player.flags.unova?.subwayRecord)||player.flags.sinnoh?.frontier?.lastRecord||player.flags.hoennBattleRecord;if(rec)await playRecord(rec);else await say("No local battle has been recorded yet.");};return "escaped";}
     if(item==="poffin-case"){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();try{await SinnohPoffinDevice.openCase(scene,player);}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="seal-case"){fieldAction=async()=>{show("scene");clearMenu();try{await SinnohCapsules.open(scene,{player});}finally{show("world");await Overworld.resume();await persist();}};return "escaped";}
     if(item==="poke-radar"){fieldAction=async()=>{show("world");await Overworld.resume();const text=SinnohRadar.use(player,Overworld.avatar());sfx("se_m_reflect");await say(text);};return "escaped";}
@@ -5959,7 +5960,7 @@
   // (The debug menu's way there: Prof. Oak's plane, without his briefing.)
   // ---------- Sinnoh: Platinum's opening chapter (ui/sinnoh-story.js) ----------
 
-  const unovaStory = UnovaStory.create({player:()=>player,say,confirm,battle,mart,replay:async rec=>{await playRecord(rec);music(WORLD_MAPS[player.location.map].music);},movie:async()=>{Screen.say("");clearMenu();show("field");music("mus_vs_trainer");try{return await UnovaMovie.shoot(player);}finally{music(WORLD_MAPS[player.location.map].music);}},canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),refreshPeople:()=>Overworld.refreshPeople(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:async loc=>{await Overworld.teleport({...loc});},choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}])),wildEncounter:async record=>{await battle("wild",{foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();}});
+  const unovaStory = UnovaStory.create({recorded:()=>lastRecord,dashing:()=>Overworld.lastStepRunning(),player:()=>player,say,confirm,battle,mart,replay:async rec=>{await playRecord(rec);music(WORLD_MAPS[player.location.map].music);},movie:async()=>{Screen.say("");clearMenu();show("field");music("mus_vs_trainer");try{return await UnovaMovie.shoot(player);}finally{music(WORLD_MAPS[player.location.map].music);}},canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),refreshPeople:()=>Overworld.refreshPeople(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:async loc=>{await Overworld.teleport({...loc});},choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}])),wildEncounter:async record=>{const outcome=await battle("wild",{foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();return outcome;}});
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
     saveCheckpoint: async()=>{tick();Save.write(player);},
@@ -11689,7 +11690,7 @@
         },
         boulderSwitch: (map, x, y) => Sinnoh.distortionSwitch(player, map, x, y) || tanobySwitch(map, x, y) || victoryRoadSwitch(map, x, y),
         // (The Tanoby Ruins' chambers are dark until the Tanoby Key's solved: EventScript_TryDarkenRuins.)
-        weather: (map) => (Sinnoh.fog(map, player) ? "fog_horizontal" : isHoenn(map) ? hoennWeatherNow() : Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
+        weather: (map) => (WORLD_MAPS[map]?.unovaSandstorm ? "sandstorm" : Sinnoh.fog(map, player) ? "fog_horizontal" : isHoenn(map) ? hoennWeatherNow() : Sevii.tanobyLocked(player.flags, map) ? "shade" : null),
         // (Off the water: on foot, or back on the Bicycle on Cycling Road, where you can't walk.)
         landAvatar: () => (onCyclingRoad() ? "bike" : "walk"),
         onAvatar: (mode) => {if(mode!=="walk")SinnohRadar.clear(player);music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music);},
