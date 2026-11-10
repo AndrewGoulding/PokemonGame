@@ -1,0 +1,21 @@
+// The Green Line town, source houses and optional railway services.
+'use strict';
+module.exports=function({room,paint,actor,link,M,json,trainer,item,bankMaps,west,postgame,read,clean}){
+ const town=west.helpers.area('AnvilleTown','Anville Town',null,'city',44,40);delete town.unovaWest;bankMaps.anville_town=postgame.banks.anville_town=town;town.unovaTheme='railway';(postgame.data.fly||=[]).push({map:town.name,x:21,y:33,facing:'down'});
+ const data={map:town.name,trainAt:{x:9,y:20},rooms:[],lore:{},futureDates:[[2,1],[6,12],[10,1],[10,14],[12,30]],schedule:[9,1,3,5,4,2,6,8,0,7],trades:[],trains:[],lostItems:[],source:{town:'res/field/scripts/anville_town.s',lostFound:'res/field/scripts/anville_town_4.s',initial:'res/field/scripts/global_9600.s',reference:'https://bulbapedia.bulbagarden.net/wiki/Anville_Town'}};
+ // Travel is a reciprocal Green Line platform warp, not a road to another route.
+ paint(M.UnovaGearStation,12,3,5,3,'paving');link(M.UnovaGearStation,14,3,town,21,35);
+ paint(town,4,17,34,10,'paving');town.art.props.push({x:9,y:20,kind:'railway-turntable'});
+ const ids=read('generated/items.txt').split(/\r?\n/).map(s=>s.replace(/#.*/,'').trim()).filter(Boolean).map(s=>s.split('=')[0].trim()),text=Object.fromEntries(read('res/text/script/anville_town.txt').split(/\r?\n/).map(s=>s.match(/^(\w+)\s*=\s*(.*)$/)).filter(Boolean).map(a=>[a[1],clean(a[2])])),source=read(data.source.town);
+ data.trains=Object.entries(text).filter(([key])=>/TodaysTrainCarHyperspeed|SingleTrainItsOldest|SuperSingleTrainNew|CarDoubleTrainMass|SuperDoubleTrainNew|CarMultiTrainFew|TrainCarSuperMulti|TrainCarWiFi|KnowLocalTrainAnville|TrainCarKindRan|TrainCarNewTrain/.test(key)).map(([,v])=>v);if(data.trains.length!==11)throw Error('Expected eleven source Anville train descriptions');
+ for(let n=18;n<=20;n++){const block=source.split('Script_'+n+':')[1].split(/\nScript_\d+:/)[0],get=i=>+block.match(new RegExp('WorkSetConst 0x802'+i+', (\\d+)'))[1];data.trades.push({give:item(ids[get(2)]),giveCount:get(4),receive:item(ids[get(1)]),receiveCount:get(3)});}
+ const lost=read(data.source.lostFound);data.lostItems=[...lost.matchAll(/WorkSetConst EVENT_WORK_0x4164, (\d+)/g)].map(a=>item(ids[+a[1]])).slice(1);if(data.lostItems.length!==10)throw Error('Expected ten lost-and-found rewards');data.pansageReward=item('ITEM_BRIGHT_POWDER');data.firstLost=item('ITEM_RARE_CANDY');
+ const custom={0:'guide',12:'trade-0',13:'trade-2',14:'trade-1',15:'pansage',16:'owner'};
+ for(const[n,a]of json('res/field/events/anville_town.json').npcs.entries()){
+  const key='town-'+a.id,script=custom[a.id];if(!script){const block=source.split('Script_'+a.script+':')[1]?.split(/\nScript_\d+:/)[0]||'',message=block.match(/(?:ParentActorMsg|ActorMsg) MSGFILE_SCRIPT, (\w+)/)?.[1];data.lore[key]=text[message]||'The Green Line connects Anville Town with Nimbasa City.';}
+  actor(town,5+(n%6)*6,28+Math.floor(n/6)*3,'bw:interior-anville-'+(script||'lore-'+key),a.model.slice(9).toLowerCase(),{...(a.id>=12&&a.id<=14?{unovaAnvilleWeekend:true}:{}),...(a.id===15?{unovaAnvillePansage:'home'}:{})});
+ }
+ for(let i=2;i<=4;i++){const bank='anville_town_'+i,m=room('AnvilleHouse'+i,'Anville Town · '+(i===4?'Lost and Found':'Railway House '+(i-1)),bank,town,7+(i-2)*13,9);delete west.banks[bank];postgame.banks[bank]=m;data.rooms.push({bank,map:m.name});const texts=Object.fromEntries(read('res/text/script/'+bank+'.txt').split(/\r?\n/).map(s=>s.match(/^(\w+)\s*=\s*(.*)$/)).filter(Boolean).map(a=>[a[1],clean(a[2])])),scriptSource=read('res/field/scripts/'+bank+'.s');for(const[n,a]of json('res/field/events/'+bank+'.json').npcs.entries()){const key=bank+'-'+a.id,block=scriptSource.split('Script_'+a.script+':')[1]?.split(/\nScript_\d+:/)[0]||'',message=block.match(/(?:ParentActorMsg|ActorMsg) MSGFILE_SCRIPT, (\w+)/)?.[1];data.lore[key]=texts[message]||Object.values(texts)[0];actor(m,7+(n%3)*7,7+Math.floor(n/3)*6,'bw:interior-anville-'+(i===4?'lost-found':'lore-'+key),a.model.slice(9).toLowerCase());}}
+ actor(M.UnovaNimbasaCity,31,35,'bw:interior-anville-find-pansage','depot_agent',{unovaAnvillePansage:'away'});actor(M.UnovaNimbasaCity,32,35,'bw:interior-anville-find-pansage','309',{unovaAnvillePansage:'away'});
+ return data;
+};

@@ -1,6 +1,6 @@
 // Source optional interiors and services, projected onto native 2D rooms.
 'use strict';
-module.exports=function({source,read,json,clean,item,move,machine,trainer,actor,paint,house,link,M,bankMaps,west,east,sp}){
+module.exports=function({source,read,json,clean,item,move,machine,trainer,actor,paint,house,link,M,bankMaps,west,east,sp,postgame}){
  const{execFileSync}=require('child_process'),pml=execFileSync('git',['-C',source,'show','HEAD:src/system/pml_item.c'],{encoding:'utf8'}),tm=[...pml.match(/TM_MOVE_LIST\[\] = \{([\s\S]*?)\};/)[1].matchAll(/MOVE_\w+/g)].map(a=>a[0]);
  const data={tmList:Array.from({length:95},(_,i)=>machine(move(tm[i<92?i:i+6]))),tmThresholds:[10,20,35,50,70,95],tmReward:item('ITEM_HP_UP'),rooms:[],lore:{},gameFreak:{early:['TRAINER_GAME_FREAK_MORIMOTO_2','TRAINER_GAME_FREAK_NISHINO'].map(trainer),late:['TRAINER_GAME_FREAK_MORIMOTO','TRAINER_GAME_FREAK_NISHINO_2'].map(trainer)},crew:['TRAINER_ROUGHNECK_RICKY','TRAINER_DANCER_JEAN_PAUL','TRAINER_GUITARIST_TINA'].map(trainer),shop:[15,16].map(i=>json('res/field/shops/shops.json').marts[i].map(item)),appliances:{Heat:['Rotom-Heat','Overheat'],Wash:['Rotom-Wash','Hydro Pump'],Frost:['Rotom-Frost','Blizzard'],Fan:['Rotom-Fan','Air Slash'],Mow:['Rotom-Mow','Leaf Storm'],Normal:['Rotom',null]}},area=west.helpers.area;
  function free(m,x,y){const cells=[];for(let yy=3;yy<m.height-3;yy++)for(let xx=3;xx<m.width-3;xx++){const i=yy*m.width+xx;if(m.collision[i]||[0x10,0x11,0x12].includes(m.behavior[i])||[...m.people,...m.warps,...m.signs].some(a=>Math.abs(a.x-xx)+Math.abs(a.y-yy)<2))continue;cells.push({x:xx,y:yy});}return cells.sort((a,b)=>Math.abs(a.x-x)+Math.abs(a.y-y)-Math.abs(b.x-x)-Math.abs(b.y-y))[0];}
@@ -17,5 +17,6 @@ module.exports=function({source,read,json,clean,item,move,machine,trainer,actor,
  data.offers=[...new Set(data.shop.flat().concat([item('ITEM_MOOMOO_MILK')]))].map(id=>{return{item:id,price:0};});
  const constants=read('generated/items.txt').split(/\r?\n/).map(s=>s.replace(/#.*/,'').trim()).filter(Boolean).map(s=>s.split('=')[0].trim());for(const offer of data.offers){const key=constants.find(n=>{try{return item(n)===offer.item;}catch{return false;}});offer.price=json('res/items/'+key.slice(5).toLowerCase()+'/data.json').price*10;}
  data.village=require('./unova-village')({room,paint,actor,M,json,trainer,item,bankMaps,west,east,sp,read,clean});
+ data.anville=require('./unova-anville')({room,paint,actor,link,M,json,trainer,item,bankMaps,west,postgame,read,clean});
  return data;
 };

@@ -25,6 +25,7 @@
   if(id>=46&&id<=49)return (p.boxes||[]).flat().filter(Boolean).length;
   if(id===93)return +p.party.concat((p.boxes||[]).flat()).some(a=>a&&!a.egg&&a.shiny);
   if(id===95)return +!!s.interiors?.boss;
+  if(id===96)return new Set((s.interiors?.anville?.seenTrains||[]).filter(i=>Number.isInteger(i)&&i>=1&&i<=10)).size;
   if(id===128)return r.expDailyBest||0;
   if(id===145)return new Set((records['pwt-Type Expert']?.types||[]).filter(t=>types.includes(t.toLowerCase()))).size;
   if(id===123)return Math.max(0,...Object.entries(records).filter(([k])=>k.startsWith('subway-')&&k.endsWith('multi')).map(([,v])=>v.best||0));

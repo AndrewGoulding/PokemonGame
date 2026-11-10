@@ -116,7 +116,8 @@ module.exports=function(root){
  function props(c,m){
   if(m.unovaRegiSwitch){const x=16*16,y=13*16;c.ellipse(x+8,y+8,7,5,[212,192,134]);c.ellipse(x+8,y+8,3,4,[65,75,88]);c.box(m.unovaRegiSwitch.x*16,m.unovaRegiSwitch.y*16,16,16,[164,148,112],[104,104,91]);}
   for(const p of m.art.props){const x=p.x*16,y=p.y*16;const size={bench:[2,2],lamp:[1,2],clock:[2,3],crates:[3,2],amp:[2,2],camera:[2,2],'cinema-screen':[12,4],'green-screen':[22,3]}[p.kind];if(size)solid(m,p.x,p.y,...size);
-   if(p.kind==='charged-crystal'){c.poly([[x,y+33],[x+6,y+8],[x+14,y],[x+25,y+12],[x+27,y+33]],[75,129,173]);c.poly([[x+14,y+3],[x+13,y+28],[x+4,y+32],[x+8,y+11]],[143,223,222]);c.line(x+15,y+8,x+22,y+29,[190,241,218],2);solid(m,p.x,p.y,2,2);}
+   if(p.kind==='railway-turntable'){c.ellipse(x+112,y+40,118,52,[107,116,117]);c.ellipse(x+112,y+40,110,45,[139,144,133]);for(let dx=0;dx<224;dx+=10)c.rect(x+dx,y+19,5,39,[109,90,68]);for(const dy of [22,50])c.box(x-24,y+dy,272,4,[167,181,179],[65,83,86]);solid(m,p.x,p.y,14,4);}
+   else if(p.kind==='charged-crystal'){c.poly([[x,y+33],[x+6,y+8],[x+14,y],[x+25,y+12],[x+27,y+33]],[75,129,173]);c.poly([[x+14,y+3],[x+13,y+28],[x+4,y+32],[x+8,y+11]],[143,223,222]);c.line(x+15,y+8,x+22,y+29,[190,241,218],2);solid(m,p.x,p.y,2,2);}
    else if(p.kind==='airstrip'){c.box(x,y,112,256,[125,139,146],[208,212,192]);for(let j=8;j<248;j+=24)c.rect(x+53,y+j,6,12,[235,225,167]);for(const xx of [5,100])for(let yy=12;yy<240;yy+=32)c.rect(x+xx,y+yy,6,6,[242,235,173]);}
    else if(p.kind==='quicksand'){for(let r=61;r>4;r-=8)c.ellipse(x+64,y+64,r,Math.floor(r*.65),r%3?[181,143,91]:[211,175,116],3);}
    else if(p.kind==='ruin-arch'){c.box(x,y,80,48,[173,149,108],[98,90,76]);c.rect(x+16,y+16,48,32,[65,65,64]);for(let i=0;i<5;i++)c.box(x+i*16,y,16,16,[197,172,127],[126,111,88]);solid(m,p.x,p.y,5,2);}
