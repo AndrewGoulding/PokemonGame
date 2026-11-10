@@ -2149,7 +2149,7 @@
       // Hoenn: a step's scene while its var has its value, and its maps' frame tables as you come in.
       if (/^hoenn:/.test(script || "")) return env.hoenn.triggerDue(script);
       // (Anyone or any sign in Hoenn that has an Emerald script, unless this game has its own for it.)
-      if ((script||'').startsWith('bw:')) return true;
+      if ((/^(?:bw|bw1):/).test(script||'')) return true;
       if (env.isHoenn(env.player.location.map) && env.hoenn.hasScript(script) && !env.SPECIAL.has(script) && !env.TRAINER_SCRIPTS.has(script) && !env.ITEM_BALLS.has(script)) return true;
       if (/^(enter|arrive):/.test(script || "") && env.isHoenn(script.replace(/^\w+:/, ""))) return !!env.hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
       if (/^hgss:/.test(script || "")) return env.johto.triggerDue(script);
@@ -2159,7 +2159,7 @@
       if (script === "Johto_MagnetTrain") return true;   // (the Magnet Train's doors: magnetTrainBoard())
       if (script === "Johto_SSAquaBoard") return true;   // (Olivine's port: ssAquaBoard())
       if (/^(BerryFarm_(Caretaker|Tree_\d+)|(Hoenn|Sinnoh)Berry_Tree_\d+)$/.test(script || "")) return true;   // (Celadon's Berry Farm: ui/berry-farm.js)
-      if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && env.johto.zoneOf(env.player.location.map)) return true;
+      if (/_PokemonCenter_1F_EventScript_Nurse$/.test(script || "") && ((window.WORLD_MAPS[env.player.location.map] || {}).pokemonCenter || env.johto.zoneOf(env.player.location.map))) return true;
       if (/^(enter|arrive):/.test(script || "") && env.johto.frameScript(script.replace(/^\w+:/, ""))) return true;
       // Coming back into Pewter City: the Museum ticket was for one visit (FireRed's OnTransition).
       // Coming out of the Gym with the Boulder Badge, Leaf is waiting.

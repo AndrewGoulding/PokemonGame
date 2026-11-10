@@ -490,6 +490,7 @@
   // player.flags.orreLevelCap raises it, for Colosseum's story proper.)
   const ORRE_LEVEL_CAP = 26;
   function levelCap(player, map) {
+    if(window.UnovaBW?.owns(map||player.location?.map))return UnovaBW.cap(player);
     if (regionOf(map || (player.location && player.location.map)) === "orre") return (player.flags && player.flags.orreLevelCap) || ORRE_LEVEL_CAP;
     const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
     const n = REGION_BADGES[region].filter((b) => (player.badges || []).includes(b)).length;

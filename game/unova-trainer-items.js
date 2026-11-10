@@ -8,6 +8,6 @@
    }return OpponentAI.choose(b,'p2');
   }return{choose,remaining,items:Object.freeze(stock.slice())};
  }
- function forTrainer(id){const t=Unova.data().trainers[id];return t?.items?.length?create(t.items):null;}
+ function forTrainer(id,p=window.Game?.player){const t=Unova.data().trainers[id]||(p&&window.UnovaBW?.trainer(p,id));return t?.items?.length?create(t.items):null;}
  window.UnovaTrainerItems={create,forTrainer};
 })();

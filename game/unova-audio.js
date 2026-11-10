@@ -2,7 +2,7 @@
  'use strict';const F=Unova,D=F.data().audio;if(!D)return;
  function track(p,map=p.location.map){return D.maps[map]?.tracks[F.season(p)]?.[F.peek(p).version||'black2']||null;}
  function apply(p,map=p.location.map){const a=track(p,map),m=WORLD_MAPS[map];if(!a||!m)return;const old=m.music;m.music=window.UnovaMusicLayers?.plan(p,map,a.song)||a.song;if(old!==m.music&&map===p.location.map&&window.Game?.player===p&&window.GameAudio?.now()===old)GameAudio.music(m.music);}
- function battle(p,wild,foe,opts={}){if(!F.owns(p.location.map))return{};const id=opts.trainerId||'',t=F.data().trainers[id],sp=foe?.team?.[0]?.species||'';let key='SEQ_BGM_VS_TRAINER';
+ function battle(p,wild,foe,opts={}){if(window.UnovaBW?.owns(p.location.map))return UnovaBW.battleMusic(p,wild,foe,opts);if(!F.owns(p.location.map))return{};const id=opts.trainerId||'',t=F.data().trainers[id],sp=foe?.team?.[0]?.species||'';let key='SEQ_BGM_VS_TRAINER';
   if(wild)key=/^(Reshiram|Zekrom|Kyurem)/.test(sp)?'SEQ_BGM_VS_SHIN':'SEQ_BGM_VS_NORAPOKE';
   else if(F.data().east?.elite?.includes(id)||F.data().east?.eliteRematch?.includes(id))key='SEQ_BGM_VS_SHITENNO';
   else if([F.data().east?.iris,F.data().east?.irisRematch].includes(id))key='SEQ_BGM_VS_CHAMP';

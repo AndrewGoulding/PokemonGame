@@ -1,7 +1,7 @@
 # Unova completion checklist
 
 Black 2 / White 2 is the initial campaign reference. Original Black / White
-story differences will need a separate campaign path. Checked items describe
+has a separate native campaign path ([scope](unova-bw.md)). Checked items describe
 playable offline 2D adaptations; importing a dataset alone does not complete its
 feature. See [opening scope and provenance](unova-opening.md) and [the Castelia chapter](unova-castelia.md).
 
@@ -61,7 +61,8 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Source Easy/Challenge levels and alternate teams, saved keys and local sharing ([scope](unova-modes.md))
 - [x] Versioned Reversal Mountain rooms and phased Giant Chasm forest ([scope](unova-versioned.md))
 - [ ] Remaining version-specific geometry and campaign-event audit
-- [ ] Black / White original campaign, gyms, rivals, N ending and postgame
+- [x] Separate Black / White campaign, original Gyms/rivals/N/Ghetsis ending, Six Sages and postgame Alder ([scope](unova-bw.md))
+- [ ] Remaining original-only optional events, source-floor/maze parity, roaming genies and network features
 - [x] Regional Town Map, visited Fly navigation and version/season habitat browser ([scope](unova-town-map.md))
 - [x] Shared Black/White music, seasonal/version arrangements and native battle/jingle routing ([scope](unova-audio.md))
 - [x] Village Bridge/Accumula interactive musicians, pianist cry quest and four city proximity layers ([scope](unova-music-layers.md))

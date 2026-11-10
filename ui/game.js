@@ -1425,8 +1425,8 @@
     const inHoennNow = isHoenn(player.location.map);
     // (In Sinnoh: its last Pokémon Center, or Sandgem Town's.)
     const sinnoh = (map) => (window.WORLD_MAPS[map] || {}).region === "sinnoh", inSinnohNow = sinnoh(player.location.map);
-    const inUnovaNow=Unova.owns(player.location.map);
-    const center = inUnovaNow ? centerOf(Unova.owns(player.flags.lastCenter)?player.flags.lastCenter:"UnovaAspertiaCity_PokemonCenter_1F") : inSinnohNow ? centerOf(sinnoh(player.flags.lastCenter) ? player.flags.lastCenter : "SandgemTown_PokemonCenter_1F")
+    const inBWNow=window.UnovaBW?.owns(player.location.map),inUnovaNow=Unova.owns(player.location.map);
+    const center = inBWNow?centerOf(UnovaBW.owns(player.flags.lastCenter)?player.flags.lastCenter:"BW1Home"):inUnovaNow ? centerOf(Unova.owns(player.flags.lastCenter)?player.flags.lastCenter:"UnovaAspertiaCity_PokemonCenter_1F") : inSinnohNow ? centerOf(sinnoh(player.flags.lastCenter) ? player.flags.lastCenter : "SandgemTown_PokemonCenter_1F")
       : player.flags.lastCenter && (!inHoennNow || isHoenn(player.flags.lastCenter)) && centerOf(player.flags.lastCenter);
     const hoennHome = inHoennNow && !center ? (player.flags.hoennRespawn || hoennBedroom()) : null;
     const to = Object.assign({}, center || hoennHome || Player.HOME);
@@ -1769,6 +1769,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
+    if(item==="bw1-cgear"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run('bw1:guide');};return "escaped";}
     if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}if(action==='receiver-call')await unovaStory.run('bw:receiver-call');if(action==='memory-archive')await unovaStory.run('bw:memory-archive');if(action==='field-journal')await unovaStory.run('bw:field-journal');if(action==='difficulty-settings')await unovaStory.run('bw:difficulty-settings');if(action==='entralink'||action==='pass-powers')await unovaStory.run('bw:'+ (action==='entralink'?'enter-entralink':action));};return "escaped";}
     if(item==="dropped-item"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run("bw:receiver-call");};return "escaped";}
     if(item==="dna-splicers"||item==="reveal-glass"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run(item==="dna-splicers"?"bw:use-splicers":"bw:use-reveal-glass");};return "escaped";}
@@ -1930,6 +1931,8 @@
     const hoennHere = !!HOENN_MAP && isHoenn(map);
     const hoennMaps = HOENN_MAP && !hoennHere && beenToHoenn() ? [HOENN_MAP] : [];
     const regions = hoennHere ? [HOENN_MAP].concat(kanto, JOHTO_MAP && beenToJohto() ? [JOHTO_MAP] : []) : (johtoHere ? johto.concat(kanto) : kanto.concat(johto)).concat(hoennMaps);
+    const bwMap=window.TOWN_MAP.unovaBW;
+    if(bwMap&&(window.UnovaBW?.owns(map)||UnovaBW.peek(player).visited?.length)){if(UnovaBW.owns(map))regions.unshift(bwMap);else regions.push(bwMap);}
     const unovaMap=window.TOWN_MAP.unova;
     if(Unova.owns(map))Unova.visit(player,map);
     if(unovaMap&&(Unova.owns(map)||Unova.peek(player).visited?.length)){
@@ -1945,6 +1948,7 @@
     // (In Johto, the square you're on: HGSS's world matrix has a square every
     // 32 tiles of a map outdoors; inside, where the building or cave is.)
     const johtoAt = (name, x, y) => {
+      if(bwMap?.at[name]&&regions.includes(bwMap))return{region:regions.indexOf(bwMap),cell:bwMap.at[name].slice(0,2)};
       if(unovaMap?.at[name]&&regions.includes(unovaMap))return{region:regions.indexOf(unovaMap),cell:unovaMap.at[name].slice(0,2)};
       // (Hoenn's: the square of its section, or, for a cave with none, of the place it's by.)
       if (HOENN_MAP && HOENN_MAP.at[name] && regions.indexOf(HOENN_MAP) >= 0) return { region: regions.indexOf(HOENN_MAP), cell: HOENN_MAP.at[name].slice(0, 2) };
@@ -1966,6 +1970,7 @@
     // Fly's places: visited, with somewhere to land.
     const flyTo = (sec) => {
       if(!flying||!sec)return null;
+      if(bwMap&&sec in bwMap.names){const spot=bwMap.fly[sec];return spot&&UnovaBW.flySpots(player).some(a=>a.map===spot.map)?spot:null;}
       if(unovaMap&&sec in unovaMap.names){const spot=unovaMap.fly[sec];return spot&&Unova.flySpots(player).some(a=>a.map===spot.map)?spot:null;}
       return visited.includes(sec)&&(T.fly||{})[sec]||null;
     };
@@ -3122,6 +3127,7 @@
   }
   async function trainerCard() {
     tick();
+    if(window.UnovaBW?.owns(player.location.map)){await say('Black/White campaign · '+UnovaBW.peek(player).version+'\nBadges: '+UnovaBW.badgeCount(player)+'/8\nStory cleared: '+(UnovaBW.peek(player).clear?'Yes':'No')+'\nChampion: '+(UnovaBW.peek(player).champion?'Yes':'No'));return null;}
     if(Unova.owns(player.location.map)){Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,"card");}finally{tick();Save.write(player);show("world");await Overworld.resume();}return null;}
     if(WORLD_MAPS[player.location.map]?.region==='sinnoh'){Screen.say("");show('scene');clearMenu();try{await SinnohOptionalDevice.card(scene,player);}finally{tick();Save.write(player);show('world');await Overworld.resume();}return null;}
     const map = player.location && window.WORLD_MAPS[player.location.map];
@@ -3791,7 +3797,7 @@
     if (!canBattle()) return;
     const team = re ? re.team() : trainerTeam(t.id);
     const outcome = await battle("trainer", { foe: { name: data.className + " " + data.name, team, pic: data.pic },
-      defeatText: re ? re.defeat : t.defeat, trainerId: t.id, prizeClass: data.className, double: !!t.double });
+      defeatText: re ? re.defeat : t.defeat, trainerId: t.id, prizeClass: data.className, double: !!t.double,format:data.format });
     if (re && outcome === "won") {
       (player.flags.dojoRematch || (player.flags.dojoRematch = {}))[t.id] = true;
       if (t.id === DOJO_MASTER) { show("world"); await Overworld.resume(); await dojoMaster(); }
@@ -3947,6 +3953,7 @@
   // (Their moves: the last four each learns by its level, not FireRed's sets.)
   function trainerTeam(id) {
     const data = window.WORLD_TRAINERS[id];
+    if (data.region === "unova-bw") return UnovaBW.team(id,player);
     if (data.region === "unova") return Unova.team(id);
     if (data.region === "sinnoh") return Sinnoh.team(id); // Platinum's authored movesets
     return data.party.map((m) => Object.assign(Party.create(m.species, m.level, { ivs: Math.floor(m.iv * 31 / 255) }),
@@ -11881,7 +11888,7 @@
         // (The Battle Pike's hall of wild Pokémon: your challenge's three fight it, and the room's own scripts see how it went.)
         else if (at.map === "BattleFrontier_BattlePikeRoomWildMons" || at.map === PYRAMID_FLOOR) await pikeWildBattle(ev);
         else if (Sinnoh.isRoamer(player,ev.species) && here.region === "sinnoh") await battle("wild", {foe:{name:"Wild",team:[Party.create(ev.species,ev.level)]},terrain,noGimmicks:true});
-        else if(here.region==='unova'&&Overworld.avatar()!=='surf'&&await unovaSpecialBattle(at.map,terrain)) { /* source N Pokémon and daily swarms */ }
+        else if(Unova.owns(at.map)&&Overworld.avatar()!=='surf'&&await unovaSpecialBattle(at.map,terrain)) { /* source N Pokémon and daily swarms */ }
         else if (ev.unovaDark && ableToBattle()>=2 && Math.random()<.4) await wildDoubleBattle(ev,at.map,terrain,Unova.landTable(player,at.map));
         // (A Max Lure on: always a horde, from the map's hordes or its own wild Pokémon (on the water, its water's).)
         else if (lureOn() === "max-lure" && !towerGhost() && wildTable(here) && await hordeBattle(at.map, terrain, wildTable(here))) { /* (fought) */ }
