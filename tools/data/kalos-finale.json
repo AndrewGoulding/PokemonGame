@@ -1,0 +1,3880 @@
+{
+  "source": {
+    "references": [
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_9",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_10",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_11",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_12",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_13",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_14"
+    ],
+    "curated": "2026-11-10"
+  },
+  "field": {
+    "Route14": [
+      {
+        "name": "Melina",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Arbok",
+            35,
+            "F"
+          ],
+          [
+            "Pyroar",
+            37,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Nash",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Goomy",
+            38,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Anina",
+        "className": "Hex Maniac",
+        "party": [
+          [
+            "Litwick",
+            34,
+            "F"
+          ],
+          [
+            "Haunter",
+            34,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Reed",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Poliwhirl",
+            35,
+            "M"
+          ],
+          [
+            "Loudred",
+            34,
+            "M"
+          ],
+          [
+            "Fraxure",
+            36,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Imogen",
+        "className": "Fairy Tale Girl",
+        "party": [
+          [
+            "Floette",
+            33,
+            "F"
+          ],
+          [
+            "Slurpuff",
+            35,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "LaverreGym": [
+      {
+        "name": "Blossom",
+        "className": "Furisode Girl",
+        "party": [
+          [
+            "Klefki",
+            37,
+            "F"
+          ],
+          [
+            "Kirlia",
+            37,
+            "F"
+          ],
+          [
+            "Granbull",
+            37,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Katherine",
+        "className": "Furisode Girl",
+        "party": [
+          [
+            "Slurpuff",
+            40,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Kali",
+        "className": "Furisode Girl",
+        "party": [
+          [
+            "Dedenne",
+            38,
+            "F"
+          ],
+          [
+            "Azumarill",
+            38,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Linnea",
+        "className": "Furisode Girl",
+        "party": [
+          [
+            "Aromatisse",
+            40,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Factory": [
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Toxicroak",
+            37,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Mightyena",
+            36,
+            "M"
+          ],
+          [
+            "Golbat",
+            36,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Scraggy",
+            36,
+            "F"
+          ],
+          [
+            "Mightyena",
+            36,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Swalot",
+            37,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Admin",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Scraggy",
+            37,
+            "F"
+          ],
+          [
+            "Houndoom",
+            38,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Route15": [
+      {
+        "name": "Silas",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Quagsire",
+            39,
+            "M"
+          ],
+          [
+            "Beartic",
+            39,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Luna",
+        "className": "Hex Maniac",
+        "party": [
+          [
+            "Chimecho",
+            40,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Dean",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Watchog",
+            37,
+            "M"
+          ],
+          [
+            "Swoobat",
+            38,
+            "M"
+          ],
+          [
+            "Seadra",
+            39,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Keith",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Gabite",
+            41,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Pedro",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Vileplume",
+            41,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Mahalyn",
+        "className": "Fairy Tale Girl",
+        "party": [
+          [
+            "Dedenne",
+            37,
+            "F"
+          ],
+          [
+            "Aromatisse",
+            39,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Carrie",
+        "className": "Hex Maniac",
+        "party": [
+          [
+            "Litwick",
+            38,
+            "F"
+          ],
+          [
+            "Duosion",
+            38,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "LostHotel": [
+      {
+        "name": "Sid",
+        "className": "Punk Guy",
+        "party": [
+          [
+            "Scrafty",
+            39,
+            "M"
+          ],
+          [
+            "Sharpedo",
+            39,
+            "M"
+          ],
+          [
+            "Pawniard",
+            39,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Jeanne",
+        "className": "Punk Girl",
+        "party": [
+          [
+            "Seviper",
+            40,
+            "F"
+          ],
+          [
+            "Arbok",
+            40,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Slater",
+        "className": "Punk Guy",
+        "party": [
+          [
+            "Dunsparce",
+            42,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Jacques",
+        "className": "Punk Guy",
+        "party": [
+          [
+            "Skuntank",
+            40,
+            "M"
+          ],
+          [
+            "Crawdaunt",
+            40,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Cecile",
+        "className": "Punk Girl",
+        "party": [
+          [
+            "Liepard",
+            40,
+            "F"
+          ],
+          [
+            "Liepard",
+            40,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Route16": [
+      {
+        "name": "Jet",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Delcatty",
+            37,
+            "F"
+          ],
+          [
+            "Swanna",
+            39,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Olle",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Manectric",
+            40,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Lee",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Crawdaunt",
+            39,
+            "M"
+          ],
+          [
+            "Sandslash",
+            39,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Osanna",
+        "className": "Hex Maniac",
+        "party": [
+          [
+            "Pumpkaboo",
+            40,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Bjorn",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Sliggoo",
+            41,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Alice",
+        "className": "Fairy Tale Girl",
+        "party": [
+          [
+            "Klefki",
+            37,
+            "F"
+          ],
+          [
+            "Mawile",
+            39,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Wade",
+        "className": "Fisherman",
+        "party": [
+          [
+            "Poliwhirl",
+            37,
+            "M"
+          ],
+          [
+            "Poliwhirl",
+            39,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Seward",
+        "className": "Fisherman",
+        "party": [
+          [
+            "Whiscash",
+            40,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Finn",
+        "className": "Fisherman",
+        "party": [
+          [
+            "Basculin",
+            38,
+            "M"
+          ],
+          [
+            "Basculin",
+            38,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "FrostCavern": [
+      {
+        "name": "Ross",
+        "className": "Hiker",
+        "party": [
+          [
+            "Vibrava",
+            44,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Salvador",
+        "className": "Artist",
+        "party": [
+          [
+            "Smeargle",
+            44,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Cordelia",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Doublade",
+            46,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Neil",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Raichu",
+            42,
+            "M"
+          ],
+          [
+            "Golduck",
+            42,
+            "M"
+          ],
+          [
+            "Marowak",
+            43,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Alain",
+        "className": "Hiker",
+        "party": [
+          [
+            "Graveler",
+            40,
+            "M"
+          ],
+          [
+            "Graveler",
+            41,
+            "M"
+          ],
+          [
+            "Carbink",
+            42,
+            "N"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Delmon",
+        "className": "Hiker",
+        "party": [
+          [
+            "Relicanth",
+            42,
+            "M"
+          ],
+          [
+            "Rhydon",
+            42,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Eoin & Wolf",
+        "className": "Brains & Brawn",
+        "party": [
+          [
+            "Grumpig",
+            44,
+            "M"
+          ],
+          [
+            "Hariyama",
+            46,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Alonzo",
+        "className": "Black Belt",
+        "party": [
+          [
+            "Scrafty",
+            43,
+            "M"
+          ],
+          [
+            "Throh",
+            44,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Kinsey",
+        "className": "Battle Girl",
+        "party": [
+          [
+            "Sawk",
+            43,
+            "M"
+          ],
+          [
+            "Mienshao",
+            44,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Kenji",
+        "className": "Black Belt",
+        "party": [
+          [
+            "Gurdurr",
+            46,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Brent",
+        "className": "Hiker",
+        "party": [
+          [
+            "Probopass",
+            44,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Gabrielle",
+        "className": "Battle Girl",
+        "party": [
+          [
+            "Medicham",
+            46,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Golbat",
+            42,
+            "F"
+          ],
+          [
+            "Manectric",
+            42,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "AnistarGym": [
+      {
+        "name": "Paschal",
+        "className": "Psychic",
+        "party": [
+          [
+            "Exeggutor",
+            46,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Harry",
+        "className": "Psychic",
+        "party": [
+          [
+            "Medicham",
+            46,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Arthur",
+        "className": "Psychic",
+        "party": [
+          [
+            "Reuniclus",
+            46,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Melanie",
+        "className": "Hex Maniac",
+        "party": [
+          [
+            "Gardevoir",
+            46,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Arachna",
+        "className": "Hex Maniac",
+        "party": [
+          [
+            "Jynx",
+            46,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Labs": [
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Swalot",
+            46,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Swalot",
+            45,
+            "M"
+          ],
+          [
+            "Liepard",
+            43,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Liepard",
+            44,
+            "M"
+          ],
+          [
+            "Mightyena",
+            44,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Houndoom",
+            44,
+            "F"
+          ],
+          [
+            "Toxicroak",
+            44,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Manectric",
+            43,
+            "F"
+          ],
+          [
+            "Scrafty",
+            45,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Golbat",
+            46,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Toxicroak",
+            44,
+            "F"
+          ],
+          [
+            "Liepard",
+            44,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Mightyena",
+            43,
+            "M"
+          ],
+          [
+            "Toxicroak",
+            45,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "SecretHQ": [
+      {
+        "name": "Admin",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Toxicroak",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Liepard",
+            48,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Admin",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Manectric",
+            50,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Mightyena",
+            48,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Admin",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Houndoom",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Scrafty",
+            48,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Admin",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Liepard",
+            47,
+            "F"
+          ],
+          [
+            "Manectric",
+            48,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Admin",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Swalot",
+            50,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Admin",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Mightyena",
+            47,
+            "M"
+          ],
+          [
+            "Houndoom",
+            48,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Admin",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Golbat",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Route18": [
+      {
+        "name": "Jayden",
+        "className": "Youngster",
+        "party": [
+          [
+            "Scolipede",
+            48,
+            "M"
+          ],
+          [
+            "Pinsir",
+            48,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Justine",
+        "className": "Battle Girl",
+        "party": [
+          [
+            "Mienshao",
+            52,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Orestes",
+        "className": "Hiker",
+        "party": [
+          [
+            "Stunfisk",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Yanis",
+        "className": "Black Belt",
+        "party": [
+          [
+            "Sawk",
+            49,
+            "M"
+          ],
+          [
+            "Pangoro",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Route19": [
+      {
+        "name": "Josette",
+        "className": "Hex Maniac",
+        "party": [
+          [
+            "Pumpkaboo",
+            50,
+            "F"
+          ],
+          [
+            "Pumpkaboo",
+            50,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Coral",
+        "className": "Swimmer ♀",
+        "party": [
+          [
+            "Stunfisk",
+            52,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Clementine",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Alomomola",
+            54,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Ambre",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Emolga",
+            51,
+            "F"
+          ],
+          [
+            "Grumpig",
+            51,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Shinobu",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Zangoose",
+            51,
+            "M"
+          ],
+          [
+            "Beartic",
+            51,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Lovelyn",
+        "className": "Fairy Tale Girl",
+        "party": [
+          [
+            "Mr. Mime",
+            49,
+            "F"
+          ],
+          [
+            "Azumarill",
+            49,
+            "F"
+          ],
+          [
+            "Aromatisse",
+            49,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Route20": [
+      {
+        "name": "Nana & Nina",
+        "className": "Twins",
+        "party": [
+          [
+            "Slurpuff",
+            53,
+            "F"
+          ],
+          [
+            "Aromatisse",
+            53,
+            "F"
+          ]
+        ],
+        "double": true
+      },
+      {
+        "name": "Roisin",
+        "className": "Poké Fan",
+        "party": [
+          [
+            "Snubbull",
+            51,
+            "F"
+          ],
+          [
+            "Granbull",
+            53,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Wynne",
+        "className": "Fairy Tale Girl",
+        "party": [
+          [
+            "Klefki",
+            52,
+            "F"
+          ],
+          [
+            "Azumarill",
+            52,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Corey",
+        "className": "Poké Fan",
+        "party": [
+          [
+            "Dedenne",
+            54,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Desdemona",
+        "className": "Hex Maniac",
+        "party": [
+          [
+            "Trevenant",
+            54,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "SnowbelleGym": [
+      {
+        "name": "Imelda",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Sneasel",
+            54,
+            "F"
+          ],
+          [
+            "Cloyster",
+            55,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Viktor",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Delibird",
+            54,
+            "M"
+          ],
+          [
+            "Mamoswine",
+            55,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Shannon",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Cryogonal",
+            52,
+            "N"
+          ],
+          [
+            "Piloswine",
+            53,
+            "F"
+          ],
+          [
+            "Jynx",
+            54,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Theo",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Beartic",
+            54,
+            "M"
+          ],
+          [
+            "Vanilluxe",
+            55,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Route21": [
+      {
+        "name": "Mireille",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Sableye",
+            55,
+            "F"
+          ],
+          [
+            "Crustle",
+            56,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Elina & Sean",
+        "className": "Ace Duo",
+        "party": [
+          [
+            "Wailord",
+            57,
+            "M"
+          ],
+          [
+            "Vileplume",
+            57,
+            "M"
+          ]
+        ],
+        "double": true
+      },
+      {
+        "name": "Evan",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Chandelure",
+            58,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Trisha",
+        "className": "Veteran",
+        "party": [
+          [
+            "Tyrantrum",
+            59,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Louis",
+        "className": "Veteran",
+        "party": [
+          [
+            "Hippowdon",
+            55,
+            "M"
+          ],
+          [
+            "Aurorus",
+            57,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "VictoryRoad": [
+      {
+        "name": "Robbie",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Carbink",
+            56,
+            "N"
+          ],
+          [
+            "Raichu",
+            56,
+            "M"
+          ],
+          [
+            "Kingdra",
+            57,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Alanza",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Weavile",
+            60,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Bence",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Steelix",
+            56,
+            "M"
+          ],
+          [
+            "Electrode",
+            56,
+            "N"
+          ],
+          [
+            "Kangaskhan",
+            57,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Markus",
+        "className": "Black Belt",
+        "party": [
+          [
+            "Machamp",
+            60,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Veronique",
+        "className": "Battle Girl",
+        "party": [
+          [
+            "Hawlucha",
+            57,
+            "F"
+          ],
+          [
+            "Mienshao",
+            58,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Farid",
+        "className": "Backpacker",
+        "party": [
+          [
+            "Haxorus",
+            58,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Sigrid",
+        "className": "Battle Girl",
+        "party": [
+          [
+            "Medicham",
+            60,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "William",
+        "className": "Psychic",
+        "party": [
+          [
+            "Espeon",
+            58,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Ander",
+        "className": "Black Belt",
+        "party": [
+          [
+            "Pangoro",
+            57,
+            "M"
+          ],
+          [
+            "Heracross",
+            58,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Arman & Hugo",
+        "className": "Brains & Brawn",
+        "party": [
+          [
+            "Medicham",
+            58,
+            "M"
+          ],
+          [
+            "Gallade",
+            60,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Corinne",
+        "className": "Fairy Tale Girl",
+        "party": [
+          [
+            "Azumarill",
+            56,
+            "F"
+          ],
+          [
+            "Florges",
+            56,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Raziah",
+        "className": "Hex Maniac",
+        "party": [
+          [
+            "Gourgeist",
+            58,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Petra",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Slowbro",
+            57,
+            "F"
+          ],
+          [
+            "Altaria",
+            57,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Inga",
+        "className": "Veteran",
+        "party": [
+          [
+            "Talonflame",
+            61,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Ralf",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Crobat",
+            59,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Gerard",
+        "className": "Veteran",
+        "party": [
+          [
+            "Banette",
+            57,
+            "M"
+          ],
+          [
+            "Leafeon",
+            59,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Vincent",
+        "className": "Artist",
+        "party": [
+          [
+            "Smeargle",
+            58,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Michele",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Magcargo",
+            57,
+            "F"
+          ],
+          [
+            "Scizor",
+            58,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Corwin",
+        "className": "Hiker",
+        "party": [
+          [
+            "Torkoal",
+            56,
+            "M"
+          ],
+          [
+            "Golem",
+            56,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Timeo",
+        "className": "Veteran",
+        "party": [
+          [
+            "Trevenant",
+            57,
+            "M"
+          ],
+          [
+            "Gigalith",
+            59,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Catrina",
+        "className": "Veteran",
+        "party": [
+          [
+            "Glaceon",
+            57,
+            "M"
+          ],
+          [
+            "Snorlax",
+            59,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Gilles",
+        "className": "Veteran",
+        "party": [
+          [
+            "Skarmory",
+            55,
+            "M"
+          ],
+          [
+            "Umbreon",
+            55,
+            "M"
+          ],
+          [
+            "Alakazam",
+            57,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ]
+  },
+  "story": {
+    "9-Calem": [
+      [
+        [
+          "Meowstic",
+          35,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          35,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Delphox",
+          37,
+          "M",
+          [
+            "Psybeam",
+            "Mystical Fire"
+          ],
+          "Blaze"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          35,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          35,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Greninja",
+          37,
+          "M",
+          [
+            "Quick Attack",
+            "Water Shuriken"
+          ],
+          "Torrent"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          35,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          35,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Chesnaught",
+          37,
+          "M",
+          [
+            "Seed Bomb",
+            "Bite"
+          ],
+          "Overgrow"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          37,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          39,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Delphox",
+          39,
+          "M",
+          [
+            "Mystical Fire",
+            "Psybeam"
+          ],
+          "Blaze"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          37,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          39,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Greninja",
+          39,
+          "M",
+          [
+            "Water Shuriken",
+            "Quick Attack"
+          ],
+          "Torrent"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          37,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          39,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Chesnaught",
+          39,
+          "M",
+          [
+            "Seed Bomb",
+            "Bite"
+          ],
+          "Overgrow"
+        ]
+      ]
+    ],
+    "9-Serena": [
+      [
+        [
+          "Meowstic",
+          35,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          35,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Delphox",
+          37,
+          "M",
+          [
+            "Psybeam",
+            "Mystical Fire"
+          ],
+          "Blaze"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          35,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          35,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Greninja",
+          37,
+          "M",
+          [
+            "Quick Attack",
+            "Water Shuriken"
+          ],
+          "Torrent"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          35,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          35,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Chesnaught",
+          37,
+          "M",
+          [
+            "Seed Bomb",
+            "Bite"
+          ],
+          "Overgrow"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          37,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          39,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Delphox",
+          39,
+          "M",
+          [
+            "Mystical Fire",
+            "Psybeam"
+          ],
+          "Blaze"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          37,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          39,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Greninja",
+          39,
+          "M",
+          [
+            "Water Shuriken",
+            "Quick Attack"
+          ],
+          "Torrent"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          37,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Light Screen"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          39,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Chesnaught",
+          39,
+          "M",
+          [
+            "Seed Bomb",
+            "Bite"
+          ],
+          "Overgrow"
+        ]
+      ]
+    ],
+    "9-Valerie": [
+      [
+        [
+          "Mawile",
+          38,
+          "F",
+          [
+            "Feint Attack",
+            "Crunch",
+            "Iron Defense"
+          ],
+          "Hyper Cutter"
+        ],
+        [
+          "Mr. Mime",
+          39,
+          "F",
+          [
+            "Light Screen",
+            "Reflect",
+            "Psychic",
+            "Dazzling Gleam"
+          ],
+          "Soundproof"
+        ],
+        [
+          "Sylveon",
+          42,
+          "M",
+          [
+            "Dazzling Gleam",
+            "Quick Attack",
+            "Swift",
+            "Charm"
+          ],
+          "Cute Charm"
+        ]
+      ]
+    ],
+    "9-Celosia": [
+      [
+        [
+          "Liepard",
+          41,
+          "F",
+          [
+            "Hone Claws",
+            "Assurance",
+            "Slash",
+            "Taunt"
+          ],
+          "Unburden"
+        ],
+        [
+          "Manectric",
+          41,
+          "F",
+          [
+            "Spark",
+            "Thunder Fang",
+            "Bite",
+            "Odor Sleuth"
+          ],
+          "Lightning Rod"
+        ]
+      ]
+    ],
+    "10-Mable": [
+      [
+        [
+          "Houndoom",
+          48,
+          "F",
+          [
+            "Embargo",
+            "Foul Play",
+            "Fire Fang",
+            "Feint Attack"
+          ],
+          "Flash Fire"
+        ]
+      ]
+    ],
+    "10-Calem": [
+      [
+        [
+          "Meowstic",
+          44,
+          "M",
+          [
+            "Fake Out",
+            "Psychic",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          44,
+          "M",
+          [
+            "Swords Dance",
+            "Slash",
+            "Night Slash",
+            "Quick Attack"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Jolteon",
+          44,
+          "M",
+          [
+            "Discharge",
+            "Quick Attack",
+            "Double Kick"
+          ],
+          "Volt Absorb"
+        ],
+        [
+          "Delphox",
+          46,
+          "M",
+          [
+            "Psychic",
+            "Flamethrower"
+          ],
+          "Blaze"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          44,
+          "M",
+          [
+            "Fake Out",
+            "Psychic",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          44,
+          "M",
+          [
+            "Swords Dance",
+            "Slash",
+            "Night Slash",
+            "Quick Attack"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Flareon",
+          44,
+          "M",
+          [
+            "Quick Attack",
+            "Lava Plume",
+            "Bite"
+          ],
+          "Flash Fire"
+        ],
+        [
+          "Greninja",
+          46,
+          "M",
+          [
+            "Water Shuriken",
+            "Dark Pulse"
+          ],
+          "Torrent"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          44,
+          "M",
+          [
+            "Fake Out",
+            "Psychic",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          44,
+          "M",
+          [
+            "Swords Dance",
+            "Slash",
+            "Night Slash",
+            "Quick Attack"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Vaporeon",
+          44,
+          "M",
+          [
+            "Aurora Beam",
+            "Muddy Water",
+            "Quick Attack"
+          ],
+          "Water Absorb"
+        ],
+        [
+          "Chesnaught",
+          46,
+          "M",
+          [
+            "Seed Bomb",
+            "Brick Break"
+          ],
+          "Overgrow"
+        ]
+      ]
+    ],
+    "10-Serena": [
+      [
+        [
+          "Meowstic",
+          44,
+          "F",
+          [
+            "Fake Out",
+            "Psychic",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          44,
+          "M",
+          [
+            "Swords Dance",
+            "Slash",
+            "Night Slash",
+            "Quick Attack"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Jolteon",
+          44,
+          "M",
+          [
+            "Discharge",
+            "Quick Attack",
+            "Double Kick"
+          ],
+          "Volt Absorb"
+        ],
+        [
+          "Delphox",
+          46,
+          "M",
+          [
+            "Psychic",
+            "Flamethrower"
+          ],
+          "Blaze"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          44,
+          "F",
+          [
+            "Fake Out",
+            "Psychic",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          44,
+          "M",
+          [
+            "Swords Dance",
+            "Slash",
+            "Night Slash",
+            "Quick Attack"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Flareon",
+          44,
+          "M",
+          [
+            "Quick Attack",
+            "Lava Plume",
+            "Bite"
+          ],
+          "Flash Fire"
+        ],
+        [
+          "Greninja",
+          46,
+          "M",
+          [
+            "Water Shuriken",
+            "Dark Pulse"
+          ],
+          "Torrent"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          44,
+          "F",
+          [
+            "Fake Out",
+            "Psychic",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Absol",
+          44,
+          "M",
+          [
+            "Swords Dance",
+            "Slash",
+            "Night Slash",
+            "Quick Attack"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Vaporeon",
+          44,
+          "M",
+          [
+            "Aurora Beam",
+            "Muddy Water",
+            "Quick Attack"
+          ],
+          "Water Absorb"
+        ],
+        [
+          "Chesnaught",
+          46,
+          "M",
+          [
+            "Seed Bomb",
+            "Brick Break"
+          ],
+          "Overgrow"
+        ]
+      ]
+    ],
+    "10-Olympia": [
+      [
+        [
+          "Sigilyph",
+          44,
+          "F",
+          [
+            "Psychic",
+            "Air Slash",
+            "Light Screen",
+            "Reflect"
+          ],
+          "Magic Guard"
+        ],
+        [
+          "Slowking",
+          45,
+          "F",
+          [
+            "Psychic",
+            "Calm Mind",
+            "Power Gem",
+            "Yawn"
+          ],
+          "Oblivious"
+        ],
+        [
+          "Meowstic",
+          48,
+          "F",
+          [
+            "Psychic",
+            "Calm Mind",
+            "Fake Out",
+            "Shadow Ball"
+          ],
+          "Infiltrator"
+        ]
+      ]
+    ],
+    "11-Lysandre": [
+      [
+        [
+          "Mienfoo",
+          45,
+          "M",
+          [
+            "Swords Dance",
+            "High Jump Kick",
+            "Acrobatics"
+          ],
+          "Inner Focus"
+        ],
+        [
+          "Murkrow",
+          45,
+          "M",
+          [
+            "Foul Play",
+            "Aerial Ace",
+            "Retaliate",
+            "Steel Wing"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Pyroar",
+          47,
+          "M",
+          [
+            "Hyper Voice",
+            "Fire Blast",
+            "Dark Pulse"
+          ],
+          "Rivalry"
+        ],
+        [
+          "Gyarados",
+          49,
+          "M",
+          [
+            "Aqua Tail",
+            "Earthquake",
+            "Iron Head",
+            "Outrage"
+          ],
+          "Intimidate"
+        ]
+      ],
+      [
+        [
+          "Mienshao",
+          47,
+          "M",
+          [
+            "Swords Dance",
+            "High Jump Kick",
+            "Acrobatics"
+          ],
+          "Inner Focus"
+        ],
+        [
+          "Honchkrow",
+          47,
+          "M",
+          [
+            "Night Slash",
+            "Aerial Ace",
+            "Retaliate",
+            "Steel Wing"
+          ],
+          "Insomnia"
+        ],
+        [
+          "Pyroar",
+          49,
+          "M",
+          [
+            "Hyper Voice",
+            "Fire Blast",
+            "Dark Pulse"
+          ],
+          "Unnerve"
+        ],
+        [
+          "Gyarados",
+          51,
+          "M",
+          [
+            "Aqua Tail",
+            "Earthquake",
+            "Iron Head",
+            "Outrage"
+          ],
+          "Intimidate"
+        ]
+      ],
+      [
+        [
+          "Mienshao",
+          49,
+          "M",
+          [
+            "Swords Dance",
+            "High Jump Kick",
+            "Acrobatics"
+          ],
+          "Inner Focus"
+        ],
+        [
+          "Honchkrow",
+          49,
+          "M",
+          [
+            "Night Slash",
+            "Aerial Ace",
+            "Retaliate",
+            "Steel Wing"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Pyroar",
+          51,
+          "M",
+          [
+            "Hyper Voice",
+            "Fire Blast",
+            "Dark Pulse"
+          ],
+          "Unnerve"
+        ],
+        [
+          "Gyarados",
+          53,
+          "M",
+          [
+            "Aqua Tail",
+            "Earthquake",
+            "Iron Head",
+            "Outrage"
+          ],
+          "Intimidate"
+        ]
+      ]
+    ],
+    "11-Aliana": [
+      [
+        [
+          "Mightyena",
+          46,
+          "F",
+          [
+            "Taunt",
+            "Sucker Punch",
+            "Crunch",
+            "Embargo"
+          ],
+          "Intimidate"
+        ],
+        [
+          "Druddigon",
+          48,
+          "F",
+          [
+            "Dragon Claw",
+            "Crunch",
+            "Shadow Claw",
+            "Surf"
+          ],
+          "Sheer Force"
+        ]
+      ]
+    ],
+    "11-Celosia": [
+      [
+        [
+          "Manectric",
+          46,
+          "F",
+          [
+            "Thunderbolt",
+            "Quick Attack",
+            "Flamethrower",
+            "Thunder Wave"
+          ],
+          "Static"
+        ],
+        [
+          "Drapion",
+          48,
+          "F",
+          [
+            "Night Slash",
+            "X-Scissor",
+            "Poison Jab",
+            "Acupressure"
+          ],
+          "Battle Armor"
+        ]
+      ]
+    ],
+    "11-Bryony": [
+      [
+        [
+          "Liepard",
+          46,
+          "F",
+          [
+            "Fake Out",
+            "Sucker Punch",
+            "Taunt",
+            "Slash"
+          ],
+          "Limber"
+        ],
+        [
+          "Bisharp",
+          48,
+          "F",
+          [
+            "Night Slash",
+            "Iron Head",
+            "X-Scissor",
+            "Shadow Claw"
+          ],
+          "Inner Focus"
+        ]
+      ]
+    ],
+    "11-Mable": [
+      [
+        [
+          "Houndoom",
+          46,
+          "F",
+          [
+            "Snarl",
+            "Flamethrower",
+            "Sludge Bomb",
+            "Foul Play"
+          ],
+          "Early Bird"
+        ],
+        [
+          "Weavile",
+          48,
+          "F",
+          [
+            "Night Slash",
+            "Quick Attack",
+            "Ice Shard",
+            "Low Sweep"
+          ],
+          "Pressure"
+        ]
+      ]
+    ],
+    "11-Xerosic": [
+      [
+        [
+          "Crobat",
+          46,
+          "M",
+          [
+            "X-Scissor",
+            "Cross Poison",
+            "Steel Wing",
+            "Air Slash"
+          ],
+          "Inner Focus"
+        ],
+        [
+          "Malamar",
+          48,
+          "M",
+          [
+            "Superpower",
+            "Payback",
+            "Psycho Cut",
+            "Retaliate"
+          ],
+          "Contrary"
+        ]
+      ]
+    ],
+    "11-Calem": [
+      [
+        [
+          "Meowstic",
+          45,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Delphox",
+          49,
+          "M",
+          [
+            "Flamethrower",
+            "Psychic"
+          ],
+          "Blaze"
+        ],
+        [
+          "Jolteon",
+          46,
+          "M",
+          [
+            "Discharge",
+            "Double Kick",
+            "Quick Attack"
+          ],
+          "Volt Absorb"
+        ],
+        [
+          "Absol",
+          46,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Night Slash"
+          ],
+          "Super Luck"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          45,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Greninja",
+          49,
+          "M",
+          [
+            "Water Shuriken",
+            "Dark Pulse"
+          ],
+          "Torrent"
+        ],
+        [
+          "Flareon",
+          46,
+          "M",
+          [
+            "Quick Attack",
+            "Bite",
+            "Lava Plume"
+          ],
+          "Flash Fire"
+        ],
+        [
+          "Absol",
+          46,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Night Slash"
+          ],
+          "Super Luck"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          45,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Chesnaught",
+          49,
+          "M",
+          [
+            "Brick Break",
+            "Seed Bomb"
+          ],
+          "Overgrow"
+        ],
+        [
+          "Vaporeon",
+          46,
+          "M",
+          [
+            "Muddy Water",
+            "Quick Attack",
+            "Aurora Beam"
+          ],
+          "Water Absorb"
+        ],
+        [
+          "Absol",
+          46,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Night Slash"
+          ],
+          "Super Luck"
+        ]
+      ]
+    ],
+    "11-Serena": [
+      [
+        [
+          "Meowstic",
+          45,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Delphox",
+          49,
+          "M",
+          [
+            "Flamethrower",
+            "Psychic"
+          ],
+          "Blaze"
+        ],
+        [
+          "Jolteon",
+          46,
+          "M",
+          [
+            "Discharge",
+            "Double Kick",
+            "Quick Attack"
+          ],
+          "Volt Absorb"
+        ],
+        [
+          "Absol",
+          46,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Night Slash"
+          ],
+          "Super Luck"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          45,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Greninja",
+          49,
+          "M",
+          [
+            "Water Shuriken",
+            "Dark Pulse"
+          ],
+          "Torrent"
+        ],
+        [
+          "Flareon",
+          46,
+          "M",
+          [
+            "Quick Attack",
+            "Bite",
+            "Lava Plume"
+          ],
+          "Flash Fire"
+        ],
+        [
+          "Absol",
+          46,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Night Slash"
+          ],
+          "Super Luck"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          45,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Chesnaught",
+          49,
+          "M",
+          [
+            "Brick Break",
+            "Seed Bomb"
+          ],
+          "Overgrow"
+        ],
+        [
+          "Vaporeon",
+          46,
+          "M",
+          [
+            "Muddy Water",
+            "Quick Attack",
+            "Aurora Beam"
+          ],
+          "Water Absorb"
+        ],
+        [
+          "Absol",
+          46,
+          "M",
+          [
+            "Slash",
+            "Swords Dance",
+            "Quick Attack",
+            "Night Slash"
+          ],
+          "Super Luck"
+        ]
+      ]
+    ],
+    "12-Sycamore": [
+      [
+        [
+          "Venusaur",
+          50,
+          "M",
+          [
+            "Petal Dance",
+            "Worry Seed",
+            "Synthesis",
+            "Petal Blizzard"
+          ],
+          "Overgrow"
+        ],
+        [
+          "Charizard",
+          50,
+          "M",
+          [
+            "Flame Burst",
+            "Wing Attack",
+            "Slash",
+            "Flamethrower"
+          ],
+          "Blaze"
+        ],
+        [
+          "Blastoise",
+          50,
+          "M",
+          [
+            "Water Pulse",
+            "Aqua Tail",
+            "Iron Defense",
+            "Skull Bash"
+          ],
+          "Torrent"
+        ]
+      ]
+    ],
+    "12-Shauna": [
+      [
+        [
+          "Delcatty",
+          49,
+          "F",
+          [
+            "Charm",
+            "Play Rough",
+            "Feint Attack",
+            "Return"
+          ],
+          "Cute Charm"
+        ],
+        [
+          "Goodra",
+          49,
+          "M",
+          [
+            "Dragon Pulse",
+            "Sludge Wave",
+            "Body Slam",
+            "Earthquake"
+          ],
+          "Sap Sipper"
+        ],
+        [
+          "Greninja",
+          51,
+          "F",
+          [
+            "Water Shuriken",
+            "Extrasensory",
+            "Double Team"
+          ],
+          "Torrent"
+        ]
+      ],
+      [
+        [
+          "Delcatty",
+          49,
+          "F",
+          [
+            "Charm",
+            "Play Rough",
+            "Feint Attack",
+            "Return"
+          ],
+          "Cute Charm"
+        ],
+        [
+          "Goodra",
+          49,
+          "M",
+          [
+            "Dragon Pulse",
+            "Sludge Wave",
+            "Body Slam",
+            "Earthquake"
+          ],
+          "Sap Sipper"
+        ],
+        [
+          "Chesnaught",
+          51,
+          "F",
+          [
+            "Spiky Shield",
+            "Seed Bomb",
+            "Brick Break"
+          ],
+          "Overgrow"
+        ]
+      ],
+      [
+        [
+          "Delcatty",
+          49,
+          "F",
+          [
+            "Charm",
+            "Play Rough",
+            "Feint Attack",
+            "Return"
+          ],
+          "Cute Charm"
+        ],
+        [
+          "Goodra",
+          49,
+          "M",
+          [
+            "Dragon Pulse",
+            "Sludge Wave",
+            "Body Slam",
+            "Earthquake"
+          ],
+          "Sap Sipper"
+        ],
+        [
+          "Delphox",
+          51,
+          "F",
+          [
+            "Mystical Fire",
+            "Psychic",
+            "Calm Mind"
+          ],
+          "Blaze"
+        ]
+      ]
+    ],
+    "12-Tierno": [
+      [
+        [
+          "Talonflame",
+          48,
+          "M",
+          [
+            "Swords Dance",
+            "Acrobatics",
+            "Quick Attack"
+          ],
+          "Flame Body"
+        ],
+        [
+          "Roserade",
+          49,
+          "F",
+          [
+            "Petal Dance"
+          ],
+          "Poison Point"
+        ],
+        [
+          "Crawdaunt",
+          52,
+          "M",
+          [
+            "Swords Dance",
+            "Crabhammer",
+            "Night Slash"
+          ],
+          "Shell Armor"
+        ]
+      ]
+    ],
+    "12-Trevor": [
+      [
+        [
+          "Raichu",
+          49,
+          "M",
+          [
+            "Thunderbolt",
+            "Quick Attack",
+            "Nuzzle",
+            "Slam"
+          ],
+          "Static"
+        ],
+        [
+          "Aerodactyl",
+          49,
+          "M",
+          [
+            "Crunch",
+            "Ancient Power",
+            "Sky Drop",
+            "Supersonic"
+          ],
+          "Rock Head"
+        ],
+        [
+          "Florges",
+          51,
+          "F",
+          [
+            "Moonblast",
+            "Energy Ball",
+            "Confide",
+            "Misty Terrain"
+          ],
+          "Flower Veil"
+        ]
+      ]
+    ],
+    "13-Wulfric": [
+      [
+        [
+          "Abomasnow",
+          56,
+          "M",
+          [
+            "Ice Beam",
+            "Ice Shard",
+            "Energy Ball"
+          ],
+          "Snow Warning"
+        ],
+        [
+          "Cryogonal",
+          55,
+          "N",
+          [
+            "Ice Beam",
+            "Confuse Ray",
+            "Flash Cannon",
+            "Hail"
+          ],
+          "Levitate"
+        ],
+        [
+          "Avalugg",
+          59,
+          "M",
+          [
+            "Avalanche",
+            "Crunch",
+            "Curse",
+            "Gyro Ball"
+          ],
+          "Ice Body"
+        ]
+      ]
+    ],
+    "14-Calem": [
+      [
+        [
+          "Meowstic",
+          57,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Jolteon",
+          57,
+          "M",
+          [
+            "Discharge",
+            "Quick Attack",
+            "Double Kick"
+          ],
+          "Volt Absorb"
+        ],
+        [
+          "Altaria",
+          58,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure"
+        ],
+        [
+          "Absol",
+          59,
+          "M",
+          [
+            "Night Slash",
+            "Quick Attack",
+            "Swords Dance",
+            "Slash"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Delphox",
+          61,
+          "M",
+          [
+            "Psychic",
+            "Shadow Ball",
+            "Flamethrower"
+          ],
+          "Blaze"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          57,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Flareon",
+          57,
+          "M",
+          [
+            "Bite",
+            "Lava Plume",
+            "Quick Attack"
+          ],
+          "Flash Fire"
+        ],
+        [
+          "Altaria",
+          58,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure"
+        ],
+        [
+          "Absol",
+          59,
+          "M",
+          [
+            "Night Slash",
+            "Quick Attack",
+            "Swords Dance",
+            "Slash"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Greninja",
+          61,
+          "M",
+          [
+            "Dark Pulse",
+            "Ice Beam",
+            "Water Shuriken"
+          ],
+          "Torrent"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          57,
+          "M",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Vaporeon",
+          57,
+          "M",
+          [
+            "Muddy Water",
+            "Aurora Beam",
+            "Quick Attack"
+          ],
+          "Water Absorb"
+        ],
+        [
+          "Altaria",
+          58,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure"
+        ],
+        [
+          "Absol",
+          59,
+          "M",
+          [
+            "Night Slash",
+            "Quick Attack",
+            "Swords Dance",
+            "Slash"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Chesnaught",
+          61,
+          "M",
+          [
+            "Brick Break",
+            "Seed Bomb",
+            "Body Slam"
+          ],
+          "Overgrow"
+        ]
+      ]
+    ],
+    "14-Serena": [
+      [
+        [
+          "Meowstic",
+          57,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Jolteon",
+          57,
+          "M",
+          [
+            "Discharge",
+            "Quick Attack",
+            "Double Kick"
+          ],
+          "Volt Absorb"
+        ],
+        [
+          "Altaria",
+          58,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure"
+        ],
+        [
+          "Absol",
+          59,
+          "M",
+          [
+            "Slash",
+            "Quick Attack",
+            "Swords Dance",
+            "Night Slash"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Delphox",
+          61,
+          "M",
+          [
+            "Psychic",
+            "Shadow Ball",
+            "Flamethrower"
+          ],
+          "Blaze"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          57,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Flareon",
+          57,
+          "M",
+          [
+            "Bite",
+            "Lava Plume",
+            "Quick Attack"
+          ],
+          "Flash Fire"
+        ],
+        [
+          "Altaria",
+          58,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure"
+        ],
+        [
+          "Absol",
+          59,
+          "M",
+          [
+            "Slash",
+            "Quick Attack",
+            "Swords Dance",
+            "Night Slash"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Greninja",
+          61,
+          "M",
+          [
+            "Dark Pulse",
+            "Ice Beam",
+            "Water Shuriken"
+          ],
+          "Torrent"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          57,
+          "F",
+          [
+            "Psychic",
+            "Fake Out",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye"
+        ],
+        [
+          "Vaporeon",
+          57,
+          "M",
+          [
+            "Muddy Water",
+            "Aurora Beam",
+            "Quick Attack"
+          ],
+          "Water Absorb"
+        ],
+        [
+          "Altaria",
+          58,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure"
+        ],
+        [
+          "Absol",
+          59,
+          "M",
+          [
+            "Slash",
+            "Quick Attack",
+            "Swords Dance",
+            "Night Slash"
+          ],
+          "Super Luck"
+        ],
+        [
+          "Chesnaught",
+          61,
+          "M",
+          [
+            "Brick Break",
+            "Seed Bomb",
+            "Body Slam"
+          ],
+          "Overgrow"
+        ]
+      ]
+    ]
+  }
+}

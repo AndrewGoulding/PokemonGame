@@ -12387,7 +12387,7 @@
         skate: () => Kalos.skating(player)||!!Kalos.mount(player),
         mount: () => Kalos.mount(player),
         landAvatar: () => (onCyclingRoad() ? "bike" : "walk"),
-        onAvatar: (mode) => {if(mode!=="walk"&&Kalos.owns(player.location.map)){Kalos.state(player).riding=false;Kalos.state(player).skiddoRiding=false;}if(mode!=="walk")SinnohRadar.clear(player);music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music);},
+        onAvatar: (mode) => {if(mode!=="walk"&&Kalos.owns(player.location.map)){Kalos.state(player).riding=false;Kalos.state(player).skiddoRiding=false;Kalos.state(player).mamoswineRiding=false;}if(mode!=="walk")SinnohRadar.clear(player);music(avatarMusic(mode) || (window.WORLD_MAPS[player.location.map] || {}).music);},
         onStep: () => {
           Player.advanceClock(player);   // (the game's clock: Player.gameTime)
           leftPallet(player.location.map); DayCare.step(player.flags.dayCare); DayCare.step(player.flags.dayCare2); DayCare.step(player.flags.johtoDayCare); DayCare.step(player.flags.sinnohDayCare); DayCare.step(player.flags.unovaDayCare); friendshipStep();
