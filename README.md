@@ -4259,3 +4259,5 @@ missed target still counts). Speed order is fixed at the start of the turn (Gen
 Unova Entralink/Funfest and Pass Powers: [scope and source notes](docs/unova-funfest.md).
 
 Unova Musical and daily sports: [scope and source notes](docs/unova-activities.md).
+
+Unova Pokéstar catalog: [scope and source notes](docs/unova-movies.md).

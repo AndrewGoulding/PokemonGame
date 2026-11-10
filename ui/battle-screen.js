@@ -2710,7 +2710,7 @@
   // back by feeding them to a battle built the same way: run's cfg.record and cfg.replay.)
   let recording = null;
   const RECORD_KEYS = ["p1", "p2", "format", "partnerTrainer", "foeTrainer2", "defeatText2", "ghost", "noCatch", "snag", "wild", "weather", "trickRoom", "levelCap", "arena", "palace",
-    "trainer", "foeTrainer", "defeatText", "victoryMusic", "terrain", "friendshipPower", "expMultiplier", "catchContext"];
+    "trainer", "foeTrainer", "defeatText", "victoryMusic", "terrain", "friendshipPower", "expMultiplier", "catchContext", "movieRules"];
   function choose(side, choice) {
     try {
       const r = battle.choose(side, choice);
@@ -2729,6 +2729,7 @@
       if (battle.ended) return;
       if (battle.doubles) { const r = await doublesStep(); if (r === "crashed") return r; continue; }
       const p1 = battle.getRequest("p1");
+      if(p1.phase === "move" && config.beforeChoice)await config.beforeChoice(battle);
       // (A Tera Raid's turn limit, this game's own: config.raidTurns.)
       if (config.raidTurns && p1.phase === "move" && raidAnnounced !== battle.turn) {
         raidAnnounced = battle.turn;
@@ -3519,6 +3520,7 @@
       seed: cfg.seed,   // (a recorded battle played back: the seed it was fought with)
       arena: !!cfg.arena, palace: !!cfg.palace   // (the Battle Arena's judging; the Battle Palace, where Pokémon choose their own moves: engine/battle.js)
     }, cfg.format === "doubles" || cfg.format === "horde" ? { format: cfg.format } : {}));
+    if(cfg.movieRules)UnovaMovies.attach(battle,cfg.movieRules);
     recording = cfg.record && !cfg.replay ? { seed: battle.seed, choices: [], cfg: JSON.parse(JSON.stringify(Object.fromEntries(RECORD_KEYS.filter((k) => cfg[k] !== undefined).map((k) => [k, cfg[k]])))) } : null;
     // (The Palace: the opponents' Pokémon choose by their natures too.)
     if (cfg.palace) {
