@@ -88,6 +88,7 @@
   // doesn't know it and you haven't the TM or HM), "unable" (it can't learn
   // it); or null when it can.
   function check(player, record, move) {
+    if(window.WORLD_MAPS?.[player.location?.map]?.unovaTower)return "unable";
     const f = info(move);
     if (!f || record.egg) return "unable";   // (an Egg can't do anything)
     if (!window.Party.knowsMove(record, move) && !natural(record, move)) {

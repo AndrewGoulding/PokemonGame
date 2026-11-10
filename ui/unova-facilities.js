@@ -1,0 +1,23 @@
+(function(){
+ 'use strict';
+ function create({env,resume,checkpoint,report}){
+ const F=Unova,R=UnovaFacilities,p=()=>env.player(),s=()=>R.state(p()),d=()=>R.data(),say=x=>env.say(x),move=async a=>{await env.teleport(a);await checkpoint();};
+ async function end(lost=false){const a=R.towerEnd(p());if(lost)p().party.forEach(Party.heal);await checkpoint();if(a)await move(a);}
+ async function battle(foe){const result=await env.battle('trainer',{foe:JSON.parse(JSON.stringify(foe)),noBag:true,noGimmicks:true,noPrize:true,noBlackout:true,record:true});await resume();if(result!=='won'){await say('Your challenge ended.\nYou can try this area again.');await end(true);}return result;}
+ async function start(mode){if(!UnovaPost.unlocked(p())){await say('Return after entering the\nUnova Hall of Fame.');return;}const record=s().tower[mode],opts=Array.from({length:Math.min(10,record.cleared+1)},(_,i)=>'Area '+(i+1)),choice=await env.choose('Choose an area',opts);if(!choice)return;await say('Find the Gate Trainer on each floor.\nDefeat them to open the boss gate.\nThe nurse can heal once per area.\nItems cannot be used here.');if(!await env.confirm('Begin the challenge?'))return;R.startTower(p(),mode,opts.indexOf(choice));await checkpoint();await move(R.towerPosition(p()));}
+ async function gift(mode){const record=s().tower[mode],name=mode==='black'?'Gible':'Dratini';if(record.cleared<10){await say('Benga awaits at the end of\nArea 10 in each challenge.');return;}if(record.gift){await say('Train your Shiny '+name+' well!');return;}if(p().party.length>=6){await say('Make a space in your party\nfor Benga’s gift.');return;}if(!await env.confirm('Receive a Shiny '+name+'?'))return;const r=Party.create(name,1,{shiny:true,moves:F.levelMoves(name,1)});r.ot={name:p().name,id:p().trainerId};r.met={level:1,map:p().location.map,game:F.state(p()).version,from:'Benga'};p().party.push(r);Player.markCaught(p(),name);record.gift=true;await checkpoint();await say('You received a Shiny '+name+'!');}
+ async function run(key){if(!key.startsWith('tower-'))return false;
+ if(key.startsWith('tower-start-'))await start(key.slice(12));
+ else if(key.startsWith('tower-records-')){const mode=key.slice(14);await say((mode==='black'?'Black Tower':'White Treehollow')+'\nAreas cleared: '+s().tower[mode].cleared+'/10');}
+ else if(key.startsWith('tower-gift-'))await gift(key.slice(11));
+ else if(key==='tower-invalid'){const r=s().towerRun;if(r)await move(R.towerPosition(p()));else{const mode=WORLD_MAPS[p().location.map].unovaTower?.mode||'black';await move(d().tower.lobbies[mode]);}}
+ else if(key==='tower-retire'){if(await env.confirm('Retire from this area?'))await end();}
+ else if(key==='tower-nurse'){const r=s().towerRun;if(!r)return true;if(r.nurse)await say('I have already healed your team\nduring this area challenge.');else if(await env.confirm('Rest your team once this area?')){p().party.forEach(Party.heal);r.nurse=true;await checkpoint();await say('Your team is fully rested.');}}
+ else if(key.startsWith('tower-trainer-')){const i=+key.slice(-1),r=s().towerRun;if(!r)return true;if(r.wins.includes(i))await say(i===r.keeper?'I was the Gate Trainer!\nThe floor’s gate is now open.':'The Gate Trainer is on this floor.');else if(await battle(r.opponents[i])==='won'){R.towerWon(p(),i);await checkpoint();await say(i===r.keeper?'I was the Gate Trainer!\nThe floor’s gate is now open.':'Keep searching for the Gate Trainer!');}}
+ else if(key==='tower-gate'){let a=R.towerAdvance(p());if(a.locked)await say('Defeat this floor’s Gate Trainer\nbefore you can advance.');else if(a.next)await move(a.next);else if(a.boss){if(await battle(s().towerRun.boss||s().towerRun.opponents[(s().towerRun.keeper+1)%3])==='won'){s().towerRun.bossWon=true;a=R.towerAdvance(p());}}else if(a.benga){const r=s().towerRun,t=F.data().trainers[d().tower.benga[r.mode==='black'?0:1]];if(await battle({name:'Benga',pic:t.pic,team:F.team(d().tower.benga[r.mode==='black'?0:1])})==='won'){s().towerRun.benga=true;a=R.towerAdvance(p());}}if(a.complete){await checkpoint();await say('Area '+(a.area+1)+' cleared!'+(a.area===9?'\nBenga: Visit Alder’s home\nfor your special Pokémon!':''));await move(d().tower.lobbies[a.mode]);}}
+ return true;}
+ function step(){const m=WORLD_MAPS[p().location.map],q=m?.unovaTower;if(!q){if(Unova.peek(p()).facilities?.towerRun)R.towerEnd(p());return null;}const r=s().towerRun;if(!r||r.mode!==q.mode||r.area!==q.area||r.floor!==q.floor)return{type:'trigger',map:m.name,trigger:{script:'bw:tower-invalid'}};return null;}
+ return{run,step,visible:()=>undefined};
+ }
+ window.UnovaFacilityStory={create};
+})();

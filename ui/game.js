@@ -2420,6 +2420,7 @@
     player.flags.bagOrder = Object.assign({}, player.flags.bagOrder, { [pocketName]: ids });
   }
   async function bagScreen() {
+    if(WORLD_MAPS[player.location.map]?.unovaTower){await say("Items cannot be used during this challenge.");return;}
     for (;;) {
       Screen.say("");
       clearMenu();

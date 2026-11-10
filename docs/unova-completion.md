@@ -24,7 +24,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Plasma Frigate, Giant Chasm, Colress, Ghetsis and Kyurem climax
 - [x] Victory Road, Elite Four and Iris; Hall of Fame and rematches
 - [x] Postgame southern/eastern routes, towns, dungeons, Black City/White Forest ([scope](unova-postgame.md))
-- [ ] Black Tower / White Treehollow, Nature Preserve and other postgame challenges
+- [x] Ten-area Black Tower / White Treehollow, Benga and shiny gifts ([scope](unova-facilities.md))
 - [x] Postgame legendary quests, DNA Splicers, research/charms and Nature Preserve
 - [x] Twenty source Hidden Grottos, regrowth, Hidden Abilities and item tables
 - [ ] Remaining event stories, N’s wild Pokémon and Memory Link recaps
