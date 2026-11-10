@@ -44,14 +44,19 @@ medal sources. There are 39 trainer records (including deferred later rematches)
 427 dialogue records, eight encounter banks and the 255-entry medal catalog.
 
 NPC sheets, trainer portraits, Medal Box art and the C-Gear background are
-exported from the source assets. Shop upgrades count only Unova Badges. Maps are authored 2D layouts with native
-collision and warps; they are not a DS matrix/model renderer. Music currently
-uses existing game tracks. Shared battles retain the project’s battle rules;
-the imported teams, wild moves and starters use their Gen 5 source moves.
-Dialogue and events are adapted to the browser interface. The C-Gear does not
-provide DS wireless/online services, and its regional itinerary is not a full
-Unova graphical Town Map. The regional Trainer Card is not the complete native
-BW2 card/stars system. No BW1 story coverage is implied by this opening.
+exported from the source assets. Shop upgrades count only Unova Badges. Maps are
+authored 2D layouts with native collision and warps; they are not a DS
+matrix/model renderer. Outdoor art now uses the same FireRed terrain tiles and
+native building stamps as the shared Johto renderer, including roof layers and
+animated water/flowers. Paths and building footprints are compact, with gardens,
+groves and furnished interiors. Existing door anchors stay fixed; older saves on
+newly blocked scenery recover to nearby open ground. Music currently uses
+existing game tracks. Shared battles retain the project’s battle rules; the
+imported teams, wild moves and starters use their Gen 5 source moves. Dialogue
+and events are adapted to the browser interface. The C-Gear does not provide DS
+wireless/online services, and its regional itinerary is not a full Unova
+graphical Town Map. The regional Trainer Card is not the complete native BW2
+card/stars system. No BW1 story coverage is implied by this opening.
 
 ## Rebuilding and checking
 
@@ -69,6 +74,8 @@ uses the project’s PNG utilities. `tests/browser/unova.js` drives real battles
 through both Gyms, the opening quests, device controls and saved reloads.
 `tests/browser/unova-services.js` checks workers, Bag use, blackout/nurses and
 grass battles; `tests/browser/unova-shop.js` checks purchases and PC withdrawal.
+`tests/browser/unova-maps.js` checks refreshed scenery, roof/animation loading,
+physical doorway entrances/returns and saved reloads.
 
 Remaining campaign and feature work is tracked in
 [the Unova checklist](unova-completion.md). The current harbor and studio NPCs

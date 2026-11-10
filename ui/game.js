@@ -11647,6 +11647,7 @@
   }
 
   async function explore() {
+    Unova.recover(player);
     Unova.visit(player,player.location.map);
     SinnohDaily.correctLocation(player);
     SinnohPark.recover(player);
