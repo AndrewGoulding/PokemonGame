@@ -3164,7 +3164,7 @@ your mother, Jovi as your sister) are left out, and Lily's and Krane's welcome a
 words, matched to its speakers by what they say. Orre's level cap is XD's own while its story's on
 (`player.flags.xdLevelCap`, 15 at the start). Supertrainer Aferd battles you on the plaza (`tests/browser/xd-hq-lab.js`).
 Its second chapter: Lily's errand for the Purify Chamber's **Machine Part**, Jovi (Lily's daughter, your companion
-here, still calling you "big brother") with you (7); **Gateon Port** (drawn; its Pokémon Center, Mart, Parts Shop and
+here, calling you by name where XD's Jovi says "big brother") with you (7); **Gateon Port** (drawn; its Pokémon Center, Mart, Parts Shop and
 Emili's house; the Krabby Club shut for now), where Jovi bumps into Zook and Mr. Verich's man Ardos sees him off (8);
 Perr at the pier (9); **Kaminko's House**, Chobin's battle at the gate, Makan inside (10); the Machine Part from Perr
 (11); back to Lily, who sends you to Agate's Eagun and the Relic Stone (12, which purifies XD's Shadow Pokémon too).
@@ -3179,7 +3179,13 @@ XD's Shadow Pokémon have **Reverse Mode**, not Hyper Mode (`engine/battle.js`):
 usable; after acting they may go into it (likelier the more the heart's opened; the odds are this game's own), and
 it doesn't cost the turn; in it they hurt themselves 1/16 of their HP each turn, take no item but a Scent, may
 disobey with a non-Shadow move, and come out of it only by a Call or a Scent, never by themselves (XD's words)
-(`tests/xd-reverse-test.js`, `tests/xd-chamber-test.js`, `tests/browser/xd-chapter2.js`). XD's text: `assets/text/xd.json`, XD's
+(`tests/xd-reverse-test.js`, `tests/xd-chamber-test.js`, `tests/browser/xd-chapter2.js`). Its third chapter, **Agate
+Village**: at Eagun's house Beluh greets you and Eagun runs in, all ready, and off ahead to the Relic Stone (13); his
+four friends in the Relic Cave (Jols, Gorps, Ladi, Cron) battle you as often as you like to help open a Shadow
+Pokémon's heart, if you've one in your party; Eagun and his Pikachu at the Relic Stone, then, its heart ready, your
+Shadow Pokémon purified there (14); back at his house, Vander on Mt. Battle, who saw sinister characters in the desert,
+and your P★DA number (15) (`tests/browser/xd-chapter3.js`). Eagun's house is Colosseum's, its own scenes as before
+outside XD's story. XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
 `node tools/build-colosseum-text.js --out xd.json <the disc's files folder>` (as Colosseum's are, into
 `assets/text/colosseum.json`; a European disc's other-language archives are left out). Its Trainers and Shadow

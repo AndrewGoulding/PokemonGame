@@ -6267,6 +6267,42 @@
           "Battle Coach: I've tested it out\nbefore. The opposing Pokémon was\nincredibly lifelike. It made me", "shiver even though I knew it wasn't\nreal."]);
         return;
       case "PokemonHQLab_EventScript_Aferd": await xdAferd(); return;
+      // ---- Agate (XD's chapter 3): Eagun's house, his friends in the Relic Cave, Eagun at the Relic Stone. ----
+      case "enter:AgateVillage_EaguansHouse":
+        if (story === 12) { await xdEagunWelcome(); return; }
+        if (story === 14) { await xdEagunVander(); return; }
+        await eagunsHouseScene();   // (Colosseum's)
+        return;
+      case "AgateVillage_EaguansHouse_EventScript_Eagun":
+        if (story >= 15) { await say(["Eagun: Fine! If I hear of anything, I\nwill make certain to get in touch\nwith you."]); return; }
+        await eagunsHouse(script);   // (Colosseum's)
+        return;
+      case "AgateVillage_EaguansHouse_EventScript_Beluh":
+        if (story === 13) { await say(["Beluh: The cave to the Relic Forest\nis down the slope beside the Pokémon\nCenter.", "Beluh: Good luck purifying your\nShadow Pokémon!"]); return; }
+        if (story >= 15) { await say(["Beluh: For someone so young, you've\nalready shown yourself to be\nadmirable.", "Beluh: You have the air of someone\nwho is about to accomplish great\nthings.",
+          "Beluh: Oh, dear, I'm sorry. The\ninstincts of an old woman like me\naren't anything you could trust."]); return; }
+        await eagunsHouse(script);   // (Colosseum's)
+        return;
+      case "AgateVillage_RelicCave_EventScript_XD_JOLS": await xdHelper(25, {
+        none: ["Jols: I'll help you purify your\nShadow Pokémon by having a battle", "with you. Are you ready to get\nstarted?", "Jols: Huh? You don't have a Shadow\nPokémon in your party? Then, there's\nno point in us battling.", "Jols: Come back, and bring at least\none Shadow Pokémon with you."],
+        ask: ["Jols: I'll help you purify your\nShadow Pokémon by having a battle", "with you. Are you ready to get\nstarted?"], yes: ["Jols: Okay! Then let's get with it!"],
+        no: ["Jols: Huh? We're not going to battle?\nWell, just give me the word when\nyou're in the mood to battle."], defeat: ["Jols: Handed the loss!"],
+        after: ["Jols: To open up the closed heart of\na Shadow Pokémon, entering it in\nbattles is effective.", "Jols: That's why you should make\nShadow Pokémon battle whenever", "possible. I hope your Shadow Pokémon\nget purified soon!"] }); return;
+      case "AgateVillage_RelicCave_EventScript_XD_GORPS": await xdHelper(24, {
+        none: ["Gorps: {PLAYER}, aren't you? I heard\nabout you from Eagun. Let's battle\nright away!", "Gorps: Huh? There's no Shadow Pokémon\nin your party?", "Gorps: This battle is to help purify\nShadow Pokémon. Hurry up and go bring\nat least one."],
+        ask: ["Gorps: {PLAYER}, aren't you? I heard\nabout you from Eagun. Let's battle\nright away!"], yes: ["Gorps: Here we go!"], no: ["Gorps: Oh, weren't you ready to\nbattle?"], defeat: ["Gorps: Wow, that was something."],
+        after: ["Gorps: Wasn't that a good battle? I\nlearned something from it, too.", "Gorps: Oh, yes. You know how a Shadow\nPokémon sometimes begins behaving\nstrangely in battle?", "Gorps: If that happens, calling out\nto that Shadow Pokémon is supposed to\nhelp."] }); return;
+      case "AgateVillage_RelicCave_EventScript_XD_LADI": await xdHelper(26, {
+        none: ["Ladi: Well, well. Let this old woman\ncome to the aid of pitiful Pokémon.", "Ladi: Oh? But you have not one Shadow\nPokémon in your party.", "Ladi: There isn't much that I can do\nto help, then."],
+        ask: ["Ladi: Well, well. Let this old woman\ncome to the aid of pitiful Pokémon.", "Ladi: Are you ready to begin?"], yes: ["Ladi: I wonder how our battle will\nturn out? I'm eager to find out."],
+        no: ["Ladi: Oh, dear. Off you go, then. Get\nready quickly."], defeat: ["Ladi: Oh dear, oh me, oh my!"],
+        after: ["Ladi: My, you are impressive. That\nPokémon should soon open its heart to\nyou.", "Ladi: Oh, yes. I should tell you this\nuseful bit of information.", "Ladi: I hear that if a Pokémon has a\nclosed heart, it's good to keep it\nwith you.", "Ladi: Rather than keeping it in the\nPC Storage System, you should keep it\nwith you at all times."] }); return;
+      case "AgateVillage_RelicCave_EventScript_XD_CRON": await xdHelper(27, {
+        none: ["Cron: You've kept me waiting! I hear\nthat you have Shadow Pokémon.", "Cron: Oh, but you don't have a single\none in your party? What good is that,\nthen?"],
+        ask: ["Cron: At times an ordinary old man!\nAt others a plain senior citizen!", "Cron: But my true identity…", "Cron: The legendary Trainer! Eagun\nbeat me! But only him! I'm Cron!", "Cron: Now, now! For the sake of your\nShadow Pokémon, we shall have a hot\nbattle!"],
+        yes: ["Cron: Bring it on!"], no: ["Cron: What, you don't want to do\nthis? I'm all pumped up and ready to\ngo!"], defeat: ["Cron: Hot! A hot battle that was!"],
+        after: ["Cron: It dismays me to see that\nShadow Pokémon have appeared again.\nIt's a sad world we live in."] }); return;
+      case "RelicForest_EventScript_XD_EAGUN": await xdShrine(); return;
       case "PokemonHQLab_1F_EventScript_Jovi":
         await say(f.xdChamber ? ["Jovi: That Machine Part Jovi carried\nis on that big machine. They put it\non the middle part with the ring.", "Jovi: It went right in the middle. It\nmust be the most important part!"]
           : ["Jovi: Jovi can do it!"]);
@@ -6326,7 +6362,7 @@
         return;
       case "KaminkosHouse_1F_EventScript_Makan":
         if (story === 9) {
-          await say(["Jovi: Wrong! Today, we are going to\nGateon Port on a very important job.\nBig brother is Jovi's assistant!"]);
+          await say(["Jovi: Wrong! Today, we are going to\nGateon Port on a very important job.\n{PLAYER} is Jovi's assistant!"]);
           await say("{PLAYER} explained what had been\nhappening to Makan.");   // (#44134)
           await say(["Makan: What was that?! The HQ Lab's\nDirector was abducted? That's\nterrible…", "Makan: Their modus operandi… It feels\nsimilar to that incident five years\nago. It may be Cipher.",
             "Makan: But one can't conclusively say\nthat. Before we get to thinking, you\nneed your Machine Part.", "Makan: It's waiting for you at my\nshop in Gateon Port. Have a word with\nmy grandson Perr. He should know."]);
@@ -6405,7 +6441,7 @@
   }
   // Lily's errand (XD's #40488-#40494): the Machine Part for the Purify Chamber, from Gateon Port's Parts Shop, with
   // Jovi along (xdStory 6 -> 7). (Jovi, Lily's daughter, is your companion here, not your sister; she still calls
-  // you "big brother", as XD's Jovi does.)
+  // you by your name, where XD's Jovi says "big brother".)
   async function xdErrand() {
     const f = player.flags;
     Overworld.addObject(XD("JOVI"), { x: 2, y: 4, facing: "left" });
@@ -6413,7 +6449,7 @@
     await say(["Jovi: Jovi knows the Parts Shop! It's\nnext door to Emili's house!", "Jovi: Mommy, can Jovi go? Jovi wants\nto help everyone!"]);
     await say(["Lily: Jovi, I appreciate your offer.\nI know you want to help. But, it's an\nimportant component…", "Lily: …Okay. Jovi, you're a member of\nthe Lab's staff, too. You may go if\nyou take {PLAYER} with you."]);
     await say(["Lily: Dear, would you mind going with\nJovi?"]);
-    await say(["Jovi: Okay, Mommy! Big brother is\nJovi's assistant! You have to listen\nto Jovi, big brother!"]);
+    await say(["Jovi: Okay, Mommy! {PLAYER} is Jovi's\nassistant! You have to listen to\nJovi, {PLAYER}!"]);
     await say(["Jovi: Off we go to Gateon Port!"]);
     await say(["Lily: {PLAYER}, Jovi, both of you be\nvery careful, please. I'm counting on\nyou two!"]);
     Overworld.removeObject(XD("JOVI"));
@@ -6436,8 +6472,8 @@
     }
     const J = XD("JOVI_PORT"), Z = XD("ZOOK"), V = XD("VERICH"), A1 = XD("ARDOS"), A2 = XD("ELDES"), E = XD("EMILI");
     Overworld.addObject(J, { x: at.x + 1, y: at.y, facing: "down" });
-    await say(["Jovi: Wow, big brother! Look, look!\nIt's the sea! The sea! It's so big!"]);
-    await say(["Jovi: Listen, listen! The Parts Shop\nis over there! Hurry, big brother!"]);
+    await say(["Jovi: Wow, {PLAYER}! Look, look! It's\nthe sea! The sea! It's so big!"]);
+    await say(["Jovi: Listen, listen! The Parts Shop\nis over there! Hurry, {PLAYER}!"]);
     Screen.say("");
     Overworld.addObject(Z, { x: at.x + 1, y: at.y + 5, facing: "up" });
     await Overworld.act([{ who: J, moves: ["walk_fast_down", "walk_fast_down", "walk_fast_down", "walk_fast_down"] }]);
@@ -6472,7 +6508,7 @@
     await say(["Emili: Jovi?"]);
     await say(["Jovi: Oh! Emili and Acri!"]);
     await say(["Emili: So it was you, Jovi, being\nharassed by that big, strange man.\nWere you okay?"]);
-    await say(["Jovi: Yup, strong people helped us.\nBig brother was there, too, so\nnothing bad happened.", "Jovi: Jovi came here on an important\nvisit. Big brother is Jovi's\nassistant today!"]);
+    await say(["Jovi: Yup, strong people helped us.\n{PLAYER} was there, too, so nothing\nbad happened.", "Jovi: Jovi came here on an important\nvisit. {PLAYER} is Jovi's assistant\ntoday!"]);
     await say(["Emili: Okay, bye-bye, Jovi!"]);
     Overworld.removeObject(E);
     Overworld.removeObject(J);
@@ -6601,6 +6637,103 @@
         await persist();
       }
     }
+  }
+  // Eagun's house as you first come in XD's story (XD's #38056-#38064): Beluh, then Eagun bursting in, all ready
+  // for you, and off ahead of you to the Relic Stone (xdStory 12 -> 13).
+  async function xdEagunWelcome() {
+    const f = player.flags, E = ORRE("EAGUN");
+    await say(["Beluh: Hello, what a darling Trainer\nyou are! I'm Beluh. Did you want\nsomething of me?", "Beluh: Oh? Eagun, you say. Ah, so\nyou've come calling to see my\nhusband.",
+      "Beluh: Are you perhaps {PLAYER}?"]);
+    await say(["Beluh: Ah, just as I thought! You are\n{PLAYER}! We've been expecting you!"]);
+    await say(["Beluh: We got word about you from\nLily, you see. We understand that you\nwant to purify Shadow Pokémon.", "Beluh: The instant my husband heard\nfrom Lily, why, you should have seen\nhis excitement and enthusiasm.",
+      "Beluh: Shouting, \"This calls for my\nservices!\" or some such, he went off", "running to who knows where. He hasn't\ncome back since."]);
+    sfx("se_door");
+    Overworld.addObject(E, { x: 3, y: 7, facing: "up" });
+    await say(["Eagun: Beluh, dear! I've got\neverything ready! We're ready for our", "visitor from the HQ Lab whenever he\narrives… Oh?!"]);
+    await say(["Beluh: Oh, hello, dear. Our guest,\n{PLAYER}, has just arrived."]);
+    await say(["Eagun: Oh, so you're {PLAYER}! We've\nbeen waiting! I'm Eagun!", "Eagun: I've heard everything that\nLily had to say.", "Eagun: As you know, to purify a\nShadow Pokémon, it must open its\nheart to the Trainer.",
+      "Eagun: While there are several\napproaches, battles are the best, no\ndoubt at all!", "Eagun: The place to do that here is\nin the Relic Forest, which is home to", "the Relic Stone. I will go ahead and\nwait for you there!"]);
+    Screen.say("");
+    sfx("se_door");
+    Overworld.removeObject(E);
+    await say(["Beluh: My husband is so impatient, as\nyou've just seen.", "Beluh: In his day, he was hailed as\nthe greatest Trainer. But that's a\nlong time ago."]);
+    await say(["Beluh: The cave to the Relic Forest\nis down the slope beside the Pokémon\nCenter.", "Beluh: Good luck purifying your\nShadow Pokémon!"]);
+    f.xdStory = 13;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // One of Eagun's friends in the Relic Cave (XD's #38065-#38087): a battle to help open a Shadow Pokémon's heart, as
+  // often as you like, with one in your party that can battle.
+  async function xdHelper(index, w) {
+    const shadows = player.party.filter((r) => r.shadow);
+    if (!shadows.length || shadows.every((r) => !(r.hp > 0))) { await say(w.none); return; }
+    if (w.ask.length > 1) await say(w.ask.slice(0, -1));
+    if (!(await confirm(w.ask[w.ask.length - 1]))) { await say(w.no); return; }
+    await say(w.yes);
+    const t = Orre.XD.trainer(index, null, w.defeat);
+    const outcome = await storyBattle({ foe: { name: t.name, team: t.team, pic: t.pic }, double: t.team.length > 1, prizeClass: "Cooltrainer", noBlackout: true, defeatText: t.defeat });
+    if (outcome !== "won") return;
+    await say(w.after);
+    await persist();
+  }
+  // Eagun at the Relic Stone (XD's #38090-#38097): his Pikachu, then your Shadow Pokémon's heart; ready, the Relic
+  // Stone purifies it (xdStory 13 -> 14); not yet, back again when it is.
+  async function xdShrine() {
+    const f = player.flags, shadows = player.party.filter((r) => r.shadow);
+    if (!shadows.length) { await say(["Eagun: Hah? What's that you say? You\nhave no Shadow Pokémon in your party?", "Eagun: Quick! Go get one!"]); return; }
+    if (shadows.every((r) => !(r.hp > 0))) { await say(["Eagun: Hah? What's that you say? The\nShadow Pokémon in your party…\n…Fainted?", "Eagun: That's shameful! Go heal your\nShadow Pokémon at once!"]); return; }
+    if (!f.xdEagun) {
+      await say(["Eagun: Your Shadow Pokémon should be\nready to open its heart after the\nbattles you've waged getting here.", "Eagun: Now I shall be your opponent.",
+        "Eagun: And here's my partner. The one\nPokémon that I caught as my first…", "and that has stayed with me ever\nsince.",
+        "Eagun: Go, Pikachu! Off we go to our\nfirst battle in five years! Let's\nkeep things tight!"]);
+      const t = Orre.XD.trainer(28, null, ["Eagun: Oh! Bravo! I say, bravo!"]);
+      const outcome = await storyBattle({ foe: { name: t.name, team: t.team, pic: t.pic }, double: t.team.length > 1, prizeClass: "Leader", noBlackout: true, defeatText: t.defeat });
+      if (outcome !== "won") return;
+      f.xdEagun = true;
+      await say(["Eagun: My goodness. It was a\nwhite-hot experience, our battle.", "Eagun: And to defeat my Pikachu… That\ntakes real skill!"]);
+      await say(["Pikachu: Pikka pikaaa!"]);
+      await persist();
+    }
+    await say(["Eagun: Now, let's see how your Shadow\nPokémon is doing."]);
+    const ready = shadows.filter((r) => !((r.heart | 0) > 0));
+    if (!ready.length) {
+      await say(["Eagun: Hmm… This Pokémon isn't quite\nready to open its heart to you.", "Eagun: You should travel some more\nwith it, or perhaps give it Cologne\nMassages. After it's been exposed to",
+        "some more of your kindness, bring it\nback here.", "Eagun: Of course, if you would rather\nbattle, my four friends are waiting", "like before. They're ready to do\nbattle as often as you wish."]);
+      return;
+    }
+    await say(["Eagun: Ah, this Pokémon is on the\nverge of opening its heart to you!", "You've done a good job looking after\nit."]);
+    // (The Relic Stone's words, XD's M3_shrine_1F_rl: Colosseum's same.)
+    await say(["This is a mystical relic. It seems to\nbe giving off a strange and fantastic\npower."]);
+    for (const r of ready) {
+      await Overworld.flash();
+      sfx("se_m_reflect");
+      await purifyWithWords(r);
+    }
+    await say(["Eagun: Well done! That Pokémon has\nfinally returned to its former self.", "Eagun: For the time being, we should\nreturn to my house."]);
+    f.xdStory = 14;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Back at Eagun's (XD's #38099-#38109): Prof. Krane and the Relic Stone, and Vander on Mt. Battle, who saw sinister
+  // characters out in the desert (xdStory 14 -> 15).
+  async function xdEagunVander() {
+    const f = player.flags;
+    await say(["Eagun: This is a cause for\ncelebration! You've successfully", "purified your first Shadow Pokémon\nwithout incident.",
+      "Eagun: Still, one can't be too happy,\nnot with the knowledge of Prof.\nKrane's abduction.", "Eagun: You see, he was a frequent\nvisitor to Agate up to several years\nago. He was conducting extensive",
+      "research into the Relic Stone, you\nsee.", "Eagun: He said that it was for\ncompleting an entirely new purifying\nsystem that his friend thought up.",
+      "Eagun: I wonder where the kidnappers\nhave made off with Prof. Krane. It\nmust be worrisome for you, too."]);
+    await say(["Beluh: About that abduction, dear…\nDidn't you need to mention what\nVander saw?"]);
+    await say(["Eagun: Hm? Ah, yes! That's right! I\nneeded to tell you about Vander."]);
+    await say(["Eagun: We have a friend by the name\nof Vander who lives on Mt. Battle,", "which is a place of training for\nTrainers.", "Eagun: Vander claims to have seen\nsinister characters out in the",
+      "desert, where few people dare to\ntread."]);
+    await say(["Beluh: The story of shady people in\nthe desert has me concerned, too.", "Beluh: You should speak with Vander\nin person for details. Mt. Battle is\nto the northeast of this village.",
+      "Beluh: Vander is an Area Leader on\nMt. Battle, so you should have no\ntrouble finding him."]);
+    await say(["Eagun: Oh, yes, {PLAYER}. May I have\nyour P★DA number?"]);
+    await say("{PLAYER} gave the P★DA number to\nEagun.");
+    await say(["Eagun: Fine! If I hear of anything, I\nwill make certain to get in touch\nwith you."]);
+    Orre.unlock(f, "MtBattle");
+    f.xdStory = 15;
+    await persist();
   }
   // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.
   async function xdAferd() {

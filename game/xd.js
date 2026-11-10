@@ -10,7 +10,8 @@
 // 7 Lily's errand: Jovi with you to Gateon Port for the Machine Part, 8 Zook and Mr. Verich at the port, 9 Perr's sent
 // you to Kaminko's (xdChobin: Chobin's let you in), 10 Makan's sent you back to Perr, 11 the Machine Part's yours,
 // 12 it's Lily's, and she's sent you to Agate's Eagun (xdChamberDue: the Purify Chamber's finished when you're back;
-// xdChamber, it is).
+// xdChamber, it is), 13 Eagun's met you at home and gone ahead to the Relic Stone, 14 he's battled you there and your
+// Shadow Pokémon's purified (xdEagun: he's been beaten), 15 he's told you of Vander on Mt. Battle.
 // player.flags.xdShadowSnagged: the XD Shadow Pokémon snagged, by their id in XD_DECKS.shadow.
 //
 //   Orre.XD.PLACE                       // the HQ Lab on Orre's map
@@ -62,10 +63,16 @@
       if (p.item) r.item = p.item;
       team.push(r);
     }
-    return { name: t.cls + " " + t.name, cls: t.cls, female: t.female, pic: (Orre.picFor && Orre.picFor(t.cls, t.female)) || PICS[t.cls] || "cipher_peon",
+    return { name: t.cls + " " + t.name, cls: t.cls, female: t.female,
+      pic: (t.female && PICS_F[t.cls]) || (Orre.picFor && Orre.picFor(t.cls, t.female)) || PICS[t.cls] || "cipher_peon",
       team, shadows, defeat: defeat || null };
   }
-  const PICS = { "Spy": "cipher_peon", "Thug": "burglar", "Researcher": "scientist", "Cipher Peon": "cipher_peon", "Cipher Admin": "cipher_peon" };
+  // (XD's classes' battle pictures, where game/orre-trainers.js's Colosseum ones don't have them: a woman's where
+  // there is one.)
+  const PICS = { "Spy": "cipher_peon", "Thug": "burglar", "Researcher": "scientist", "Cipher Peon": "cipher_peon", "Cipher Admin": "cipher_peon",
+    "Supertrainer": "em_cooltrainer_m", "Matron": "em_expert_f", "Fun Old Man": "em_expert_m", "Myth Trainer": "em_expert_m", "Kaminko Aide": "scientist",
+    "Navigator": "gentleman", "Sailor": "em_hiker", "Casual Guy": "juggler", "Casual Dude": "juggler", "Wanderer": "em_ruin_maniac" };
+  const PICS_F = { "Supertrainer": "em_cooltrainer_f", "Cooltrainer": "em_cooltrainer_f" };
 
   // The HQ Lab's people: (map, key, x, y, facing, script, sprite, visible).
   const PEOPLE = [
@@ -101,8 +108,18 @@
     ["KaminkosHouse", "CHOBIN", 13, 16, "face_down", "KaminkosHouse_EventScript_Chobin", "em_boy_3", (f) => !f.xdChobin],
     ["KaminkosHouse_1F", "CHOBIN_IN", 4, 3, "face_down", "KaminkosHouse_1F_EventScript_Chobin", "em_boy_3", (f) => !!f.xdChobin],
     ["KaminkosHouse_1F", "MAKAN", 7, 3, "face_down", "KaminkosHouse_1F_EventScript_Makan", "em_old_man", (f) => story(f) < 12],
-    ["KaminkosHouse_1F", "KAMINKO", 16, 3, "face_left", "KaminkosHouse_1F_EventScript_Kaminko", "em_scientist_1", () => true]
+    ["KaminkosHouse_1F", "KAMINKO", 16, 3, "face_left", "KaminkosHouse_1F_EventScript_Kaminko", "em_scientist_1", () => true],
+    // Agate (XD's M3): Eagun's four friends in the Relic Cave, there to battle and help open a Shadow Pokémon's heart,
+    // from Lily's sending you (12); Eagun himself at the Relic Stone, waiting for you (13).
+    ["AgateVillage_RelicCave", "JOLS", 6, 6, "face_down", "AgateVillage_RelicCave_EventScript_XD_JOLS", "em_woman_4", (f) => story(f) >= 12],
+    ["AgateVillage_RelicCave", "GORPS", 7, 9, "face_right", "AgateVillage_RelicCave_EventScript_XD_GORPS", "em_man_1", (f) => story(f) >= 12],
+    ["AgateVillage_RelicCave", "LADI", 15, 15, "face_left", "AgateVillage_RelicCave_EventScript_XD_LADI", "em_old_woman", (f) => story(f) >= 12],
+    ["AgateVillage_RelicCave", "CRON", 12, 5, "face_right", "AgateVillage_RelicCave_EventScript_XD_CRON", "em_old_man", (f) => story(f) >= 12],
+    ["RelicForest", "EAGUN", 10, 7, "face_down", "RelicForest_EventScript_XD_EAGUN", "em_old_man", (f) => story(f) === 13]
   ];
+  // (Colosseum's Eagun at home is out when you first come in XD's story (he runs in) and at the Relic Stone while he
+  // waits for you there: his own rule otherwise, game/orre.js's.)
+  Orre.EXTRA_VISIBLE.LOCALID_ORRE_EAGUN = (f) => (story(f) === 12 || story(f) === 13 ? false : (f.orreStory | 0) !== 29);
   for (const [map, key, x, y, facing, script, sprite, vis] of PEOPLE) {
     Orre.EXTRA_VISIBLE[ID(key)] = vis;
     const m = W[map];
@@ -111,7 +128,12 @@
       text: null, localId: ID(key), sprite, width: 16, height: 32, frames: 9 });
   }
   const SCRIPTS = [...new Set(PEOPLE.map((p) => p[5]))].concat(["enter:PokemonHQLab_1F", "enter:PokemonHQLab", "arrive:PokemonHQLab",
-    "arrive:GateonPort", "enter:GateonPort", "GateonPort_EventScript_KrabbyClub", "PokemonHQLab_1F_EventScript_PurifyChamber"]);
+    "arrive:GateonPort", "enter:GateonPort", "GateonPort_EventScript_KrabbyClub", "PokemonHQLab_1F_EventScript_PurifyChamber",
+    // (Colosseum's own scripts for Eagun's house, XD's while its story's at Agate: ui/game.js's xdScene hands the rest
+    // back to Colosseum's.)
+    "enter:AgateVillage_EaguansHouse", "AgateVillage_EaguansHouse_EventScript_Eagun", "AgateVillage_EaguansHouse_EventScript_Beluh"]);
+  // (Whether XD's story is at Agate: Lily's sent you (12) till Eagun's had your P★DA number (15) and after.)
+  const atAgate = (f) => story(f) >= 12;
   // A room's scene as you come in: Lily in the lobby the first time (2); Cipher outside with Krane (5); Jovi and Zook
   // at Gateon Port (7); the Purify Chamber finished as you come back into the lobby from a trip once Lily's had the
   // Machine Part (xdChamberDue, xdChamberAway: ui/game.js's orreWorldMap).
@@ -119,10 +141,12 @@
     if (script === "enter:PokemonHQLab_1F") return story(f) === 2 || (!!f.xdChamberDue && !!f.xdChamberAway);
     if (script === "enter:PokemonHQLab" || script === "arrive:PokemonHQLab") return story(f) === 5;
     if (script === "enter:GateonPort" || script === "arrive:GateonPort") return story(f) === 7 && !f.xdGateonScene;
+    // (Eagun's house: Beluh, then Eagun, as you first come (12); back from the Relic Stone (14).)
+    if (script === "enter:AgateVillage_EaguansHouse") return story(f) === 12 || story(f) === 14;
     return false;
   }
 
   // Gateon Port's Mart (XD's: its first selection, Poké Balls and Poké Snacks among the usual).
   const GATEON_MART = ["poke-ball", "great-ball", "potion", "super-potion", "antidote", "paralyze-heal", "awakening", "burn-heal", "ice-heal", "repel"];
-  Orre.XD = { PLACE, GATEON, KAMINKO, EEVEE, SCRIPTS, sceneDue, shadowRecord, trainer, ID, GATEON_MART };
+  Orre.XD = { PLACE, GATEON, KAMINKO, EEVEE, SCRIPTS, sceneDue, shadowRecord, trainer, ID, GATEON_MART, atAgate };
 })();
