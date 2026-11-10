@@ -35,7 +35,7 @@ module.exports=function(root){
   if(!m.unovaTheme)landscape(m);
   const kinds={'sand-grass':'sand',lawn:'grass',grass:'tallgrass','dark-grass':'tallgrass',paving:'pavement',wood:'bridge',fence:'fence',floor:'pavement',stage:'pavement'};
   const cave=['cave','sewer','sand-cave','charged'].includes(m.unovaTheme),style=cave?'cave':'outdoor';
-  const classes=m.art.tiles.map((k,i)=>k==='lawn'?(m.collision[i]?(cave?'rock':'tree'):(cave?'path':'grass')):k==='grass'&&cave?'path':kinds[k]||k);
+  const classes=m.art.tiles.map((k,i)=>k==='lava'?'rock':k==='lawn'?(m.collision[i]?(cave?'rock':'tree'):(cave?'path':'grass')):k==='grass'&&cave?'path':kinds[k]||k);
   const signs=m.signs.map(s=>[s.x,s.y,'sign']);
   for(const [x,y]of signs)classes[y*m.width+x]='object';
   const pic=Painter.compose(classes.map(k=>k==='building'?'grass':k),m.width,m.height,{signs,noFill:true,style});
@@ -55,6 +55,8 @@ module.exports=function(root){
   }
   const c=canvas(m.width*16,m.height*16);c.data.set(pic.below);
   for(let k=0;k<m.art.tiles.length;k++)if(m.art.tiles[k]==='dark-grass'){const ox=(k%m.width)*16,oy=Math.floor(k/m.width)*16;for(let y=0;y<16;y++)for(let x=0;x<16;x++)for(let channel=0;channel<3;channel++){const i=((oy+y)*c.w+ox+x)*4+channel;c.data[i]*=[.62,.74,.7][channel];pic.above[i]*=[.62,.74,.7][channel];}}
+  for(let k=0;k<m.art.tiles.length;k++)if(m.art.tiles[k]==='lava')tile(c,'../../unova/reversal-lava',0,0,k%m.width,Math.floor(k/m.width));
+  if(m.unovaFrozen)for(const layer of [c.data,pic.above,...pic.anim.pics])for(let i=0;i<layer.length;i+=4)if(layer[i+3]){const light=(layer[i]+layer[i+1]+layer[i+2])/3;layer[i]=Math.round(light*.45+120);layer[i+1]=Math.round(light*.4+140);layer[i+2]=Math.round(light*.3+174);}
   m.top=true;writePng(path.join(out,m.name+'-top.png'),c.w,c.h,pic.above);
   if(m.unovaDive){const cells=[];for(let i=0;i<pic.anim.cells.length;i+=4){const x=Math.floor(pic.anim.cells[i]/2),y=Math.floor(pic.anim.cells[i+1]/2);if(m.behavior[y*m.width+x]!==0x11)cells.push(...pic.anim.cells.slice(i,i+4));}pic.anim.cells=cells;}
   if(pic.anim.pics.length){writeAnimSheet(path.join(out,m.name+'-anim.png'),pic.anim.pics);m.anim={cells:pic.anim.cells,anims:pic.anims};}

@@ -1,7 +1,7 @@
 # Unova Town Map
 
 The native Town Map now includes Unova, opens on the current region, and
-locates all 341 imported maps, including dungeon floors, Centers, activity
+locates all imported maps, including dungeon floors, Centers, activity
 rooms and scripted travel destinations. Previously visited Unova towns are
 available on this page from other regions. R switches regions; arrows move
 the cursor; Fly selects only destinations already visited in the saved Unova

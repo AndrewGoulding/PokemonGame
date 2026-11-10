@@ -49,6 +49,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Source dungeon-floor alignment, 28 additional rooms, active indoor encounters and five field healers ([scope](unova-dungeons.md))
 - [ ] Remaining field-item banks, gifts, optional houses and encounter audit
 - [x] Source Easy/Challenge levels and alternate teams, saved keys and local sharing ([scope](unova-modes.md))
+- [x] Versioned Reversal Mountain rooms and phased Giant Chasm forest ([scope](unova-versioned.md))
 - [ ] Remaining version-specific geometry and campaign-event audit
 - [ ] Black / White original campaign, gyms, rivals, N ending and postgame
 - [x] Regional Town Map, visited Fly navigation and version/season habitat browser ([scope](unova-town-map.md))
