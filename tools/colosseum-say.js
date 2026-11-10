@@ -5,6 +5,7 @@
 //
 //   node tools/colosseum-say.js <table> <id> [speaker]   // e.g. M1_houseA_1F/M1_houseA_1F 20246 Folly
 //   node tools/colosseum-say.js --find <text>              // where a line is: table, id and the line
+//   node tools/colosseum-say.js --xd …                     // the same from Pokémon XD's words (assets/text/xd.json)
 //
 // In code: require("./colosseum-say").pages(text, speaker) -> ["…\n…", …]
 "use strict";
@@ -55,10 +56,12 @@ function pages(text, speaker) {
 module.exports = { pages, fixCase };
 
 if (require.main === module) {
-  const T = require(path.join(__dirname, "../assets/text/colosseum.json"));
-  const [a, b, c] = process.argv.slice(2);
+  const args = process.argv.slice(2), xd = args[0] === "--xd";
+  if (xd) args.shift();
+  const T = require(path.join(__dirname, "../assets/text/" + (xd ? "xd.json" : "colosseum.json")));
+  const [a, b, c] = args;
   if (a === "--find") {
-    const q = process.argv.slice(3).join(" ").toLowerCase();
+    const q = args.slice(1).join(" ").toLowerCase();
     for (const [t, m] of Object.entries(T)) for (const [id, s] of Object.entries(m)) if (s.toLowerCase().replace(/\s+/g, " ").includes(q)) console.log(t, id, JSON.stringify(s));
   } else {
     const s = (T[a] || {})[b];

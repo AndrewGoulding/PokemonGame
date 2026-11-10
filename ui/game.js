@@ -360,6 +360,7 @@
     get coloTrainer() { return coloTrainer; },
     get dayCareLady() { return dayCareLady; },
     get pyriteExtra() { return pyriteExtra; },
+    get xdScene() { return xdScene; },
     get preGymJusty() { return preGymJusty; },
     get orreTravel() { return orreTravel; },
     get orreMail() { return orreMail; }, get orreMailDue() { return orreMailDue; }, get orreMailWaiting() { return !!(orreMailPending && orreMailPending.length); },
@@ -3648,7 +3649,7 @@
       "PhenacCity_EventScript_Trudly", "PhenacCity_MayorsHouse_EventScript_EsCade", "PhenacCity_PreGym_EventScript_Justy",
       "arrive:PyriteTown", "enter:PyriteTown", "PyriteTown_DukingsHouse_EventScript_Duking", "PyriteTown_DukingsHouse_EventScript_Marcia",
       "PyriteTown_DukingsHouse_EventScript_Secc", "PyriteTown_PyriteBuilding_1F_EventScript_Nore", "enter:PyriteTown_PyriteBuilding_4F",
-      "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS), ...Orre.PYRITE_SCRIPTS, ...Object.keys(Orre.COLO_TRAINERS),
+      "enter:PyriteCave_MirorBHideout", ...Object.keys(Orre.SHADOW_TRAINERS), ...Orre.PYRITE_SCRIPTS, ...Orre.XD.SCRIPTS, ...Object.keys(Orre.COLO_TRAINERS),
       "enter:AgateVillage_EaguansHouse", "AgateVillage_EaguansHouse_EventScript_Eagun", "AgateVillage_EaguansHouse_EventScript_Beluh", OrreDayCare.SCRIPT,
       "AgateVillage_EventScript_Skrub", "AgateVillage_EventScript_Peon", "AgateVillage_EventScript_RelicStone", "RelicForest_EventScript_Shrine",
       "AgateVillage_EventScript_CologneGirl", "AgateVillage_EventScript_MartClerk", ...Object.keys(Orre.TOURNAMENTS), "MtBattle_EventScript_Challenge",
@@ -6184,7 +6185,148 @@
     await say(["Oak: I knew it! My plane is ready to\nfly you to the Orre Air Strip.",
       "Prof. Krane's lab is in the south of\nOrre. Good luck, {PLAYER}!"]);
     f.xdStory = 2;
+    Orre.unlock(f, Orre.XD.PLACE.map);
     await flyToOrre(true);
+  }
+  // XD's opening at the Pokémon HQ Lab (game/xd.js; XD's words, tools/colosseum-say.js --xd, but where marked):
+  // Lily in the lobby, Krane's welcome and his Eevee upstairs, the Snag Machine in the lobby, Cipher's raid, and Spy
+  // Naps and his Shadow Teddiursa outside. (player.flags.xdStory 2 to 6.)
+  const XD = (k) => "LOCALID_XD_" + k;
+  async function xdScene(script) {
+    const f = player.flags, story = f.xdStory | 0;
+    switch (script) {
+      case "enter:PokemonHQLab_1F":
+        // (This game's own: Lily meets you, Oak's friend; she isn't your mother here.)
+        await say(["Lily: Oh! You must be {PLAYER}. Prof.\nOak told us you'd be coming.", "Lily: I'm Lily. I work with Prof.\nKrane on the lab's big project.",
+          "Lily: The Director's in his office\nupstairs. He's been looking forward\nto meeting you!"]);
+        f.xdStory = 3;
+        Overworld.refreshPeople();
+        await persist();
+        return;
+      case "PokemonHQLab_2F_EventScript_Krane": {
+        if (story < 3) { await say(["Prof. Krane: Hm? Oh, hello there."]); return; }
+        // (This game's own: his welcome, and his Eevee, as XD's hero has one; then XD's #40075, its last pages.)
+        await say(["Prof. Krane: Ah, {PLAYER}! Welcome to\nthe Pokémon HQ Lab. I'm Krane, its\nDirector.",
+          "Prof. Krane: Prof. Oak tells me it was\nyou who stopped Cipher five years\nago. Orre owes you a great deal.",
+          "Prof. Krane: In Orre, Pokémon battle\ntwo at a time. Here: this Eevee was\nraised here at the lab. Take it as…",
+          "Prof. Krane: …your partner. I think\nit's taken a liking to you already!"]);
+        const E = Orre.XD.EEVEE;
+        const ok = await giftMon(E.species, E.level, "{PLAYER} received an Eevee!", null, null,
+          (r) => { r.moves = Party.create(E.species, E.level, { moves: E.moves }).moves; });
+        if (!ok) return;
+        await say(["Prof. Krane: I'd like you to test a\ncertain machine for me.", "Prof. Krane: I know you're a skilled\nbattler, {PLAYER}, so I think I can\ncount on you.",
+          "Prof. Krane: Come down to the lobby\nwhen you're ready."]);
+        f.xdStory = 4;
+        Overworld.refreshPeople();
+        await persist();
+        return;
+      }
+      case "PokemonHQLab_1F_EventScript_Krane":
+        await xdSnagMachine();
+        return;
+      case "enter:PokemonHQLab": case "arrive:PokemonHQLab":
+        await xdRaid();
+        return;
+      case "PokemonHQLab_1F_EventScript_Lily":
+        if (story >= 6) await say(["Lily: Prof. Krane predicted that\nsomeone will again try making Shadow", "Pokémon. His prediction was on the\nmark."]);
+        else await say(story >= 4 ? "Lily: Prof. Krane's waiting for you\nby the case over there." : "Lily: The Director's office is\nupstairs.");   // (this game's own)
+        return;
+      case "PokemonHQLab_1F_EventScript_Reception":
+        if (story >= 5) { await say(["Receptionist: We've contacted the\npolice and the proper authorities", "about Prof. Krane. They should let us\nknow if they discover anything.",
+          "Receptionist: I still can't believe\nthat this is happening…"]); return; }
+        await say(["Receptionist: Oh, {PLAYER}, welcome.\nOur project is at a critical\njunction, so we're very busy.", "Receptionist: Oh, yes! Feel free to\nuse the PC and Healing Machine."]);
+        player.party.forEach(Party.heal);
+        await say("{PLAYER}'s Pokémon were healed.");   // (this game's own: the Healing Machine)
+        return;
+      case "PokemonHQLab_1F_EventScript_Aidan":
+        await say(story >= 5 ? ["Aidan: Prof. Krane is crucial to this\nproject. Without him, there's nothing\nwe can do!"]
+          : ["Aidan: What I happen to be working on\nis a special machine for catching\nPokémon.", "Aidan: It's finally almost completed,\nmy machine. I need to focus and work\nto get it done!"]);
+        return;
+      case "PokemonHQLab_2F_EventScript_Coach":
+        await say(["Battle Coach: Battle Sims are virtual\nbattle simulations using machines.\nBut they don't lose a thing when it", "comes to re-creating the excitement\nof a battle.",
+          "Battle Coach: I've tested it out\nbefore. The opposing Pokémon was\nincredibly lifelike. It made me", "shiver even though I knew it wasn't\nreal."]);
+        return;
+      case "PokemonHQLab_EventScript_Aferd": await xdAferd(); return;
+      case "PokemonHQLab_EventScript_Staff":
+        await say(["Researcher: I'm still steamed over\nthis. I wouldn't have lost to them in\na Pokémon battle, but those cowards", "jumped me without warning and punched\nmy lights out.",
+          "Researcher: Oh, by the way, did you\nsee them running off toward the\nsoutheast?", "Researcher: Their hideout could be\nsomewhere in the southeast!"]);
+        return;
+    }
+  }
+  // The Snag Machine, in its case in the lobby; then Cipher bursts in and takes Krane (xdStory 4 -> 5).
+  async function xdSnagMachine() {
+    const f = player.flags;
+    if ((f.xdStory | 0) !== 4) return;
+    await say(["Prof. Krane: Hi there, {PLAYER}! I've\nbeen waiting for you! I wanted to\nshow you the Snag Machine."]);
+    await say(["Prof. Krane: I should tell you, the\nSnag Machine is an outrageous piece\nof work. After all, it's used for", "stealing Pokémon from another Trainer\nin battle.",
+      "Prof. Krane: But we didn't make this\nto steal Pokémon indiscriminately\nfrom Trainers.", "Prof. Krane: {PLAYER}, you've heard\nof Shadow Pokémon, haven't you?",
+      "Prof. Krane: They're Pokémon that\nhave been turned into fighting\nmachines after having their hearts", "closed by artificial means. They're\nto be pitied.",
+      "Prof. Krane: We developed the Snag\nMachine to take back such modified\nShadow Pokémon.", "Prof. Krane: Why this machine is\nneeded now I can explain later…"]);
+    await say(["Prof. Krane: The Snag Machine is\ninside that case. Try equipping it\nright away, please."]);
+    if (!(player.bag["snag-machine"] | 0)) Player.addItem(player, "snag-machine", 1);
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} put on the Snag Machine!");   // (this game's own)
+    await say(["Aidan: Wow, it fits you perfectly. It\nlooks cool, too, {PLAYER}."]);
+    await say(["Prof. Krane: I'll also add a new\nfeature to your P★DA.", "Prof. Krane: It's called the Shadow\nMonitor. It lets you check data on", "the Shadow Pokémon you've\nencountered."]);
+    f.xdShadowMonitor = true;
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} obtained the Shadow Monitor\nfeature.");
+    await say(["Prof. Krane: Whoops! How silly of me!\nI almost forgot to give you these.", "Prof. Krane: In order to use the Snag\nMachine, you need at least one Poké\nBall. So, I'll give you these."]);
+    Player.addItem(player, "poke-ball", 5);
+    await sayWithJingle("mus_obtain_item", "{PLAYER} received 5 Poké Balls!");   // (this game's own: how many isn't in XD's words)
+    await say(["Prof. Krane: From here on, it will be\na lot easier to just show you how it", "works in practice rather than trying\nto describe it.",
+      "Prof. Krane: Let's go upstairs to the\nBattle Sim System room."]);
+    // Cipher bursts in: Krane's taken out the front.
+    sfx("se_door");
+    await Overworld.shake(6, { x: 2, y: 0, delay: 2 });
+    await say(["Prof. Krane: W-what's going on?! Who\nare you people?!"]);
+    await Overworld.fadeToBlack();
+    f.xdStory = 5;
+    Overworld.refreshPeople();
+    await Overworld.fadeFromBlack();
+    await say(["Aidan: It's terrible, {PLAYER}! Some\nstrange men came barging in and took\noff with the Director!"]);
+    await persist();
+  }
+  // Outside: Krane hauled toward their car, and Spy Naps with his Shadow Teddiursa; beaten, they make off with Krane
+  // all the same, but they've seen the Snag Machine (xdStory 5 -> 6). Lost: they're still there next time.
+  async function xdRaid() {
+    const f = player.flags;
+    if ((f.xdStory | 0) !== 5) return;
+    for (const [k, x, y, facing] of [["KRANE_OUT", 14, 10, "down"], ["THUG", 12, 10, "down"], ["NAPS", 13, 11, "up"]]) Overworld.addObject(XD(k), { x, y, facing });
+    await say(["Prof. Krane: Will you let go of me!\nWhere do you think you're taking me?!"]);
+    await say(["Thug: Move it; we don't have any\ntime. If you don't want to get hurt,\nhustle yourself into the car."]);
+    await say(["Naps: Hah? What is it, punk? You're\ngoing to play hero and try to stop", "us? I don't show mercy to anyone, not\neven kids."]);
+    const t = Orre.XD.trainer(17, f.xdShadowSnagged, ["Naps: What was that? My Shadow\nPokémon! Was that… Was it a snag?"]);
+    const opts = { foe: { name: t.name, team: t.team, pic: t.pic }, double: t.team.length > 1, prizeClass: "Team Rocket", noBlackout: true,
+      snag: t.team.filter((r) => r.shadow).map((r) => r.species), defeatText: t.defeat };
+    const outcome = await storyBattle(opts);
+    const snagged = (opts.snagged || []);
+    if (snagged.length) (f.xdShadowSnagged = f.xdShadowSnagged || []).push(...t.shadows.filter((id) => snagged.includes(window.XD_DECKS.shadow[id].species)));
+    if (outcome !== "won") { for (const k of ["KRANE_OUT", "THUG", "NAPS"]) Overworld.removeObject(XD(k)); await persist(); return; }
+    await say(["Thug: Kid! What is that machine on\nyour arm?!"]);
+    await say(["Thug: Could it be… A Snag Machine?!\nWhat the heck is that doing here?"]);
+    await say(["Naps: That's big news! Come on, move!\nI need to report this to\nheadquarters, like now!"]);
+    Screen.say("");
+    await Overworld.act([{ who: XD("NAPS"), moves: ["walk_fast_down", "walk_fast_down", "walk_fast_down", "set_invisible"] },
+      { who: XD("THUG"), moves: ["walk_fast_down", "walk_fast_down", "walk_fast_down", "set_invisible"] },
+      { who: XD("KRANE_OUT"), moves: ["walk_down", "walk_down", "walk_down", "set_invisible"] }]);
+    for (const k of ["KRANE_OUT", "THUG", "NAPS"]) Overworld.removeObject(XD(k));
+    f.xdStory = 6;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.
+  async function xdAferd() {
+    const f = player.flags;
+    if (f.xdAferd) { await say(["Aferd: Okay! I'll train using the\nBattle Sim System, too! That's what\nI'll do."]); return; }
+    await say(["Aferd: Hi, {PLAYER}! I heard about\nyou! Sounds like you've been racking", "up outstanding scores on the Battle\nSim System.",
+      "Aferd: But instead of that virtual\nreality stuff, how about a real", "battle for a change? I'll be happy to\nbattle with you anytime."]);
+    if (!(await confirm("Battle Aferd?"))) { await say(["Aferd: Okay. If you're ever in the\nmood, give me a shout. I'll be happy\nto battle with you anytime."]); return; }
+    await say(["Aferd: Okay, that's the spirit! Let's\nget it on!"]);
+    const t = Orre.XD.trainer(8, null, ["Aferd: Whoa! He really is tough!"]);
+    const outcome = await storyBattle({ foe: { name: t.name, team: t.team, pic: t.pic }, double: t.team.length > 1, prizeClass: "Cooltrainer", noBlackout: true, defeatText: t.defeat });
+    if (outcome !== "won") return;
+    f.xdAferd = true;
+    await say(["Aferd: Well, that was an eye-opener!\n{PLAYER}, you've become a lot tougher\nwithout me noticing.", "Aferd: Okay! I'll train using the\nBattle Sim System, too! That's what\nI'll do."]);
+    await persist();
   }
   // Prof. Oak in his lab: the briefing and his question; or, once you've been, the plane back.
   async function oakOrre() {

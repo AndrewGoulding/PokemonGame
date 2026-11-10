@@ -453,6 +453,7 @@
 
       if (Orre.FILLERS[script]) { await env.orreTrainer(script); return; }
       if (Orre.SHADOW_TRAINERS[script]) { await env.shadowTrainer(script); return; }
+      if (Orre.XD && Orre.XD.SCRIPTS.includes(script)) { await env.xdScene(script, ev); return; }
       if (Orre.PYRITE_SCRIPTS.includes(script)) { await env.pyriteExtra(script, ev); return; }
       if (Orre.COLO_TRAINERS[script]) { await env.coloTrainer(script); return; }
       if (script === OrreDayCare.SCRIPT) { await env.dayCareLady(); return; }
@@ -2113,6 +2114,8 @@
       // (Pyrite's windmill, the Pyrite Building locked till Nore leads you in, Phenac Stadium's first visit, Fateen after
       // Miror B.: game/orre-pyrite.js.)
       if (Orre.pyriteSceneDue(script, env.player.flags)) return true;
+      // (Pokémon XD's opening at the HQ Lab: game/xd.js.)
+      if (Orre.XD && Orre.XD.sceneDue(script, env.player.flags)) return true;
       if (script === "enter:PhenacCity_MayorsHouse" && (env.player.flags.orreStory | 0) === 20 && (env.player.flags.orreMayor | 0) !== 1) return true;
       // (Colosseum's story, Pyrite: coming to town, the Pyrite Building's top floor, Miror B.'s hideout.)
       if ((script === "arrive:PyriteTown" || script === "enter:PyriteTown") && (env.player.flags.orreStory | 0) === 21) return true;

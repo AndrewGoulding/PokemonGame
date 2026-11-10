@@ -57,7 +57,8 @@
     [["Gentle", "Jolly", "Mild", "Naive"], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]]
   ];
 
-  const max = (r) => r.heartMax || sizeOf(r.species);
+  // (XD's Shadow Pokémon bring their own size: record.heartSize, game/xd.js.)
+  const max = (r) => r.heartMax || r.heartSize || sizeOf(r.species);
   // An older save's heart, 0-100 (how shut, of 100), as this gauge's points.
   function migrate(r) {
     if (!r || !r.shadow || r.heart == null || r.heartMax) return r;
@@ -66,7 +67,7 @@
     r.heartMax = size;
     return r;
   }
-  function snagged(r) { r.heartMax = sizeOf(r.species); r.heart = r.heartMax; return r; }
+  function snagged(r) { r.heartMax = r.heartSize || sizeOf(r.species); r.heart = r.heartMax; return r; }
   // The bars left, of five (a fraction: 5 is a heart shut tight, 0 one ready to open).
   const bars = (r) => (r && r.shadow && r.heart != null ? 5 * Math.max(0, migrate(r).heart) / max(r) : 0);
   // Opens the heart by `way`, `times` over; returns the points it opened.

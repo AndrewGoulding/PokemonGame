@@ -3153,7 +3153,16 @@ Orre has two campaigns, as the GameCube games do. **Pokémon Colosseum's** comes
 you're Johto's Champion and sends you undercover into Team Snagem. **Pokémon XD: Gale of Darkness's** comes once
 Colosseum's story is over in Orre (`orreStory` 44) and Hoenn's League is won: Oak calls again, Cipher on the loose
 in Orre again (`xdStory` 1), and at his lab his briefing and his plane back to the Orre Air Strip (`xdStory` 2;
-`tests/browser/xd-start.js`). XD's own story in Orre is still to come; its text is in: `assets/text/xd.json`, XD's
+`tests/browser/xd-start.js`). Its first chapter is in: the **Pokémon HQ Lab** (on Orre's map in the south once Oak's flown
+you in; its grounds drawn, its lab and the apartment Emerald rooms, `tools/lib/orre-rooms-xd.js`; `game/xd.js` and
+`xdScene` in `ui/game.js`). Lily meets you in the lobby (3); upstairs Prof. Krane welcomes you and gives you an Eevee,
+Lv. 10 as XD's hero's is, with Bite (4); in the lobby the new Snag Machine, the Shadow Monitor and 5 Poké Balls, then
+Cipher bursts in and takes Krane (5); outside, Spy Naps and his Shadow Teddiursa (6), XD's first Shadow Pokémon, its
+heart gauge and Shadow moves XD's own. You play as yourself: the few lines tying the hero to Michael's family (Lily as
+your mother, Jovi as your sister) are left out, and Lily's and Krane's welcome are this game's own; the rest is XD's
+words, matched to its speakers by what they say. Orre's level cap is XD's own while its story's on
+(`player.flags.xdLevelCap`, 15 at the start). Supertrainer Aferd battles you on the plaza. Jovi's errand, Dr.
+Kaminko's manor and Gateon Port come next (`tests/browser/xd-hq-lab.js`). XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
 `node tools/build-colosseum-text.js --out xd.json <the disc's files folder>` (as Colosseum's are, into
 `assets/text/colosseum.json`; a European disc's other-language archives are left out). Its Trainers and Shadow

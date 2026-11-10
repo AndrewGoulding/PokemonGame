@@ -491,9 +491,15 @@
   // (Orre's, this game's own: one cap for the whole prologue, while you're with Team Snagem, 26;
   // player.flags.orreLevelCap raises it, for Colosseum's story proper.)
   const ORRE_LEVEL_CAP = 26;
+  const XD_LEVEL_CAP = 15;   // (XD's opening: Krane's Eevee is Lv. 10, Naps's Teddiursa Lv. 11)
   function levelCap(player, map) {
     if(window.UnovaBW?.owns(map||player.location?.map))return UnovaBW.cap(player);
-    if (regionOf(map || (player.location && player.location.map)) === "orre") return (player.flags && player.flags.orreLevelCap) || ORRE_LEVEL_CAP;
+    if (regionOf(map || (player.location && player.location.map)) === "orre") {
+      // (Pokémon XD's campaign, from Oak's flight till it's over, has its own: player.flags.xdLevelCap.)
+      const f = player.flags || {};
+      if ((f.xdStory | 0) >= 2 && !f.xdClear) return f.xdLevelCap || XD_LEVEL_CAP;
+      return f.orreLevelCap || ORRE_LEVEL_CAP;
+    }
     const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
     const n = REGION_BADGES[region].filter((b) => (player.badges || []).includes(b)).length;
     if (region === "unova") { const base=n===8&&!(player.flags&&player.flags.unovaLeagueClear)?59:n<8?LEVEL_CAPS.unova[n]:100; return window.UnovaModes?UnovaModes.cap(player,base):base; }
