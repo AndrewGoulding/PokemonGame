@@ -32,7 +32,8 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Dropped-Xtransceiver contact quest, daily Hidden Ability trades, native Dive and Abyssal Ruins ([scope](unova-services.md))
 - [x] Eight source Memory Link conversations, Liberty Garden and offline mythical research quests ([scope](unova-events.md))
 - [x] PWT Singles/Doubles tournaments, basic/Super Subway lines, Institute trials and BP exchange ([scope](unova-facilities.md))
-- [ ] Triple/Rotation formats, full multi-partner ladders and online/download facilities
+- [x] Basic/Super Multi Subway ladders, six source NPC partner pools and native tag battles ([scope](unova-facilities.md))
+- [ ] Triple/Rotation formats and online/download facilities
 - [x] Offline Pokémon Musical, source four shows/100 props, saved finales ([scope](unova-activities.md))
 - [x] Offline Pokéstar catalog, all 41 casts/goals, scripts, premieres and records ([scope](unova-movies.md))
 - [x] Offline Funfest/Entralink, Pass Powers and forest/dream research ([scope](unova-funfest.md))

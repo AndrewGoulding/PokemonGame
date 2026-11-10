@@ -58,3 +58,40 @@ saved records.
 Triple/Rotation battles, full multi-partner facility ladders, online/download
 opponents and the original DS Institute scoring remain outside these formats.
 The existing source partner tag event is still playable separately.
+
+## Multi Trains
+
+The basic and Super Multi Lines are seven-match native tag battles. Enter two
+Pokémon and choose Rosa or Nate with a balanced, offense or defense pool. The
+six source pools are the imported Subway catalog's trainer records 300–305;
+the visible partner portraits/names use the chosen protagonist. A compatible
+pair is drawn after entry, excluding your selected species and held items.
+The partner controls their own moves and replacements using the shared engine's
+AI. Each opponent is a separate trainer with two Pokémon and their own bench.
+Basic battle 21 pairs Ingo's Galvantula/Durant with Emmet's Garbodor/Klinklang;
+Super battle 49 pairs Eelektross/Archeops with Excadrill/Haxorus. These use the
+source sets, including the basic bosses' shared Occa Berries across trainers.
+Ordinary generated pairs avoid duplicate species/items across the pair.
+
+The source `src/ov033/bsubway_trainers.c` now drives Singles, Doubles and Multi
+streak-dependent trainer ranges and IV bands: normal first-six ranges
+0–49/30–69/50–109 and final-car ranges 50–69/70–89; Super first-six ranges
+110–159/140–179/160–199/180–219, final-car ranges
+160–179/180–199/200–219/220–239, then 200–299. This prevents protagonist
+partner pools from appearing as ordinary Super opponents. Boss records retain
+their source teams. Partner choices and trainer draw RNG are local adaptations;
+the DS partner-selection UI and wireless pairing are not emulated.
+
+Multi and Super Multi retain separate saved streaks/bests/attempts. A basic
+21-win record opens only Super Multi. The Multi Boss medal reads that record;
+no Link Battle medal is awarded for playing with a local NPC. Rentals, level-50
+copies, moves/PP, held items, HP and the exact original party continue through
+the existing restoration and interrupted-save recovery. The last match remains
+available for recorded playback. Triple/Rotation and online/download facilities
+are still pending.
+
+`tests/unova-multi-test.js` runs 21 native model tag battles and checks all six
+source partner pools, entry compatibility, exact boss teams, saved streaks,
+unlocks and medals. `tests/browser/unova-multi.js` plays seven matches through
+the native entry/battle UI with an AI partner and verifies saved records and
+byte-for-byte restoration of the original party.

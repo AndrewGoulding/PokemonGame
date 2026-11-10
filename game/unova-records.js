@@ -22,6 +22,7 @@
   if(id===44)return +collection(p,F.data().postgame.regionalDex);if(id===45)return +collection(p,F.data().postgame.nationalDex);
   if(id>=46&&id<=49)return (p.boxes||[]).flat().filter(Boolean).length;
   if(id===93)return +p.party.concat((p.boxes||[]).flat()).some(a=>a&&!a.egg&&a.shiny);
+  if(id===123)return Math.max(0,...Object.entries(records).filter(([k])=>k.startsWith('subway-')&&k.endsWith('multi')).map(([,v])=>v.best||0));
   if(id===121||id===122)return Math.max(0,...Object.entries(records).filter(([k])=>k.startsWith('subway-')&&k.endsWith(id===121?'single':'double')).map(([,v])=>v.best||0));
   const tournaments=['Driftveil','Rental','Mix','Unova Leaders','Kanto Leaders','Johto Leaders','Hoenn Leaders','Sinnoh Leaders','World Leaders','Champions','Rental Master','Mix Master'];if(id>=133&&id<=144)return wins(tournaments[id-133]);
   if(id===146||id===147)return f.tower?.black?.cleared||0;if(id===148||id===149)return f.tower?.white?.cleared||0;
