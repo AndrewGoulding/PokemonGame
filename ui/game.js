@@ -848,7 +848,9 @@
   // Saving, when you've chosen to: "{PLAYER} saved the game."
   async function saveGame() {
     tick();
+    UnovaRecords.record(player,"saves");
     const r = Save.write(player);
+    if (!r.ok && Unova.peek(player).medalBox) Unova.state(player).records.saves--;
     savePromptAt = player.playTimeMs;
     if (!r.ok && saveProblem !== r.error) saveProblem = r.error;
     await message(r.ok ? player.name + " saved the game." : r.error + " Use “Download save file” on your trainer card to keep your progress.");
@@ -1317,6 +1319,7 @@
     SinnohRadar.finish(player,result.outcome,!!opts.radar);
     await persist();
     SinnohLegends.syncForms(player);
+    if (!opts.noExp && result.outcome !== "cancelled") UnovaRecords.record(player,"battles");
     return result.outcome;
   }
 
@@ -1491,6 +1494,7 @@
       const oldSpecies = record.species;
       const shed = Evolution.shedinja(record);
       const newMoves = Evolution.evolve(record, evo.into, evo);
+      UnovaRecords.record(player,"evolutions");
       cry(record.species);
       await sleep(600);
       const jingle = fanfare("mus_evolved");
@@ -2566,10 +2570,14 @@
         if (Player.itemCount(player, id) + n > 999) return { error: "You have no more room for this\nitem." };
         Player.addMoney(player, -price);
         Player.addItem(player, id, n);
+        UnovaRecords.record(player,"purchases");
+        UnovaRecords.record(player,"spent",price);
         persist();
         // (A Premier Ball with ten Poké Balls, as from Ruby and Sapphire on.)
         if (id === "poke-ball" && n >= 10) {
+          const before = Player.itemCount(player,"premier-ball");
           Player.addItem(player, "premier-ball");
+          if(Player.itemCount(player,"premier-ball")>before)UnovaRecords.record(player,"premier");
           return { bonus: "I'll throw in a Premier Ball,\ntoo." };
         }
         return null;
@@ -4041,6 +4049,7 @@
     await Overworld.pokecenterHeal(player.party.length, () => fanfare("mus_heal"));
     if (id) await Overworld.act([{ who: id, moves: M("Common_Movement_WalkInPlaceFasterDown") }]);
     player.party.forEach(Party.heal);
+    UnovaRecords.record(player,"centers");
     if (centerOf(mapName)) player.flags.lastCenter = mapName;
     await say(T("Text_RestoredPkmnToFullHealth"));
     await say(T("Text_WeHopeToSeeYouAgain"));
@@ -4933,6 +4942,7 @@
     Overworld.setAvatar("walk");
     await Overworld.teleport({ map: spot.map, x: spot.x, y: spot.y, facing: "down", hidden: true });
     await Overworld.flyIn();
+    UnovaRecords.record(player,"fly");
     // (A scene that starts on arriving: Bill waiting on Cinnabar Island.)
     if (spot.map === "CinnabarIsland" && special("enter:" + spot.map)) await story({ type: "trigger", trigger: { script: "enter:" + spot.map }, map: spot.map });
   }
@@ -4946,6 +4956,7 @@
     if (mode === "bike") { Overworld.setAvatar("walk"); return; }
     if (mode === "surf" || !here.cycling) { await say("Oak: " + player.name + "! This isn't the time to use that!"); return; }
     Overworld.setAvatar("bike");
+    UnovaRecords.record(player,"bike");
   }
   // Fishing (FireRed's StartFishing, src/field_player_avatar.c, Task_Fishing).
   // You cast, and a second later dots appear in the text box, one every 20
@@ -5033,6 +5044,7 @@
     if (!canBattle()) return;
     const outcome = await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(mon.species, mon.level))] }, terrain, fishing: true });
     // (This game's own: more fishing XP for landing it, catching it (as much again as the bite) or beating it (half).)
+    if (outcome === "caught") UnovaRecords.record(player,"fish");
     const bonus = outcome === "caught" ? mon.xp : outcome === "won" ? Math.ceil(mon.xp / 2) : 0;
     if (bonus) {
       show("world");
@@ -9038,6 +9050,7 @@
     Screen.say("");
     await Overworld.fadeToBlack();
     Breeding.hatch(egg, player.location.map);
+    UnovaRecords.record(player,"eggs");
     UnovaFunfest.hatched(player);
     SinnohVilla.record(player,"eggs");
     Player.markCaught(player, egg.species);   // (AddHatchedMonToParty)

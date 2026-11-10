@@ -37,7 +37,8 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Offline Pokéstar catalog, all 41 casts/goals, scripts, premieres and records ([scope](unova-movies.md))
 - [x] Offline Funfest/Entralink, Pass Powers and forest/dream research ([scope](unova-funfest.md))
 - [x] Stadium/court source trainer catalogs, daily sports rosters and rematches ([scope](unova-activities.md))
-- [ ] Remaining Medal Rally conditions, native card milestones and rewards
+- [x] Five source Trainer Card milestones, saved signature and expanded Medal Rally tracking ([scope](unova-records.md))
+- [ ] Remaining Medal Rally field, multiplayer and format-specific conditions
 - [ ] Remaining field items, gifts, optional houses and encounter audit
 - [x] Source Easy/Challenge levels and alternate teams, saved keys and local sharing ([scope](unova-modes.md))
 - [ ] Remaining version-specific geometry and campaign-event audit
