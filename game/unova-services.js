@@ -12,10 +12,11 @@
  function call(p){const r=receiver(p);if(!r.found)return{missing:true};if(r.day!==day(p)){r.day=day(p);r.today=0;}if(r.today>=10)return{later:true};r.calls++;r.today++;if(r.calls>=50)r.revealed=true;return{...r,meet:r.calls>=10&&!r.returned,trade:r.calls>=30&&r.returned};}
  function phoneTrade(p,give){const r=receiver(p);if(!r.returned||r.calls<30||r.tradeDay===day(p))return null;const list=D.trades.filter(t=>t.trainer_name===r.contact),t=list[r.index%list.length],mon=exchange(p,t.id,give,{any:true,repeat:true});if(mon){r.tradeDay=day(p);r.index++;}return mon;}
  function sell(p,group,item,quantity=1){const offer=D.collectors[group]?.find(a=>a.item===item);if(!offer||!Number.isInteger(quantity)||quantity<1||Player.itemCount(p,item)<quantity)return null;const amount=offer.price*quantity;if(p.money+amount>9999999)return{rich:true};Player.removeItem(p,item,quantity);p.money+=amount;return{amount,item,quantity};}
- function visit(p,map){const s=peek(p);if(!WORLD_MAPS[map]?.unovaAbyssal&&s.ruins)delete s.ruins;}
- function ruins(p){const s=state(p);return s.ruins||(s.ruins={start:Player.gameTime(p).steps,gates:{}});}
+ function migrateRuins(p){for(const a of D.ruinLegacy||[])if(F.peek(p).gifts?.[a.gift])p.flags[a.flag]=true;}
+ function visit(p,map){migrateRuins(p);const s=peek(p);if(!WORLD_MAPS[map]?.unovaAbyssal&&s.ruins)delete s.ruins;}
+ function ruins(p){migrateRuins(p);const s=state(p);return s.ruins||(s.ruins={start:Player.gameTime(p).steps,gates:{}});}
  function ruinsStep(p){const m=WORLD_MAPS[p.location.map];if(!m?.unovaAbyssal){visit(p,p.location.map);return null;}const r=ruins(p),steps=Player.gameTime(p).steps-r.start;if(steps>=500)return'ruins-expel';if(m.unovaAbyssal>1&&!r.gates[m.unovaAbyssal-1])return'ruins-sealed';return null;}
  function gate(p,floor){const r=ruins(p);if(r.gates[floor])return{open:true};if(floor===1&&Player.gameTime(p).steps-r.start>190)return{late:true};const move=floor===2?'Flash':floor===3?'Strength':null;if(move&&!FieldMoves.user(p,move))return{move};r.gates[floor]=true;return{open:true,move};}
  function syncForms(p){for(const r of p.party)if(/^Keldeo-/.test(r.species))r.species=Party.knowsMove(r,'Secret Sword')?'Keldeo-Resolute':'Keldeo-Ordinary';}
- window.UnovaServices={data:()=>D,peek,state,swarm,nMon,special,caught,compatible,tradeMon,exchange,receiver,call,phoneTrade,sell,visit,ruins,ruinsStep,gate,syncForms};
+ window.UnovaServices={data:()=>D,peek,state,swarm,nMon,special,caught,compatible,tradeMon,exchange,receiver,call,phoneTrade,sell,visit,migrateRuins,ruins,ruinsStep,gate,syncForms};
 })();

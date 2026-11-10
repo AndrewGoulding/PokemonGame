@@ -52,3 +52,5 @@ Model tests cover rates, source data, capture persistence, tutor payment, trades
 phone limits, forms, ruin gates/timers and collectors. Native browser tests cover
 Dive, all three pillars, Crown collection, expulsion, selling, the C-Gear phone,
 and a natural N encounter/capture with its fixed properties and saved reload.
+
+The [source treasure import](unova-ruins.md) now supplies all 45 repeated placements on the first three Abyssal floors, with saved legacy rewards migrated and the fourth-floor Crown retained.
