@@ -19,5 +19,6 @@ module.exports=function({source,read,json,clean,item,move,machine,trainer,actor,
  data.village=require('./unova-village')({room,paint,actor,M,json,trainer,item,bankMaps,west,east,sp,read,clean});
  data.anville=require('./unova-anville')({room,paint,actor,link,M,json,trainer,item,bankMaps,west,postgame,read,clean});
  data.giftPokemon=require('./unova-gifts')({room,rooms:data.rooms,paint,actor,M,json,read,clean,bankMaps,west,postgame});
+ data.quiz=require('./unova-quiz')({source,room,actor,paint,M,trainer,json,read,clean,item});
  return data;
 };

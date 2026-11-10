@@ -25,6 +25,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Village Bridge source houses, Honey Gather, daily fishing club, rest and practice-secret quests ([scope](unova-village.md))
 - [x] Anville Town/Green Line, lost Pansage, weekend collectors, Subway lost-and-found and train/Rail Enthusiast events ([scope](unova-anville.md))
 - [x] Castelia Dream Lab/Amanita’s hidden-ability Eevee and Nacrene–Route 3 gate/Happiny Egg ([scope](unova-gift-pokemon.md))
+- [x] All 31 source Pep Quiz questions/hints, birthday/daily rewards and Striaton’s school/Dusty quest ([scope](unova-quiz.md))
 - [x] Six-bridge thirsty runner, Fresh Water merchant and saved reward retries ([scope](unova-bridge-runner.md))
 - [x] Source trainer forms and playable Blue-Striped Basculin encounters ([scope](unova-trainer-forms.md))
 - [x] Opelucid, Drayden, Humilau and Marlon
