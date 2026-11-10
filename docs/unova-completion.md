@@ -10,6 +10,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Cheren, Roxie, Gym students/band, source teams, Badges and TM rewards
 - [x] Virbank Complex worker quest
 - [x] Opening seasonal/version encounter tables, dark grass doubles and rustling grass
+- [x] Deerling/Sawsbuck seasonal forms, source artwork and inherited saved forms ([scope](unova-seasonal.md))
 - [x] Adapted C-Gear, regional Trainer Card, Medal Box and walking medals
 - [x] Local Centers/PCs/shops, regional travel and save integration
 - [x] Opening Pokéstar film/replay, Virbank Plasma chase and sailing to Castelia

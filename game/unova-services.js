@@ -17,6 +17,6 @@
  function ruins(p){migrateRuins(p);const s=state(p);return s.ruins||(s.ruins={start:Player.gameTime(p).steps,gates:{}});}
  function ruinsStep(p){const m=WORLD_MAPS[p.location.map];if(!m?.unovaAbyssal){visit(p,p.location.map);return null;}const r=ruins(p),steps=Player.gameTime(p).steps-r.start;if(steps>=500)return'ruins-expel';if(m.unovaAbyssal>1&&!r.gates[m.unovaAbyssal-1])return'ruins-sealed';return null;}
  function gate(p,floor){const r=ruins(p);if(r.gates[floor])return{open:true};if(floor===1&&Player.gameTime(p).steps-r.start>190)return{late:true};const move=floor===2?'Flash':floor===3?'Strength':null;if(move&&!FieldMoves.user(p,move))return{move};r.gates[floor]=true;return{open:true,move};}
- function syncForms(p){for(const r of p.party)if(/^Keldeo-/.test(r.species))r.species=Party.knowsMove(r,'Secret Sword')?'Keldeo-Resolute':'Keldeo-Ordinary';}
+ function syncForms(p){if(window.UnovaSeasonal)UnovaSeasonal.sync(p);for(const r of p.party)if(/^Keldeo-/.test(r.species))r.species=Party.knowsMove(r,'Secret Sword')?'Keldeo-Resolute':'Keldeo-Ordinary';}
  window.UnovaServices={data:()=>D,peek,state,swarm,nMon,special,caught,compatible,tradeMon,exchange,receiver,call,phoneTrade,sell,visit,migrateRuins,ruins,ruinsStep,gate,syncForms};
 })();

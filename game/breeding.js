@@ -103,6 +103,7 @@
     const level = 1;
     const egg = window.Party.create(species, level, { rng, moves: eggMoves(species, level, mother, father), shiny: false });
     if(species==="Shellos"&&(mother.species==="Ditto"?father:mother).eastSea)egg.eastSea=true;
+    if(species==="Deerling")egg.seasonForm=(mother.species==="Ditto"?father:mother).seasonForm||"spring";
     const shinyRng = opts.shinyRng || Math.random;
     for (let i = 0; i < shinyRolls(a, b, opts.shinyCharm); i++) if (shinyRng() < 1 / 4096) { egg.shiny = true; break; }
     egg.language = opts.language || "en";
