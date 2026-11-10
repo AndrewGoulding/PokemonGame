@@ -316,8 +316,9 @@
         const k = Object.keys(dex).find((n) => dex[n].id < 10000 && (n === base || n.split("-")[0] === base));
         id = k && dex[k].id;
       }
-      if (!id || id > 386) return;   // FireRed only has the first 386
-      const a = new window.Audio("assets/audio/cries/" + id + ".wav");
+      const regional = window.REGIONAL_CRIES && window.REGIONAL_CRIES[species];
+      if (!regional && (!id || id > 386)) return;
+      const a = new window.Audio(regional || "assets/audio/cries/" + id + ".wav");
       a.volume = 0.8 * volume;
       if (opts && opts.faint) { a.preservesPitch = false; a.mozPreservesPitch = false; a.playbackRate = 0.75; }
       a.play().catch(() => {});

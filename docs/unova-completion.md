@@ -18,11 +18,11 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Nimbasa/Elesa, adapted coaster and wheel, local sports practice and starter Join Avenue ([scope](unova-nimbasa.md))
 - [x] Driftveil/Clay, opening PWT adaptation, Relic Passage and Chargestone Cave ([scope](unova-west.md))
 - [x] Mistralton, Celestial Tower and Skyla ([scope](unova-west.md))
-- [ ] Eastern-region flight and remaining campaign
-- [ ] Reversal Mountain, Undella, Lacunosa and Village Bridge
-- [ ] Opelucid, Drayden, Humilau and Marlon
-- [ ] Plasma Frigate, Giant Chasm, Colress, Ghetsis and Kyurem climax
-- [ ] Victory Road, Elite Four and Iris; Hall of Fame and rematches
+- [x] Eastern-region flight through the Champion ([scope](unova-east.md))
+- [x] Reversal Mountain, Undella, Lacunosa and Village Bridge
+- [x] Opelucid, Drayden, Humilau and Marlon
+- [x] Plasma Frigate, Giant Chasm, Colress, Ghetsis and Kyurem climax
+- [x] Victory Road, Elite Four and Iris; Hall of Fame and rematches
 - [ ] Postgame southern/eastern routes, towns, dungeons, Black City/White Forest
 - [ ] Black Tower / White Treehollow, Nature Preserve and other postgame challenges
 - [ ] Legendary/event stories, N’s Pokémon and Memory Link adaptations
