@@ -549,6 +549,8 @@
       this.levelCap = Math.min(window.Experience ? window.Experience.MAX_LEVEL : 100, opts.levelCap || 100);
       this.capNoted = new Set();
       this.expShare = !!opts.expShare;
+      this.expMultiplier = opts.expMultiplier || 1;
+      this.friendshipPower = opts.friendshipPower || 0;
       this.wild = !!opts.wild;
       this.roamer = this.wild && !!opts.roamer && !opts.safari && !["doubles","horde"].includes(opts.format);
       // (The Battle Arena, opts.arena: three-turn bouts judged on Mind, Skill and Body, no switching; the Battle
@@ -1068,7 +1070,7 @@
     // FireRed's AdjustFriendship for your Pokémon (engine/experience.js).
     friendship(mon, change) {
       if (mon.side.id !== "p1") return;
-      mon.happiness = window.Experience.adjustFriendship(mon.happiness, change, { item: mon.item, ball: mon.ball, metHere: mon.metHere });
+      mon.happiness = window.Experience.adjustFriendship(mon.happiness, change, { item: mon.item, ball: mon.ball, metHere: mon.metHere,friendshipPower:this.friendshipPower });
     }
 
     faint(mon, source, effect) {
@@ -2673,7 +2675,7 @@
       const give = (mon, divisor, share) => {
         E.addEvs(mon.evs, foe.baseSpecies);
         const amount = E.gain({ species: foe.baseSpecies, level: foe.level, trainer: !this.wild,
-          participants: divisor, luckyEgg: mon.item === "lucky-egg" });
+          participants: divisor, multiplier: this.expMultiplier, luckyEgg: mon.item === "lucky-egg" });
         if (mon.level >= E.MAX_LEVEL) { unused += amount; return; }
         // (Colosseum's: a Shadow Pokémon's Exp. Points are kept for it, mon.storedExp, and given back when it's purified.)
         if (mon.shadow && mon.side.id === "p1") { if (mon.bankExp) mon.storedExp = (mon.storedExp || 0) + amount; return; }
@@ -2835,7 +2837,7 @@
         { species: target.baseSpecies, level: target.level, hp: target.hp, maxhp: target.maxhp, status: target.status, types: target.types, gender: target.gender },
         ball,
         { turn: this.turn, night: !!ctx.night, caughtBefore: !!(ctx.caughtBefore && ctx.caughtBefore(target.baseSpecies)),
-          fishing: !!ctx.fishing, user: { species: mon.baseSpecies, level: mon.level, gender: mon.gender } },
+          fishing: !!ctx.fishing, rateMultiplier: ctx.rateMultiplier || 1, user: { species: mon.baseSpecies, level: mon.level, gender: mon.gender } },
         () => this.random());
       this.add("-ball", mon.side.id, ball, target, result.shakes, result.caught ? "caught" : "");
       if (!result.caught) return;

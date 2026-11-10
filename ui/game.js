@@ -827,7 +827,7 @@
   // Pokémon's Compound Eyes helps). (Not the legendaries waiting on the map.)
   // (Your lead Pokémon: Compound Eyes for what it holds, Synchronize for its nature, Cute Charm for its gender.)
   const leadMon = () => player.party.find((r) => !r.egg && r.hp > 0);
-  const wildMon = (record) => Unova.sourceWild(player,Encounters.leadRecord(Encounters.withHeldItem(window.UnovaPost?UnovaPost.charmWild(player,record):record, leadMon()), leadMon()));
+  const wildMon = (record) => {if(window.UnovaFunfest)UnovaFunfest.shiny(player,record);return Unova.sourceWild(player,Encounters.leadRecord(Encounters.withHeldItem(window.UnovaPost?UnovaPost.charmWild(player,record):record, leadMon()), leadMon()));};
   let continued = false;   // (just continued a saved game: the area's name shows)
   const sfx = (name) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(name); };
 
@@ -1166,7 +1166,7 @@
       safari: opts.safari ? Object.assign({ balls: player.flags.safari.balls,park:!!player.flags.safari.park, hgss: !!(player.flags.safari.hgss || player.flags.safari.sinnoh), ...(player.flags.safari.sinnoh ? { fleeRate: PLATINUM_DATA.daily.flee[foe.team[0].species] || 0 } : {}) },
         player.flags.safari.hoenn ? { hoenn: true, pokeblocks: () => hoennPokeblock.blocks().map(HoennPokeblock.name), usePokeblock: (i) => hoennPokeblock.blocks().splice(i, 1)[0] } : {}) : undefined,
       wild, roamer: !!opts.roamer, weather: opts.weather, trickRoom: !!opts.trickRoom,
-      exp: !opts.safari && !opts.noExp, levelCap: Player.levelCap(player),
+      exp: !opts.safari && !opts.noExp, expMultiplier:UnovaFunfest.scale(player,"EXP"),friendshipPower:UnovaFunfest.value(player,"BEFRIEND"),levelCap: Player.levelCap(player),
       arena: !!opts.arena, palace: !!opts.palace,   // (the Battle Frontier's Arena and Palace rules: engine/battle.js)
       record: !!opts.record,   // (the choices and seed kept, to play it back: a Frontier battle's)
       expShare: expShareOn(),
@@ -1178,7 +1178,7 @@
       // (The Bag screen: its pockets, and the bag's colours.)
       // (Another bag: only its Poké Balls pocket, and the others it has anything in.)
       bagPockets: opts.bag ? () => bagPockets(opts.bag).filter((p) => p.items.length || p.name === "Poké Balls") : bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
-      catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s), fishing: !!opts.fishing },
+      catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s), fishing: !!opts.fishing,rateMultiplier:opts.catchMultiplier||UnovaFunfest.scale(player,"CAPTURE") },
       // (A Tera Raid's Pokémon, or a wild Tera Pokémon, battles as a trainer's does, and Terastallizes.)
       opponent: opts.roamer ? (b) => OpponentAI.choose(b,"p2") : horde || wildDouble ? (b) => b.randomChoice("p2") : wild && !opts.raid && !wildTera ? randomMove : (b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
@@ -1240,6 +1240,7 @@
         (f) => Player.prizeMoney(f.name, f.team, f === foe ? opts.prizeClass : f.prizeClass), double);
       // An Amulet Coin held by a Pokémon that battled doubles it (FireRed's moneyMultiplier).
       if (b.sides.p2.pokemon.some((m) => [...(m.expParticipants || [])].some((p) => p.item === "amulet-coin"))) prize *= 2;
+      prize=Math.floor(prize*UnovaFunfest.scale(player,"PRIZE_MONEY"));
       Player.addMoney(player, prize);
       await message("You got " + money(prize) + " for winning!");
       Player.addMoney(player, -gear.savePrize(prize));   // (a quarter for Mom to save, while she is: ui/pokegear.js)
@@ -1757,7 +1758,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
-    if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}if(action==='receiver-call')await unovaStory.run('bw:receiver-call');};return "escaped";}
+    if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}if(action==='receiver-call')await unovaStory.run('bw:receiver-call');if(action==='entralink'||action==='pass-powers')await unovaStory.run('bw:'+ (action==='entralink'?'enter-entralink':action));};return "escaped";}
     if(item==="dropped-item"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run("bw:receiver-call");};return "escaped";}
     if(item==="dna-splicers"||item==="reveal-glass"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run(item==="dna-splicers"?"bw:use-splicers":"bw:use-reveal-glass");};return "escaped";}
     if(item==="white-flute"||item==="black-flute"){if(SinnohCompletion.flute(player,item)){await message("The "+Bag.name(item)+" sounded.\nWild Pokémon will appear "+(item==="white-flute"?"more":"less")+" often here.");}return;}
@@ -2543,9 +2544,10 @@
     Screen.say("");
     const at = Overworld.position(), d = World.DIRS ? World.DIRS[at.facing] : null;
     const [dx, dy] = d || ({ up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] })[at.facing] || [0, -1];
+    const offers=Bag.martStock(stock).map((x) => ({ id: x.item, name: Bag.name(x.item), price: Math.floor(x.price*UnovaFunfest.scale(player,"BARGAIN")), desc: Bag.description(x.item), icon: Bag.sprite(x.item) }));
     return ShopScreen.open({
       frame: GameOptions.get().frame,
-      items: Bag.martStock(stock).map((x) => ({ id: x.item, name: Bag.name(x.item), price: x.price, desc: Bag.description(x.item), icon: Bag.sprite(x.item) })),
+      items: offers,
       // (A counter of only TMs and HMs, Celadon's 2F: every name in the small
       // font, as the long ones must be, so the list looks the same all down.)
       smallNames: stock.length > 0 && stock.every((id) => /^(tm|hm)\d/.test(id)),
@@ -2556,7 +2558,8 @@
       limit: (id) => (!Bag.isMachine(id) ? { max: 99 }
         : Player.itemCount(player, id) > 0 ? { max: 0, why: "You already have that " + Bag.name(id).split(" ")[0] + ".\nTMs and HMs never run out." } : { max: 1 }),
       buy: (id, n) => {
-        const price = Bag.price(id) * n;
+        const price = offers.find(a=>a.id===id).price * n;
+        if(player.money<price)return{error:"You do not have enough money."};
         if (Player.itemCount(player, id) + n > 999) return { error: "You have no more room for this\nitem." };
         Player.addMoney(player, -price);
         Player.addItem(player, id, n);
@@ -9020,7 +9023,7 @@
     if (f.sinnohDayCare && f.sinnohDayCare.length === 2) Breeding.dayCareStep(f.sinnohDayCareEggs || (f.sinnohDayCareEggs = {}), f.sinnohDayCare, Math.random, Player.itemCount(player,"oval-charm")>0);
     if (f.johtoDayCare && f.johtoDayCare.length === 2) Breeding.dayCareStep(f.johtoDayCareEggs || (f.johtoDayCareEggs = {}), f.johtoDayCare, Math.random, Player.itemCount(player,"oval-charm")>0);
     if (f.unovaDayCare && f.unovaDayCare.length === 2) Breeding.dayCareStep(f.unovaDayCareEggs || (f.unovaDayCareEggs = {}), f.unovaDayCare, Math.random, Player.itemCount(player,"oval-charm")>0);
-    const egg = Breeding.hatchStep(f.eggHatch || (f.eggHatch = {}), player.party);
+    const egg = Breeding.hatchStep(f.eggHatch || (f.eggHatch = {}), player.party,UnovaFunfest.value(player,"HATCH",100));
     return egg ? { type: "egg-hatch", record: egg } : null;
   }
   // An Egg hatching (EventScript_EggHatch, then FireRed's egg hatch scene,
@@ -9032,6 +9035,7 @@
     Screen.say("");
     await Overworld.fadeToBlack();
     Breeding.hatch(egg, player.location.map);
+    UnovaFunfest.hatched(player);
     SinnohVilla.record(player,"eggs");
     Player.markCaught(player, egg.species);   // (AddHatchedMonToParty)
     // (Elm's Mystery Egg: he'll call about it, CALL_TRIGGER_ELM_EGG_HATCHED.)
@@ -11732,7 +11736,7 @@
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           SinnohLegends.syncForms(player);
           return unovaStory.step() || sinnohStory.step() || orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
-        }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()) * SinnohCompletion.rate(player),
+        }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()) * SinnohCompletion.rate(player)*UnovaFunfest.scale(player,"ENCOUNTER"),
         adjustWild: (mon, table) => { SinnohDaily.apply(player); const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !SinnohPark.suppresses(player) && !SinnohRadar.suppresses(player) && !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
         onMap: (m) => {

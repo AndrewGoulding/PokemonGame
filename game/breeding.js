@@ -173,10 +173,10 @@
   // in the party is a cycle nearer (two with a Pokémon whose Ability is Flame
   // Body or Magma Armor in the party); one with none left hatches.
   // state: { hatchSteps }.
-  function hatchStep(state, party) {
+  function hatchStep(state, party, power = 100) {
     if (!party.some((r) => r.egg)) return null;
     state.hatchSteps = (state.hatchSteps | 0) + 1;
-    if (state.hatchSteps < CYCLE_STEPS) return null;
+    if (state.hatchSteps < Math.ceil(CYCLE_STEPS * 100 / Math.max(100,power))) return null;
     state.hatchSteps = 0;
     // (Flame Body, Magma Armor and, since Sword and Shield, Steam Engine: Eggs hatch twice as fast.)
     const fast = party.some((r) => !r.egg && ["Flame Body", "Magma Armor", "Steam Engine"].includes(r.ability));

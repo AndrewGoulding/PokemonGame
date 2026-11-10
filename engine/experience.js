@@ -66,7 +66,7 @@
     if (opts.trainer) exp = Math.floor(exp * 1.5);
     if (opts.traded) exp = Math.floor(exp * 1.5);
     if (opts.luckyEgg) exp = Math.floor(exp * 1.5);
-    return Math.max(1, exp);
+    return Math.max(1, Math.floor(exp * (opts.multiplier || 1)));
   }
 
   // Adds the defeated species' EV yield to `evs` (mutated), respecting the caps.
@@ -103,6 +103,7 @@
     const table = typeof change === "string" ? FRIENDSHIP_EVENTS[change] : change;
     if (!table) return friendship;
     let delta = table[friendship >= 200 ? 2 : friendship >= 100 ? 1 : 0];
+    if(delta>0)delta+=opts.friendshipPower||0;
     if (delta > 0 && opts.item === "soothe-bell") delta = Math.floor(150 * delta / 100);
     let f = friendship + delta;
     if (delta > 0) {

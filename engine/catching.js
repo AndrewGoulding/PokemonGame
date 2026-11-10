@@ -69,7 +69,7 @@
     const bonus = ballBonus(ball, Object.assign({ target, turn: 1 }, ctx));
     if (bonus === Infinity) return Infinity;
     const dex = window.DEX[target.species];
-    const rate = dex ? dex.captureRate : 45;
+    const rate = (dex ? dex.captureRate : 45) * ((ctx && ctx.rateMultiplier) || 1);
     const m = target.maxhp, h = Math.max(1, target.hp);
     const a = (((3 * m - 2 * h) * rate * bonus) / (3 * m)) * (STATUS_BONUS[target.status] || 1);
     return Math.max(1, Math.floor(a));

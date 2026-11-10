@@ -2710,7 +2710,7 @@
   // back by feeding them to a battle built the same way: run's cfg.record and cfg.replay.)
   let recording = null;
   const RECORD_KEYS = ["p1", "p2", "format", "partnerTrainer", "foeTrainer2", "defeatText2", "ghost", "noCatch", "snag", "wild", "weather", "trickRoom", "levelCap", "arena", "palace",
-    "trainer", "foeTrainer", "defeatText", "victoryMusic", "terrain"];
+    "trainer", "foeTrainer", "defeatText", "victoryMusic", "terrain", "friendshipPower", "expMultiplier", "catchContext"];
   function choose(side, choice) {
     try {
       const r = battle.choose(side, choice);
@@ -3513,7 +3513,7 @@
     config = cfg;
     partyOrder = null;
     battle = new Battle(Object.assign({
-      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, snag: cfg.snag || null, exp: !!cfg.exp, expShare: !!cfg.expShare, catchContext: cfg.catchContext,
+      p1: cfg.p1, p2: cfg.p2, wild: !!cfg.wild, ghost: !!cfg.ghost, noCatch: !!cfg.noCatch, snag: cfg.snag || null, exp: !!cfg.exp, expShare: !!cfg.expShare, expMultiplier:cfg.expMultiplier, friendshipPower:cfg.friendshipPower, catchContext: cfg.catchContext,
       safari: cfg.safari, raid: cfg.raid || 0, raidAllies: cfg.raidAllies || undefined,
       levelCap: cfg.levelCap,   // (the level cap, Player.levelCap: no Exp. past it, and a Pokémon over it may not obey)
       seed: cfg.seed,   // (a recorded battle played back: the seed it was fought with)

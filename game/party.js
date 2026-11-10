@@ -157,7 +157,8 @@
   // Changes its friendship for a FireRed event ("walking", "tm", ...) or an
   // item's [low, mid, high] (engine/experience.js adjustFriendship).
   function adjustFriendship(record, change, here) {
-    record.happiness = window.Experience.adjustFriendship(record.happiness, change, friendshipOpts(record, here));
+    const opts=friendshipOpts(record,here);opts.friendshipPower=window.UnovaFunfest&&window.Game?.player?UnovaFunfest.value(Game.player,"BEFRIEND"):0;
+    record.happiness = window.Experience.adjustFriendship(record.happiness, change, opts);
     return record.happiness;
   }
 

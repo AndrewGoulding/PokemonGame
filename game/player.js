@@ -178,13 +178,13 @@
     if (!record.met) record.met = { level: record.level, map: player.location ? player.location.map : null };
     if (player.party.length < PARTY_SIZE) {
       player.party.push(record);
-      window.UnovaServices?.caught(player,record);
+      window.UnovaServices?.caught(player,record);window.UnovaFunfest?.caught(player,record);
       return "party";
     }
     const i = player.boxes.findIndex((box) => firstEmpty(box) >= 0);
     if (i < 0) return null;
     player.boxes[i][firstEmpty(player.boxes[i])] = window.Party.heal(record);
-    window.UnovaServices?.caught(player,record);
+    window.UnovaServices?.caught(player,record);window.UnovaFunfest?.caught(player,record);
     return "box " + (i + 1);
   }
 

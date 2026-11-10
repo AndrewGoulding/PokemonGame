@@ -4255,3 +4255,5 @@ Cherrim's Sunshine Form (Flower Gift's boost works, the forme doesn't change).
 The spread multiplier counts the targets when the move starts (a protected or
 missed target still counts). Speed order is fixed at the start of the turn (Gen
 6).
+
+Unova Entralink/Funfest and Pass Powers: [scope and source notes](docs/unova-funfest.md).
