@@ -13,7 +13,7 @@
  ];return{goals,stars:goals.filter(a=>a.done).length};}
  function signature(p,strokes){if(!Array.isArray(strokes)||strokes.length>256)return false;const out=[];let count=0;for(const line of strokes){if(!Array.isArray(line)||!line.length)return false;const points=[];for(const at of line){if(++count>8192||!Array.isArray(at)||at.length!==2||!at.every(Number.isFinite))return false;points.push([Math.max(0,Math.min(191,Math.round(at[0]))),Math.max(0,Math.min(63,Math.round(at[1])))]);}out.push(points);}F.state(p).signature=out;return true;}
  function progress(p,id){const s=F.peek(p),r=s.records||{},a=s.activities||{},f=s.facilities||{},records=f.records||{},cin=s.cinema||{},fest=s.funfest||{},wins=k=>records['pwt-'+k]?.wins||0;
-  const counters={0:r.steps||0,1:r.saves||0,3:r.bike||0,4:r.battles||0,8:r.fish||0,9:r.eggs||0,10:r.evolutions||0,11:r.centers||0,42:r.fly||0,45:r.powers||0,46:r.dreamCaught||0,21:r.purchases||0,22:r.spent||0,31:r.premier||0,114:a.shows||0,115:a.wins||0,118:a.total||0,121:Object.entries(records).filter(([k])=>k.startsWith('institute')).reduce((n,[,v])=>n+(v.attempts||0),0),48:Object.entries(records).filter(([k])=>k.startsWith('subway-')).reduce((n,[,v])=>n+(v.attempts||0),0)};
+  const counters={0:r.steps||0,1:r.saves||0,3:r.bike||0,4:r.battles||0,8:r.fish||0,9:r.eggs||0,10:r.evolutions||0,11:r.centers||0,42:r.fly||0,45:r.powers||0,46:r.dreamCaught||0,21:r.purchases||0,22:r.spent||0,31:r.premier||0,127:s.avenue?.full?.referrals||0,128:s.avenue?.full?.created??s.avenue?.full?.shops?.filter(Boolean).length??0,130:s.avenue?.full?.souvenirs||0,114:a.shows||0,115:a.wins||0,118:a.total||0,121:Object.entries(records).filter(([k])=>k.startsWith('institute')).reduce((n,[,v])=>n+(v.attempts||0),0),48:Object.entries(records).filter(([k])=>k.startsWith('subway-')).reduce((n,[,v])=>n+(v.attempts||0),0)};
   const m=F.data().medals[id];if(m?.record!=null&&Object.hasOwn(counters,m.record))return counters[m.record];
   if(id>=27&&id<=43){const caught=new Set(p.pokedex.caught.map(Party.speciesName)),list=(F.data().medalTypes||[]).filter(a=>a.types.includes(types[id-27]));return list.length&&list.every(a=>caught.has(Party.speciesName(a.species)))?1:0;}
   if(id>=236&&id<=252)return +(s.hallOfFame||[]).some(h=>h.team?.length&&h.team.every(a=>DEX[a.species]?.types.some(t=>t.toLowerCase()===types[id-236])));
@@ -27,6 +27,7 @@
   const tournaments=['Driftveil','Rental','Mix','Unova Leaders','Kanto Leaders','Johto Leaders','Hoenn Leaders','Sinnoh Leaders','World Leaders','Champions','Rental Master','Mix Master'];if(id>=133&&id<=144)return wins(tournaments[id-133]);
   if(id===146||id===147)return f.tower?.black?.cleared||0;if(id===148||id===149)return f.tower?.white?.cleared||0;
   if(id===172)return (a.props||[]).length;
+  if(id===194)return +!!s.avenue?.full?.renamed;
   if(id===203)return +(s.movieReleased||cin.records?.[0]?.endings?.length>0);
   const series=[[1,2],[3,6],[7,10],[11,14],[15,17],[18,20],[21,23],[24,27],[28,30],[31,34],[35,38],[39,39]];
   if(id>=204&&id<=215){const [start,end]=series[id-204];return +Array.from({length:end-start+1},(_,i)=>i+start).every(i=>cin.good?.includes(i));}

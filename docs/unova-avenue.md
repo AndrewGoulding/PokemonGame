@@ -30,3 +30,34 @@ recruitment and saved referrals rather than a network service.
 Model tests cover source catalogs, migration, rank progression, all shop families,
 service limits, stock, saved raffles and capacity. A native browser test covers
 migration, recruitment, referral, source-priced bulk shopping and Dojo evolution.
+
+## Management and visitor souvenirs
+
+The manager can replace an occupied shop and move/swap plots. Replacement
+requires an explicit in-game confirmation and starts the incoming shop at rank
+1; cancellation or invalid/Nursery-locked choices preserve the outgoing shop.
+Moving shops preserves each shop's rank, points, daily stock and pending raffle
+roll. Shop creation and successful visitor referral totals persist for the
+corresponding Medal Rally conditions. Older eight-plot saves initialize the
+creation total from their occupied plots, since prior replacements were not
+possible; older referral history cannot be reconstructed.
+
+At rank 10 the manager opens a 20-character avenue name entry, following the
+source rank-table unlock 3 and the source 21-u16 name buffer. Naming persists
+and awards the naming milestone; cancelling/blank names leave it unchanged.
+
+Each of the eight daily local visitors may bring one souvenir. The chance and
+prize follow `ResortData_RaffleShopItem` in `src/ov137/resort_data_manager.c`:
+first use the source rank row's `raffle_chance`, then draw from that row's
+`raffle` weighted item table. Both successful and failed rolls are saved. A
+full Bag leaves that same prize pending until collected or the daily cohort
+changes. Only actual collection increments the souvenir count; a conversation
+or repeated request cannot duplicate the reward. Daily local visitors replace
+the original game's external visitor arrivals. The native shop services now
+also feed the source purchase and spending Medal Rally counters after payment.
+
+`tests/unova-avenue-management-test.js` covers atomic replacement, movement,
+creation/referral records, rank-10 naming, source souvenir rolls, full-Bag and
+reload retries, daily refresh and migration. The browser counterpart performs
+name entry, confirmed replacement, shop movement and a souvenir/referral using
+the native UI, then verifies medals and save/reload.
