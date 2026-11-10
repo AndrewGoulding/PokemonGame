@@ -1,0 +1,641 @@
+{
+  "source": {
+    "references": [
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_2",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_3",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_4",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_5"
+    ],
+    "curated": "2026-11-10",
+    "note": "Roster transcription; original move/ability sets explicit for story battles. Generic dialogue and projected positions."
+  },
+  "field": {
+    "Route4": [
+      {
+        "name": "Wheaton",
+        "className": "Gardener",
+        "party": [
+          [
+            "Corphish",
+            10,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Roland",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Pidgey",
+            10,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Calida",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Fletchling",
+            10,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Agnes",
+        "className": "Poké Fan",
+        "party": [
+          [
+            "Burmy",
+            7,
+            "F"
+          ],
+          [
+            "Burmy-Sandy",
+            7,
+            "F"
+          ],
+          [
+            "Burmy-Trash",
+            7,
+            "F"
+          ]
+        ],
+        "heldItems": {
+          "0": "super-potion"
+        }
+      },
+      {
+        "name": "Mia",
+        "className": "Preschooler",
+        "party": [
+          [
+            "Budew",
+            9,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Adrian",
+        "className": "Preschooler",
+        "party": [
+          [
+            "Magikarp",
+            9,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Gabe",
+        "className": "Poké Fan",
+        "party": [
+          [
+            "Pichu",
+            7,
+            "F"
+          ],
+          [
+            "Pikachu",
+            9,
+            "M"
+          ]
+        ],
+        "heldItems": {
+          "0": "potion"
+        }
+      },
+      {
+        "name": "Fabian",
+        "className": "Gardener",
+        "party": [
+          [
+            "Corphish",
+            10,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Grover",
+        "className": "Gardener",
+        "party": [
+          [
+            "Corphish",
+            10,
+            "M"
+          ]
+        ]
+      }
+    ],
+    "Route5": [
+      {
+        "name": "Faith & Joy",
+        "className": "Twins",
+        "party": [
+          [
+            "Plusle",
+            11,
+            "F"
+          ],
+          [
+            "Minun",
+            11,
+            "F"
+          ]
+        ],
+        "double": true
+      },
+      {
+        "name": "Hamish",
+        "className": "Rising Star",
+        "party": [
+          [
+            "Kadabra",
+            13,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Winnie",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Bunnelby",
+            9,
+            "F"
+          ],
+          [
+            "Skiddo",
+            11,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Florin",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Doduo",
+            12,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Tyson",
+        "className": "Rising Star",
+        "party": [
+          [
+            "Bidoof",
+            12,
+            "M"
+          ],
+          [
+            "Oddish",
+            10,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Heike",
+        "className": "Backpacker",
+        "party": [
+          [
+            "Sentret",
+            12,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Keita",
+        "className": "Youngster",
+        "party": [
+          [
+            "Pansage",
+            12,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Anthony",
+        "className": "Youngster",
+        "party": [
+          [
+            "Carvanha",
+            10,
+            "M"
+          ],
+          [
+            "Pancham",
+            10,
+            "M"
+          ]
+        ]
+      }
+    ],
+    "Route6": [
+      {
+        "name": "Hiroko",
+        "className": "Tourist",
+        "party": [
+          [
+            "Pikachu",
+            11,
+            "F"
+          ],
+          [
+            "Psyduck",
+            11,
+            "F"
+          ],
+          [
+            "Pidgey",
+            11,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Eriko",
+        "className": "Tourist",
+        "party": [
+          [
+            "Zigzagoon",
+            11,
+            "F"
+          ],
+          [
+            "Ralts",
+            11,
+            "F"
+          ],
+          [
+            "Gulpin",
+            11,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Jan & Erin",
+        "className": "Poké Fan Family",
+        "party": [
+          [
+            "Furfrou",
+            14,
+            "M"
+          ],
+          [
+            "Furfrou",
+            14,
+            "F"
+          ]
+        ],
+        "double": true
+      },
+      {
+        "name": "Brigitte",
+        "className": "Beauty",
+        "party": [
+          [
+            "Espurr",
+            12,
+            "F"
+          ],
+          [
+            "Butterfree",
+            12,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Tyler",
+        "className": "Youngster",
+        "party": [
+          [
+            "Venipede",
+            12,
+            "M"
+          ],
+          [
+            "Scraggy",
+            12,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Roderick",
+        "className": "Backpacker",
+        "party": [
+          [
+            "Bunnelby",
+            14,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Jerome",
+        "className": "Backpacker",
+        "party": [
+          [
+            "Fletchling",
+            14,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Takemi",
+        "className": "Tourist",
+        "party": [
+          [
+            "Volbeat",
+            14,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Mari",
+        "className": "Tourist",
+        "party": [
+          [
+            "Illumise",
+            14,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Jacob",
+        "className": "Youngster",
+        "party": [
+          [
+            "Croagunk",
+            11,
+            "M"
+          ],
+          [
+            "Beedrill",
+            13,
+            "M"
+          ]
+        ]
+      }
+    ],
+    "Route7West": [
+      {
+        "name": "Georgia",
+        "className": "Artist",
+        "party": [
+          [
+            "Smeargle",
+            16,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Family Mona & Paolo",
+        "className": "Artist",
+        "party": [
+          [
+            "Smeargle",
+            16,
+            "M"
+          ],
+          [
+            "Smeargle",
+            16,
+            "M"
+          ]
+        ],
+        "double": true
+      },
+      {
+        "name": "Pierre",
+        "className": "Artist",
+        "party": [
+          [
+            "Smeargle",
+            16,
+            "M"
+          ]
+        ]
+      }
+    ],
+    "ConnectingCave": [
+      {
+        "name": "Mercy",
+        "className": "Pokémon Breeder",
+        "party": [
+          [
+            "Ducklett",
+            12,
+            "F"
+          ],
+          [
+            "Pikachu",
+            12,
+            "F"
+          ],
+          [
+            "Litleo",
+            12,
+            "F"
+          ]
+        ]
+      }
+    ],
+    "Route8Upper": [
+      {
+        "name": "Paulette",
+        "className": "Rising Star",
+        "party": [
+          [
+            "Axew",
+            19,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Rhys",
+        "className": "Rising Star",
+        "party": [
+          [
+            "Pancham",
+            15,
+            "M"
+          ],
+          [
+            "Skiddo",
+            16,
+            "M"
+          ],
+          [
+            "Goldeen",
+            17,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Cadoc",
+        "className": "Black Belt",
+        "party": [
+          [
+            "Machop",
+            20,
+            "M"
+          ]
+        ]
+      }
+    ],
+    "Route8Coast": [
+      {
+        "name": "Genevieve",
+        "className": "Swimmer",
+        "party": [
+          [
+            "Wingull",
+            19,
+            "F"
+          ],
+          [
+            "Psyduck",
+            21,
+            "F"
+          ]
+        ]
+      },
+      {
+        "name": "Wharton",
+        "className": "Fisherman",
+        "party": [
+          [
+            "Tentacool",
+            19,
+            "M"
+          ],
+          [
+            "Tentacool",
+            19,
+            "M"
+          ],
+          [
+            "Tentacool",
+            19,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Shad",
+        "className": "Fisherman",
+        "party": [
+          [
+            "Shellder",
+            20,
+            "M"
+          ],
+          [
+            "Staryu",
+            20,
+            "N"
+          ]
+        ]
+      },
+      {
+        "name": "Marissa",
+        "className": "Swimmer",
+        "party": [
+          [
+            "Masquerain",
+            22,
+            "F"
+          ]
+        ]
+      }
+    ],
+    "CyllageGym": [
+      {
+        "name": "Didier",
+        "className": "Rising Star",
+        "party": [
+          [
+            "Dwebble",
+            21,
+            "M"
+          ],
+          [
+            "Relicanth",
+            23,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Manon",
+        "className": "Rising Star",
+        "party": [
+          [
+            "Solrock",
+            22,
+            "N"
+          ],
+          [
+            "Lunatone",
+            22,
+            "N"
+          ]
+        ]
+      },
+      {
+        "name": "Craig",
+        "className": "Hiker",
+        "party": [
+          [
+            "Roggenrola",
+            24,
+            "M"
+          ]
+        ]
+      },
+      {
+        "name": "Bernard",
+        "className": "Hiker",
+        "party": [
+          [
+            "Rhyhorn",
+            21,
+            "M"
+          ],
+          [
+            "Nosepass",
+            21,
+            "M"
+          ],
+          [
+            "Onix",
+            21,
+            "M"
+          ]
+        ]
+      }
+    ]
+  }
+}

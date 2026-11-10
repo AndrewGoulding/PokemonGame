@@ -343,7 +343,7 @@
     const t = map(mapName).fishing;
     const slots = ROD_SLOTS[rodId] && (weights ? ROD_SLOTS[rodId].map(([slot], i) => [slot, weights[i]]) : ROD_SLOTS[rodId]);
     if (t && t.rods) {
-      const r = t.rods[rodId], w = weights || GEN4_ROD_WEIGHTS;
+      const r = t.rods[rodId], w = weights || (r && r.weights) || GEN4_ROD_WEIGHTS;
       if (!r) return null;
       let roll = Math.floor(rng() * 100), k = 0;
       while (k < w.length - 1 && roll >= w[k]) roll -= w[k++];

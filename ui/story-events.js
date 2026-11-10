@@ -5,6 +5,7 @@
 
   function create(env) {
     function visible(person, map) {
+      const xy=env.kalosStory?.visible(person);if(xy!==undefined)return xy;
       const bw=env.unovaStory?.visible(person);if(bw!==undefined)return bw;
       const platinum = env.sinnohStory.visible(person);
       if (platinum !== undefined) return platinum;

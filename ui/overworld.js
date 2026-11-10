@@ -2095,6 +2095,8 @@
       const r = rodFrame();
       sheet = look + "_fish"; w = 32; frame = r.frame; dx = r.dx; dy = r.dy;
     }
+    const mount = me.avatar === "walk" && ctx.mount?.();
+    if(mount){sheet=look;frame=frameFor(me.facing,false,0,9);dy=-10;sprites.push({y:py,over:false,draw:()=>drawSprite(mount,32,32,frameFor(me.facing,!!me.move,me.parity,9),me.facing==="right",px-camX-8,py-camY+4)});}
     const meOver = overTop(me, me.map, me.x, me.y, me.move ? me.move.tmap || me.map : me.map, me.move ? me.move.tx : me.x, me.move ? me.move.ty : me.y);
     // (Up in the air on an Escape Rope: over everything once a tile up.)
     const lift = me.lift || 0;
