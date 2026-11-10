@@ -312,8 +312,9 @@
   const knowsMove = (record, move) => record.moves.some((m) => m.name === move);
 
   // Moves the species learns at exactly this level that the record doesn't know.
-  function movesLearnedAt(record, level) {
-    const learnset = window.LEARNSETS_GEN6[record.species];
+  function movesLearnedAt(record, level, here) {
+    const xy = window.Kalos?.owns(here) && Kalos.data().learnsets[record.species];
+    const learnset = xy ? {levelup:xy} : window.LEARNSETS_GEN6[record.species];
     if (!learnset) return [];
     const out = [];
     for (const [lvl, move] of learnset.levelup) {

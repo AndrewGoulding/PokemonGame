@@ -457,7 +457,7 @@
 
   function startStep(r, dir, spin, speedOverride) {
     // (ctx.canRun can restrict running, e.g. to after FireRed's Running Shoes.)
-    const run = !spin && !speedOverride && !r.jump && me.avatar === "walk" && runHeld() && (!ctx.canRun || ctx.canRun());
+    const run = !spin && !speedOverride && !r.jump && me.avatar === "walk" && (ctx.skate?.() || runHeld()) && (!ctx.canRun || ctx.canRun());
     if (me.avatar === "bike") { me.bikeRun = dir === me.bikeDir ? (me.bikeRun || 0) + 1 : 0; me.bikeDir = dir; }
     const speed = me.avatar === "bike" ? BIKE_SPEEDS[Math.min(me.bikeRun, BIKE_SPEEDS.length - 1)]
       : me.avatar === "surf" || me.avatar === "dive" ? SURF_SPEED : run ? RUN_SPEED : WALK_SPEED;

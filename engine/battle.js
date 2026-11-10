@@ -545,6 +545,7 @@
       this.switchCause = null;
       this.pendingSwitch = null;
       this.expEnabled = !!opts.exp;
+      this.levelUpLearnsets = opts.levelUpLearnsets || null;
       // (The level your Pokémon can grow to here: this game's level caps, Player.levelCap.)
       this.levelCap = Math.min(window.Experience ? window.Experience.MAX_LEVEL : 100, opts.levelCap || 100);
       this.capNoted = new Set();
@@ -2789,7 +2790,7 @@
     ownMoves(mon) { return mon.transformed && mon.original ? mon.original.moves : mon.moves; }
 
     learnLevelUpMoves(mon) {
-      const learnset = window.LEARNSETS_GEN6 && window.LEARNSETS_GEN6[mon.baseSpecies];
+      const learnset = this.levelUpLearnsets?.[mon.baseSpecies] ? {levelup:this.levelUpLearnsets[mon.baseSpecies]} : window.LEARNSETS_GEN6 && window.LEARNSETS_GEN6[mon.baseSpecies];
       if (!learnset) return;
       for (const [lvl, name] of learnset.levelup) {
         if (lvl !== mon.level) continue;

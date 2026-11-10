@@ -291,6 +291,7 @@
       const f = env.player.flags;
       // (Orre: an e-mail due as you come in, Colosseum's: special() below found it, game/orre-mail.js.)
       if (ev.trigger && /^(arrive|enter):/.test(script || "") && env.orreMailWaiting) { await env.orreMail(); return; }
+      if (env.kalosStory && await env.kalosStory.run(script)) return;
       if (env.unovaStory && await env.unovaStory.run(script)) return;
       if (await env.sinnohStory.run(script)) return;
 
@@ -2149,7 +2150,7 @@
       // Hoenn: a step's scene while its var has its value, and its maps' frame tables as you come in.
       if (/^hoenn:/.test(script || "")) return env.hoenn.triggerDue(script);
       // (Anyone or any sign in Hoenn that has an Emerald script, unless this game has its own for it.)
-      if ((/^(?:bw|bw1):/).test(script||'')) return true;
+      if ((/^(?:bw|bw1|xy):/).test(script||'')) return true;
       if (env.isHoenn(env.player.location.map) && env.hoenn.hasScript(script) && !env.SPECIAL.has(script) && !env.TRAINER_SCRIPTS.has(script) && !env.ITEM_BALLS.has(script)) return true;
       if (/^(enter|arrive):/.test(script || "") && env.isHoenn(script.replace(/^\w+:/, ""))) return !!env.hoenn.frameScript(script.replace(/^\w+:/, ""), /^enter:/.test(script));
       if (/^hgss:/.test(script || "")) return env.johto.triggerDue(script);

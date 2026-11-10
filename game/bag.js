@@ -345,7 +345,7 @@
     record.exp = Math.max(record.exp, E.expForLevel(E.growthRate(record.species), record.level));
     if (!opts.noFriendship) window.Party.adjustFriendship(record, "levelUp", opts.here);
     if (record.hp > 0) record.hp = Math.min(window.Party.maxHp(record), record.hp + window.Party.maxHp(record) - oldMax);
-    return window.Party.movesLearnedAt(record, record.level);
+    return window.Party.movesLearnedAt(record, record.level, opts.here);
   }
 
   // An Exp. Candy: its Exp. Points, and the levels they bring, each as if

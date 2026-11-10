@@ -1972,7 +1972,7 @@ for (const share of [false, true]) {
   // (FireRed gives the Underground Path, the S.S. Anne, the Rocket Hideout, Silph Co., the Pokémon League,
   // the Ember Spa, the Dunsparce Tunnel (Three Isle Path), the Rocket Warehouse, Trainer Tower's inside, the Tanoby Key and the Tanoby chambers no square of their own.)
   for (const name of Object.keys(WORLD_MAPS)) {
-    if (["johto", "emerald", "orre", "hoenn", "sinnoh", "unova"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Hoenn, Faraway Island, Orre, Sinnoh and Unova aren't on Kanto's Town Map)
+    if (["johto", "emerald", "orre", "hoenn", "sinnoh", "unova", "kalos"].includes(WORLD_MAPS[name].region)) continue;   // (Johto, Hoenn, Faraway Island, Orre, Sinnoh and Unova aren't on Kanto's Town Map)
     if (window.JOHTO_TOWN_MAP && window.JOHTO_TOWN_MAP.at[name]) continue;   // (nor Johto's maps east of New Bark Town, which are Kanto's for Badges but on Johto's)
     // (Saffron's Magnet Train station, HGSS's: its townMapSection, which ui/magnet-train.js adds.)
     if (WORLD_MAPS[name].townMapSection) { assert(onMap(WORLD_MAPS[name].townMapSection), name + " is on the Town Map"); continue; }

@@ -474,6 +474,7 @@
     johto: ["zephyr", "hive", "plain", "fog", "storm", "mineral", "glacier", "rising"],
     hoenn: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"],
     sinnoh: ["coal", "forest", "relic", "cobble", "fen", "mine", "icicle", "beacon"],
+    kalos: ["kalos-bug", "kalos-cliff", "kalos-rumble", "kalos-plant", "kalos-voltage", "kalos-fairy", "kalos-psychic", "kalos-iceberg"],
     unova: ["basic", "toxic", "insect", "bolt", "quake", "jet", "legend", "wave"]
   };
   // Each region's caps by its Badges held: the level of the next Gym Leader's ace (their highest-levelled
@@ -481,6 +482,7 @@
   const LEVEL_CAPS = {
     kanto: [14, 22, 26, 32, 47, 47, 52, 55],   // Brock, Misty, Lt. Surge, Erika, Koga, Sabrina, Blaine, Giovanni (raised: game/kanto-trainer-levels.js)
     johto: [13, 17, 19, 25, 31, 35, 35, 41],   // Falkner, Bugsy, Whitney, Morty, Chuck, Jasmine, Pryce (34), Clair
+    kalos: [12, 25, 32, 34, 37, 42, 48, 59],
     unova: [13, 18, 24, 30, 33, 39, 48, 51],
     sinnoh: [14, 22, 26, 32, 37, 41, 44, 50], // Platinum Gym order
     hoenn: [15, 19, 24, 29, 31, 33, 42, 46]    // Roxanne, Brawly, Wattson, Flannery, Norman, Winona, Tate & Liza, Juan
@@ -495,6 +497,7 @@
     const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
     const n = REGION_BADGES[region].filter((b) => (player.badges || []).includes(b)).length;
     if (region === "unova") { const base=n===8&&!(player.flags&&player.flags.unovaLeagueClear)?59:n<8?LEVEL_CAPS.unova[n]:100; return window.UnovaModes?UnovaModes.cap(player,base):base; }
+    if (region === "kalos" && n === 8 && !player.flags.kalosLeagueClear) return 68;
     if (region === "sinnoh" && n === 8 && !(player.flags && player.flags.sinnohLeagueClear)) return 62;
     return n < LEVEL_CAPS[region].length ? LEVEL_CAPS[region][n] : 100;
   }

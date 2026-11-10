@@ -95,7 +95,8 @@
       if (!byMachine(record, move)) return "unable";
       if (!hasMachine(player, move)) return "hm";
     }
-    const badge = (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "unova") ? null : inSinnoh(player) ? SINNOH_BADGES[move] : inHoenn(player) ? f.hoenn : inJohto(player) ? f.johto : f.badge;
+    const kalosBadges={Cut:"kalos-bug",Fly:"kalos-plant",Surf:"kalos-rumble",Strength:"kalos-cliff",Waterfall:"kalos-iceberg"};
+    const badge = window.Kalos?.owns(player.location?.map) ? kalosBadges[move] : (((window.WORLD_MAPS || {})[(player.location || {}).map] || {}).region === "unova") ? null : inSinnoh(player) ? SINNOH_BADGES[move] : inHoenn(player) ? f.hoenn : inJohto(player) ? f.johto : f.badge;
     if (badge && !player.badges.includes(badge)) return "badge";
     return null;
   }

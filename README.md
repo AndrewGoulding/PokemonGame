@@ -15,6 +15,9 @@ Area. See [Unova’s opening](docs/unova-opening.md) for content, rebuilding and
 [remaining work](docs/unova-completion.md). Its offline postgame also includes [battle facilities](docs/unova-facilities.md),
 [eight-family Join Avenue](docs/unova-avenue.md), and [N’s Pokémon, swarms, tutors, trades and Abyssal Ruins](docs/unova-services.md).
 
+Kalos’s X/Y opening is playable through Viola’s first Gym. Start with the Kalos
+researcher in Fight Area; see [Kalos’s opening](docs/kalos.md) for content and limits.
+
 ## Running it
 
 Open `index.html` in a browser. FireRed's opening plays (the copyright screen,
