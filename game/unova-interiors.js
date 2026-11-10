@@ -9,5 +9,10 @@
  function tmProgress(p){const count=D.tmList.filter(id=>Player.itemCount(p,id)>0).length;return{count,total:D.tmList.length,next:D.tmThresholds.find(n=>count>=n&&!F.peek(p).gifts?.['interior-tm-'+n])||null};}
  function tmReward(p){const a=tmProgress(p);return a.next?F.gift(p,'interior-tm-'+a.next,D.tmReward):{done:true};}
  function diplomas(p){const caught=new Set(p.pokedex.caught.map(Party.speciesName));return[['regional',F.data().postgame.regionalDex],['national',F.data().postgame.nationalDex]].map(([key,list])=>({key,count:list.filter(n=>caught.has(Party.speciesName(n))).length,total:list.length}));}
- window.UnovaInteriors={data:()=>D,state,peek,freak,freakWon,crew,crewWon,buy,rotom,tmProgress,tmReward,diplomas};
+ function village(p){return state(p).village||(state(p).village={});}
+ function villageHoney(p){if(!p.flags[D.village.baker])return{battle:true};const mon=p.party.find(r=>!r.egg&&r.ability.replace(/[^a-z]/gi,'').toLowerCase()==='honeygather');if(!mon)return{ability:true};return F.gift(p,'village-honey-gather',D.village.honeyReward.item,D.village.honeyReward.quantity);}
+ function villageSecret(p){if(!village(p).practiceSeen)return{secret:true};return F.gift(p,'village-practice-secret',D.village.secretReward.item,D.village.secretReward.quantity);}
+ function villageFishing(p,rng=Math.random){const s=village(p),day=Player.gameTime(p).day;if(!s.fishing||s.fishing.day!==day){const list=D.village.fishingTables[F.season(p)][F.state(p).version||'black2'];s.fishing={day,target:list[Math.min(list.length-1,Math.max(0,Math.floor(rng()*list.length)))],done:false};}return s.fishing;}
+ function villageFish(p,mon){const s=villageFishing(p);if(!village(p).fishingJoined)return{joined:false};if(s.done)return{done:true};if(!mon||!p.party.includes(mon)||mon.egg)return{invalid:true};if(Party.speciesName(mon.species)!==Party.speciesName(s.target))return{species:true};if(mon.met?.caughtDay!==s.day)return{date:true};const r=F.gift(p,'village-fishing-'+s.day,D.village.fishingReward.item,D.village.fishingReward.quantity);if(!r.full)s.done=true;return r;}
+ window.UnovaInteriors={data:()=>D,village,villageHoney,villageSecret,villageFishing,villageFish,state,peek,freak,freakWon,crew,crewWon,buy,rotom,tmProgress,tmReward,diplomas};
 })();

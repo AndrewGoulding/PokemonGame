@@ -1296,6 +1296,7 @@
       if (player.flags.hoennRoamer === foe.team[0].species) delete player.flags.hoennRoamer;   // (and Hoenn's Latias or Latios)
       // (A horde's: the last one left, whichever of them it is.)
       const record = Party.caught(foe.team[(horde || wildDouble) && b.caught ? b.caught.teamIndex : 0] || foe.team[0], b.caught, ballUsed(b));
+      record.met = { ...record.met, caughtDay: Player.gameTime(player).day };
       delete record.teraAce;   // (a Tera Pokémon keeps its Tera Type)
       await addCaught(record, opts.keepCaught);
     }

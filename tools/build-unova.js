@@ -55,7 +55,7 @@ for(const [key,id]of [['cheren',58],['colress',59]]){const list=json('res/traine
 const movieKeys={hp:'hp',attack:'atk',defense:'def',speed:'spe',special_attack:'spa',special_defense:'spd'};
 for(const side of ['player','opponent'])chapter.data.movie.cast[side]=chapter.data.movie.cast[side].map(m=>({species:sp(m.species),level:m.level,nature:m.nature.slice(7).toLowerCase().replace(/^./,c=>c.toUpperCase()),gender:m.sex==='GENDER_MALE'?'M':'F',ability:m.ability,ivs:Object.fromEntries(Object.entries(m.ivs).map(([k,v])=>[movieKeys[k],v])),evs:Object.fromEntries(Object.entries(m.evs).map(([k,v])=>[movieKeys[k],Math.min(252,v)])),moves:m.moves.filter(n=>n!=='MOVE_NONE').map(move),...(m.held_item!=='ITEM_NONE'?{item:item(m.held_item)}:{})}));
 const bankMaps={royal_unova:M.UnovaRoyalUnova,castelia_city_11:M.UnovaRoyalUnovaDock,aspertia_city:city,route_19:r19,floccesy_town:town,floccesy_town_2:alder,route_20:r20,floccesy_ranch:ranch,floccesy_ranch_2:back,aspertia_city_gym:gym,virbank_city:virbank,virbank_city_gym_2:music,virbank_complex:complex,virbank_complex_2:inner,...chapter.banks,...nimbasa.banks,...west.banks,...east.banks,...postgame.banks,...services.banks};
-const interiors=require('./lib/unova-interiors')({source,read,json,clean,item,move,machine,trainer,actor,paint,house,link,M,bankMaps,west});
+const interiors=require('./lib/unova-interiors')({source,read,json,clean,item,move,machine,trainer,actor,paint,house,link,M,bankMaps,west,east,sp});
 const dungeons=require('./lib/unova-dungeons')({json,read,M,bankMaps,west,east,postgame,paint,link,fieldTrainer,trainers,deferred});
 const versioned=require('./lib/unova-versioned')({root,source,json,M,bankMaps,west,east,paint,link});
 const ruins=require('./lib/unova-ruins')({M,bankMaps,services});

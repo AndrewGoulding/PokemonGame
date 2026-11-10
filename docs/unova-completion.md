@@ -22,6 +22,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Mistralton, Celestial Tower and Skyla ([scope](unova-west.md))
 - [x] Eastern-region flight through the Champion ([scope](unova-east.md))
 - [x] Reversal Mountain, Undella, Lacunosa and Village Bridge
+- [x] Village Bridge source houses, Honey Gather, daily fishing club, rest and practice-secret quests ([scope](unova-village.md))
 - [x] Six-bridge thirsty runner, Fresh Water merchant and saved reward retries ([scope](unova-bridge-runner.md))
 - [x] Source trainer forms and playable Blue-Striped Basculin encounters ([scope](unova-trainer-forms.md))
 - [x] Opelucid, Drayden, Humilau and Marlon
