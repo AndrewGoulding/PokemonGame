@@ -34,6 +34,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] PWT Singles/Doubles tournaments, basic/Super Subway lines, Institute trials and BP exchange ([scope](unova-facilities.md))
 - [x] Basic/Super Multi Subway ladders, six source NPC partner pools and native tag battles ([scope](unova-facilities.md))
 - [x] Native Triple Battles, adjacency/Shift and six-member PWT tournaments ([scope](unova-facilities.md))
+- [x] Source rental pools, distinct Type Expert wins and native battle Medal counters ([scope](unova-facilities.md))
 - [x] Native Rotation Battles, four-member PWT tournaments and versioned Charles lessons ([scope](unova-facilities.md))
 - [ ] Online/download facilities
 - [x] Offline Pokémon Musical, source four shows/100 props, saved finales ([scope](unova-activities.md))
@@ -43,6 +44,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Five source Trainer Card milestones, saved signature and expanded Medal Rally tracking ([scope](unova-records.md))
 - [ ] Remaining Medal Rally field, multiplayer and format-specific conditions
 - [x] Mapped-area source pickups, native Dowsing Machine and field journal ([scope](unova-field.md))
+- [x] Royal Unova cabin search, daily source crews, cruise timer and weekday prizes ([scope](unova-cruise.md))
 - [ ] Remaining field-item banks, gifts, optional houses and encounter audit
 - [x] Source Easy/Challenge levels and alternate teams, saved keys and local sharing ([scope](unova-modes.md))
 - [ ] Remaining version-specific geometry and campaign-event audit
