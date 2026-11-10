@@ -131,7 +131,7 @@
   // The song that plays for `name` (Johto's loaded, or tried): in Johto,
   // HGSS's for FireRed's; a gs_ song that isn't there, what it falls back to.
   function pick(name) {
-    if(wantsUnova(name)){const bw=/^bw_/.test(name)?name:UNOVA_SONGS[name];return unovaReady()&&window.UNOVA_MUSIC_DATA.songs[bw]?bw:/^bw_/.test(name)?"mus_route1":name;}
+    if(wantsUnova(name)){const bw=window.UnovaMusicLayers?.decode(name)?.base||(/^bw_/.test(name)?name:UNOVA_SONGS[name]);return unovaReady()&&window.UNOVA_MUSIC_DATA.songs[bw]?bw:/^bw_/.test(name)?"mus_route1":name;}
     // (Hoenn's: Emerald's song of that name, if it has one; else, as it was.)
     if (wantsHoenn(name)) {
       const em = hoennSong(name);
@@ -221,11 +221,15 @@
     cache.set(name, s);
     // Keep the most recent scores within 128 MiB; one long current score
     // may exceed that budget, but a regional tour cannot retain ten of them.
-    let bytes=[...cache.values()].reduce((n,a)=>n+a.buffer.length*a.buffer.numberOfChannels*4,0);
-    while(cache.size>1&&(cache.size>10||bytes>128*1024*1024)){const key=cache.keys().next().value,a=cache.get(key);bytes-=a.buffer.length*a.buffer.numberOfChannels*4;cache.delete(key);}
+    trimCache();
     return s;
   }
 
+  function trimCache(stemBytes=layers?.bytes()||0) {
+    let bytes=[...cache.values()].reduce((n,a)=>n+a.buffer.length*a.buffer.numberOfChannels*4,0);
+    while(cache.size>(stemBytes?0:1)&&(cache.size>10||bytes+stemBytes>128*1024*1024)){const key=cache.keys().next().value,a=cache.get(key);bytes-=a.buffer.length*a.buffer.numberOfChannels*4;cache.delete(key);}
+  }
+  const layers=window.UnovaLayerAudio?.create({context:()=>ctx,master:()=>master,current:()=>current,setCurrent:c=>{current=c;},stop:stopCurrent,valid:base=>enabled&&!fanfareDepth&&window.UnovaMusicLayers?.decode(wanted)?.base===base,trim:trimCache});
   function stopCurrent(fade) {
     if (!current) return;
     const c = current;
@@ -234,7 +238,7 @@
     c.gain.gain.cancelScheduledValues(t);
     c.gain.gain.setValueAtTime(c.gain.gain.value, t);
     c.gain.gain.linearRampToValueAtTime(0, t + (fade || 0.01));
-    try { c.source.stop(t + (fade || 0.01) + 0.02); } catch (e) { /* already stopped */ }
+    for(const source of c.sources||[c.source])if(source)try { source.stop(t + (fade || 0.01) + 0.02); } catch (e) { /* already stopped */ }
   }
 
   // Plays `name` from `offset` seconds (looping if it loops). Resolves when a
@@ -262,6 +266,9 @@
       loadDp(name).then((ok) => { if (ok && enabled && ctx && wanted === name && !fanfareDepth && (!current || current.name !== name)) start(name); });
       return Promise.resolve();
     }
+    const mix=window.UnovaMusicLayers?.decode(name);
+    if(mix&&layers&&unovaReady()){layers.start(name,mix,offset,fade);return Promise.resolve();}
+    layers?.leave(fanfareDepth>0);
     const play = pick(name), s = play && song(play);
     if (!s) return Promise.resolve();
     stopCurrent(fade != null ? fade : 0.3);
@@ -286,7 +293,7 @@
     music(name) {
       wanted = name || null;
       if (!enabled || !ctx || !window.MUSIC_DATA || fanfareDepth) return;
-      if (!name) { stopCurrent(0.5); return; }
+      if (!name) { stopCurrent(0.5); layers?.leave(false); return; }
       // (The same song; unless it stands for a different one now: off to or from Johto on a bike.)
       if (current && current.name === name && (johtoTried || !wantsJohto(name)) && (hoennTried || !wantsHoenn(name)) && (unovaTried || !wantsUnova(name)) && current.play === pick(name)) return;
       start(name);
@@ -346,6 +353,7 @@
       volume = Math.max(0, Math.min(1, +v || 0));
       if (master) master.gain.setValueAtTime(MASTER * volume, ctx.currentTime);
     },
+    layerInfo:()=>layers?.info()||null,
     playing:()=>current?.play||null,
     now: () => (current ? current.name : null),   // the song playing (or null)
     // Where the player is: a function giving the region ("johto" there), so

@@ -161,7 +161,7 @@ function decodeSequence(data, seed) {
   const tracks = [];
   const starts = [[0, 0]];   // [track number, offset]
   // (Track 0 opens the others first: 0xFE, then 0x93s.)
-  for (let i = 0; i < starts.length; i++) tracks.push(decodeTrack(data, starts[i][1], i === 0 ? starts : null, vars, random));
+  for (let i = 0; i < starts.length; i++) tracks.push({ ...decodeTrack(data, starts[i][1], i === 0 ? starts : null, vars, random), id: starts[i][0] });
   return tracks;
 }
 function decodeTrack(data, start, opens, vars, random) {

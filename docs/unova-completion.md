@@ -64,4 +64,5 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [ ] Black / White original campaign, gyms, rivals, N ending and postgame
 - [x] Regional Town Map, visited Fly navigation and version/season habitat browser ([scope](unova-town-map.md))
 - [x] Shared Black/White music, seasonal/version arrangements and native battle/jingle routing ([scope](unova-audio.md))
-- [ ] BW2-exclusive/interactive music coverage, final source audit and browser campaign validation
+- [x] Village Bridge/Accumula interactive musicians, pianist cry quest and four city proximity layers ([scope](unova-music-layers.md))
+- [ ] BW2-exclusive music coverage, remaining interactive sound events, final source audit and browser campaign validation

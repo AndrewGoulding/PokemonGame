@@ -1,0 +1,366 @@
+{
+  "source": {
+    "repository": "https://github.com/squiddonaut/pokeblack",
+    "commit": "67d91a78b16caccbd4fbecdddf8a74c823d208a6",
+    "layoutRepository": "https://github.com/fuddlesworth/pokebw2",
+    "layoutCommit": "588c0b937229f5c5cb7abad9bf8070dd2c7d97eb",
+    "archives": {
+      "switch": {
+        "file": "files/a/1/4/7",
+        "sha256": "b2ebedf83e8468b0c6a34c8b8d16bcaad36ba4309d1c74491d5e039a7c209ec7"
+      },
+      "city": {
+        "file": "files/a/1/3/2",
+        "sha256": "8306946c3a99b1f972e35d4ff9d0b0f28ece4482734ab5ec811d4ed7ca6ca2aa"
+      }
+    }
+  },
+  "switchCount": 9,
+  "cityMask": 768,
+  "switchSets": [
+    {
+      "index": 0,
+      "bgm": 1067,
+      "sequence": "SEQ_BGM_BATTLE_SUBWAY",
+      "song": "bw_bgm_battle_subway",
+      "masks": [
+        63816,
+        512,
+        128,
+        1024,
+        6,
+        1,
+        48,
+        0,
+        0
+      ],
+      "fadeFrames": 60,
+      "zones": [
+        {
+          "id": 75,
+          "bank": "battle_subway"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "bgm": 1058,
+      "sequence": "SEQ_BGM_H_04",
+      "song": "bw_bgm_h_04",
+      "masks": [
+        64517,
+        266,
+        640,
+        32,
+        80,
+        0,
+        0,
+        0,
+        0
+      ],
+      "fadeFrames": 60,
+      "zones": [
+        {
+          "id": 255,
+          "bank": "village_bridge"
+        },
+        {
+          "id": 256,
+          "bank": "village_bridge_2"
+        },
+        {
+          "id": 257,
+          "bank": "village_bridge_3"
+        },
+        {
+          "id": 258,
+          "bank": "village_bridge_4"
+        },
+        {
+          "id": 259,
+          "bank": "village_bridge_5"
+        },
+        {
+          "id": 260,
+          "bank": "village_bridge_6"
+        },
+        {
+          "id": 261,
+          "bank": "village_bridge_7"
+        },
+        {
+          "id": 262,
+          "bank": "village_bridge_8"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "bgm": 1019,
+      "sequence": "SEQ_BGM_T_02",
+      "song": "bw_bgm_t_02",
+      "masks": [
+        64639,
+        768,
+        128,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "fadeFrames": 60,
+      "zones": [
+        {
+          "id": 397,
+          "bank": "accumula_town"
+        },
+        {
+          "id": 398,
+          "bank": "accumula_town_pokemon_center"
+        },
+        {
+          "id": 399,
+          "bank": "accumula_town_2"
+        },
+        {
+          "id": 400,
+          "bank": "accumula_town_3"
+        },
+        {
+          "id": 401,
+          "bank": "accumula_town_4"
+        },
+        {
+          "id": 402,
+          "bank": "accumula_town_5"
+        },
+        {
+          "id": 403,
+          "bank": "accumula_town_6"
+        },
+        {
+          "id": 404,
+          "bank": "accumula_town_7"
+        },
+        {
+          "id": 405,
+          "bank": "accumula_town_8"
+        }
+      ]
+    }
+  ],
+  "cities": [
+    {
+      "index": 0,
+      "zone": 16,
+      "bank": "nacrene_city",
+      "origin": {
+        "x": 629,
+        "y": 0,
+        "z": 582
+      },
+      "volume": [
+        0,
+        10,
+        40,
+        80,
+        127,
+        127
+      ],
+      "rangeX": [
+        15,
+        12,
+        8,
+        5,
+        3,
+        0
+      ],
+      "rangeY": [
+        104,
+        103,
+        102,
+        101,
+        100,
+        0
+      ],
+      "rangeZ": [
+        15,
+        12,
+        8,
+        5,
+        3,
+        0
+      ]
+    },
+    {
+      "index": 1,
+      "zone": 97,
+      "bank": "driftveil_city_gym",
+      "origin": {
+        "x": 15,
+        "y": -62,
+        "z": 0
+      },
+      "volume": [
+        0,
+        50,
+        75,
+        110,
+        127,
+        127
+      ],
+      "rangeX": [
+        104,
+        103,
+        102,
+        101,
+        100,
+        0
+      ],
+      "rangeY": [
+        15,
+        12,
+        8,
+        7,
+        6,
+        0
+      ],
+      "rangeZ": [
+        25,
+        18,
+        14,
+        9,
+        4,
+        0
+      ]
+    },
+    {
+      "index": 2,
+      "zone": 113,
+      "bank": "icirrus_city",
+      "origin": {
+        "x": 176,
+        "y": 0,
+        "z": 187
+      },
+      "volume": [
+        0,
+        25,
+        50,
+        95,
+        127,
+        127
+      ],
+      "rangeX": [
+        15,
+        12,
+        8,
+        5,
+        3,
+        0
+      ],
+      "rangeY": [
+        104,
+        103,
+        102,
+        101,
+        100,
+        0
+      ],
+      "rangeZ": [
+        15,
+        12,
+        8,
+        5,
+        3,
+        0
+      ]
+    },
+    {
+      "index": 3,
+      "zone": 120,
+      "bank": "opelucid_city",
+      "origin": {
+        "x": 420,
+        "y": -1,
+        "z": 172
+      },
+      "volume": [
+        0,
+        10,
+        40,
+        80,
+        127,
+        127
+      ],
+      "rangeX": [
+        15,
+        12,
+        8,
+        5,
+        3,
+        0
+      ],
+      "rangeY": [
+        104,
+        103,
+        102,
+        101,
+        100,
+        0
+      ],
+      "rangeZ": [
+        15,
+        12,
+        8,
+        5,
+        3,
+        0
+      ]
+    },
+    {
+      "index": 4,
+      "zone": 418,
+      "bank": "anville_town",
+      "origin": {
+        "x": 20,
+        "y": 5,
+        "z": 38
+      },
+      "volume": [
+        0,
+        10,
+        40,
+        80,
+        127,
+        127
+      ],
+      "rangeX": [
+        15,
+        12,
+        8,
+        5,
+        3,
+        0
+      ],
+      "rangeY": [
+        104,
+        103,
+        102,
+        101,
+        100,
+        0
+      ],
+      "rangeZ": [
+        15,
+        12,
+        8,
+        5,
+        3,
+        0
+      ]
+    }
+  ]
+}

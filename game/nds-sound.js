@@ -116,7 +116,8 @@
     const loop = song.loop && song.loop[1] > song.loop[0] ? song.loop : null;
     const gain = opts.gain || GAIN;
 
-    const tracks = seq.map((t) => ({
+    const tracks = seq.map((t, i) => ({
+      audible: opts.trackMask == null || !!(opts.trackMask & (1 << (t.id == null ? i : t.id))),
       events: t.events, i: 0, offset: 0, loop: t.loop, loopTick: t.loopTick, end: t.end, done: !t.events.length,
       prog: 0, vol: 127, expr: 127, master: 127, pan: 64, bend: 0, bendRange: 2,
       modDepth: 0, modSpeed: 16, modType: 0, modRange: 1, modDelay: 0,
@@ -147,6 +148,7 @@
       return best;
     }
     function noteOn(tr, key, vel, len) {
+      if (!tr.audible) return;
       const r = region(bank[tr.prog], key);
       if (!r || (r.t === "pcm" && !data.waves[r.w])) return;
       // (Tie: the note goes on in the channel that's playing, at the new key.)
@@ -256,7 +258,7 @@
     }
 
     const L = [], R = [];
-    let outLen = 0, carry = 0;
+    let outLen = 0, carry = 0, introMark = 0;
     const loopMarks = [];
     const maxUpdates = Math.ceil((opts.maxSeconds || 600) * UPDATE_HZ);
     let tail = 0;
@@ -265,6 +267,7 @@
       tempoCount += tempo;
       while (tempoCount >= 240) {
         tempoCount -= 240;
+        if (loop && tick === loop[0]) introMark = outLen;
         if (loop && tick === loop[1] + (loop[1] - loop[0]) * loopMarks.length && loopMarks.length < 2) loopMarks.push(outLen);
         if (loop && loopMarks.length >= 2) break;
         doTick();
@@ -345,6 +348,14 @@
         left[b - SEAM + i] += (left[a - SEAM + i] - left[b - SEAM + i]) * f;
         right[b - SEAM + i] += (right[a - SEAM + i] - right[b - SEAM + i]) * f;
       }
+    }
+    // Stems share the same sequencer clock. Keep the intro and the warmed-up
+    // loop, avoiding a redundant complete loop in every retained stem buffer.
+    if (opts.trimLoopWarmup && looped) {
+      const [a,b] = loopMarks, size = introMark + b - a;
+      const cut = channel => { const out = new Float32Array(size); out.set(channel.subarray(0,introMark)); out.set(channel.subarray(a,b),introMark);
+        const seam = Math.min(SEAM,introMark,a); for(let i=0;i<seam;i++){const f=(i+1)/seam;out[introMark-seam+i]+=(channel[a-seam+i]-out[introMark-seam+i])*f;} return out; };
+      return {rate:RATE,left:cut(left),right:cut(right),loopStart:introMark,loopEnd:size};
     }
     return { rate: RATE, left, right, loopStart: looped ? loopMarks[0] : null, loopEnd: looped ? loopMarks[1] : null };
   }
