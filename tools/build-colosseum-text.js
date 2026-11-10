@@ -1,9 +1,17 @@
-// Pokémon Colosseum's text, from your own copy of the game: its .fsys archives
-// (extracted from the disc with Dolphin: right-click the game, Properties,
-// Filesystem), unpacked and their message tables decoded into
-// assets/text/colosseum.json, for Orre's story to use as it's built.
+// Pokémon Colosseum's text, or Pokémon XD's, from your own copy of the game:
+// its .fsys archives (extracted from the disc with Dolphin: right-click the
+// game, Properties, Filesystem, Extract Entire Disc; they're in its files
+// folder), unpacked and their message tables decoded into
+// assets/text/colosseum.json (or, with --out, another file there: XD's is
+// xd.json), for Orre's stories to use as they're built.
 //
 //   node tools/build-colosseum-text.js <.fsys files or folders of them>
+//   node tools/build-colosseum-text.js --out xd.json <XD's .fsys files or folders>
+//
+// (Both games' archives are the same kind. The European discs also carry some
+// archives again for their other languages, named _fr, _ge, _it, _sp: those
+// are left out, the English game's own tables being in the others; and some of
+// their files are only zeros, skipped.)
 //
 // (Message tables already unpacked from the archives, .msg files, can be
 // given too.)
@@ -45,7 +53,10 @@ function lzss(src, size) {
 
 function unpack(file) {
   const d = fs.readFileSync(file);
-  if (d.toString("latin1", 0, 4) !== "FSYS") throw new Error(file + " isn't an .fsys archive");
+  if (d.toString("latin1", 0, 4) !== "FSYS") {
+    if (d.every((b) => b === 0)) return [];   // (a European disc's empty placeholders)
+    throw new Error(file + " isn't an .fsys archive");
+  }
   const files = [], n = d.readUInt32BE(0x0c);
   for (let k = 0; k < n; k++) {
     const e = d.readUInt32BE(0x60 + 4 * k), type = d[e + 2];
@@ -107,15 +118,20 @@ function tablesIn(d) {
 
 // ---------- Everything given ----------
 
-const inputs = process.argv.slice(2).flatMap((p) => (fs.statSync(p).isDirectory()
-  ? fs.readdirSync(p).filter((f) => /\.(fsys|msg)$/i.test(f)).map((f) => path.join(p, f)) : [p]));
-if (!inputs.length) {
-  console.error("Usage: node tools/build-colosseum-text.js <.fsys or .msg files, or folders of them>");
+const args = process.argv.slice(2), outAt = args.indexOf("--out");
+const outName = outAt >= 0 ? args.splice(outAt, 2)[1] : "colosseum.json";
+// (A European disc's other languages: the same archive again, named for its language.)
+const OTHER_LANGUAGE = /_(fr|ge|it|sp)\.fsys$/i;
+const inputs = args.flatMap((p) => (fs.statSync(p).isDirectory()
+  ? fs.readdirSync(p).filter((f) => /\.(fsys|msg)$/i.test(f)).map((f) => path.join(p, f)) : [p]))
+  .filter((f) => !OTHER_LANGUAGE.test(f));
+if (!inputs.length || !/^[\w.-]+\.json$/.test(outName)) {
+  console.error("Usage: node tools/build-colosseum-text.js [--out xd.json] <.fsys or .msg files, or folders of them>");
   process.exit(1);
 }
-// (Into the repository's assets/text; or, run from a copy of this script on its own, colosseum.json where you are.)
+// (Into the repository's assets/text; or, run from a copy of this script on its own, where you are.)
 const repoText = path.join(__dirname, "..", "assets/text");
-const outFile = fs.existsSync(repoText) ? path.join(repoText, "colosseum.json") : path.resolve("colosseum.json");
+const outFile = fs.existsSync(repoText) ? path.join(repoText, outName) : path.resolve(outName);
 const out = fs.existsSync(outFile) ? JSON.parse(fs.readFileSync(outFile, "utf8")) : {};
 let count = 0;
 for (const file of inputs) {

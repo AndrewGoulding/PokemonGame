@@ -3150,7 +3150,10 @@ Orre has two campaigns, as the GameCube games do. **Pokémon Colosseum's** comes
 you're Johto's Champion and sends you undercover into Team Snagem. **Pokémon XD: Gale of Darkness's** comes once
 Colosseum's story is over in Orre (`orreStory` 44) and Hoenn's League is won: Oak calls again, Cipher on the loose
 in Orre again (`xdStory` 1), and at his lab his briefing and his plane back to the Orre Air Strip (`xdStory` 2;
-`tests/browser/xd-start.js`). XD's own story in Orre is still to come.
+`tests/browser/xd-start.js`). XD's own story in Orre is still to come; its text is in: `assets/text/xd.json`, XD's
+English message tables (19,323 strings), extracted from your own copy of the disc by
+`node tools/build-colosseum-text.js --out xd.json <the disc's files folder>` (as Colosseum's are, into
+`assets/text/colosseum.json`; a European disc's other-language archives are left out).
 
 Orre's story is played through in a real browser by `tests/browser/orre-story-early.js`, `-pyrite.js`, `-agate.js`
 (with `-agate-2.js`), `-under.js`, `-realgam.js` and `orre-shadow-mechanics.js` (Playwright: real input, battles won,
