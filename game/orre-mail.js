@@ -16,65 +16,65 @@
 (function () {
   const Orre = window.Orre;
   const MAIL = {
-    EMERGENCY: { subject: "EMERGENCY!!!", from: "Duking of Pyrite Town",   // (#20859, #20860, #20861)
+    EMERGENCY: { subject: "Emergency!!!", from: "Duking of Pyrite Town",   // (#20859, #20860, #20861)
       body: ["{PLAYER}, we've got big trouble! I\njust got word from our people that\nMt. Battle's under attack by a","mysterious group of thugs. Please,\ncan you go help? We think it's the","same group as the one Miror B.\nbelonged to. We're counting on you!"] },
-    TROUBLE_IN_UNDER: { subject: "TROUBLE IN UNDER?", from: "Secc in Pyrite Town",   // (#16023, #16130, #16040)
+    TROUBLE_IN_UNDER: { subject: "Trouble in Under?", from: "Secc in Pyrite Town",   // (#16023, #16130, #16040)
       body: ["Hi, big guy. We've been hearing about\nShadow Pokémon from people visiting\nThe Under from Pyrite. A lot of the","visitors have seen the Shadow\nPokémon. Nett in The Under should\nhave more information for you."] },
-    MIROR_PEON_NABBED: { subject: "MIROR PEON NABBED!", from: "Chief Sherles",   // (#17425, #16069, #17422)
+    MIROR_PEON_NABBED: { subject: "Miror Peon Nabbed!", from: "Chief Sherles",   // (#17425, #16069, #17422)
       body: ["{PLAYER}, it's Sherles. We've just\napprehended a pair of thugs we\nbelieve to be Miror B.'s underlings.","We may be able to lean on them for\ninformation. We have them locked up,\nso hurry over to Pyrite."] },
-    LAB_DATA: { subject: "LAB DATA?", from: "Nett from The Under",   // (#21079, #16143, #16031)
+    LAB_DATA: { subject: "Lab Data?", from: "Nett from The Under",   // (#21079, #16143, #16031)
       body: ["Hi, this is Nett. If you find any\ndata at the Shadow Pokémon Lab,","please bring it to me in The Under.\nI'll be waiting."] },
-    SHADOW_LIST: { subject: "SHADOW PKMN LIST!", from: "Nett from The Under",   // (#16149, #16143, #16108)
+    SHADOW_LIST: { subject: "Shadow Pokémon List!", from: "Nett from The Under",   // (#16149, #16143, #16108)
       body: ["{PLAYER}, I did it! I analyzed the\ndata ROM and managed to extract a\npartial list of Shadow Pokémon. For","the time being, I've identified 29\nShadow Pokémon. There appear to be","more, so I'll send updates when I\nfind them."] },
-    NEW_SYSTEM: { subject: "NEW SYSTEM DONE!", from: "Nett from The Under",   // (#21752, #21753, #21754)
+    NEW_SYSTEM: { subject: "New System Done!", from: "Nett from The Under",   // (#21752, #21753, #21754)
       body: ["We, that's me and Secc in Pyrite,\ndeveloped a new system of downloading\ndata automatically to your P★DA. From","now on, information about Shadow\nPokémon should arrive directly from","people connected to the network.\nCheck it out!"] },
-    GREETINGS: { subject: "GREETINGS", from: "Eagun of Agate Village",   // (#21767, #21768, #21778)
+    GREETINGS: { subject: "Greetings", from: "Eagun of Agate Village",   // (#21767, #21768, #21778)
       body: ["Dear {PLAYER}, This is Eagun of Agate\nVillage. I just wanted to let you\nknow this is my first electronic","mail. I am not familiar with\nhigh-tech things, so I have only","learned how to type in words.\nIncidentally, if you are ever in"] },
-    WHO_IS_THIS: { subject: "WHO IS THIS?", from: "Bitt from The Under",   // (#16060, #16121, #16181)
+    WHO_IS_THIS: { subject: "Who Is This?", from: "Bitt from The Under",   // (#16060, #16121, #16181)
       body: ["Hi, it's Bitt in The Under. I was\ntaking photos the other day when I\nsaw this guy with this amazing head,","so I snapped him. He was singing this\nweird song. Something about the\nColosseum being his new place."] },
-    KID_NETWORK: { subject: "SHADOW POKéMON?", from: "Secc in Pyrite Town",   // (#16061, #16130, #16136)
+    KID_NETWORK: { subject: "Shadow Pokémon?", from: "Secc in Pyrite Town",   // (#16061, #16130, #16136)
       body: ["Big guy, there's trouble! The Kid\nNetwork got word that a\nsuspicious-looking Pokémon was","spotted in Pyrite. I'd like to give\nyou the full story in person, so can\nyou come visit me?"] },
-    LIST_1: { subject: "LIST ANALYSIS!", from: "Nett from The Under",   // (#17424, #16143, #16110)
+    LIST_1: { subject: "List Analysis!", from: "Nett from The Under",   // (#17424, #16143, #16110)
       body: ["Hi, it's Nett. I analyzed the Shadow\nPokémon List again and discovered six\nmore. The additions are Tyranitar,","Misdreavus, Slugma, Smeargle, Absol,\nand Heracross. I'll send another\nupdate if I can find any more."] },
-    LIST_2: { subject: "LIST ANALYSIS!", from: "Nett from The Under",   // (#17424, #16143, #16112)
+    LIST_2: { subject: "List Analysis!", from: "Nett from The Under",   // (#17424, #16143, #16112)
       body: ["Hi, it's Nett. I analyzed the Shadow\nPokémon List again and discovered six\nmore. The additions are Ursaring,","Skiploom, Quagsire, Tropius,\nSkarmory, and Sunflora. Look for more\nupdates!"] },
-    LIST_3: { subject: "LIST ANALYSIS!", from: "Nett from The Under",   // (#17424, #16143, #16114)
+    LIST_3: { subject: "List Analysis!", from: "Nett from The Under",   // (#17424, #16143, #16114)
       body: ["Hi, it's Nett. I analyzed the Shadow\nPokémon List again and discovered six\nmore. The additions are Noctowl,","Flaaffy, Houndoom, Shuckle, Miltank,\nand Delibird. I'll be in contact."] },
-    LIST_DONE: { subject: "LIST COMPLETED!", from: "Nett from The Under",   // (#16122, #16143, #16116)
+    LIST_DONE: { subject: "List Completed!", from: "Nett from The Under",   // (#16122, #16143, #16116)
       body: ["Hi, it's Nett. I analyzed the Shadow\nPokémon List some more and discovered\nthe very last one. The last Shadow","Pokémon was Togetic! That completes\nthe analysis of the data ROM you\nprovided!"] },
-    RECEIVE_PHOTOS: { subject: "RECEIVE PHOTOS", from: "Bitt from The Under",   // (#16124, #16121, #16137)
+    RECEIVE_PHOTOS: { subject: "Receive Photos", from: "Bitt from The Under",   // (#16124, #16121, #16137)
       body: ["{PLAYER}, did you know? Your P★DA can\nreceive not only e-mail, it can also","accept digital photos. I'll send one\nas a test. I hope it reaches you."] },
-    BIG_SNAG_MACHINE: { subject: "BIG SNAG MACHINE?", from: "Bitt from The Under",   // (#16037, #16121, #16057)
+    BIG_SNAG_MACHINE: { subject: "Big Snag Machine?", from: "Bitt from The Under",   // (#16037, #16121, #16057)
       body: ["Hi, this is Bitt in The Under.\nThere's this freaky rumor going\naround that Snagem holdouts fixed a","big Snag Machine. Do you think it's\ntrue? Can you look into it, too,\n{PLAYER}?"] },
-    SNAGEM_RUMOR: { subject: "SHADOW POKéMON?", from: "Bitt from The Under",   // (#16123, #16121, #16073)
+    SNAGEM_RUMOR: { subject: "Shadow Pokémon?", from: "Bitt from The Under",   // (#16123, #16121, #16073)
       body: ["Hi, this is Bitt in The Under. Got\nsome more news about those Snagem\nholdouts. There's a rumor now about a","creepy Smeargle and Ursaring. I think\nit's worth checking out."] },
-    TRAINER_VERDE: { subject: "BAYLEEF TRAINER", from: "Secc in Pyrite Town",   // (#16125, #16130, #16138)
+    TRAINER_VERDE: { subject: "Bayleef Trainer", from: "Secc in Pyrite Town",   // (#16125, #16130, #16138)
       body: ["Hi, big guy! Cail wanted me to tell\nyou that the Shadow Bayleef's trainer\nis named Verde. Please take care!"] },
-    TRAINER_ROSSO: { subject: "QUILAVA TRAINER", from: "Secc in Pyrite Town",   // (#16172, #16130, #16177)
+    TRAINER_ROSSO: { subject: "Quilava Trainer", from: "Secc in Pyrite Town",   // (#16172, #16130, #16177)
       body: ["Hi, big guy! Cail wanted me to tell\nyou that the Shadow Quilava's trainer\nis named Rosso. Please take care!"] },
-    TRAINER_BLUNO: { subject: "CROCONAW TRAINER", from: "Secc in Pyrite Town",   // (#16173, #16130, #16178)
+    TRAINER_BLUNO: { subject: "Croconaw Trainer", from: "Secc in Pyrite Town",   // (#16173, #16130, #16178)
       body: ["Hi, big guy! Cail wanted me to tell\nyou that the Shadow Croconaw's","trainer is named Bluno. Please take\ncare!"] },
-    LAB_VERDE: { subject: "SHADOW PKMN LAB", from: "Marcia of Pyrite Town",   // (#16024, #16098, #16042)
+    LAB_VERDE: { subject: "Shadow Pokémon Lab", from: "Marcia of Pyrite Town",   // (#16024, #16098, #16042)
       body: ["It appears as if criminals are\ngathering at the Shadow Pokémon Lab\nagain. There's more. People have seen","a Cipher Peon in a gaudy green outfit\nwith a Shadow Bayleef. I wonder\nwhat's up?"] },
-    LAB_ROSSO: { subject: "SHADOW PKMN LAB", from: "Marcia of Pyrite Town",   // (#16174, #16098, #16179)
+    LAB_ROSSO: { subject: "Shadow Pokémon Lab", from: "Marcia of Pyrite Town",   // (#16174, #16098, #16179)
       body: ["It appears as if criminals are\ngathering at the Shadow Pokémon Lab\nagain. There's more. People have seen","a Cipher Peon in a gaudy red outfit\nwith a Shadow Quilava. I wonder\nwhat's up?"] },
-    LAB_BLUNO: { subject: "SHADOW PKMN LAB", from: "Marcia of Pyrite Town",   // (#16175, #16098, #16180)
+    LAB_BLUNO: { subject: "Shadow Pokémon Lab", from: "Marcia of Pyrite Town",   // (#16175, #16098, #16180)
       body: ["It appears as if criminals are\ngathering at the Shadow Pokémon Lab\nagain. There's more. People have seen","a Cipher Peon in a gaudy blue outfit\nwith a Shadow Croconaw. I wonder\nwhat's up?"] },
-    WATCH_TV: { subject: "WATCH TV!", from: "Nett from The Under",   // (#16077, #16143, #16131)
+    WATCH_TV: { subject: "Watch TV!", from: "Nett from The Under",   // (#16077, #16143, #16131)
       body: ["It's me, Nett! Please watch TV now!"] },
-    WHATS_WITH_YOU: { subject: "WHAT'S WITH YOU?", from: "Dash the Athlete",   // (#16059, #16087, #16113)
+    WHATS_WITH_YOU: { subject: "What's with You?", from: "Dash the Athlete",   // (#16059, #16087, #16113)
       body: ["I'm Dash from Phenac. I'm just an\nordinary citizen who happens to run\naround the town's fountain. So what","gives you the right to have your\nPokémon attack me? You don't deserve","any respect as a trainer. Shame on\nyou!"] },
-    TOGETIC: { subject: "WHO IS THIS?", from: "Bitt from The Under",   // (#16176, #16121, #16115)
+    TOGETIC: { subject: "Who Is This?", from: "Bitt from The Under",   // (#16176, #16121, #16115)
       body: ["It's Bitt in The Under. {PLAYER}, I\ncaught you on film in an unbelievable\nscene that's terrible and shocking.","What's your problem? Why are you\nattacking people with a Shadow\nTogetic?"] },
-    DEEP_KING_1: { subject: "DEEP KING?", from: "Nett from The Under",   // (#16062, #16143, #16074)
+    DEEP_KING_1: { subject: "Deep King?", from: "Nett from The Under",   // (#16062, #16143, #16074)
       body: ["This is Nett. I heard you've gone to\nthe Deep Colosseum. I heard a rumor\nabout it. There's supposed to be a","seriously tough trainer who goes by\nthe name of Deep King. I wonder what\nPokémon he uses?"] },
-    DEEP_KING_2: { subject: "DEEP KING!", from: "Nett from The Under",   // (#16063, #16143, #16075)
+    DEEP_KING_2: { subject: "Deep King!", from: "Nett from The Under",   // (#16063, #16143, #16075)
       body: ["This is Nett. I'm getting information\nabout Deep King, but slowly. He does\nsound like an expert trainer, though.","I wonder what kind of Pokémon he\nuses?"] },
-    DEEP_KING_3: { subject: "DEEP KING!", from: "Nett from The Under",   // (#16064, #16143, #16076)
+    DEEP_KING_3: { subject: "Deep King!", from: "Nett from The Under",   // (#16064, #16143, #16076)
       body: ["This is Nett. I've been slowly\ngetting more information on the\ntrainer Deep King. He apparently uses","a Shadow Shuckle. He could be very\ntenacious."] },
-    DEEP_KING_4: { subject: "DEEP KING!", from: "Nett from The Under",   // (#16065, #16143, #16078)
+    DEEP_KING_4: { subject: "Deep King!", from: "Nett from The Under",   // (#16065, #16143, #16078)
       body: ["This is Nett. There's a rumor that\nDeep King is entered in the knockout\ntourney at the Deep Colosseum.","{PLAYER}, you've got to enter, too,\nand show up his highness!"] },
-    DEEP_KING_5: { subject: "I AM DEEP KING!", from: "Agnol the Deep King",   // (#16066, #16089, #16080)
+    DEEP_KING_5: { subject: "I Am Deep King!", from: "Agnol the Deep King",   // (#16066, #16089, #16080)
       body: ["Kukuku… I'm Agnol, also called Deep\nKing! I enjoyed battling you. But\nyou're still a greenhorn! So long as","I have my Shadow Shuckle, I'll take\non your challenge at the Deep\nColosseum anytime!"] }
   };
   // (Eagun's first e-mail is cut short: Rui's words on reading it, D4_dome_11 #21774.)

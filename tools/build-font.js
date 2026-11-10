@@ -48,6 +48,23 @@ const add = (ch, code) => {
 };
 for (const [ch, code] of Object.entries(charmap)) if ([...ch].length === 1) add(ch, code);
 if (charmap["¥"] != null) add("₽", charmap["¥"]);   // the game's money sign
+// Characters FireRed's font hasn't, drawn here pixel by pixel in its style ("#" a lit pixel; rows from the cell's top,
+// the capitals' rows 3 to 10): the ★ of Colosseum's P★DA (Orre's e-mail).
+const EXTRA = {
+  "★": { width: 8, rows: ["", "", "", "...#...", "...#...", "#######", ".#####.", "..###..", ".##.##.", "##...##"] }
+};
+for (const [ch, g] of Object.entries(EXTRA)) {
+  const u = ch.codePointAt(0);
+  if (done.has(u)) continue;
+  done.add(u);
+  const p = new opentype.Path();
+  g.rows.forEach((row, y) => [...row].forEach((c, x) => {
+    if (c !== "#") return;
+    const x0 = x * PX, x1 = x0 + PX, y1 = (BASELINE - y) * PX, y0 = y1 - PX;
+    p.moveTo(x0, y0); p.lineTo(x0, y1); p.lineTo(x1, y1); p.lineTo(x1, y0); p.close();
+  }));
+  glyphs.push(new opentype.Glyph({ name: "u" + u.toString(16).padStart(4, "0"), unicode: u, advanceWidth: g.width * PX, path: p }));
+}
 
 const out = new opentype.Font({
   familyName: "FireRed", styleName: "Regular", unitsPerEm: EM,

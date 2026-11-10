@@ -6235,7 +6235,7 @@
     for (let cursor = 0; ;) {
       const list = Orre.mailList(player.flags);
       if (!list.length) { await say("There's no e-mail."); return; }
-      const i = await multichoice("Which e-mail will you read?", 0, 0, list.map((e) => (e.read ? " " : "+") + e.subject).concat(["CANCEL"]), { shown: 6, cursor });
+      const i = await multichoice("Which e-mail will you read?", 0, 0, list.map((e) => (e.read ? " " : "+") + e.subject).concat(["Cancel"]), { shown: 6, cursor });
       Screen.say("");
       if (i < 0 || i >= list.length) return;
       cursor = i;
@@ -7109,12 +7109,14 @@
     const was = r.heart | 0, opened = OrreHeart.open(r, way, times);
     return { opened, ready: was > 0 && !(r.heart > 0) };
   }
-  let heartSteps = 0;
+  // (The steps towards the next 256 are kept in the save, player.flags.orreHeartSteps, so a reload doesn't lose them.)
   function heartStep() {
     // (The Day-Care Lady's Pokémon grows a step's worth: game/orre-daycare.js.)
     OrreDayCare.step(player, Player.levelCap(player));
-    if (++heartSteps < OrreHeart.STEPS) return null;
-    heartSteps = 0;
+    const f = player.flags;
+    f.orreHeartSteps = (f.orreHeartSteps | 0) + 1;
+    if (f.orreHeartSteps < OrreHeart.STEPS) return null;
+    f.orreHeartSteps = 0;
     let ready = null;
     for (const r of player.party) if (r.shadow && r.heart > 0 && openHeart(r, "walk").ready && !ready) ready = r;
     // (The Day-Care Lady's Pokémon: game/orre-daycare.js.)

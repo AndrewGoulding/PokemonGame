@@ -1202,7 +1202,9 @@ node tools/build-font.js          # FireRed's text font as assets/fonts/firered.
 
 All the game's text is in FireRed's own font (`tools/build-font.js` turns its
 glyphs, a pixel a square with FireRed's letter widths, into a web font); the
-text box is FireRed's size, a game pixel a pixel, with its shadow.
+text box is FireRed's size, a game pixel a pixel, with its shadow. FireRed's money sign is the Pokédollar,
+for both "¥" and "₽"; a few characters FireRed hasn't are drawn in its style there too (`EXTRA`: the ★ of
+Colosseum's P★DA).
 
 ### Intro
 
