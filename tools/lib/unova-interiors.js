@@ -18,5 +18,6 @@ module.exports=function({source,read,json,clean,item,move,machine,trainer,actor,
  const constants=read('generated/items.txt').split(/\r?\n/).map(s=>s.replace(/#.*/,'').trim()).filter(Boolean).map(s=>s.split('=')[0].trim());for(const offer of data.offers){const key=constants.find(n=>{try{return item(n)===offer.item;}catch{return false;}});offer.price=json('res/items/'+key.slice(5).toLowerCase()+'/data.json').price*10;}
  data.village=require('./unova-village')({room,paint,actor,M,json,trainer,item,bankMaps,west,east,sp,read,clean});
  data.anville=require('./unova-anville')({room,paint,actor,link,M,json,trainer,item,bankMaps,west,postgame,read,clean});
+ data.giftPokemon=require('./unova-gifts')({room,rooms:data.rooms,paint,actor,M,json,read,clean,bankMaps,west,postgame});
  return data;
 };

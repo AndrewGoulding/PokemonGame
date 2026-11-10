@@ -1,7 +1,9 @@
 // Village Bridge's source houses and B2/W2 optional quests.
 'use strict';
 module.exports=function({room,paint,actor,M,json,trainer,item,bankMaps,west,east,sp,read,clean}){
- const parent=M.UnovaVillageBridge,data={rooms:[],lore:{},baker:trainer('TRAINER_BAKER_CHRIS'),honeyReward:{item:item('ITEM_PERSIM_BERRY'),quantity:3},secretReward:{item:item('ITEM_LUM_BERRY'),quantity:5},fishingReward:{item:item('ITEM_DIVE_BALL'),quantity:5},fishingZones:['village_bridge','route_1','route_3','wellspring_cave','route_13','route_17'],fishingTables:{},source:{fishing:'src/ov036/scrcmd_encount.c',baker:'res/field/scripts/village_bridge_3.s',secret:'res/field/scripts/village_bridge_9.s'}};
+ const itemIds=read('generated/items.txt').split(/\r?\n/).map(s=>s.replace(/#.*/,'').trim()).filter(Boolean).map(s=>s.split('=')[0].trim());
+ function berry(bank){const s=read('res/field/scripts/'+bank+'.s'),id=+s.match(/WorkSet 0x8000, (\d+)/)[1],quantity=+s.match(/WorkSet 0x8001, (\d+)/)[1];return{item:item(itemIds[id]),quantity,source:'res/field/scripts/'+bank+'.s',sourceItem:id};}
+ const parent=M.UnovaVillageBridge,data={rooms:[],lore:{},baker:trainer('TRAINER_BAKER_CHRIS'),honeyReward:berry('village_bridge_3'),secretReward:berry('village_bridge'),fishingReward:{item:item('ITEM_DIVE_BALL'),quantity:5},fishingZones:['village_bridge','route_1','route_3','wellspring_cave','route_13','route_17'],fishingTables:{},source:{fishing:'src/ov036/scrcmd_encount.c',baker:'res/field/scripts/village_bridge_3.s',secret:'res/field/scripts/village_bridge_9.s'}};
  // Riverbank neighborhoods, joined to the existing wide central bridge.
  paint(parent,3,3,44,11,'lawn');paint(parent,3,23,44,10,'lawn');paint(parent,4,11,3,16,'path');paint(parent,43,11,3,16,'path');
  parent.people=parent.people.filter(a=>a.script!=='bw:bridge-lunch');
