@@ -3153,7 +3153,12 @@ in Orre again (`xdStory` 1), and at his lab his briefing and his plane back to t
 `tests/browser/xd-start.js`). XD's own story in Orre is still to come; its text is in: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
 `node tools/build-colosseum-text.js --out xd.json <the disc's files folder>` (as Colosseum's are, into
-`assets/text/colosseum.json`; a European disc's other-language archives are left out).
+`assets/text/colosseum.json`; a European disc's other-language archives are left out). Its Trainers and Shadow
+Pokémon are in too: `data/xd-decks.js`, decoded from the disc's `deck_archive.fsys` and `common.fsys` by
+`node tools/build-xd-decks.js <the disc's files folder>`: XD's 83 Shadow Pokémon (each with its heart gauge, Shadow
+moves, catch rate and level) and every deck's Trainers with their parties, moves and held items in this game's own
+names (the story's 232, the Orre Colosseum's, Mt. Battle's hundred, the Battle Sim's), women marked as the European
+deck has them (`tests/xd-decks-test.js`).
 
 Orre's story is played through in a real browser by `tests/browser/orre-story-early.js`, `-pyrite.js`, `-agate.js`
 (with `-agate-2.js`), `-under.js`, `-realgam.js` and `orre-shadow-mechanics.js` (Playwright: real input, battles won,
