@@ -155,6 +155,8 @@
     req.actives.forEach((a, slot) => {
       if (!a) return;
       if (a.forced) { out[slot] = { type: "move", move: 0 }; return; }
+      const actor = side.actives[slot];
+      if (a.canShift && !battle.foesOf(actor).some(f => battle.adjacent(actor, f)) && !a.moves.some(m => !m.disabled && m.category !== "Status" && m.targets.some(t => t > 0))) { out[slot] = { type: "shift" }; return; }
       if (a.struggle) { out[slot] = { type: "move", move: "Struggle" }; return; }
       const attacker = side.actives[slot];
       const foes = battle.foesOf(attacker);
@@ -166,15 +168,15 @@
         if (!data || data.cat === "Status" || !foes.length) continue;
         let score = 0, target = null;
         if (SPREAD.includes(data.target)) {
-          const hitAlly = data.target === "allAdjacent" && ally && !(ally.ability === "Telepathy");
-          const mult = foes.length + (hitAlly ? 1 : 0) > 1 ? 0.75 : 1;
-          for (const foe of foes) score += scoreMove(battle, attacker, foe, m.name) * mult;
-          if (hitAlly) {
-            const dmg = expectedDamage(battle, attacker, ally, m.name) * mult * hitChance(data, attacker, ally);
-            if (dmg > 0) score -= Math.min(dmg, ally.hp) * 1.5 + (dmg >= ally.hp ? ally.maxhp : 0);
+          const nearFoes = foes.filter(f => battle.adjacent(attacker, f, data)), hitAllies = data.target === "allAdjacent" ? battle.alliesOf(attacker, data).filter(a => a.ability !== "Telepathy") : [];
+          const mult = nearFoes.length + hitAllies.length > 1 ? 0.75 : 1;
+          for (const foe of nearFoes) score += scoreMove(battle, attacker, foe, m.name) * mult;
+          for (const partner of hitAllies) {
+            const dmg = expectedDamage(battle, attacker, partner, m.name) * mult * hitChance(data, attacker, partner);
+            if (dmg > 0) score -= Math.min(dmg, partner.hp) * 1.5 + (dmg >= partner.hp ? partner.maxhp : 0);
           }
         } else if (SINGLE.includes(data.target)) {
-          for (const foe of foes) {
+          for (const foe of foes.filter(f => m.targets.includes(f.slot + 1))) {
             const s = scoreMove(battle, attacker, foe, m.name);
             if (s > score) { score = s; target = foe.slot + 1; }
           }

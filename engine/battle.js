@@ -413,7 +413,7 @@
     get speciesData() { return window.DEX[this.species]; }
     get moveSlots() { return this.moves.map((m) => ({ id: m.id, move: m.name, name: m.name, pp: m.pp, maxpp: m.maxpp })); }
     get hpType() { return window.Damage.hiddenPowerType(this.ivs) || "Dark"; }
-    adjacentAllies() { const a = this.battle.allyOf(this); return a ? [a] : []; }
+    adjacentAllies() { return this.battle.alliesOf(this); }
     hasItem(i) { return (Array.isArray(i) ? i : [i]).map(normItem).includes(this.item); }
     getUpdatedDetails() { return this.species + ", L" + this.level; }
     runEffectiveness(move) {
@@ -447,7 +447,7 @@
       // Tag battle (doubles only): a partner trainer with their own party
       // controls slot b. Each party is up to 3; the partner's Pokémon follow
       // the trainer's in `pokemon` (Pokemon.owner 0 = trainer, 1 = partner).
-      this.tag = !!(battle.doubles && !battle.horde && opts.partner);
+      this.tag = !!(battle.doubles && !battle.horde && !battle.triples && opts.partner);
       this.trainers = this.tag ? [this.name, opts.partner.name || id + " partner"] : [this.name];
       const sets = this.tag ? (opts.team || []).slice(0, 3).map((s) => [s, 0]).concat((opts.partner.team || []).slice(0, 3).map((s) => [s, 1]))
         : (opts.team || []).slice(0, 6).map((s) => [s, 0]);
@@ -575,10 +575,11 @@
       // "singles" (default), "doubles" (two active Pokémon a side) or "horde"
       // (X and Y's horde battles: your one against up to five wild Pokémon,
       // all out at once; run on the doubles machinery, `doubles` true).
-      this.format = opts.safari || opts.ghost ? "singles" : opts.format === "doubles" ? "doubles" : opts.format === "horde" ? "horde" : "singles";
+      this.format = opts.safari || opts.ghost ? "singles" : ["doubles", "triples", "horde"].includes(opts.format) ? opts.format : "singles";
       this.horde = this.format === "horde";
       this.doubles = this.format !== "singles";
-      this.activePerSide = this.doubles ? 2 : 1;
+      this.triples = this.format === "triples";
+      this.activePerSide = this.triples ? 3 : this.doubles ? 2 : 1;
       this.sides = { p1: new Side(this, "p1", opts.p1 || {}), p2: new Side(this, "p2", opts.p2 || {}) };
       this.sides.p1.foe = this.sides.p2;
       this.sides.p2.foe = this.sides.p1;
@@ -792,7 +793,7 @@
         randomChance: (n, d) => b.randomChance(n, d),
         sample: (a) => b.sample(a),
         random: (a, c) => (a === undefined ? b.random() : c === undefined ? Math.floor(b.random() * a) : b.randInt(a, c - 1)),
-        foes: () => (b.doubles ? b.foesOf(holder)
+        foes: () => (b.doubles ? b.foesOf(holder).filter(m => b.adjacent(holder, m))
           : holder.side.foe.active && !holder.side.foe.active.fainted ? [holder.side.foe.active] : []),
         allies: () => holder.adjacentAllies(),
         getAllActive: () => b.getActives(),
@@ -855,8 +856,7 @@
     // Breaker (o.breakAbility) skips the breakable ones. Returns false if
     // one of them blocked the event.
     runAllyHooks(name, mon, o) {
-      const ally = this.allyOf(mon);
-      for (const holder of ally ? [mon, ally] : [mon]) {
+      for (const holder of [mon, ...this.alliesOf(mon)]) {
         const ab = window.ABILITIES[holder.ability];
         const fn = ab && ab["onAlly" + name];
         if (typeof fn !== "function" || holder.volatiles.gastroacid || this.neutralized(holder)) continue;
@@ -902,23 +902,33 @@
     }
     // Flower Gift on a Pokémon's side (itself or its ally); only Cherrim's works.
     flowerGift(mon) {
-      return [mon, this.allyOf(mon)].some((m) => m && !m.fainted && m.hasAbility("Flower Gift") && /^Cherrim/.test(m.baseSpecies));
+      return [mon, ...this.alliesOf(mon)].some((m) => m && !m.fainted && m.hasAbility("Flower Gift") && /^Cherrim/.test(m.baseSpecies));
     }
     // Sweet Veil on a Pokémon's side (itself or its ally): it can't fall asleep.
     sweetVeiled(mon, effect) {
       if (this._breakFor(mon, effect)) return null;
-      const ally = this.allyOf(mon);
-      return [mon, ally].find((m) => m && m.hasAbility("Sweet Veil")) || null;
+      return [mon, ...this.alliesOf(mon)].find((m) => m && m.hasAbility("Sweet Veil")) || null;
     }
 
     getActives() { return this.sides.p1.actives.concat(this.sides.p2.actives).filter((m) => m && !m.fainted); }
     // Doubles helpers (in singles: the one foe, no ally).
     foesOf(mon) { return mon.side.foe.actives.filter((m) => m && !m.fainted); }
-    allyOf(mon) {
-      // (A horde has no allies to aim at: each of the wild five stands alone.)
-      if (!this.doubles || this.horde || !mon.side) return null;
-      const a = mon.side.actives[1 - mon.slot];
-      return a && a !== mon && !a.fainted && a.isActive ? a : null;
+    adjacent(user, target, move) {
+      if (!this.triples || user === target || move?.flags?.distance || move?.target === "any") return true;
+      return user.side === target.side ? Math.abs(user.slot - target.slot) <= 1 : Math.abs(user.slot + target.slot - 2) <= 1;
+    }
+    alliesOf(mon, move) {
+      if (!this.doubles || this.horde || !mon.side) return [];
+      return mon.side.actives.filter(a => a && a !== mon && !a.fainted && a.isActive && this.adjacent(mon, a, move));
+    }
+    allyOf(mon) { return this.alliesOf(mon)[0] || null; }
+    shiftPosition(mon, to = 1, from = "shift") {
+      if (!this.triples || !mon || mon.fainted || !mon.isActive || mon.slot === to) return false;
+      const side = mon.side, old = mon.slot, other = side.actives[to], identity = mon.ident;
+      side.actives[to] = mon; side.actives[old] = other; mon.slot = to;
+      if (other) other.slot = old;
+      this.add("swap", identity, to, "[from] " + from);
+      return true;
     }
     // The Pokémon at a relative target location seen from `mon`: 1/2 are the
     // foe's slots a/b, -1/-2 its own side's slots a/b.
@@ -1296,7 +1306,7 @@
       delete mon.volatiles.choicelock;
       this.runEvent("onAfterUseItem", mon, { only: "ability" });
       // Symbiosis (doubles): the ally hands over its own item.
-      const ally = this.allyOf(mon);
+      const ally = this.alliesOf(mon).find(a => a.item && a.hasAbility("Symbiosis") && !MEGA_MAP[a.item]);
       if (ally && !mon.fainted && !mon.item && ally.item && ally.hasAbility("Symbiosis") && !MEGA_MAP[ally.item]) {
         const it = ally.item;
         ally.item = ""; ally.lastItem = it;
@@ -1488,7 +1498,7 @@
       }
       if (mon.ability === "Imposter" && !mon.transformed) {
         // (Doubles: the foe standing opposite.)
-        const foe = this.horde ? this.foesOf(mon)[0] : this.doubles ? mon.side.foe.actives[1 - mon.slot] : mon.side.foe.active;
+        const foe = this.horde ? this.foesOf(mon)[0] : this.doubles ? mon.side.foe.actives[(this.triples ? 2 : 1) - mon.slot] : mon.side.foe.active;
         if (foe && !foe.fainted) this.transformInto(mon, foe);
       }
       this.runEvent("onStart", mon, { only: "ability" });
@@ -2047,16 +2057,15 @@
     // Target locations a doubles move may be aimed at (see the header comment):
     // 1/2 = the foe in slot a/b, -1/-2 = your own slot a/b. Empty for moves
     // that need no chosen target (spread, self, side, field, random).
-    targetLocs(mon, moveTarget) {
+    targetLocs(mon, moveTarget, move) {
       if (!CHOSEN_TARGETS.has(moveTarget)) return [];
-      const foes = this.foesOf(mon).map((f) => f.slot + 1);
-      const ally = this.allyOf(mon);
-      const allyLoc = ally ? [-(ally.slot + 1)] : [];
+      const foes = this.foesOf(mon).filter(f => this.adjacent(mon, f, move)).map(f => f.slot + 1);
+      const allies = this.alliesOf(mon, move).map(a => -(a.slot + 1));
       switch (moveTarget) {
         case "adjacentFoe": return foes;
-        case "adjacentAlly": return allyLoc;
-        case "adjacentAllyOrSelf": return [-(mon.slot + 1)].concat(allyLoc);
-        default: return foes.concat(allyLoc);
+        case "adjacentAlly": return allies;
+        case "adjacentAllyOrSelf": return [-(mon.slot + 1)].concat(allies);
+        default: return foes.concat(allies);
       }
     }
 
@@ -2151,9 +2160,9 @@
         if (!mon || mon.fainted || !open.includes(slot)) return null;
         const forced = this.forcedAction(mon);
         const moves = this.getMoveSlots(mon);
-        for (const m of moves) m.targets = this.targetLocs(mon, m.target);
+        for (const m of moves) m.targets = this.targetLocs(mon, m.target, window.MOVES[m.name]);
         const r = {
-          slot, teamIndex: mon.teamIndex, species: mon.species, name: mon.name, hp: mon.hp, maxhp: mon.maxhp,
+          slot, canShift: this.triples && slot !== 1 && !forced, teamIndex: mon.teamIndex, species: mon.species, name: mon.name, hp: mon.hp, maxhp: mon.maxhp,
           status: mon.status, item: mon.item, ability: mon.ability, boosts: Object.assign({}, mon.boosts),
           moves, struggle: !forced && !moves.some((m) => !m.disabled),
           canMega: !forced && !this.megaUsedFor(side, mon) && !mon.mega && !!this.megaForme(mon),
@@ -2232,6 +2241,9 @@
         } else if (c.type === "run") {
           if (!a.canRun) return err("You can't escape!");
           partial[slot] = { type: "run" };
+        } else if (c.type === "shift") {
+          if (!a.canShift) return err("You cannot shift from here");
+          partial[slot] = { type: "shift" };
         } else if (c.type === "call") {
           if (!a.canCall) return err("You can't do that.");
           partial[slot] = { type: "call" };
@@ -2302,6 +2314,7 @@
         if (a.forced) { out[slot] = { type: "move", move: 0 }; return; }
         if (a.struggle) { out[slot] = { type: "move", move: "Struggle" }; return; }
         const opts = [];
+        if (a.canShift) opts.push({ type: "shift" });
         for (const m of a.moves) if (!m.disabled) for (let k = 0; k < 3; k++) opts.push({ type: "move", move: m.index });
         for (const i of a.switches) if (!used.has(i)) opts.push({ type: "switch", index: i });
         const c = Object.assign({}, this.sample(opts));
@@ -2426,6 +2439,7 @@
               mon, side: s, priority: 0, speed: this.getSpeed(mon) });
           }
           else if (c.type === "switch") actions.push({ order: 1, type: "switch", mon, side: s, index: c.index, priority: 0, speed: this.getSpeed(mon) });
+          else if (c.type === "shift") actions.push({ order: 3, type: "shift", mon, side: s, priority: 0, speed: this.getSpeed(mon) });
           else if (c.type === "recharge") actions.push({ order: 3, type: "move", mon, side: s, recharge: true, priority: 0, speed: this.getSpeed(mon) });
           else if (c.type === "commanding") continue;
           else if (c.palaceIdle) actions.push({ order: 3, type: "move", mon, side: s, palaceIdle: true, priority: 0, frac: 0, speed: this.getSpeed(mon) });
@@ -2528,6 +2542,9 @@
     }
 
     afterTurn() {
+      if (this.triples && this.sides.p1.remaining === 1 && this.sides.p2.remaining === 1) {
+        for (const side of [this.sides.p1, this.sides.p2]) this.shiftPosition(side.actives.find(m => m && !m.fainted));
+      }
       if (this.doubles) {
         const need = this.faintedSlots();
         if (need.length) {
@@ -2913,6 +2930,7 @@
     // ---------- Actions ----------
     runAction(a) {
       switch (a.type) {
+        case "shift": this.shiftPosition(a.mon); break;
         case "switch": {
           if (this.doubles) {
             const next = a.side.pokemon[a.index];
@@ -3362,44 +3380,33 @@
     // Doubles: who a move hits, from its target type and the chosen target
     // location (o.targetLoc), after retargeting and redirection.
     getMoveTargets(user, move, o) {
-      const t = move.target;
-      const foes = this.foesOf(user);
-      const ally = this.allyOf(user);
+      const t = move.target, near = m => this.adjacent(user, m, move);
+      const foes = this.foesOf(user).filter(near), allies = this.alliesOf(user, move);
+      const chosen = o.targetLoc && this.atLoc(user, o.targetLoc);
       switch (t) {
         case "self": case "allySide": case "allyTeam": case "all": return [user];
         case "foeSide": {
-          // (A reflectable side move bounces off whichever foe has Magic
-          // Coat up or Magic Bounce: Stealth Rock, Spikes, ...)
-          const bouncer = move.flags.reflectable && !move.hasBounced
-            ? foes.find((f) => f.volatiles.magiccoat) || (!move.ignoreAbility && foes.find((f) => f.hasAbility("Magic Bounce"))) : null;
-          return [bouncer || foes[0] || user];
+          const all = this.foesOf(user), bouncer = move.flags.reflectable && !move.hasBounced
+            ? all.find(f => f.volatiles.magiccoat) || (!move.ignoreAbility && all.find(f => f.hasAbility("Magic Bounce"))) : null;
+          return [bouncer || all[0] || user];
         }
-        case "adjacentAlly": return ally ? [ally] : [];
-        case "adjacentAllyOrSelf": return [o.targetLoc && ally && this.atLoc(user, o.targetLoc) === ally ? ally : user];
+        case "adjacentAlly": return chosen && allies.includes(chosen) ? [chosen] : allies.slice(0, 1);
+        case "adjacentAllyOrSelf": return [chosen && allies.includes(chosen) ? chosen : user];
         case "allAdjacentFoes": return foes;
-        case "allAdjacent": return ally ? foes.concat([ally]) : foes;
+        case "allAdjacent": return foes.concat(allies);
         case "scripted": {
           const src = user.lastDamage && user.lastDamage.source;
-          if (src && src.isActive && !src.fainted && src.side !== user.side) return [src];
+          if (src && src.isActive && !src.fainted && src.side !== user.side && near(src)) return [src];
           return foes.length ? [foes.length > 1 ? this.sample(foes) : foes[0]] : [];
         }
         default: break;
       }
-      let target = null;
-      if (o.target) {
-        if (o.target.fainted || !o.target.isActive) return [];
-        return [o.target];
-      }
-      if (t !== "randomNormal" && o.targetLoc) {
-        const m = this.atLoc(user, o.targetLoc);
-        if (m && m !== user && m.isActive && !m.fainted) target = m;
-        // (Aimed at an ally that's gone: FireRed's HandleAction_UseMove turns it
-        // on the foe opposite the user, or else the other foe.)
-        else if (m && m.side === user.side) target = foes.find((f) => f.slot === user.slot) || foes[0] || null;
-      }
+      if (o.target) return !o.target.fainted && o.target.isActive && near(o.target) ? [o.target] : [];
+      let target = t !== "randomNormal" && chosen && chosen !== user && chosen.isActive && !chosen.fainted && near(chosen) ? chosen : null;
+      if (!target && chosen && chosen.side === user.side) target = foes.find(f => f.slot === user.slot) || foes[0] || null;
       if (!target) target = foes.length > 1 ? this.sample(foes) : foes[0] || null;
       target = this.redirectTarget(user, move, target);
-      return target ? [target] : [];
+      return target && near(target) ? [target] : [];
     }
 
     // Spotlight, then Follow Me / Rage Powder on a foe, then Lightning Rod /
@@ -3407,7 +3414,7 @@
     // single-target moves.
     redirectTarget(user, move, target) {
       if (!target || !REDIRECTABLE.has(move.target) || user.hasAbility(["Stalwart", "Propeller Tail"]) || move.id === "snipeshot") return target;
-      const foes = this.foesOf(user);
+      const foes = this.foesOf(user).filter(m => this.adjacent(user, m, move));
       const lit = foes.find((f) => f.volatiles.spotlight && !f.volatiles.skydrop);
       if (lit) return lit;
       const powderProof = user.hasType("Grass") || user.hasAbility("Overcoat") || user.item === "safety-goggles";
@@ -3416,7 +3423,7 @@
       }
       const ab = move.type === "Electric" ? "Lightning Rod" : move.type === "Water" ? "Storm Drain" : null;
       if (ab && !move.ignoreAbility && !target.hasAbility(ab)) {
-        const rod = this.getActives().find((m) => m !== user && m.hasAbility(ab));
+        const rod = this.getActives().find((m) => m !== user && this.adjacent(user, m, move) && m.hasAbility(ab));
         if (rod) { this._redirectedBy = [rod, ab]; return rod; }
       }
       return target;
@@ -3500,7 +3507,7 @@
     priorityBlocked(user, target, move, brk) {
       if (target.side === user.side || !(move.priority > 0)) return false;
       if (move.target !== "normal" && move.target !== "any" && move.target !== "adjacentFoe" && !SPREAD_TARGETS.has(move.target)) return false;
-      const guard = [target, this.allyOf(target)].find((m) => m && !m.fainted && m.hasAbility(["Queenly Majesty", "Dazzling", "Armor Tail"]) && !(brk && m === target));
+      const guard = [target, ...this.alliesOf(target)].find((m) => m && !m.fainted && m.hasAbility(["Queenly Majesty", "Dazzling", "Armor Tail"]) && !(brk && m === target));
       if (guard) { this.add("-activate", guard, "ability: " + guard.ability, "[of] " + user.ident); return true; }
       if (this.field.terrain === "PsychicTerrain" && this.isGrounded(target)) { this.add("-activate", target, "move: Psychic Terrain"); return true; }
       return false;
@@ -3733,7 +3740,7 @@
           zPower: move.zPower, zCategory: move.zPower ? move.category : undefined, zBrokeProtect: !!o.zBrokeProtect,
           targetDynamaxed: !!target.dynamaxed,
           suppressA: this.neutralized(user), suppressD: this.neutralized(target),
-          steelySpirit: [user, this.allyOf(user)].some((m) => m && m.hasAbility("Steely Spirit")),
+          steelySpirit: [user, ...this.alliesOf(user)].some((m) => m && m.hasAbility("Steely Spirit")),
           // (Gen 9's Treasures of Ruin: each lowers that stat of every other Pokémon out.)
           ruin: this.ruin(user, target),
           timesHit: user.timesHit || 0,
@@ -3753,11 +3760,11 @@
         if (this.doubles) {
           opts.targets = o.spread || 1;
           if (beatUp) opts.beatUpPower = beatUp[i];
-          const uAlly = this.allyOf(user), tAlly = this.allyOf(target);
-          opts.plusMinus = user.hasAbility(["Plus", "Minus"]) && !!uAlly && uAlly.hasAbility(["Plus", "Minus"]);
-          opts.friendGuard = !!tAlly && tAlly !== user && tAlly.hasAbility("Friend Guard") && !move.ignoreAbility;
-          opts.battery = !!uAlly && uAlly.hasAbility("Battery");
-          opts.powerSpot = !!uAlly && uAlly.hasAbility("Power Spot");
+          const uAllies = this.alliesOf(user), tAllies = this.alliesOf(target);
+          opts.plusMinus = user.hasAbility(["Plus", "Minus"]) && uAllies.some(a => a.hasAbility(["Plus", "Minus"]));
+          opts.friendGuard = move.ignoreAbility ? 0 : tAllies.filter(a => a !== user && a.hasAbility("Friend Guard")).length;
+          opts.battery = uAllies.some(a => a.hasAbility("Battery"));
+          opts.powerSpot = uAllies.some(a => a.hasAbility("Power Spot"));
         }
         let r;
         try { r = window.Damage.calc(user, target, move.name, field, opts); }
@@ -4177,7 +4184,7 @@
       }
       const choice = { type: "move", move: pick.index };
       if (this.doubles) {
-        const foes = this.foesOf(mon), locs = this.targetLocs(mon, (window.MOVES[pick.name] || {}).target);
+        const foes = this.foesOf(mon), locs = this.targetLocs(mon, (window.MOVES[pick.name] || {}).target, window.MOVES[pick.name]);
         const foeLocs = foes.map((f) => f.slot + 1).filter((l) => locs.includes(l));
         if (foeLocs.length > 1) {
           const [f1, f2] = foes, how = PALACE_TARGET[mon.nature] || "stronger";

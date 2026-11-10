@@ -393,6 +393,12 @@
   // Ally Switch: the user and its ally trade slots (doubles only).
   status.allyswitch = (b, user) => {
     if (!b.doubles || user.side.tag) return false;   // (not in a tag team: slots belong to trainers)
+    if (b.triples) {
+      const other = user.side.actives[2 - user.slot];
+      if (user.slot === 1 || !other || other.fainted || !other.isActive) return false;
+      b.shiftPosition(user, 2 - user.slot, "move: Ally Switch");
+      return "done";
+    }
     const other = user.side.actives[1 - user.slot];
     if (!other || other.fainted || !other.isActive) return false;
     b.swapSlots(user.side, "move: Ally Switch");

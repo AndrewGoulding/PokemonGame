@@ -682,7 +682,7 @@
       result.notes.push(D.item + " would be consumed");
     }
 
-    if (opts.friendGuard) pushF(0.75);
+    for (let guard = 0; guard < (opts.friendGuard === true ? 1 : Math.min(2, Math.max(0, opts.friendGuard || 0))); guard++) pushF(0.75);
     // (Gen 9: Collision Course and Electro Drift, super effective; Glaive Rush's user takes double.)
     if ((move.id === "collisioncourse" || move.id === "electrodrift") && eff > 1) pushF(5461 / 4096);
     if (opts.glaiveRush) pushF(2);

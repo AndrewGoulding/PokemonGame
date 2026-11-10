@@ -95,3 +95,49 @@ source partner pools, entry compatibility, exact boss teams, saved streaks,
 unlocks and medals. `tests/browser/unova-multi.js` plays seven matches through
 the native entry/battle UI with an AI partner and verifies saved records and
 byte-for-byte restoration of the original party.
+
+## Triple Battles
+
+PWT tournaments now offer Singles, Doubles and Triples. Triple entry requires
+six Pokémon and uses three active positions per side, with three decisions per
+turn, ordinary bench replacements and the existing exact-party restoration.
+All thirteen local tournament categories have playable six-member brackets.
+Source rosters with fewer than six usable sets are excluded from Triple draws;
+no invented Pokémon are appended to those undersized tables. Unrestricted
+Driftveil/Mix rosters may repeat a species using distinct source sets, following
+`WbtPartyFilter_Create`'s `allowSameSpecies` rule. Held items remain distinct.
+
+Wing Pokémon reach the opposing center and nearby wing, plus their own center.
+The center reaches every opponent and both allies. The source move `distance`
+flag allows distant targets (Flying attacks and pulse moves, for example).
+Spread attacks affect only adjacent Pokémon and retain native spread damage.
+Redirection and Intimidate respect range; ally hooks and shared abilities can
+see both neighbors of a center Pokémon. Two adjacent Friend Guards stack their
+0.75× protection. The ordinary doubles/horde formats
+retain their existing behavior.
+
+SHIFT replaces the unusable RUN command on a Trainer battle's wing menu. It
+uses that Pokémon's action to swap with the center, preserves PP, boosts,
+Substitute and other state, and does not trigger entry hazards or switch-in
+abilities. The last Pokémon of each side automatically moves to the center.
+Ally Switch exchanges the two wings and fails from the center. The six sprites,
+six readable healthboxes, target cursor and move previews use the same 2D style
+as existing battles. The shared GBA animation player maps the participants of
+an effect into its four animation slots and echoes additional spread targets;
+it does not emulate the DS battle renderer.
+
+The rental catalog now retains source file order. Normal rentals use files
+1–132 and Master rentals use 209–558, matching the first source rental group.
+Player rental IVs are 20 as in `WbtParty_CreateInitialParty`; opponents use their
+trainer IVs, draw from the corresponding rental pool and exclude the player's
+selected species. This corrects drawing rental teams from the trainer's
+ordinary pool. The source's additional second/mixed rental-group selection UI
+is not yet offered.
+
+`tests/triples-test.js` verifies range/long-range/spread targeting, two adjacent
+allies, invalid-target rejection, Shift state and action cost, final centering,
+Ally support and Intimidate, exact seeded replay, 45 randomized/AI battles,
+source rental pools/IVs/exclusions and six-member entry for every PWT category.
+The browser test enters six Pokémon, renders all six, performs Shift, plays a
+three-match bracket and checks recorded format and original-party/save recovery.
+Rotation and online/download formats remain pending.

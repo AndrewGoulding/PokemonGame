@@ -30,8 +30,8 @@
   "use strict";
 
   const able = (r) => !!r && !r.egg && !window.Party.isFainted(r);
-  const ORDINAL = ["FIRST", "SECOND", "THIRD"];
-  const NUMBER = ["", "One", "Two", "Three"];
+  const ORDINAL = ["FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH", "SIXTH"];
+  const NUMBER = ["", "One", "Two", "Three", "Four", "Five", "Six"];
 
   function canDouble(party) { return party.filter(able).length >= 2; }
 

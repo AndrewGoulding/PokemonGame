@@ -1156,7 +1156,7 @@
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
       p2: Object.assign({ name: foe.name, team: foeSets(foe), tera: !!foe.tera || !!wildTera }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
-      format: double ? "doubles" : horde ? "horde" : undefined,
+      format: opts.format === "triples" ? "triples" : double ? "doubles" : horde ? "horde" : undefined,
       partnerTrainer: opts.partner && opts.partner.pic,
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
       ghost: !!opts.ghost, noCatch: !!opts.noCatch, snag: opts.snag || null, raid: opts.raid || 0, raidAllies: opts.raidAllies || null, raidTurns: opts.raid ? RaidDens.TURNS[opts.raid] : 0,
@@ -1353,7 +1353,7 @@
       }
       cursor = r.cursor;
       if (r.action === "confirm") {
-        const err = rules ? (order.length < max ? ["", "One", "Two", "Three", "Four"][max] + " POKéMON are needed." : null) : DoubleBattle.confirmError(party, order, max);
+        const err = rules ? (order.length < max ? ["", "One", "Two", "Three", "Four", "Five", "Six"][max] + " POKéMON are needed." : null) : DoubleBattle.confirmError(party, order, max);
         if (err) { sfx("se_failure"); note = err; continue; }
         PartyMenu.close();
         return order;
@@ -6002,7 +6002,7 @@
       if(!temporary){st.pwtBackup=original;st.facilityPending={key:spec.key,kind:spec.kind};Save.write(player);}
       player.party=chosen.map(i=>{const r=JSON.parse(JSON.stringify(player.party[i]));r.level=50;r.exp=Experience.expForLevel(Experience.growthRate(r.species),50);Party.heal(r);return r;});temporary=true;
       const partner=spec.multi?UnovaFacilities.partnerFor(player,spec.partnerName,spec.partnerStyle,player.party):null;if(spec.multi&&!partner){await say('No compatible partner team is available.');return{outcome:'cancelled',wins:0};}
-      for(const foe of spec.opponents){let count=0;const outcome=await battle('trainer',{foe:JSON.parse(JSON.stringify(foe)),foe2:foe.foe2?JSON.parse(JSON.stringify(foe.foe2)):undefined,partner,chosen:partner?[0,1]:undefined,double:spec.double,noExp:true,noPrize:true,noBlackout:true,noBag:true,noGimmicks:true,record:true,onResult:r=>{count=r.turns||0;}});turns+=count;if(outcome!=='won'&&spec.kind!=='institute')return{outcome,wins,turns};if(outcome==='won')wins++;player.party.forEach(Party.heal);
+      for(const planned of spec.opponents){const foe=spec.rentals?{...planned,team:UnovaFacilities.rentalTeam(player,spec.count,spec.name.endsWith('Master'),player.party,planned.rentalIv)}:planned;let count=0;const outcome=await battle('trainer',{foe:JSON.parse(JSON.stringify(foe)),foe2:foe.foe2?JSON.parse(JSON.stringify(foe.foe2)):undefined,partner,chosen:partner?[0,1]:undefined,format:spec.format,double:spec.double,noExp:true,noPrize:true,noBlackout:true,noBag:true,noGimmicks:true,record:true,onResult:r=>{count=r.turns||0;}});turns+=count;if(outcome!=='won'&&spec.kind!=='institute')return{outcome,wins,turns};if(outcome==='won')wins++;player.party.forEach(Party.heal);
         if(spec.mix&&wins<spec.rounds&&await confirm('Exchange one temporary Pokémon\nwith the previous opponent?')){const own=await choosePartyFor('Choose a Pokémon to exchange');if(own){const labels=foe.team.map((m,i)=>({label:Party.displayName(m)+' Lv50',value:i})).concat([{label:'Cancel',value:null}]),slot=await ask('Choose the incoming Pokémon',labels);if(slot!=null){const at=player.party.indexOf(own),incoming=foe.team[slot],others=player.party.map((_,i)=>i).filter(i=>i!==at),candidate=player.party.slice();candidate[at]=incoming;const err=UnovaFacilities.entry(candidate,others,at);if(err)await say(err);else{player.party[at]=JSON.parse(JSON.stringify(incoming));Party.heal(player.party[at]);}}}}
       }return{outcome:'won',wins,turns};
     }finally{if(temporary||st.pwtBackup){player.party=original;delete st.pwtBackup;delete st.facilityPending;if(lastRecord){UnovaFacilities.state(player).lastRecord=lastRecord;lastRecord=null;}Save.write(player);}show('world');await Overworld.resume();}

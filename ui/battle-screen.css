@@ -369,3 +369,6 @@ body {
 .sprite-doll { position: absolute; width: 26.6667%; image-rendering: pixelated; pointer-events: none; }
 .sprite-doll.hidden { display: none; }
 .sprite.behind-sub { visibility: hidden; }
+
+/* Triple Battles: three visible positions and separate healthboxes per side. */
+.field.triples .sprite.slot-c { display:block; }
