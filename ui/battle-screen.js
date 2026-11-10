@@ -273,6 +273,7 @@
   const TRIPLE_LAYOUT = {p1:[24,104],p1b:[62,99],p1c:[100,94],p2:[218,20],p2b:[180,25],p2c:[142,30]};
   function layoutTriples(on) {
     el.field.classList.toggle("triples", !!on);
+    if(!on)el.field.classList.remove("rotation");
     for (const [pos,[cx,feet]] of Object.entries(TRIPLE_LAYOUT)) {
       const st=el.sides[pos].sprite.style;
       if(!on){st.left=st.top=st.width=st.right=st.bottom=st.zIndex="";continue;}
@@ -329,7 +330,7 @@
   // (A horde: your box is the singles one; theirs are rows of the horde's panel, drawHordePanel.)
   // (A Tera Raid: the Pokémon's box is the bar along the screen's top instead, drawRaidPanel.)
   const hbCfg = (pos) => (battle && battle.horde ? (pos === "p1" ? HB.p1 : null) : config && config.raid && pos === "p2" ? null
-    : battle && battle.triples ? HB_TRIPLES[pos] : doublesLayout ? HB_DOUBLES[pos] : HB[pos]);
+    : battle && (battle.triples || battle.rotation) ? HB_TRIPLES[pos] : doublesLayout ? HB_DOUBLES[pos] : HB[pos]);
   // How a box is laid out: the singles player's (name at 16, HP numbers, EXP
   // bar) or the opponent's style (name at 8, the status over "HP"), which a
   // double battle's player boxes share with the name at 16.
@@ -837,7 +838,7 @@
     const key = dex.id + (v.form ? "-" + v.form : "");
     const of = (t) => (t[key] != null ? t[key] : t[dex.id]) || 0;
     let pct = of(table) / 96 * 100;
-    if (back && M.backTop && !(battle && battle.doubles)) {
+    if (back && M.backTop && !(battle && (battle.doubles || battle.rotation))) {
       const top = PLAYER_SPRITE_TOP + of(table) + of(M.backTop);
       if (top < FOE_BOX_BOTTOM) pct += (FOE_BOX_BOTTOM - top) / 96 * 100;
     }
@@ -917,6 +918,7 @@
     if (id === "p2" && config && config.ghost) { if (sprite.getAttribute("src") !== GHOST_PIC) { sprite.src = GHOST_PIC; sprite.style.visibility = ""; } }
     else window.Screen.setSprite(sprite, v.species, v.form, side === "p1", v.shiny, v.tera ? TERA_RGB[v.tera] : null);
     placeSprite(sprite, v, side === "p1");
+    sprite.classList.toggle("rotation-reserve", !!battle.rotation && slotOf(id)>0);
     sprite.alt = v.name;
     sprite.classList.toggle("hidden", !!v.inBall || !!v.commanding);   // (Commander: in Dondozo's mouth)
     sprite.classList.toggle("fainted", v.fainted);
@@ -1668,8 +1670,13 @@
       case "-withdraw": return null;   // (the switch that follows calls it back)
       case "-trainerout":   // [side, trainer, slot]: a tag team's trainer with no one left
         return b + " is out of\nusable Pokémon!";
+      case "rotation-reserve": {
+        const info=/^(.*?), L(\d+)/.exec(b)||[],hp=parseHp(c)||{},set=setOf(side,+ev[5]);
+        view[pos]={name:nameOf(a),species:info[1]||nameOf(a),level:info[2]||'?',hp:hp.hp,maxhp:hp.maxhp,status:hp.status||'',fainted:false,teamIndex:+ev[5],form:set.form||'',shiny:!!set.shiny};
+        renderSide(pos);return null;
+      }
       case "swap": {   // Ally Switch: [old identity, new slot]; both come one after the other
-        if(battle.triples){const other=posAt(side,+b),mine=posOf(a),old=view[mine];view[mine]=view[other]||{species:null};view[other]=old;for(const k of [mine,other]){hb[k].key=null;hb[k].layer=null;renderSide(k);}return fill(c==="[from] shift"?"{who} moved to the center!":"{who} switched places with its ally!",a);}
+        if(battle.triples||battle.rotation){const other=posAt(side,+b),mine=posOf(a),old=view[mine];view[mine]=view[other]||{species:null};view[other]=old;for(const k of [mine,other]){hb[k].key=null;hb[k].layer=null;renderSide(k);}return fill(c==="[from] shift"?"{who} moved to the center!":c==="[from] rotation"?"{who} rotated to the front!":"{who} switched places with its ally!",a);}
         if (+b !== 1) return null;
         const other = posAt(side, 1), mine = posAt(side, 0);
         const t = view[mine];
@@ -2499,9 +2506,9 @@
   // choice, or "back" (B on your second Pokémon: back to the first).
   async function chooseAction(req) {
     if (req.safari) return chooseSafariAction();
-    const active = req.active, dbl = req.doubles, pos = dbl ? posAt("p1", req.slot) : "p1";
+    let active = req.active, rotated = 0;const dbl = req.doubles, pos = dbl ? posAt("p1", req.slot) : "p1";
     // Locked into a move (Outrage, recharging): no menu, as in FireRed.
-    if (active.forced) return { type: "move", move: 0 };
+    if (active.forced && !(battle.rotation && active.rotations?.filter(m=>!m.fainted).length>1)) return { type: "move", move: 0 };
     // Each turn the ▶ starts on FIGHT; the moves' ▶ starts on the first move,
     // then on the one it used last.
     let actionCursor = 0;
@@ -2511,26 +2518,29 @@
       // (Your box bobs while you choose: DoBounceEffect(BOUNCE_HEALTHBOX, 7, 1).)
       hb[pos].bounce = true; hb[pos].bounceIdx = 128;
       // (Colosseum's CALL, for one of your Shadow Pokémon: in a Trainer battle, where RUN does nothing, in its place.)
-      const call = !!active.canCall && !battle.wild, shift = !!active.canShift && !battle.wild;
+      const call = !!active.canCall && !battle.wild, shift = !!active.canShift && !battle.wild, rotate = !!battle.rotation && !battle.wild && req.active.rotations?.filter(m=>!m.fainted).length>1;
       const a = await window.GbaMenus.battleAction(overlay(), { name: active.name, cursor: actionCursor, frame: frame(), canBack: !!(dbl && dbl.back),
-        labels: call ? ["FIGHT", "BAG", "POKéMON", "CALL"] : shift ? ["FIGHT", "BAG", "POKéMON", "SHIFT"] : undefined });
+        labels: call ? ["FIGHT", "BAG", "POKéMON", "CALL"] : shift ? ["FIGHT", "BAG", "POKéMON", "SHIFT"] : rotate ? ["FIGHT", "BAG", "POKéMON", "ROTATE"] : undefined });
       hb[pos].bounce = false;
       actionCursor = a.cursor;
       if (a.action === "back") return "back";
       if (a.action === "run" && shift) return { type: "shift" };
+      if(a.action==='run'&&rotate){const choices=req.active.rotations.filter(m=>!m.fainted);say('Choose who rotates to the front.');const picked=await GbaMenus.listMenu(overlay(),{left:8,top:1,width:21,frame:frame(),items:choices.map(m=>m.name+' · '+m.hp+'/'+m.maxhp).concat(['Cancel'])});if(picked&&picked.index>=0&&picked.index<choices.length){rotated=choices[picked.index].slot;active=battle.rotationRequest('p1',rotated).active;actionCursor=0;}continue;}
+
       if (a.action === "fight") {
         // (The Battle Palace: it picks its own move, by its nature.)
         if (config.palace) return battle.palaceChoice("p1", dbl ? req.slot : 0);
-        if (active.struggle) { await message(active.name + " has no moves left!"); return { type: "move", move: "Struggle" }; }
+        if(active.forced)return{type:"move",move:0,rotate:rotated};
+        if (active.struggle) { await message(active.name + " has no moves left!"); return { type: "move", move: "Struggle", rotate:rotated }; }
         const slots = () => active.moves.map((m) => ({ name: m.name, type: m.type, pp: m.pp, maxpp: m.maxpp, index: m.index, disabled: m.disabled,
           target: m.target, targets: m.targets }));
         let moves = slots();
         const last = lastMove[active.name];
         let at = Math.max(0, moves.findIndex((m) => m.index === last));
         // SELECT swaps two moves, in the battle and on the Pokémon.
-        const mon = battle.sides.p1.actives[dbl ? req.slot : 0];
+        const mon = battle.rotation ? battle.sides.p1.rotationRoster[rotated] : battle.sides.p1.actives[dbl ? req.slot : 0];
         const swap = (a, b) => {
-          battle.swapMoves("p1", a, b, dbl ? req.slot : 0);
+          battle.swapMoves("p1", a, b, dbl ? req.slot : rotated);
           active.moves = battle.getMoveSlots(mon);
           if (dbl) for (const m of active.moves) m.targets = battle.targetLocs(mon, m.target, window.MOVES[m.name]);
           if (lastMove[active.name] === a) lastMove[active.name] = b;
@@ -2594,7 +2604,7 @@
           if (mega && mega.alt && mega.alt.on) choice[mega.alt.kind] = true;
           if (target !== undefined) choice.target = target;
           hideTrigger();
-          return choice;
+          if(battle.rotation)choice.rotate=rotated;return choice;
         }
         hideTrigger();
         continue;
@@ -3539,7 +3549,7 @@
       levelCap: cfg.levelCap,   // (the level cap, Player.levelCap: no Exp. past it, and a Pokémon over it may not obey)
       seed: cfg.seed,   // (a recorded battle played back: the seed it was fought with)
       arena: !!cfg.arena, palace: !!cfg.palace   // (the Battle Arena's judging; the Battle Palace, where Pokémon choose their own moves: engine/battle.js)
-    }, ["doubles","triples","horde"].includes(cfg.format) ? { format: cfg.format } : {}));
+    }, ["doubles","triples","rotation","horde"].includes(cfg.format) ? { format: cfg.format } : {}));
     if(cfg.movieRules)UnovaMovies.attach(battle,cfg.movieRules);
     recording = cfg.record && !cfg.replay ? { seed: battle.seed, choices: [], cfg: JSON.parse(JSON.stringify(Object.fromEntries(RECORD_KEYS.filter((k) => cfg[k] !== undefined).map((k) => [k, cfg[k]])))) } : null;
     // (The Palace: the opponents' Pokémon choose by their natures too.)
@@ -3550,11 +3560,11 @@
     safariCursor = 0;
     cursor = 0;
     hbStop();
-    doublesLayout = !!battle.doubles && !battle.horde;
+    doublesLayout = !!(battle.doubles || battle.rotation) && !battle.horde;
     el.field.classList.toggle("doubles", doublesLayout);
     layoutTriples(false);
     layoutHorde(battle.horde);
-    if(battle.triples)layoutTriples(true);
+    if(battle.triples||battle.rotation){layoutTriples(true);if(battle.rotation){el.field.classList.remove("triples");el.field.classList.add("rotation");}}
     hordeTarget = null; hordeTextKey = null;
     el.field.classList.toggle("tag", !!battle.sides.p1.tag);
     el.field.classList.toggle("raid", !!cfg.raid);

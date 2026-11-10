@@ -372,3 +372,6 @@ body {
 
 /* Triple Battles: three visible positions and separate healthboxes per side. */
 .field.triples .sprite.slot-c { display:block; }
+
+.field.rotation .sprite.slot-b,.field.rotation .sprite.slot-c{display:block;}
+.field.rotation .sprite.rotation-reserve{opacity:.55;}

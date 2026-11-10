@@ -208,6 +208,10 @@
 
   function choose(battle, sideId, rng) {
     rng = rng || Math.random;
+    if(battle.rotation&&battle.getRequest(sideId).phase==='move'){
+      const side=battle.sides[sideId],foe=side.foe.active;let best=null,score=-Infinity;
+      for(const[slot,mon]of side.rotationRoster.entries()){if(mon.fainted)continue;const req=battle.rotationRequest(sideId,slot),a=req.active;if(a.forced){if(!best)best={type:'move',move:0,rotate:slot};continue;}if(a.struggle){if(!best)best={type:'move',move:'Struggle',rotate:slot};continue;}for(const m of a.moves.filter(m=>!m.disabled)){const data=window.MOVES[m.name],value=(data?.cat!=='Status'?scoreMove(battle,mon,foe,m.name):.1)+mon.hp/mon.maxhp*.01;if(value>score){score=value;best={type:'move',move:m.index,rotate:slot};}}}return best;
+    }
     if (battle.doubles) return chooseDoubles(battle, sideId, rng);
     const pick = (arr) => arr[Math.floor(rng() * arr.length)];
     const req = battle.getRequest(sideId);

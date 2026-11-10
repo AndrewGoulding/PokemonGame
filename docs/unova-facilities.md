@@ -87,8 +87,7 @@ Multi and Super Multi retain separate saved streaks/bests/attempts. A basic
 no Link Battle medal is awarded for playing with a local NPC. Rentals, level-50
 copies, moves/PP, held items, HP and the exact original party continue through
 the existing restoration and interrupted-save recovery. The last match remains
-available for recorded playback. Triple/Rotation and online/download facilities
-are still pending.
+available for recorded playback. Triple/Rotation are described below. Online/download facilities remain pending.
 
 `tests/unova-multi-test.js` runs 21 native model tag battles and checks all six
 source partner pools, entry compatibility, exact boss teams, saved streaks,
@@ -140,4 +139,28 @@ Ally support and Intimidate, exact seeded replay, 45 randomized/AI battles,
 source rental pools/IVs/exclusions and six-member entry for every PWT category.
 The browser test enters six Pokémon, renders all six, performs Shift, plays a
 three-match bracket and checks recorded format and original-party/save recovery.
-Rotation and online/download formats remain pending.
+Online/download facilities remain pending.
+
+
+## Rotation Battles
+
+All thirteen PWT categories also offer four-member Rotation entry. Three Pokémon
+are visible on each side, with one front Pokémon attacking and receiving attacks.
+ROTATE selects either reserve and then opens that Pokémon’s move menu. The change
+commits only with the attack and resolves before move priority. Rotating costs
+no attack, preserves boosts, Substitute, status, PP and held items, and triggers
+neither entry hazards nor entry abilities. Reserve status and volatile counters
+pause while they are away from the front. The fourth Pokémon uses ordinary
+switching. A reserve can move forward after the front faints without resetting
+its state. Recorded playback retains the rotation choice and format.
+
+Charles now uses his source Triple team in Black 2 and Rotation team in White 2,
+with a short control lesson and a three-healthy-Pokémon requirement. Existing
+Charles victory flags still open the drawbridge. Imported field trainer records
+retain source Triple/Rotation formats rather than silently becoming Singles.
+
+The engine tests cover planned rotations, pure move previews, invalid choices,
+PP and state preservation, paused reserve poison, faint promotion, reserve move
+reordering and 35 randomized/AI battles. The browser test exercises four-member
+entry, six displayed roster members, ROTATE and move selection, a three-match
+bracket, recorded format and original-party/save restoration.

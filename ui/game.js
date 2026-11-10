@@ -1091,6 +1091,7 @@
   let lastRecord = null;   // (the last battle's record, if it was asked for: the Battle Frontier's, for the Frontier Pass)
   let battleCount = 0;   // (how many battles so far: whether a script battled)
   async function battle(kind, opts) {
+    if(!opts.format&&opts.trainerId&&window.Unova?.data().trainers[opts.trainerId]?.format)opts={...opts,format:Unova.data().trainers[opts.trainerId].format};
     SinnohLegends.syncForms(player);
     opts = opts || {};
     if (WORLD_MAPS[player.location.map]?.unovaSandstorm && !opts.weather) opts = {...opts,weather:"sandstorm"};
@@ -1156,7 +1157,7 @@
         opts.partner ? { partner: { name: opts.partner.name, team: opts.partner.team.map((r) => Party.toBattleSet(r)) } } : {}),
       // (Pokémon Tower's unidentified Ghost goes by "Ghost".)
       p2: Object.assign({ name: foe.name, team: foeSets(foe), tera: !!foe.tera || !!wildTera }, foe2 ? { partner: { name: foe2.name, team: foeSets(foe2) } } : {}),
-      format: opts.format === "triples" ? "triples" : double ? "doubles" : horde ? "horde" : undefined,
+      format: ["triples","rotation"].includes(opts.format) ? opts.format : double ? "doubles" : horde ? "horde" : undefined,
       partnerTrainer: opts.partner && opts.partner.pic,
       foeTrainer2: foe2 && foe2.pic, defeatText2: foe2 && foe2.defeatText && foe2.defeatText.map((p) => fill(p)),
       ghost: !!opts.ghost, noCatch: !!opts.noCatch, snag: opts.snag || null, raid: opts.raid || 0, raidAllies: opts.raidAllies || null, raidTurns: opts.raid ? RaidDens.TURNS[opts.raid] : 0,

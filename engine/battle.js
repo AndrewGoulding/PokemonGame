@@ -482,7 +482,7 @@
     // In a tag team, `slot` narrows it to that slot's trainer's party.
     bench(slot) {
       const own = (p) => !this.tag || slot == null || p.owner === slot;
-      return this.pokemon.map((p, i) => (!p.fainted && !this.actives.includes(p) && own(p) ? i : -1)).filter((i) => i >= 0);
+      return this.pokemon.map((p, i) => (!p.fainted && !this.actives.includes(p) && !(this.battle.rotation && this.rotationRoster?.includes(p)) && own(p) ? i : -1)).filter((i) => i >= 0);
     }
   }
 
@@ -575,14 +575,16 @@
       // "singles" (default), "doubles" (two active Pokémon a side) or "horde"
       // (X and Y's horde battles: your one against up to five wild Pokémon,
       // all out at once; run on the doubles machinery, `doubles` true).
-      this.format = opts.safari || opts.ghost ? "singles" : ["doubles", "triples", "horde"].includes(opts.format) ? opts.format : "singles";
+      this.format = opts.safari || opts.ghost ? "singles" : ["doubles", "triples", "rotation", "horde"].includes(opts.format) ? opts.format : "singles";
       this.horde = this.format === "horde";
-      this.doubles = this.format !== "singles";
+      this.rotation = this.format === "rotation";
+      this.doubles = this.format !== "singles" && !this.rotation;
       this.triples = this.format === "triples";
       this.activePerSide = this.triples ? 3 : this.doubles ? 2 : 1;
       this.sides = { p1: new Side(this, "p1", opts.p1 || {}), p2: new Side(this, "p2", opts.p2 || {}) };
       this.sides.p1.foe = this.sides.p2;
       this.sides.p2.foe = this.sides.p1;
+      if(this.rotation)for(const side of [this.sides.p1,this.sides.p2]){side.rotationRoster=side.pokemon.filter(m=>!m.fainted).slice(0,3);side.rotationRoster.forEach((m,i)=>m.slot=i);}
       // A Tera Raid's other three on your side (this game's own, after Scarlet
       // and Violet's four-player raids): opts.raidAllies, [{ set, trainer }].
       // Each is a Pokémon of yours in all but standing on the field: it moves
@@ -939,6 +941,22 @@
     }
     locOf(mon, from) { return (mon.side === from.side ? -1 : 1) * (mon.slot + 1); }
 
+    rotationRequest(sideId, slot=0) {
+      const side=this.sides[sideId],mon=side?.rotationRoster?.[slot];
+      if(!this.rotation||!mon||mon.fainted)return null;
+      if(!slot)return this.getRequest(sideId);
+      const front=side.active,oldSlot=mon.slot,was=mon.isActive,frontActive=front.isActive;
+      side.active=mon;mon.slot=0;mon.isActive=true;front.isActive=false;
+      try{return this.getRequest(sideId);}finally{side.active=front;front.isActive=frontActive;mon.slot=oldSlot;mon.isActive=was;}
+    }
+    rotateFront(side, slot) {
+      const roster=side.rotationRoster,mon=roster?.[slot],old=side.active;
+      if(!this.rotation||!slot||!mon||mon.fainted||!old)return false;
+      const id=mon.ident;roster[0]=mon;roster[slot]=old;side.active=mon;
+      old.slot=slot;old.isActive=false;mon.slot=0;mon.isActive=true;mon.wasOut=true;
+      mon.moveThisTurn=false;mon.usedItemThisTurn=false;mon.lastDamage=null;mon.statsRaisedThisTurn=false;mon.statsLoweredThisTurn=false;
+      this.add('swap',id,0,'[from] rotation');this.markParticipants();return true;
+    }
     // ---------- Stats ----------
     getBoostedStat(mon, stat) {
       const stage = clamp(mon.boosts[stat] || 0, -6, 6);
@@ -1383,6 +1401,7 @@
           from = next;
         }
       }
+      if(this.rotation)for(const side of [this.sides.p1,this.sides.p2])for(const mon of side.rotationRoster.slice(1))this.add('rotation-reserve',mon,mon.species+', L'+mon.level,this.hpStr(mon),this.expProgress(mon),mon.teamIndex);
       this.sortBySpeed(mons).forEach((m) => this.onSwitchInEvents(m));
       this.runUpdates();
       this.checkWin();
@@ -1399,6 +1418,7 @@
     switchIn(side, index, o) {
       o = o || {};
       const mon = side.pokemon[index];
+      if(this.rotation&&side.rotationRoster){const at=side.rotationRoster.indexOf(mon);if(at>0){this.rotateFront(side,at);mon.rotationPromotion=true;return mon;}side.rotationRoster[0]=mon;}
       const slot = o.slot || 0;
       const old = side.actives[slot];
       let carried = null;
@@ -1471,6 +1491,7 @@
     }
 
     onSwitchInEvents(mon) {
+      if(mon.rotationPromotion){delete mon.rotationPromotion;return;}
       if (mon.fainted || !mon.isActive) return;
       // Primal Reversion
       if ((mon.species === "Groudon" && mon.item === "red-orb") || (mon.species === "Kyogre" && mon.item === "blue-orb")) {
@@ -1771,7 +1792,7 @@
     // SELECT on the move menu: two of the active Pokémon's moves trade places
     // (and their PP; the party's order follows, as in FireRed).
     swapMoves(sideId, a, b, slot) {
-      const mon = this.sides[sideId].actives[slot || 0], m = mon && mon.moves;
+      const side = this.sides[sideId], mon = this.rotation ? side.rotationRoster[slot || 0] : side.actives[slot || 0], m = mon && mon.moves;
       if (!m) return;
       if (!m[a] || !m[b] || a === b) return;
       [m[a], m[b]] = [m[b], m[a]];
@@ -1842,14 +1863,14 @@
       if (this.ended) return Object.assign(base, { phase: "ended" });
       const team = side.pokemon.map((p, i) => ({
         index: i, species: p.species, name: p.name, level: p.level, hp: p.hp, maxhp: p.maxhp, status: p.status,
-        fainted: p.fainted, active: p.isActive && p === side.active, item: p.item, gender: p.gender
+        fainted: p.fainted, active: this.rotation && this.phase === "move" ? side.rotationRoster.includes(p) : p.isActive && p === side.active, item: p.item, gender: p.gender
       }));
       base.team = team;
       base.chosen = !!side.choice;
       if (this.phase === "switch") {
         if (!this.switchSides.includes(sideId) || side.choice) return base;
         base.phase = "switch";
-        base.switches = side.pokemon.map((p, i) => (!p.fainted && p !== side.active ? i : -1)).filter((i) => i >= 0);
+        base.switches = side.pokemon.map((p, i) => (!p.fainted && p !== side.active && (!this.rotation || side.active.fainted || !side.rotationRoster.includes(p)) ? i : -1)).filter((i) => i >= 0);
         return base;
       }
       if (this.phase !== "move" || side.choice) return base;
@@ -1871,13 +1892,14 @@
         canTera: !forced && this.canTera(mon), teraType: mon.teraType, terastallized: mon.terastallized,
         trapped: false, forced: forced
       };
+      if(this.rotation)base.active.rotations=side.rotationRoster.map((m,slot)=>({slot,name:m.name,species:m.species,hp:m.hp,maxhp:m.maxhp,fainted:m.fainted}));
       if (forced) { base.switches = []; return base; }
       base.active.trapped = this.isTrapped(mon);
       base.active.canCatch = sideId === "p1" && (this.wild || this.snaggable(side.foe.active));
       base.active.canCall = sideId === "p1" && !!side.active.shadow;
       base.active.canRun = this.wild && (sideId === "p1" || this.roamer && sideId === "p2") &&
         (!base.active.trapped || mon.item === "smoke-ball" || mon.hasAbility("Run Away"));
-      base.switches = base.active.trapped || this.arena ? [] : side.pokemon.map((p, i) => (!p.fainted && p !== side.active ? i : -1)).filter((i) => i >= 0);
+      base.switches = base.active.trapped || this.arena ? [] : side.pokemon.map((p, i) => (!p.fainted && p !== side.active && !(this.rotation && side.rotationRoster.includes(p)) ? i : -1)).filter((i) => i >= 0);
       return base;
     }
 
@@ -1887,7 +1909,9 @@
       const side = this.sides[sideId];
       if (!side) return { ok: false, error: "No such side" };
       if (this.ended) return { ok: false, error: "Battle is over" };
-      const req = this.getRequest(sideId);
+      const rotating=this.rotation&&choice?.rotate!=null?choice.rotate:0;
+      if(this.rotation&&choice?.rotate!=null&&(!Number.isInteger(rotating)||rotating<0||rotating>2||choice.type!=='move'||!side.rotationRoster[rotating]||side.rotationRoster[rotating].fainted))return{ok:false,error:'Invalid rotation'};
+      const req = rotating ? this.rotationRequest(sideId,rotating) : this.getRequest(sideId);
       if (req.phase === "wait") return { ok: false, error: "Not waiting for a choice from " + sideId };
       if (this.safari) {
         if (!choice || !(this.safari.park?["ball","run"]:["ball", "bait", "rock", "run", "pokeblock", "gonear"]).includes(choice.type)) return { ok: false, error: "Invalid choice" };
@@ -1898,7 +1922,7 @@
           return { ok: false, error: "Invalid switch" };
         side.choice = { type: "switch", index: choice.index };
       } else {
-        const mon = side.active;
+        const mon = rotating ? side.rotationRoster[rotating] : side.active;
         const forced = req.active.forced;
         if (forced) {
           side.choice = forced.recharge ? { type: "recharge" } : { type: "move", forced };
@@ -1956,6 +1980,7 @@
           }
         } else return { ok: false, error: "Invalid choice" };
       }
+      if(rotating&&side.choice)side.choice.rotate=rotating;
       this.maybeCommit();
       return { ok: true };
     }
@@ -1977,6 +2002,7 @@
           this.completeSide(s);
           continue;
         }
+        if(this.rotation&&s.rotationRoster.some(m=>m!==s.active&&!m.fainted))continue;
         const f = this.forcedAction(s.active);
         if (f) s.choice = f.commanding ? { type: "commanding" } : f.recharge ? { type: "recharge" } : { type: "move", forced: f };
       }
@@ -2034,6 +2060,7 @@
     }
 
     randomChoice(sideId) {
+      if(this.rotation&&this.phase==='move'&&!this.sides[sideId].choice){const side=this.sides[sideId],pool=side.rotationRoster.map((m,i)=>!m.fainted?i:-1).filter(i=>i>=0),at=this.sample(pool),r=this.rotationRequest(sideId,at);if(r?.phase==='move'){const moves=r.active.moves.filter(m=>!m.disabled);return{type:'move',move:r.active.forced?0:r.active.struggle?'Struggle':this.sample(moves).index,rotate:at};}}
       if (this.phase === "revive") { const rq = this.reviveRequest(sideId); return rq.phase === "revive" ? { type: "revive", index: this.sample(rq.revives) } : null; }
       if (this.doubles) return this.randomChoiceDoubles(sideId);
       const req = this.getRequest(sideId);
@@ -2432,8 +2459,9 @@
       for (const s of [this.sides.p1, this.sides.p2]) {
         // (Doubles: one choice per slot, in slot order.)
         const entries = this.doubles ? s.choice.map((c, i) => [c, s.actives[i]]).filter(([c, m]) => c && m && !m.fainted)
-          : [[s.choice, s.active]];
+          : [[s.choice, this.rotation && s.choice.rotate ? s.rotationRoster[s.choice.rotate] : s.active]];
         for (const [c, mon] of entries) {
+          if(this.rotation&&c.rotate)actions.push({order:-1,type:'rotate',mon,side:s,rotationSlot:c.rotate,priority:0,speed:this.getSpeed(mon)});
           if (c.type === "run" || c.type === "ball" || c.type === "item" || c.type === "call") {
             actions.push({ order: c.type === "run" && this.roamer && s.id === "p2" ? 3 : 0, type: c.type, ball: c.ball, item: c.item, target: c.target, move: c.move,
               mon, side: s, priority: 0, speed: this.getSpeed(mon) });
@@ -2485,7 +2513,7 @@
         return a.rand - b.rand;
       });
       for (const s of [this.sides.p1, this.sides.p2]) {
-        for (const m of s.actives) if (m) { m.moveThisTurn = false; m.usedItemThisTurn = false; m.lastDamage = null; m.statsRaisedThisTurn = false; m.statsLoweredThisTurn = false; }
+        for (const m of this.rotation ? s.rotationRoster : s.actives) if (m) { m.moveThisTurn = false; m.usedItemThisTurn = false; m.lastDamage = null; m.statsRaisedThisTurn = false; m.statsLoweredThisTurn = false; }
       }
       this.queue = actions;
       this.queue.push({ type: "residual", order: 9 });
@@ -2930,6 +2958,7 @@
     // ---------- Actions ----------
     runAction(a) {
       switch (a.type) {
+        case "rotate": this.rotateFront(a.side,a.rotationSlot); break;
         case "shift": this.shiftPosition(a.mon); break;
         case "switch": {
           if (this.doubles) {
