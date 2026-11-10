@@ -11,7 +11,7 @@ module.exports=function(root){
  const picture=name=>cache[name]||(cache[name]=readPng(path.join(out,name+'.png')));
  function blit(c,p,sx,sy,w,h,dx,dy){for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=((sy+y)*p.width+sx+x)*4;if(p.rgba[k+3])c.p(dx+x,dy+y,p.rgba.subarray(k,k+4));}}
  function tile(c,name,sx,sy,x,y){blit(c,picture(name),sx*16,sy*16,16,16,x*16,y*16);}
- function reserved(m,x,y,r=2){return [...m.people,...m.warps,...m.signs].some(a=>Math.abs(a.x-x)<=r&&Math.abs(a.y-y)<=r);}
+ function reserved(m,x,y,r=2){return [...m.people,...m.warps,...m.signs,...(m.hidden||[])].some(a=>Math.abs(a.x-x)<=r&&Math.abs(a.y-y)<=r);}
  function patch(m,x,y,w,h,kind,solid=false){for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){if(xx<2||yy<2||xx>=m.width-2||yy>=m.height-2)continue;const k=yy*m.width+xx;if(m.art.tiles[k]!=='lawn'||reserved(m,xx,yy))continue;if(kind==='flowers'&&(xx+2*yy)%4!==0)continue;m.art.tiles[k]=kind;if(solid)m.collision[k]=1;}}
  function landscape(m){
   for(const p of m.art.props)if(p.kind==='fence')patch(m,p.x,p.y,2,1,'fence',true);

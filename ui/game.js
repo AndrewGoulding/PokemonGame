@@ -1748,9 +1748,9 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["unova-cgear", "unova-medal-box","dna-splicers","reveal-glass","dropped-item","white-flute", "black-flute","vs-recorder","poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["unova-cgear", "unova-medal-box","unova-dowsing-machine","dna-splicers","reveal-glass","dropped-item","white-flute", "black-flute","vs-recorder","poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
-  const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
+  const REGISTERABLE = ["unova-dowsing-machine","eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
   const usableFromBag = (item) => item === "gracidea" || Bag.isStone(item) || Bag.isMachine(item) || !!Bag.mintNature(item) ||
     item === "ability-capsule" || item === "ability-patch" || item === "bottle-cap" || item === "gold-bottle-cap" || item === "tin-bottle-cap" || item === "zygarde-cube" ||
@@ -1765,7 +1765,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
-    if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}if(action==='receiver-call')await unovaStory.run('bw:receiver-call');if(action==='memory-archive')await unovaStory.run('bw:memory-archive');if(action==='difficulty-settings')await unovaStory.run('bw:difficulty-settings');if(action==='entralink'||action==='pass-powers')await unovaStory.run('bw:'+ (action==='entralink'?'enter-entralink':action));};return "escaped";}
+    if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}if(action==='receiver-call')await unovaStory.run('bw:receiver-call');if(action==='memory-archive')await unovaStory.run('bw:memory-archive');if(action==='field-journal')await unovaStory.run('bw:field-journal');if(action==='difficulty-settings')await unovaStory.run('bw:difficulty-settings');if(action==='entralink'||action==='pass-powers')await unovaStory.run('bw:'+ (action==='entralink'?'enter-entralink':action));};return "escaped";}
     if(item==="dropped-item"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run("bw:receiver-call");};return "escaped";}
     if(item==="dna-splicers"||item==="reveal-glass"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run(item==="dna-splicers"?"bw:use-splicers":"bw:use-reveal-glass");};return "escaped";}
     if(item==="white-flute"||item==="black-flute"){if(SinnohCompletion.flute(player,item)){await message("The "+Bag.name(item)+" sounded.\nWild Pokémon will appear "+(item==="white-flute"?"more":"less")+" often here.");}return;}
@@ -1778,7 +1778,7 @@
     if (item === "explorer-kit") return (await explorerKit()) ? "escaped" : null;
     if (item === "pokeblock-case") { await hoennPokeblock.menu(); return null; }   // (Hoenn's Pokéblocks: ui/hoenn-pokeblock.js)
     if (item === "berry-pouch") return (await berryPouch()) ? "escaped" : null;
-    if (item === "itemfinder") { fieldAction = itemfinder; return "escaped"; }
+    if (item === "itemfinder" || item === "unova-dowsing-machine") { fieldAction = ()=>itemfinder(item === "unova-dowsing-machine" ? "Dowsing Machine" : "Itemfinder"); return "escaped"; }
     if (item === "bicycle") { fieldAction = bicycle; return "escaped"; }
     if (item === "eon-flute") {
       // (Outdoors in Hoenn, with your Latias or Latios: soaring, ui/soaring.js.)
@@ -1822,16 +1822,17 @@
   // The Itemfinder (FireRed's src/itemfinder.c): a hidden item within 7 steps
   // across and 5 up or down makes it respond, and you turn toward the nearest;
   // one right underfoot is dug up.
-  async function itemfinder() {
+  async function itemfinder(label="Itemfinder") {
     const at = Overworld.position(), m = window.WORLD_MAPS[at.map] || {};
     const hidden = (m.hidden || []).filter((h) => !player.flags[h.flag]);
     const under = hidden.find((h) => h.x === at.x && h.y === at.y);
     if (under) {
-      await say(["Oh!\nThe Itemfinder's shaking wildly!", "There's an item buried underfoot!", "‥ ‥ ‥ ‥ ‥ ‥"]);
+      await say(["Oh!\nThe "+label+"'s shaking wildly!", "There's an item buried underfoot!", "‥ ‥ ‥ ‥ ‥ ‥"]);
       const before=Player.itemCount(player,under.item),quantity=under.quantity||1;
       Player.addItem(player, under.item, quantity);
       if(Player.itemCount(player,under.item)!==before+quantity){if(Player.itemCount(player,under.item)>before)Player.removeItem(player,under.item,Player.itemCount(player,under.item)-before);await say("Your Bag is full.");return;}
       player.flags[under.flag] = true;
+      UnovaRecords.record(player,"hidden");
       await sayWithJingle(itemJingle(under.item), "{PLAYER} found " + (under.quantity > 1 ? under.quantity + " " : "a ") + Bag.name(under.item) + "!");
       return;
     }
@@ -1843,7 +1844,7 @@
     if (!best) { await say("‥ ‥ ‥ ‥Nope!\nThere's no response."); return; }
     const face = Math.abs(best.dx) >= Math.abs(best.dy) ? (best.dx > 0 ? "right" : "left") : (best.dy > 0 ? "down" : "up");
     await Overworld.act([{ who: "player", moves: ["face_" + face] }]);
-    await say(["Huh?\nThe Itemfinder's responding!", "There's an item buried around here!"]);
+    await say(["Huh?\nThe "+label+"'s responding!", "There's an item buried around here!"]);
   }
 
   // Every 200 steps, each Pokémon in the party grows a little friendlier

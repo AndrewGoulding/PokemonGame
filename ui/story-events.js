@@ -283,6 +283,7 @@
           await env.say("Your Bag is full."); return;
         }
         env.player.flags[h.flag] = true;
+        if(window.UnovaRecords)UnovaRecords.record(env.player,"hidden");
         await env.sayWithJingle(env.itemJingle(h.item), "{PLAYER} found " + (h.quantity > 1 ? h.quantity + " " : "a ") + Bag.name(h.item) + "!");
         return;
       }
