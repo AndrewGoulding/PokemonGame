@@ -15,7 +15,8 @@ learn={n:[[l,m] for l,m,o in sorted(a,key=lambda v:(v[0],v[2]))] for n,a in lear
 slots={r['id']:r for r in rows('encounter_slots') if r['version_group_id']=='15' }
 methods={r['id']:r['identifier'] for r in rows('encounter_methods')}
 areas={('713','walk'):'Route2',('714','walk'):'Route3',('733','walk'):'Route22',('734','walk'):'SantaluneForest',('715','yellow-flowers'):'Route4Yellow',('715','red-flowers'):'Route4Red',('716','walk'):'Route5',('716','purple-flowers'):'Route5Flowers',('717','rough-terrain'):'Route6',('718','walk'):'Route7West',('718','yellow-flowers'):'Route7Yellow',('718','purple-flowers'):'Route7Purple',('719','walk'):'Route8Upper',('719','yellow-flowers'):'Route8Flowers',('720','rough-terrain'):'Route9',('736','walk'):'GlitteringCave',('753','walk'):'ConnectingCave'}
-for area,label in [('719','Route8Coast'),('710','CyllageCity'),('709','AmbretteTown')]:
+for area,label,method in [('721','Route10','walk'),('721','Route10Yellow','yellow-flowers'),('722','Route11','walk'),('723','Route12','walk'),('723','Route12Yellow','yellow-flowers'),('724','Route13','rough-terrain'),('738','Reflection1F','walk'),('739','ReflectionB1F','walk'),('740','ReflectionB2F','walk'),('741','ReflectionDeep','walk'),('760','AzureBay','walk')]:areas[(area,method)]=label
+for area,label in [('723','Route12'),('760','AzureBay'),('719','Route8Coast'),('710','CyllageCity'),('709','AmbretteTown')]:
  for method in ['surf','old-rod','good-rod','super-rod']:areas[(area,method)]=label+'_'+method
 enc={a:{'x':{'rate':20,'slots':[]},'y':{'rate':20,'slots':[]}} for a in areas.values()}
 for r in rows('xy_encounters'):

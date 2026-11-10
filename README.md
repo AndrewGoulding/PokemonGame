@@ -15,8 +15,8 @@ Area. See [Unova’s opening](docs/unova-opening.md) for content, rebuilding and
 [remaining work](docs/unova-completion.md). Its offline postgame also includes [battle facilities](docs/unova-facilities.md),
 [eight-family Join Avenue](docs/unova-avenue.md), and [N’s Pokémon, swarms, tutors, trades and Abyssal Ruins](docs/unova-services.md).
 
-Kalos’s X/Y campaign is playable through Grant’s second Gym, including Lumiose,
-Parfum Palace, Snorlax, Glittering Cave and fossil revival. Start with the Kalos
+Kalos’s X/Y campaign is playable through Clemont’s fifth Gym, including Mega
+Evolution, Shalour, Coumarine, the Power Plant and northern Lumiose. Start with the Kalos
 researcher in Fight Area; see [Kalos’s campaign](docs/kalos.md) for content and limits.
 
 ## Running it

@@ -1,0 +1,968 @@
+{
+  "source": {
+    "references": [
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_6",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_7",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_8"
+    ],
+    "curated": "2026-11-10"
+  },
+  "field": {
+    "Route10": [
+      {
+        "name": "Robert",
+        "className": "Psychic",
+        "party": [
+          [
+            "Solosis",
+            22,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Fumiko",
+        "className": "Tourist",
+        "party": [
+          [
+            "Skiploom",
+            19,
+            "F"
+          ],
+          [
+            "Azumarill",
+            19,
+            "F"
+          ],
+          [
+            "Dunsparce",
+            19,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Houndour",
+            21,
+            "M"
+          ],
+          [
+            "Golbat",
+            23,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Sayid",
+        "className": "Psychic",
+        "party": [
+          [
+            "Meditite",
+            19,
+            "M"
+          ],
+          [
+            "Kirlia",
+            21,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Electrike",
+            23,
+            "F"
+          ],
+          [
+            "Croagunk",
+            21,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Gulpin",
+            24,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Tomoko",
+        "className": "Tourist",
+        "party": [
+          [
+            "Drifloon",
+            19,
+            "F"
+          ],
+          [
+            "Hippopotas",
+            19,
+            "F"
+          ],
+          [
+            "Pachirisu",
+            19,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Route11": [
+      {
+        "name": "Emanuel",
+        "className": "Psychic",
+        "party": [
+          [
+            "Solosis",
+            24,
+            "M"
+          ],
+          [
+            "Sigilyph",
+            24,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Gerardine",
+        "className": "Battle Girl",
+        "party": [
+          [
+            "Mienfoo",
+            28,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Frank & Sly",
+        "className": "Brains & Brawn",
+        "party": [
+          [
+            "Mr. Mime",
+            26,
+            "M"
+          ],
+          [
+            "Machoke",
+            28,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Reflection": [
+      {
+        "name": "Lane",
+        "className": "Backpacker",
+        "party": [
+          [
+            "Linoone",
+            26,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Hedvig",
+        "className": "Battle Girl",
+        "party": [
+          [
+            "Throh",
+            25,
+            "M"
+          ],
+          [
+            "Hawlucha",
+            26,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Monique",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Doduo",
+            24,
+            "F"
+          ],
+          [
+            "Granbull",
+            24,
+            "F"
+          ],
+          [
+            "Helioptile",
+            25,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Dunstan",
+        "className": "Hiker",
+        "party": [
+          [
+            "Sandile",
+            22,
+            "M"
+          ],
+          [
+            "Dwebble",
+            23,
+            "M"
+          ],
+          [
+            "Diggersby",
+            24,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Monami",
+        "className": "Tourist",
+        "party": [
+          [
+            "Nidorina",
+            26,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Igor",
+        "className": "Black Belt",
+        "party": [
+          [
+            "Sawk",
+            28,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Franz",
+        "className": "Psychic",
+        "party": [
+          [
+            "Chimecho",
+            24,
+            "M"
+          ],
+          [
+            "Golett",
+            24,
+            "N"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Haruto",
+        "className": "Tourist",
+        "party": [
+          [
+            "Nidorino",
+            26,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Yuu & Ami",
+        "className": "Honeymooners",
+        "party": [
+          [
+            "Combee",
+            26,
+            "M"
+          ],
+          [
+            "Vespiquen",
+            26,
+            "F"
+          ]
+        ],
+        "double": true
+      },
+      {
+        "name": "Emil",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Absol",
+            26,
+            "M"
+          ],
+          [
+            "Pinsir",
+            25,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "ShalourGym": [
+      {
+        "name": "Shun",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Pancham",
+            27,
+            "M"
+          ],
+          [
+            "Throh",
+            27,
+            "M"
+          ],
+          [
+            "Machoke",
+            27,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Dash",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Heracross",
+            30,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Rolanda",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Sawk",
+            27,
+            "M"
+          ],
+          [
+            "Hariyama",
+            29,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Kate",
+        "className": "Roller Skater",
+        "party": [
+          [
+            "Meditite",
+            28,
+            "F"
+          ],
+          [
+            "Mienfoo",
+            28,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Route12": [
+      {
+        "name": "Alessandro",
+        "className": "Swimmer",
+        "party": [
+          [
+            "Qwilfish",
+            29,
+            "M"
+          ],
+          [
+            "Binacle",
+            27,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Joren",
+        "className": "Backpacker",
+        "party": [
+          [
+            "Linoone",
+            28,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Amala",
+        "className": "Pokémon Breeder",
+        "party": [
+          [
+            "Seviper",
+            27,
+            "F"
+          ],
+          [
+            "Miltank",
+            29,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Aidan",
+        "className": "Youngster",
+        "party": [
+          [
+            "Yanma",
+            27,
+            "M"
+          ],
+          [
+            "Mothim",
+            27,
+            "M"
+          ],
+          [
+            "Whirlipede",
+            27,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Foster",
+        "className": "Pokémon Breeder",
+        "party": [
+          [
+            "Zangoose",
+            27,
+            "M"
+          ],
+          [
+            "Tauros",
+            29,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Murray",
+        "className": "Fisherman",
+        "party": [
+          [
+            "Magikarp",
+            24,
+            "M"
+          ],
+          [
+            "Magikarp",
+            24,
+            "M"
+          ],
+          [
+            "Magikarp",
+            24,
+            "M"
+          ],
+          [
+            "Magikarp",
+            24,
+            "M"
+          ],
+          [
+            "Magikarp",
+            24,
+            "M"
+          ],
+          [
+            "Magikarp",
+            24,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "AzureBay": [
+      {
+        "name": "Kieran",
+        "className": "Swimmer",
+        "party": [
+          [
+            "Remoraid",
+            27,
+            "M"
+          ],
+          [
+            "Skrelp",
+            27,
+            "M"
+          ],
+          [
+            "Wailmer",
+            27,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Romy",
+        "className": "Swimmer",
+        "party": [
+          [
+            "Slowpoke",
+            30,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Ewan",
+        "className": "Fisherman",
+        "party": [
+          [
+            "Clauncher",
+            27,
+            "M"
+          ],
+          [
+            "Carvanha",
+            29,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Isla",
+        "className": "Swimmer",
+        "party": [
+          [
+            "Corsola",
+            28,
+            "F"
+          ],
+          [
+            "Lanturn",
+            28,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "CoumarineGym": [
+      {
+        "name": "Chaise",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Simisage",
+            32,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Maurice",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Ferroseed",
+            29,
+            "M"
+          ],
+          [
+            "Lombre",
+            29,
+            "M"
+          ],
+          [
+            "Carnivine",
+            29,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Brooke",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Roselia",
+            30,
+            "F"
+          ],
+          [
+            "Wormadam",
+            30,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Twiggy",
+        "className": "Pokémon Ranger",
+        "party": [
+          [
+            "Gloom",
+            29,
+            "F"
+          ],
+          [
+            "Exeggutor",
+            31,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "PowerPlant": [
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Scraggy",
+            32,
+            "M"
+          ],
+          [
+            "Croagunk",
+            32,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Croagunk",
+            31,
+            "F"
+          ],
+          [
+            "Golbat",
+            33,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Mightyena",
+            34,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Scraggy",
+            32,
+            "M"
+          ],
+          [
+            "Golbat",
+            32,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Golbat",
+            32,
+            "M"
+          ],
+          [
+            "Mightyena",
+            32,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Swalot",
+            34,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Liepard",
+            31,
+            "F"
+          ],
+          [
+            "Swalot",
+            33,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Grunt",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Croagunk",
+            31,
+            "F"
+          ],
+          [
+            "Scraggy",
+            31,
+            "F"
+          ],
+          [
+            "Liepard",
+            31,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Admin",
+        "className": "Team Flare",
+        "party": [
+          [
+            "Houndoom",
+            36,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "LumioseGym": [
+      {
+        "name": "Arno",
+        "className": "Schoolboy",
+        "party": [
+          [
+            "Pachirisu",
+            34,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Sherlock",
+        "className": "Schoolboy",
+        "party": [
+          [
+            "Stunfisk",
+            34,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Finnian",
+        "className": "Schoolboy",
+        "party": [
+          [
+            "Dedenne",
+            34,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Estel",
+        "className": "Rising Star",
+        "party": [
+          [
+            "Raichu",
+            35,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Nelly",
+        "className": "Rising Star",
+        "party": [
+          [
+            "Magneton",
+            35,
+            "N"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Helene",
+        "className": "Rising Star",
+        "party": [
+          [
+            "Manectric",
+            35,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Mathis",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Lanturn",
+            36,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Maxim",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Electrode",
+            36,
+            "N"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Rico",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Ampharos",
+            36,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Abigail",
+        "className": "Poké Fan",
+        "party": [
+          [
+            "Minun",
+            34,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Lydie",
+        "className": "Poké Fan",
+        "party": [
+          [
+            "Plusle",
+            34,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Tara",
+        "className": "Poké Fan",
+        "party": [
+          [
+            "Pikachu",
+            34,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ]
+  }
+}
