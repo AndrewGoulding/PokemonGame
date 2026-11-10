@@ -3146,6 +3146,12 @@ does. (Script warps now name their maps, so every script's warp works.)
 
 ## Orre (in progress)
 
+Orre has two campaigns, as the GameCube games do. **Pokémon Colosseum's** comes after Johto: Prof. Oak calls once
+you're Johto's Champion and sends you undercover into Team Snagem. **Pokémon XD: Gale of Darkness's** comes once
+Colosseum's story is over in Orre (`orreStory` 44) and Hoenn's League is won: Oak calls again, Cipher on the loose
+in Orre again (`xdStory` 1), and at his lab his briefing and his plane back to the Orre Air Strip (`xdStory` 2;
+`tests/browser/xd-start.js`). XD's own story in Orre is still to come.
+
 Orre's story is played through in a real browser by `tests/browser/orre-story-early.js`, `-pyrite.js`, `-agate.js`
 (with `-agate-2.js`), `-under.js`, `-realgam.js` and `orre-shadow-mechanics.js` (Playwright: real input, battles won,
 snags, Hyper Mode and CALL, the heart gauge, the lab's keys, the e-mail; no page errors or missing files).

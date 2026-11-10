@@ -6132,9 +6132,48 @@
       "I'll be waiting for you!"].map((p) => fill(p)));
     await persist();
   }
+  // Pokémon XD: Gale of Darkness, Orre's second campaign. Once Colosseum's story is over in Orre (orreStory 44) and
+  // Hoenn's League is won, Prof. Oak calls: Cipher's on the loose in Orre again (player.flags.xdStory 1). At his lab he
+  // tells you what's known and his plane flies you back to the Orre Air Strip (xdStory 2). (His words are this game's
+  // own, as the Colosseum campaign's prologue is; XD's own story follows in Orre.)
+  function xdCallStep() {
+    const f = player.flags;
+    if (f.xdStory || (f.orreStory | 0) < 44 || !hoennChampion(f)) return null;
+    const here = window.WORLD_MAPS[player.location.map] || {};
+    return OUTDOORS.includes(here.type) && !Orre.inOrre(player.location) ? { type: "xd-call" } : null;
+  }
+  async function xdOakCall() {
+    player.flags.xdStory = 1;
+    await gear.storyCall(["Prof. Oak: {PLAYER}! It's Prof. Oak!\nI'm glad I caught you.",
+      "You've done Hoenn proud, I hear!\nBut I've had some bad news from\nOrre.",
+      "Cipher… They're on the loose in\nOrre again.",
+      "Please, come and see me at my lab\nin Pallet Town as soon as you can!"].map((p) => fill(p)));
+    await persist();
+  }
+  async function oakXD() {
+    const f = player.flags;
+    if (!f.xdBriefed) {
+      await say(["Oak: {PLAYER}! Thank you for coming\nso quickly.",
+        "You broke Cipher in Orre and set\nits Shadow Pokémon free. We all\nthought that was the end of it.",
+        "But Cipher is back. A cargo ship,\nthe S.S. Libra, has vanished off\nOrre's coast with all its Pokémon.",
+        "And there's talk of a new Shadow\nPokémon: one that can't be purified,\nmade to be Cipher's ultimate weapon.",
+        "Prof. Krane at Orre's Pokémon HQ\nLab has been building a new machine\nto snag Shadow Pokémon back.",
+        "He'll need a Trainer he can trust\nto use it. I told him there's no\none better than you, {PLAYER}."]);
+      f.xdBriefed = true;
+    } else await say(["Oak: {PLAYER}, have you thought about\nwhat I asked?"]);
+    if (!(await confirm(fill("Oak: Will you go back to Orre and\nstop Cipher again, {PLAYER}?")))) {
+      await say(["Oak: I understand. Come and see me\nwhen you're ready. Orre needs you."]);
+      return;
+    }
+    await say(["Oak: I knew it! My plane is ready to\nfly you to the Orre Air Strip.",
+      "Prof. Krane's lab is in the south of\nOrre. Good luck, {PLAYER}!"]);
+    f.xdStory = 2;
+    await flyToOrre(true);
+  }
   // Prof. Oak in his lab: the briefing and his question; or, once you've been, the plane back.
   async function oakOrre() {
     const f = player.flags;
+    if (f.xdStory === 1) { await oakXD(); return; }
     if (f.orreStory >= 2) {
       if (!(await confirm(fill("Oak: {PLAYER}! How goes your mission\nin Orre? Shall I have my plane take\nyou back there?")))) { await say("Oak: Rest up, then. Orre is counting\non you."); return; }
       await say("Oak: Good luck, {PLAYER}!");
@@ -11764,7 +11803,7 @@
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           SinnohLegends.syncForms(player);
-          return unovaStory.step() || sinnohStory.step() || orreCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
+          return unovaStory.step() || sinnohStory.step() || orreCallStep() || xdCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()) * SinnohCompletion.rate(player)*UnovaFunfest.scale(player,"ENCOUNTER"),
         adjustWild: (mon, table) => { SinnohDaily.apply(player); const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !SinnohPark.suppresses(player) && !SinnohRadar.suppresses(player) && !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -11814,6 +11853,7 @@
       else if (ev.type === "egg-hatch") await eggHatches(ev.record);
       else if (ev.type === "phone") await gear.ring();
       else if (ev.type === "orre-call") await orreOakCall();
+      else if (ev.type === "xd-call") await xdOakCall();
       else if (ev.type === "heart-open") await say(ev.text);
       else if (ev.type === "viridian-stop") await viridianOldManStop();
       else if (ev.type === "red-forest") await redForest();
