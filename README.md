@@ -4263,3 +4263,5 @@ Unova Musical and daily sports: [scope and source notes](docs/unova-activities.m
 Unova Pokéstar catalog: [scope and source notes](docs/unova-movies.md).
 
 Unova Memory Link and event research: [scope and source notes](docs/unova-events.md).
+
+Unova difficulty modes: [scope and source notes](docs/unova-modes.md).

@@ -1101,10 +1101,13 @@
     }
     const unovaPartner=Unova.sewerPartner(player);
     if(unovaPartner){if(wild&&!opts.foe)opts={...opts,foe:{name:'Wild',team:[wildMon(Encounters.wild(partyLevel()))]}};opts=Unova.escortBattle(player,kind,opts,()=>{const m=WORLD_MAPS[player.location.map],e=m.wild&&World.pickWild(m,Math.random);return wildMon(e?Party.create(e.species,e.level):Encounters.wild(partyLevel()));});}
-    const foe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
+    const rawFoe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
+    const modeEligible=!wild&&!opts.noExp&&!!UNOVA_DATA.trainers[opts.trainerId]&&Unova.owns(player.location.map);
+    const foe=modeEligible?UnovaModes.foe(player,rawFoe,opts.trainerId):rawFoe;
     if(wild&&foe.team.length===1)foe.team[0]=Sinnoh.roamerRecord(player,foe.team[0]);
     if(wild && foe.team.length === 1 && SinnohRoamers.eligible(player.location.map) && Sinnoh.isRoamer(player,foe.team[0].species)) opts = {...opts,roamer:true};
-    const foe2 = !wild && opts.foe2 || null;
+    const rawFoe2 = !wild && opts.foe2 || null;
+    const foe2=modeEligible?UnovaModes.extraFoe(player,rawFoe2):rawFoe2;
     // (Two wild Pokémon, opts.wildDouble: Black and White's wild double battle, this game's own way: game/hordes.js.)
     const wildDouble = wild && !!opts.wildDouble && foe.team.length > 1;
     const double = wildDouble || (!wild && !opts.safari && !!(opts.double || opts.partner || foe2));
@@ -1758,7 +1761,7 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
-    if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}if(action==='receiver-call')await unovaStory.run('bw:receiver-call');if(action==='memory-archive')await unovaStory.run('bw:memory-archive');if(action==='entralink'||action==='pass-powers')await unovaStory.run('bw:'+ (action==='entralink'?'enter-entralink':action));};return "escaped";}
+    if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}if(action==='receiver-call')await unovaStory.run('bw:receiver-call');if(action==='memory-archive')await unovaStory.run('bw:memory-archive');if(action==='difficulty-settings')await unovaStory.run('bw:difficulty-settings');if(action==='entralink'||action==='pass-powers')await unovaStory.run('bw:'+ (action==='entralink'?'enter-entralink':action));};return "escaped";}
     if(item==="dropped-item"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run("bw:receiver-call");};return "escaped";}
     if(item==="dna-splicers"||item==="reveal-glass"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run(item==="dna-splicers"?"bw:use-splicers":"bw:use-reveal-glass");};return "escaped";}
     if(item==="white-flute"||item==="black-flute"){if(SinnohCompletion.flute(player,item)){await message("The "+Bag.name(item)+" sounded.\nWild Pokémon will appear "+(item==="white-flute"?"more":"less")+" often here.");}return;}

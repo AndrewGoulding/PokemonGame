@@ -39,6 +39,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Stadium/court source trainer catalogs, daily sports rosters and rematches ([scope](unova-activities.md))
 - [ ] Remaining Medal Rally conditions, native card milestones and rewards
 - [ ] Remaining field items, gifts, optional houses and encounter audit
-- [ ] Challenge/Easy Mode and version-specific campaign events
+- [x] Source Easy/Challenge levels and alternate teams, saved keys and local sharing ([scope](unova-modes.md))
+- [ ] Remaining version-specific geometry and campaign-event audit
 - [ ] Black / White original campaign, gyms, rivals, N ending and postgame
 - [ ] Full regional map, music coverage, final source audit and browser campaign validation

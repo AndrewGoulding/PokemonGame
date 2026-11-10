@@ -493,7 +493,7 @@
     if (regionOf(map || (player.location && player.location.map)) === "orre") return (player.flags && player.flags.orreLevelCap) || ORRE_LEVEL_CAP;
     const region = REGION_BADGES[regionOf(map || (player.location && player.location.map))] ? regionOf(map || (player.location && player.location.map)) : "kanto";
     const n = REGION_BADGES[region].filter((b) => (player.badges || []).includes(b)).length;
-    if (region === "unova" && n === 8 && !(player.flags && player.flags.unovaLeagueClear)) return 59;
+    if (region === "unova") { const base=n===8&&!(player.flags&&player.flags.unovaLeagueClear)?59:n<8?LEVEL_CAPS.unova[n]:100; return window.UnovaModes?UnovaModes.cap(player,base):base; }
     if (region === "sinnoh" && n === 8 && !(player.flags && player.flags.sinnohLeagueClear)) return 62;
     return n < LEVEL_CAPS[region].length ? LEVEL_CAPS[region][n] : 100;
   }
