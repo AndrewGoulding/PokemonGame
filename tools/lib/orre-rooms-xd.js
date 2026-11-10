@@ -5,8 +5,8 @@
 // the apartment's two floors (Littleroot's house). XD's story there is game/xd.js's and ui/game.js's.
 "use strict";
 
-module.exports = function ({ changed, room, drawings, block, A }) {
-  const { canvas, texture, C, door, palm, text } = A;
+module.exports = function ({ changed, room, drawings, block, A, emerald }) {
+  const { canvas, texture, C, door, palm, text, water } = A;
   const OUT = "PokemonHQLab", LAB1 = "PokemonHQLab_1F", LAB2 = "PokemonHQLab_2F", APT1 = "PokemonHQLab_Apartment_1F", APT2 = "PokemonHQLab_Apartment_2F";
   const W = 28, H = 22;
 
@@ -65,4 +65,95 @@ module.exports = function ({ changed, room, drawings, block, A }) {
   changed[APT2] = room("LittlerootTown_MaysHouse_2F", APT2, "Pokémon HQ Lab", "mus_oak",
     [{ x: 1, y: 1, map: APT1, warp: 2 }]);
   for (const n of [LAB1, LAB2, APT1, APT2]) changed[n].orrePlace = OUT;
+  // (The Purify Chamber: the big machine in the lobby's south-east corner, its plate before it.)
+  changed[LAB1].signs = [{ x: 11, y: 7, script: "PokemonHQLab_1F_EventScript_PurifyChamber", text: null }];
+
+  // A drawn outdoor map: its ground everywhere walkable but `solid(x, y)`, sand painted, Orre's way out along `exit`.
+  function outdoors(name, title, music, w, h, solid, exit) {
+    const o = { name, title, region: "orre", type: "town", music, width: w, height: h, top: true, borderWidth: 2, borderHeight: 2,
+      battleScene: "sand", showName: true, colosseumLayout: true, orrePlace: name, collision: [], elevation: [], behavior: [], encounter: [],
+      connections: [], hidden: [], signs: [], people: [], triggers: [], warps: [] };
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { o.collision.push(solid(x, y) ? 1 : 0); o.behavior.push(0); o.elevation.push(3); o.encounter.push(0); }
+    const oc = canvas(w * 16, h * 16), oz = canvas(oc.w, oc.h);
+    texture(oc, [0, 0, oc.w, oc.h], C.sand, name.length, 4);
+    for (const [x, y] of exit) o.triggers.push({ x, y, script: "Orre_WorldMap" });
+    changed[name] = o; drawings[name] = { c: oc, z: oz };
+    return { o, oc, oz };
+  }
+  // A plain building: a box with a roof band, windows, and a door on its south wall (a warp into `to`).
+  function house(o, oc, x, y, w, h, roof, label, doorX, to) {
+    block(o, x, y, w, h);
+    oc.rect(x * 16 + 4, y * 16 + 4, w * 16, h * 16, [0, 0, 0, 60]);
+    oc.box(x * 16, y * 16, w * 16, h * 16, C.stone[1], C.metal[1]);
+    oc.rect(x * 16 + 2, y * 16 + 2, w * 16 - 4, 14, roof);
+    for (let i = 0; i < w - 1; i += 2) if (x + i + 1 !== doorX) oc.box(x * 16 + 8 + i * 16, y * 16 + 24, 14, 12, C.blue[2], C.metal[1]);
+    if (label) text(oc, label, x * 16 + 6, y * 16 + 6, C.cream);
+    door(oc, doorX * 16 + 8, (y + h) * 16 - 1, 14, C.blue[0]);
+    if (to) o.warps.push({ x: doorX, y: y + h - 1, map: to, warp: 0 });
+    return o.warps.length - 1;
+  }
+  const pcRoom = (name, title, music, outName, back) => {
+    const r = room("MauvilleCity_PokemonCenter_1F", name, title, music, [{ x: 7, y: 8, map: outName, warp: back }, { x: 6, y: 8, map: outName, warp: back }]);
+    r.pokemonCenter = true;
+    r.people = [{ id: 0, x: 7, y: 2, movement: "face_down", rangeX: 0, rangeY: 0, script: name.replace(/_1F$/, "") + "_1F_EventScript_Nurse", flag: null, text: null,
+      localId: "LOCALID_XD_NURSE", sprite: "em_nurse", width: 16, height: 32, frames: 4 }];
+    return r;
+  };
+
+  // ---- Gateon Port (XD's M6): a port town on Orre's south coast. Its Pokémon Center, Mart, the Parts Shop and Emili's
+  // house next door along the north street; the Krabby Club and the lighthouse to the south; the docks, the pier
+  // and its rotating bridge, and Mr. Verich's cruiser out on the water. Orre's map the way you came, north. ----
+  {
+    const GP = "GateonPort", GW = 36, GH = 26;
+    const sea = (x, y) => y >= 20 || (x >= 31 && y >= 9);
+    const { o, oc, oz } = outdoors(GP, "Gateon Port", "em_slateport", GW, GH,
+      (x, y) => x === 0 || x === GW - 1 || (y === 0 && (x < 15 || x > 20)) || (sea(x, y) && !(x >= 16 && x <= 19 && y >= 20 && y <= 23)), [15, 16, 17, 18, 19, 20].map((x) => [x, 0]));
+    // The sea, a stone quay along it, the pier out to its rotating bridge.
+    water(oc, 0, 20 * 16, oc.w, oc.h - 20 * 16); water(oc, 31 * 16, 9 * 16, oc.w - 31 * 16, 11 * 16);
+    oc.rect(0, 18 * 16, 31 * 16, 2 * 16, C.stone[1]); oc.rect(0, 20 * 16 - 3, 31 * 16, 3, C.stone[3]);
+    oc.rect(16 * 16, 20 * 16, 64, 64, C.wood[1]); for (let y = 20 * 16; y < 24 * 16; y += 6) oc.rect(16 * 16, y, 64, 1, C.wood[0]);
+    oc.ellipse(18 * 16, 22 * 16, 22, 10, C.metal[2]); oc.ellipse(18 * 16, 22 * 16, 6, 3, C.gold);
+    block(o, 16, 23, 4, 1);
+    // Mr. Verich's cruiser, moored east.
+    oc.poly([[31 * 16 + 4, 11 * 16], [35 * 16, 11 * 16], [35 * 16, 16 * 16], [31 * 16 + 4, 16 * 16], [31 * 16 - 10, 13 * 16 + 8]], C.stone[0]);
+    oc.rect(32 * 16, 12 * 16, 40, 18, C.blue[1]); oc.rect(32 * 16, 14 * 16 + 4, 56, 4, C.gold);
+    // The north street.
+    const pc = house(o, oc, 2, 3, 6, 4, [193, 63, 43], "P C", 5, GP + "_PokemonCenter_1F");
+    const mart = house(o, oc, 9, 3, 5, 4, C.blue[1], "MART", 11, GP + "_Mart");
+    const parts = house(o, oc, 18, 2, 7, 5, C.rust[2], "PARTS SHOP", 21, GP + "_PartsShop");
+    const emili = house(o, oc, 26, 3, 4, 4, C.grass[2], null, 27, GP + "_EmilisHouse");
+    // The Krabby Club (closed for now) and the lighthouse.
+    block(o, 3, 11, 9, 5); oc.box(48, 176, 144, 80, [173, 66, 72], C.rust[0]); text(oc, "KRABBY CLUB", 72, 186, C.cream); door(oc, 7 * 16 + 8, 16 * 16 - 1, 16, C.dark);
+    o.signs.push({ x: 7, y: 16, script: "GateonPort_EventScript_KrabbyClub", text: null });
+    block(o, 26, 10, 3, 6); oz.rect(26 * 16 + 6, 6 * 16, 36, 10 * 16, C.stone[0]); oz.rect(26 * 16 + 6, 6 * 16, 36, 10, [193, 63, 43]); oz.ellipse(27 * 16 + 8, 6 * 16, 14, 6, C.gold);
+    o.signs.push({ x: 18, y: 17, script: "GateonPort_EventScript_Sign", text: ["GATEON PORT", "A lively seaport with active trade."] });
+    for (const [x, y] of [[1, 8], [14, 9], [22, 9], [13, 16], [1, 16]]) { palm(oz, x * 16 + 8, y * 16 + 12); block(o, x, y, 1, 1); }
+    const PORT_WARPS = { pc, mart, parts, emili };
+    changed[GP + "_PokemonCenter_1F"] = pcRoom(GP + "_PokemonCenter_1F", "Gateon Port", "mus_poke_center", GP, PORT_WARPS.pc);
+    changed[GP + "_Mart"] = room("PetalburgCity_Mart", GP + "_Mart", "Gateon Port", "em_poke_mart",
+      [{ x: 3, y: 7, map: GP, warp: PORT_WARPS.mart }, { x: 4, y: 7, map: GP, warp: PORT_WARPS.mart }]);
+    changed[GP + "_PartsShop"] = room("SlateportCity_SternsShipyard_1F", GP + "_PartsShop", "Gateon Port", "em_slateport",
+      [{ x: 2, y: 14, map: GP, warp: PORT_WARPS.parts }, { x: 3, y: 14, map: GP, warp: PORT_WARPS.parts }]);
+    changed[GP + "_EmilisHouse"] = room("SlateportCity_House", GP + "_EmilisHouse", "Gateon Port", "em_slateport",
+      [{ x: 3, y: 7, map: GP, warp: PORT_WARPS.emili }, { x: 4, y: 7, map: GP, warp: PORT_WARPS.emili }]);
+    for (const n of ["_PokemonCenter_1F", "_Mart", "_PartsShop", "_EmilisHouse"]) changed[GP + n].orrePlace = GP;
+  }
+
+  // ---- Kaminko's House (XD's S3): Dr. Kaminko's peculiar manor out in the desert, its gate kept by his assistant
+  // Chobin; inside, his inventions on show. ----
+  {
+    const KH = "KaminkosHouse", KW = 28, KH_H = 22;
+    const { o, oc, oz } = outdoors(KH, "Kaminko's House", "mus_oak", KW, KH_H,
+      (x, y) => x === 0 || x === KW - 1 || y === 0 || (y === KH_H - 1 && (x < 11 || x > 16)), [11, 12, 13, 14, 15, 16].map((x) => [x, KH_H - 1]));
+    // A walled yard; the manor, odd and top-heavy, with a big dish and a crooked tower.
+    oc.rect(64, 176, 320, 3, C.metal[1]); oc.rect(64, 176, 3, 140, C.metal[1]); oc.rect(381, 176, 3, 140, C.metal[1]);
+    for (let x = 0; x < KW; x++) if (x < 11 || x > 16) block(o, x, 17, 1, 1);
+    block(o, 4, 11, 1, 7); block(o, 23, 11, 1, 7);
+    oc.rect(64, 17 * 16, 176 - 64, 6, C.metal[2]); oc.rect(17 * 16, 17 * 16, 384 - 17 * 16, 6, C.metal[2]);
+    const manor = house(o, oc, 5, 3, 18, 8, [112, 62, 140], "KAMINKO", 14, KH + "_1F");
+    oz.ellipse(8 * 16, 3 * 16, 34, 16, C.metal[3]); oz.ellipse(8 * 16, 3 * 16, 26, 11, C.metal[2]);
+    oz.rect(19 * 16, 0, 24, 3 * 16, C.metal[1]); oz.poly([[19 * 16 - 6, 6], [20 * 16 + 14, 0], [20 * 16 + 18, 12]], C.rust[1]);
+    changed[KH + "_1F"] = Object.assign(room("SlateportCity_OceanicMuseum_1F", KH + "_1F", "Kaminko's House", "em_lilycove_museum",
+      [{ x: 9, y: 8, map: KH, warp: manor }, { x: 10, y: 8, map: KH, warp: manor }]), { orrePlace: KH });
+  }
 };

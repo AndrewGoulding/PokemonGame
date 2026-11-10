@@ -11,6 +11,7 @@
 //   OrreHeart.banks(record)            // Exp. Points (and friendship) kept for it yet?
 //   OrreHeart.door(record)             // the Summary's words for its heart
 //   OrreHeart.hyperChance(record)      // the chance its Shadow Rush sends it into Hyper Mode
+//   OrreHeart.reverseChance(record)    // XD's: the chance it goes into Reverse Mode as it finishes acting
 "use strict";
 
 (function () {
@@ -93,10 +94,15 @@
     return "The door to its heart is " + (h >= max(r) ? "tightly shut." : b >= 4 ? "starting to open." : b >= 3 ? "opening up."
       : b >= 2 ? "opening wider." : b >= 1 ? "nearly open." : "almost fully open.");
   }
+  // Pokémon XD's Reverse Mode: the chance, as it finishes acting, that one of its Shadow Pokémon goes into it, by the
+  // bars left (5 a heart shut tight). XD's words: "more apt to go into REVERSE MODE the closer it is to full
+  // purification" (#40098); the figures this game's own, no source giving XD's.
+  const REVERSE = [0.2, 0.15, 0.1, 0.06, 0.04, 0.02];
+  const reverseChance = (r) => REVERSE[Math.max(0, Math.min(5, Math.ceil(bars(r) - 1e-9)))];
   function hyperChance(r) {
     const left = Math.ceil(bars(r) - 1e-9), row = HYPER.find(([ns]) => ns.includes(r.nature));
     return row ? row[1][Math.max(0, Math.min(5, left))] : 0.15;
   }
 
-  window.OrreHeart = { NATURES, HYPER, STEPS, sizeOf, migrate, snagged, bars, open, scentTimes, moves, natureShown, banks, door, hyperChance };
+  window.OrreHeart = { NATURES, HYPER, STEPS, sizeOf, migrate, snagged, bars, open, scentTimes, moves, natureShown, banks, door, hyperChance, reverseChance };
 })();

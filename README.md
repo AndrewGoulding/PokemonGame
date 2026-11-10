@@ -3162,8 +3162,24 @@ Cipher bursts in and takes Krane (5); outside, Spy Naps and his Shadow Teddiursa
 heart gauge and Shadow moves XD's own. You play as yourself: the few lines tying the hero to Michael's family (Lily as
 your mother, Jovi as your sister) are left out, and Lily's and Krane's welcome are this game's own; the rest is XD's
 words, matched to its speakers by what they say. Orre's level cap is XD's own while its story's on
-(`player.flags.xdLevelCap`, 15 at the start). Supertrainer Aferd battles you on the plaza. Jovi's errand, Dr.
-Kaminko's manor and Gateon Port come next (`tests/browser/xd-hq-lab.js`). XD's text: `assets/text/xd.json`, XD's
+(`player.flags.xdLevelCap`, 15 at the start). Supertrainer Aferd battles you on the plaza (`tests/browser/xd-hq-lab.js`).
+Its second chapter: Lily's errand for the Purify Chamber's **Machine Part**, Jovi (Lily's daughter, your companion
+here, still calling you "big brother") with you (7); **Gateon Port** (drawn; its Pokémon Center, Mart, Parts Shop and
+Emili's house; the Krabby Club shut for now), where Jovi bumps into Zook and Mr. Verich's man Ardos sees him off (8);
+Perr at the pier (9); **Kaminko's House**, Chobin's battle at the gate, Makan inside (10); the Machine Part from Perr
+(11); back to Lily, who sends you to Agate's Eagun and the Relic Stone (12, which purifies XD's Shadow Pokémon too).
+The **Purify Chamber** is finished "while you're gone": once you've been somewhere on Orre's map and come back into
+the lobby (`xdChamber`). Its control panel is on the machine in the lobby: nine Sets, each a Shadow Pokémon and a ring
+of up to four from your party; every 161 steps a Set opens its Shadow Pokémon's heart by its tempo (a base by the
+ring's size, more for each pair round it that flows, each super effective against the next, less for each resisted,
+doubled for four; a third more or less by the Shadow Pokémon against the first of the ring; a full circle of four
+that flows all the way round is a perfect one), and once its heart is open it's purified there (`game/xd-chamber.js`;
+the figures are Bulbapedia's as search engines quote them, unconfirmed; Shadow Lugia's rule comes with Lugia).
+XD's Shadow Pokémon have **Reverse Mode**, not Hyper Mode (`engine/battle.js`): only their Shadow moves, all
+usable; after acting they may go into it (likelier the more the heart's opened; the odds are this game's own), and
+it doesn't cost the turn; in it they hurt themselves 1/16 of their HP each turn, take no item but a Scent, may
+disobey with a non-Shadow move, and come out of it only by a Call or a Scent, never by themselves (XD's words)
+(`tests/xd-reverse-test.js`, `tests/xd-chamber-test.js`, `tests/browser/xd-chapter2.js`). XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
 `node tools/build-colosseum-text.js --out xd.json <the disc's files folder>` (as Colosseum's are, into
 `assets/text/colosseum.json`; a European disc's other-language archives are left out). Its Trainers and Shadow

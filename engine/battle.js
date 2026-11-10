@@ -149,6 +149,12 @@
   // turn it may come back to its senses by itself, 1 in 256 (HYPER_CALM). How often it does as it's told otherwise in
   // it, HYPER_OBEY, Colosseum doesn't document: this game's own.)
   const HYPER_CHANCE = 0.15, HYPER_OBEY = 0.5, HYPER_CRIT_RATE = 7 / 8, HYPER_CALM = 1 / 256;
+  // (Pokémon XD's Reverse Mode, for its Shadow Pokémon (set.reverse): this.hyper too, but entered by a chance
+  // (set.reverseChance, game/orre-heart.js) as it finishes acting, any move, which doesn't cost it the turn; then it
+  // hurts itself, REVERSE_HURT of its HP, at the end of each turn, no Shadow move's critical ratio raised; it doesn't
+  // come back to its senses by itself (XD's #40100), only by a Call or a Scent. Smogon's Colosseum/XD guide, the LP
+  // Archive's XD guide. How often it disobeys, HYPER_OBEY, this game's own.)
+  const REVERSE_HURT = 1 / 16;
   const RAID_THRESHOLDS = [[], [], [0.5], [0.5], [0.66, 0.33], [0.75, 0.5, 0.25]];
   const RAID_EVERY = [0, 0, 0, 5, 4, 3];
   const RAID_FAINT_TURNS = 2;
@@ -348,6 +354,8 @@
       this.heart = set.heart | 0;
       this.hyperChance = set.hyperChance != null ? set.hyperChance : HYPER_CHANCE;
       this.hyper = !!set.hyper;   // (Hyper Mode lasts from one battle to the next, till it's dispelled)
+      this.xd = !!set.reverse;   // (XD's: Reverse Mode, not Hyper Mode)
+      this.reverseChance = set.reverseChance || 0;
       this.calls = 0;
       this.scents = 0;   // (Scents used on it in battle: Joy 1, Excite 2, Vivid 3)
       this.bankExp = set.bankExp !== false;   // (its Exp. Points kept for it yet: under three bars of its heart left)
@@ -2107,7 +2115,7 @@
       const target = side.pokemon[choice.target];
       if (!target || !window.ItemUse || !window.ItemUse.effect(choice.item)) return "You can't use that here.";
       // (Colosseum's: a Pokémon in Hyper Mode takes no item but a Scent.)
-      if (target.hyper && !window.ItemUse.effect(choice.item).scent) return target.name + " is in HYPER MODE!\nIt won't accept an item!";
+      if (target.hyper && !window.ItemUse.effect(choice.item).scent) return target.name + " is in " + (target.xd ? "REVERSE" : "HYPER") + " MODE!\nIt won't accept an item!";
       if (!window.ItemUse.canUse(this.itemView(target), choice.item, { inBattle: true, move: choice.move })) return "It won't have any effect.";
       return null;
     }
@@ -3057,7 +3065,7 @@
       // (Colosseum's Hyper Mode: one of your Shadow Pokémon, its emotions running high, may go into it, and then may
       // do as it pleases instead.)
       if (!a.forced && mon.side.id === "p1" && mon.shadow && move.id !== "struggle") {
-        const r = this.hyperMode(mon, move, o);
+        const r = mon.xd ? this.reverseMode(mon, move, o) : this.hyperMode(mon, move, o);
         if (r === false) return;
         if (r) move = r;
       }
@@ -3082,6 +3090,27 @@
       if (this.arena && mon.arena) mon.arena.mind += arenaMindRating(move);
       this.execMove(mon, move, o);
       if (this.arena && mon.arena) mon.arena.skill += this.arenaSkill(at, move);
+      // (XD: having acted, one of your Shadow Pokémon may go into Reverse Mode; its turn's been had.)
+      if (mon.xd && mon.shadow && mon.side.id === "p1" && !mon.fainted && !mon.hyper && this.random() < mon.reverseChance) {
+        mon.hyper = true;
+        this.add("-reverse", mon, "start");
+      }
+    }
+    // XD's Reverse Mode, as it's about to act: it does as it's told with a Shadow move; with another, HYPER_OBEY of
+    // the time, else it ignores orders or uses a move of its own choosing. Returns as hyperMode does.
+    reverseMode(mon, move, o) {
+      if (!mon.hyper) return null;
+      this.add("-reverse", mon, "in");
+      if (move.shadow || this.random() < HYPER_OBEY) return null;
+      const usable = mon.moves.map((m, i) => ({ m, i })).filter(({ m }) => m.pp > 0 && !m.disabled && !m.sealed);
+      if (usable.length && this.random() < 0.5) {
+        const pick = usable[this.randInt(0, usable.length - 1)];
+        this.add("-hyper", mon, "selfish", pick.m.name);
+        o.slot = pick.i;
+        return this.getActiveMove(pick.m.name);
+      }
+      this.add("-hyper", mon, "ignore");
+      return false;
     }
 
     // Colosseum's Hyper Mode (its Strategy Memo, "HYPER MODE": a Shadow Pokémon may behave abnormally at times,
@@ -3751,7 +3780,7 @@
             });
           // (Gen 7: Laser Focus, and Merciless against a poisoned target.)
           const sure = !!user.volatiles.laserfocus || (user.hasAbility("Merciless") && (target.status === "psn" || target.status === "tox"));
-          crit = sure || chance >= 1 || this.random() < (user.hyper && move.id === "shadowrush" ? HYPER_CRIT_RATE : chance);
+          crit = sure || chance >= 1 || this.random() < (user.hyper && !user.xd && move.id === "shadowrush" ? HYPER_CRIT_RATE : chance);
         }
         const field = {
           weather: this.getWeather(), terrain: this.field.terrain, gravity: !!this.field.pseudo.gravity, isDoubles: this.doubles,
@@ -4045,7 +4074,9 @@
       }
       const actives = this.sortBySpeed(this.getActives());
       // (Colosseum's Hyper Mode: each turn a Pokémon in it may come back to its senses by itself, 1 in 256.)
-      for (const mon of actives) if (mon.hyper && !mon.fainted && this.random() < HYPER_CALM) { mon.hyper = false; this.add("-hyper", mon, "calm"); }
+      for (const mon of actives) if (mon.hyper && !mon.xd && !mon.fainted && this.random() < HYPER_CALM) { mon.hyper = false; this.add("-hyper", mon, "calm"); }
+      // (XD's Reverse Mode hurts it at the end of each turn.)
+      for (const mon of actives) if (mon.hyper && mon.xd && !mon.fainted) { this.add("-reverse", mon, "hurt"); this.damage(mon, mon.maxhp * REVERSE_HURT); }
       const w2 = this.getWeather();
       if (w2) {
         this.add("-weather", w2, "[upkeep]");

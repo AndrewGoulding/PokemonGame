@@ -212,7 +212,10 @@
       // back (the rest sealed), and whether its Exp. Points are kept for it yet: game/orre-heart.js.)
       ...(record.shadow && record.heart != null && window.OrreHeart ? {
         hyperChance: window.OrreHeart.hyperChance(record), hyper: !!record.hyper,
-        ownMoves: window.OrreHeart.moves(record), bankExp: window.OrreHeart.banks(record) } : {})
+        // (Pokémon XD's: Reverse Mode instead, record.xdShadow.)
+        reverse: !!record.xdShadow, reverseChance: record.xdShadow ? window.OrreHeart.reverseChance(record) : 0,
+        // (XD's Shadow Pokémon know only their Shadow moves, all usable: nothing sealed.)
+        ownMoves: record.xdShadow ? null : window.OrreHeart.moves(record), bankExp: window.OrreHeart.banks(record) } : {})
     };
   }
 

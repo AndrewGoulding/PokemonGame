@@ -1810,6 +1810,11 @@
           ball: "{who} tried to return to its\nBALL without permission!\nBut it doesn't know how!",
           item: "{who} tried to use its item\nwithout permission!\nBut it didn't know how!", noitem: "{who} tried to use its item\nwithout permission!\nBut it's not holding anything!" }[b] || "{who} is in HYPER MODE!");
       }
+      // Pokémon XD's Reverse Mode (its fight_common's words: #20450, #20451, #20489).
+      case "-reverse":
+        if (b === "start") return fill("{who}'s emotions rose to\na fever pitch!\nIt entered REVERSE MODE!", a);
+        if (b === "hurt") return fill("The REVERSE MODE attack hurts\n{who}!", a);
+        return fill("{who} is in REVERSE MODE!", a);
       case "-call":
         if (b === "deaf") return fill("{who} failed to hear!", a);
         if (b === "eager") return fill("{who} eagerly responded to\nthe call!", a);

@@ -6,7 +6,11 @@
 // Depends on: window.Orre, window.XD_DECKS, window.WORLD_MAPS, window.Party.
 //
 // player.flags.xdStory: 1 Oak's called, 2 flown to Orre (the HQ Lab on Orre's map), 3 Lily's met you in the lobby,
-// 4 Krane's welcomed you (his Eevee), 5 the Snag Machine's yours and Cipher's taken Krane, 6 Naps beaten outside.
+// 4 Krane's welcomed you (his Eevee), 5 the Snag Machine's yours and Cipher's taken Krane, 6 Naps beaten outside,
+// 7 Lily's errand: Jovi with you to Gateon Port for the Machine Part, 8 Zook and Mr. Verich at the port, 9 Perr's sent
+// you to Kaminko's (xdChobin: Chobin's let you in), 10 Makan's sent you back to Perr, 11 the Machine Part's yours,
+// 12 it's Lily's, and she's sent you to Agate's Eagun (xdChamberDue: the Purify Chamber's finished when you're back;
+// xdChamber, it is).
 // player.flags.xdShadowSnagged: the XD Shadow Pokémon snagged, by their id in XD_DECKS.shadow.
 //
 //   Orre.XD.PLACE                       // the HQ Lab on Orre's map
@@ -21,9 +25,13 @@
   const D = () => window.XD_DECKS;
   const story = (f) => f.xdStory | 0;
 
-  // The HQ Lab on Orre's map: in the south, from Oak's flight (xdStory 2).
+  // The HQ Lab on Orre's map: in the south, from Oak's flight (xdStory 2). Gateon Port, due south of it, from Lily's
+  // errand (7); Kaminko's House, south-east, from Perr's word (9). (XD's world map: "GATEON PORT is due south from
+  // here. It's not far", "It's a big, weird house southeast of here.")
   const PLACE = { map: "PokemonHQLab", name: "Pokémon HQ Lab", x: 150, y: 146, arrive: { x: 13, y: 20, facing: "up" } };
-  if (!Orre.PLACES.some((p) => p.map === PLACE.map)) Orre.PLACES.push(PLACE);
+  const GATEON = { map: "GateonPort", name: "Gateon Port", x: 148, y: 157, arrive: { x: 17, y: 1, facing: "down" } };
+  const KAMINKO = { map: "KaminkosHouse", name: "Kaminko's House", x: 176, y: 152, arrive: { x: 13, y: 20, facing: "up" } };
+  for (const p of [PLACE, GATEON, KAMINKO]) if (!Orre.PLACES.some((q) => q.map === p.map)) Orre.PLACES.push(p);
 
   // Krane's Eevee: Lv. 10, as XD's gift Eevee is; its Gen 3 moves at that level, with Bite (XD's hero's has it).
   const EEVEE = { species: "Eevee", level: 10, moves: ["Tackle", "Tail Whip", "Helping Hand", "Bite"] };
@@ -61,7 +69,8 @@
 
   // The HQ Lab's people: (map, key, x, y, facing, script, sprite, visible).
   const PEOPLE = [
-    ["PokemonHQLab_1F", "LILY", 4, 5, "face_down", "PokemonHQLab_1F_EventScript_Lily", "em_woman_2", (f) => story(f) >= 3],
+    ["PokemonHQLab_1F", "LILY", 1, 4, "face_right", "PokemonHQLab_1F_EventScript_Lily", "em_woman_2", (f) => story(f) >= 3],
+    ["PokemonHQLab_1F", "JOVI", 2, 4, "face_left", "PokemonHQLab_1F_EventScript_Jovi", "em_little_girl", (f) => story(f) >= 12],
     ["PokemonHQLab_1F", "RECEPTION", 8, 3, "face_down", "PokemonHQLab_1F_EventScript_Reception", "em_woman_3", () => true],
     ["PokemonHQLab_1F", "AIDAN", 11, 4, "face_down", "PokemonHQLab_1F_EventScript_Aidan", "em_scientist_2", () => true],
     ["PokemonHQLab_1F", "KRANE_1F", 12, 4, "face_left", "PokemonHQLab_1F_EventScript_Krane", "em_scientist_1", (f) => story(f) === 4],
@@ -71,7 +80,28 @@
     ["PokemonHQLab", "NAPS", 13, 11, "face_up", "PokemonHQLab_EventScript_Naps", "orre_peon_m", () => false],
     ["PokemonHQLab", "THUG", 12, 10, "face_up", "PokemonHQLab_EventScript_Thug", "orre_peon_m", () => false],
     ["PokemonHQLab", "KRANE_OUT", 14, 10, "face_down", "PokemonHQLab_EventScript_KraneOut", "em_scientist_1", () => false],
-    ["PokemonHQLab", "STAFF", 16, 10, "face_left", "PokemonHQLab_EventScript_Staff", "em_scientist_2", (f) => story(f) >= 6]
+    ["PokemonHQLab", "STAFF", 16, 10, "face_left", "PokemonHQLab_EventScript_Staff", "em_scientist_2", (f) => story(f) >= 6],
+    // (Jovi, travelling with you on Lily's errand, only in its scenes: she's beside you then.)
+    ["PokemonHQLab", "JOVI_OUT", 14, 10, "face_down", "PokemonHQLab_EventScript_Jovi", "em_little_girl", () => false],
+    // Gateon Port: Perr at the pier, mending its rotating bridge; Emili and Acri at home; the Parts Shop's stand-in
+    // keeper, and Perr behind the counter once Makan's sent you back; the Pokémon Center's and the Mart's people.
+    ["GateonPort", "PERR", 18, 21, "face_up", "GateonPort_EventScript_Perr", "em_boy_1", (f) => story(f) >= 7 && story(f) < 10],
+    ["GateonPort", "ZOOK", 18, 6, "face_up", "GateonPort_EventScript_Zook", "orre_snagem_m", () => false],
+    ["GateonPort", "VERICH", 24, 6, "face_left", "GateonPort_EventScript_Verich", "em_gentleman", () => false],
+    ["GateonPort", "ARDOS", 24, 5, "face_left", "GateonPort_EventScript_Ardos", "em_man_5", () => false],
+    ["GateonPort", "ELDES", 24, 7, "face_left", "GateonPort_EventScript_Eldes", "em_man_4", () => false],
+    ["GateonPort", "EMILI", 27, 8, "face_up", "GateonPort_EventScript_Emili", "em_girl_2", () => false],
+    ["GateonPort", "JOVI_PORT", 18, 2, "face_down", "GateonPort_EventScript_Jovi", "em_little_girl", () => false],
+    ["GateonPort_EmilisHouse", "EMILI_HOME", 5, 4, "face_down", "GateonPort_EventScript_EmiliHome", "em_girl_2", (f) => story(f) >= 8],
+    ["GateonPort_EmilisHouse", "ACRI", 7, 4, "face_down", "GateonPort_EventScript_Acri", "em_boy_3", (f) => story(f) >= 8],
+    ["GateonPort_PartsShop", "SHOPKEEP", 8, 9, "face_down", "GateonPort_PartsShop_EventScript_Keeper", "em_man_2", (f) => story(f) < 10],
+    ["GateonPort_PartsShop", "PERR_SHOP", 8, 9, "face_down", "GateonPort_PartsShop_EventScript_Perr", "em_boy_1", (f) => story(f) >= 10],
+    ["GateonPort_Mart", "CLERK", 2, 3, "face_right", "GateonPort_Mart_EventScript_Clerk", "em_man_3", () => true],
+    // Kaminko's House: Chobin at the gate till he's let you in, then indoors; Makan and the Doctor inside.
+    ["KaminkosHouse", "CHOBIN", 13, 16, "face_down", "KaminkosHouse_EventScript_Chobin", "em_boy_3", (f) => !f.xdChobin],
+    ["KaminkosHouse_1F", "CHOBIN_IN", 4, 3, "face_down", "KaminkosHouse_1F_EventScript_Chobin", "em_boy_3", (f) => !!f.xdChobin],
+    ["KaminkosHouse_1F", "MAKAN", 7, 3, "face_down", "KaminkosHouse_1F_EventScript_Makan", "em_old_man", (f) => story(f) < 12],
+    ["KaminkosHouse_1F", "KAMINKO", 16, 3, "face_left", "KaminkosHouse_1F_EventScript_Kaminko", "em_scientist_1", () => true]
   ];
   for (const [map, key, x, y, facing, script, sprite, vis] of PEOPLE) {
     Orre.EXTRA_VISIBLE[ID(key)] = vis;
@@ -80,13 +110,19 @@
     m.people.push({ id: Math.max(-1, ...m.people.map((p) => p.id)) + 1, x, y, movement: facing, rangeX: 0, rangeY: 0, script, flag: null,
       text: null, localId: ID(key), sprite, width: 16, height: 32, frames: 9 });
   }
-  const SCRIPTS = [...new Set(PEOPLE.map((p) => p[5]))].concat(["enter:PokemonHQLab_1F", "enter:PokemonHQLab", "arrive:PokemonHQLab"]);
-  // A room's scene as you come in: Lily in the lobby the first time (2), and Cipher outside with Krane (5).
+  const SCRIPTS = [...new Set(PEOPLE.map((p) => p[5]))].concat(["enter:PokemonHQLab_1F", "enter:PokemonHQLab", "arrive:PokemonHQLab",
+    "arrive:GateonPort", "enter:GateonPort", "GateonPort_EventScript_KrabbyClub", "PokemonHQLab_1F_EventScript_PurifyChamber"]);
+  // A room's scene as you come in: Lily in the lobby the first time (2); Cipher outside with Krane (5); Jovi and Zook
+  // at Gateon Port (7); the Purify Chamber finished as you come back into the lobby from a trip once Lily's had the
+  // Machine Part (xdChamberDue, xdChamberAway: ui/game.js's orreWorldMap).
   function sceneDue(script, f) {
-    if (script === "enter:PokemonHQLab_1F") return story(f) === 2;
+    if (script === "enter:PokemonHQLab_1F") return story(f) === 2 || (!!f.xdChamberDue && !!f.xdChamberAway);
     if (script === "enter:PokemonHQLab" || script === "arrive:PokemonHQLab") return story(f) === 5;
+    if (script === "enter:GateonPort" || script === "arrive:GateonPort") return story(f) === 7 && !f.xdGateonScene;
     return false;
   }
 
-  Orre.XD = { PLACE, EEVEE, SCRIPTS, sceneDue, shadowRecord, trainer, ID };
+  // Gateon Port's Mart (XD's: its first selection, Poké Balls and Poké Snacks among the usual).
+  const GATEON_MART = ["poke-ball", "great-ball", "potion", "super-potion", "antidote", "paralyze-heal", "awakening", "burn-heal", "ice-heal", "repel"];
+  Orre.XD = { PLACE, GATEON, KAMINKO, EEVEE, SCRIPTS, sceneDue, shadowRecord, trainer, ID, GATEON_MART };
 })();

@@ -6198,6 +6198,19 @@
     const f = player.flags, story = f.xdStory | 0;
     switch (script) {
       case "enter:PokemonHQLab_1F":
+        if (f.xdChamberDue && f.xdChamberAway) {
+          // The Purify Chamber, finished while you were away (XD's #40527, #40528).
+          await say(["Aidan: Certainly. Okay, {PLAYER},\nlisten closely."]);
+          await say(["Aidan: The Purify Chamber status is\non standby. System status is good to\ngo!", "Aidan: Step onto that circular plate.\nA holographic image of the Pokémon\ninvolved in purification will appear.",
+            "Aidan: Well, it would if there were\nactually some Pokémon on the Sets.", "Aidan: When you're checking the\nhologram, you can zoom to individual",
+            "Sets. At any selected Set, you can\nconfigure things as you see fit.", "Aidan: A control panel will appear\nfor you to pick the Pokémon you want",
+            "to place on the selected Set,\nposition them, and so on.", "Aidan: If you bring some Pokémon,\n{PLAYER}, you can place them on Sets.",
+            "Don't worry, you'll figure it out\nwhen you actually try it.", "Aidan: We'll also be around to\nprovide advice if you need it. First,\ncheck the hologram, please."]);
+          f.xdChamber = true;
+          delete f.xdChamberDue; delete f.xdChamberAway;
+          await persist();
+          return;
+        }
         // (This game's own: Lily meets you, Oak's friend; she isn't your mother here.)
         await say(["Lily: Oh! You must be {PLAYER}. Prof.\nOak told us you'd be coming.", "Lily: I'm Lily. I work with Prof.\nKrane on the lab's big project.",
           "Lily: The Director's in his office\nupstairs. He's been looking forward\nto meeting you!"]);
@@ -6209,7 +6222,7 @@
         if (story < 3) { await say(["Prof. Krane: Hm? Oh, hello there."]); return; }
         // (This game's own: his welcome, and his Eevee, as XD's hero has one; then XD's #40075, its last pages.)
         await say(["Prof. Krane: Ah, {PLAYER}! Welcome to\nthe Pokémon HQ Lab. I'm Krane, its\nDirector.",
-          "Prof. Krane: Prof. Oak tells me it was\nyou who stopped Cipher five years\nago. Orre owes you a great deal.",
+          "Prof. Krane: Prof. Oak tells me it\nwas you who stopped Cipher five years\nago. Orre owes you a great deal.",
           "Prof. Krane: In Orre, Pokémon battle\ntwo at a time. Here: this Eevee was\nraised here at the lab. Take it as…",
           "Prof. Krane: …your partner. I think\nit's taken a liking to you already!"]);
         const E = Orre.XD.EEVEE;
@@ -6230,6 +6243,11 @@
         await xdRaid();
         return;
       case "PokemonHQLab_1F_EventScript_Lily":
+        if (story === 6) { await xdErrand(); return; }
+        if (story === 11) { await xdHandOver(); return; }
+        if (story >= 7 && story < 11) { await say(["Lily: I've ordered the Machine Part\nfrom the Parts Shop in Gateon Port.", "Lily: {PLAYER}, Jovi, be very\ncareful, please."]); return; }
+        if (story >= 12) { await say(["Lily: The Relic Stone, which is used\nfor the purification ceremony, is\nunder the care of a man named Eagun.",
+          "Lily: I will do my best to get the\nPurify Chamber finished while you're\ngone. Please be careful, {PLAYER}."]); return; }
         if (story >= 6) await say(["Lily: Prof. Krane predicted that\nsomeone will again try making Shadow", "Pokémon. His prediction was on the\nmark."]);
         else await say(story >= 4 ? "Lily: Prof. Krane's waiting for you\nby the case over there." : "Lily: The Director's office is\nupstairs.");   // (this game's own)
         return;
@@ -6249,6 +6267,76 @@
           "Battle Coach: I've tested it out\nbefore. The opposing Pokémon was\nincredibly lifelike. It made me", "shiver even though I knew it wasn't\nreal."]);
         return;
       case "PokemonHQLab_EventScript_Aferd": await xdAferd(); return;
+      case "PokemonHQLab_1F_EventScript_Jovi":
+        await say(f.xdChamber ? ["Jovi: That Machine Part Jovi carried\nis on that big machine. They put it\non the middle part with the ring.", "Jovi: It went right in the middle. It\nmust be the most important part!"]
+          : ["Jovi: Jovi can do it!"]);
+        return;
+      case "PokemonHQLab_1F_EventScript_PurifyChamber":
+        if (!f.xdChamber) { await say(story >= 12 ? "The Purify Chamber isn't finished\nyet." : "It's a big machine with a ring in\nthe middle. It isn't finished yet."); return; }   // (this game's own)
+        await purifyChamber();
+        return;
+      case "enter:GateonPort": case "arrive:GateonPort": await xdGateon(); return;
+      case "GateonPort_EventScript_KrabbyClub": await say("The Krabby Club's doors are shut."); return;   // (this game's own, for now)
+      case "GateonPort_EventScript_Perr":
+        if (story === 8) {
+          await say(["Perr: …You want to talk to me? …Yeah,\nthe Parts Shop is ours.", "Perr: Huh? You need a Machine Part.\nWhere's Grandpa? …He's gone off to\nDr. Kaminko's…",
+            "Perr: Arrrgh! When my grandpa gets\nexcited over some mechanical thing,", "he's off like a shot, never mind the\nshop or his grandson, me.",
+            "Perr: I'll find that Machine Part you\nneed. Can I get you to come to our\nshop?"]);
+          await say(["Perr: It's a big, weird house\nsoutheast of here."]);   // (XD's world map's words, #54544)
+          Orre.unlock(f, Orre.XD.KAMINKO.map);
+          f.xdStory = 9;
+          await say("Kaminko's House was marked on\nthe Orre Map!");
+          await persist();
+          return;
+        }
+        await say(["Perr: When my grandpa gets excited\nover some mechanical thing, he's off\nlike a shot."]);   // (#41312's words again)
+        return;
+      case "GateonPort_PartsShop_EventScript_Keeper":
+        await say(["Shopkeeper: Hi, did you want\nsomething here? The shopkeeper's out\nright now.", "Shopkeeper: He said something about\nhaving to go out to Dr. KAMIN…uh…what",
+          "was it now? Well, to that doctor's\nmanor is where he went.", "Shopkeeper: He said his grandson Perr\nwill be back from repairing the",
+          "Rotating Bridges, so I'm supposed to\nmind the shop until then."]);
+        return;
+      case "GateonPort_PartsShop_EventScript_Perr":
+        if (story === 10) {
+          await say(["Perr: Sorry we were out. A Machine\nPart, you said, right?"]);
+          await say(["Perr: Here it is, here it is. This is\nit. Here you go!"]);
+          Player.addItem(player, "machine-part", 1);
+          await sayWithJingle("mus_obtain_key_item", "{PLAYER} obtained the Machine Part.");
+          await say(["Perr: It's a rare item, that Machine\nPart. It took a while to get the", "order in. How's your Director, Prof.\nKrane, doing?"]);
+          f.xdStory = 11;
+          await persist();
+          return;
+        }
+        await say(["Perr: I hope the Lab Director's\nfound. I'll be rooting for you, so\ndon't give up."]);
+        return;
+      case "GateonPort_EventScript_EmiliHome":
+        await say(["Emili: That elderly gentleman's name\nis Mr. Verich. He comes here by boat\nwith his two assistants occasionally."]);
+        return;
+      case "GateonPort_EventScript_Acri":
+        await say(["Acri: That old man is Mr. Verich.\nHe's supposed to be really wealthy!", "Acri: The people with him were really\nstrong, too! Wow, were they ever\ncool!"]);
+        return;
+      case "GateonPort_Mart_EventScript_Clerk": await mart(Orre.XD.GATEON_MART); return;
+      case "KaminkosHouse_EventScript_Chobin": await xdChobin(); return;
+      case "KaminkosHouse_1F_EventScript_Chobin":
+        await say(["Chobin: The Doctor is currently busy.\nHe is developing a secret robo that", "is strictly a secret to everyone. But\nChobin is not busy.",
+          "Chobin: Chobin is, in fact, bored.\nAhahaha."]);
+        return;
+      case "KaminkosHouse_1F_EventScript_Kaminko":
+        await say(["Dr. Kaminko: I… I… I'm in the middle\nof highly important research. I'm\nquite busy. Now, if you'll excuse me,", "I ask that you refrain from\ndisturbing me."]);
+        return;
+      case "KaminkosHouse_1F_EventScript_Makan":
+        if (story === 9) {
+          await say(["Jovi: Wrong! Today, we are going to\nGateon Port on a very important job.\nBig brother is Jovi's assistant!"]);
+          await say("{PLAYER} explained what had been\nhappening to Makan.");   // (#44134)
+          await say(["Makan: What was that?! The HQ Lab's\nDirector was abducted? That's\nterrible…", "Makan: Their modus operandi… It feels\nsimilar to that incident five years\nago. It may be Cipher.",
+            "Makan: But one can't conclusively say\nthat. Before we get to thinking, you\nneed your Machine Part.", "Makan: It's waiting for you at my\nshop in Gateon Port. Have a word with\nmy grandson Perr. He should know."]);
+          f.xdStory = 10;
+          await persist();
+          return;
+        }
+        if (story === 10) { await say(["Makan: Your Machine Part is waiting\nfor you at my shop in Gateon Port.", "Makan: Have a word with my grandson\nPerr. He'll fetch it up right away\nfor you."]); return; }
+        await say(story >= 11 ? ["Makan: Quickly, deliver that Machine\nPart to the Pokémon HQ Lab."] : ["Makan: Hm? Oh, hello there."]);
+        return;
       case "PokemonHQLab_EventScript_Staff":
         await say(["Researcher: I'm still steamed over\nthis. I wouldn't have lost to them in\na Pokémon battle, but those cowards", "jumped me without warning and punched\nmy lights out.",
           "Researcher: Oh, by the way, did you\nsee them running off toward the\nsoutheast?", "Researcher: Their hideout could be\nsomewhere in the southeast!"]);
@@ -6314,6 +6402,205 @@
     f.xdStory = 6;
     Overworld.refreshPeople();
     await persist();
+  }
+  // Lily's errand (XD's #40488-#40494): the Machine Part for the Purify Chamber, from Gateon Port's Parts Shop, with
+  // Jovi along (xdStory 6 -> 7). (Jovi, Lily's daughter, is your companion here, not your sister; she still calls
+  // you "big brother", as XD's Jovi does.)
+  async function xdErrand() {
+    const f = player.flags;
+    Overworld.addObject(XD("JOVI"), { x: 2, y: 4, facing: "left" });
+    await say(["Lily: {PLAYER}, you came at the right\ntime. May I get you to run an errand\nfor me in Gateon Port?"]);
+    await say(["Jovi: Jovi knows the Parts Shop! It's\nnext door to Emili's house!", "Jovi: Mommy, can Jovi go? Jovi wants\nto help everyone!"]);
+    await say(["Lily: Jovi, I appreciate your offer.\nI know you want to help. But, it's an\nimportant component…", "Lily: …Okay. Jovi, you're a member of\nthe Lab's staff, too. You may go if\nyou take {PLAYER} with you."]);
+    await say(["Lily: Dear, would you mind going with\nJovi?"]);
+    await say(["Jovi: Okay, Mommy! Big brother is\nJovi's assistant! You have to listen\nto Jovi, big brother!"]);
+    await say(["Jovi: Off we go to Gateon Port!"]);
+    await say(["Lily: {PLAYER}, Jovi, both of you be\nvery careful, please. I'm counting on\nyou two!"]);
+    Overworld.removeObject(XD("JOVI"));
+    Orre.unlock(f, Orre.XD.GATEON.map);
+    f.xdStory = 7;
+    await say("Gateon Port was marked on the\nOrre Map!");   // (this game's own, as Colosseum's places are)
+    await persist();
+  }
+  // Gateon Port with Jovi (XD's #41001-#41018): she runs off, bumps into Zook, and Mr. Verich's man sees him off;
+  // then her friend Emili (xdStory 7 -> 8). (Ardos's battle with Zook is told, not fought: XD shows it.)
+  async function xdGateon() {
+    const f = player.flags;
+    if ((f.xdStory | 0) !== 7 || f.xdGateonScene) return;
+    // (The scene plays on the road in from the north, wherever you came in: you're set down there first.)
+    f.xdGateonScene = true;
+    const at = Orre.XD.GATEON.arrive;
+    if (player.location.x !== at.x || player.location.y !== at.y) {
+      player.location = { map: Orre.XD.GATEON.map, x: at.x, y: at.y, facing: "down" };
+      await Overworld.teleport(player.location);
+    }
+    const J = XD("JOVI_PORT"), Z = XD("ZOOK"), V = XD("VERICH"), A1 = XD("ARDOS"), A2 = XD("ELDES"), E = XD("EMILI");
+    Overworld.addObject(J, { x: at.x + 1, y: at.y, facing: "down" });
+    await say(["Jovi: Wow, big brother! Look, look!\nIt's the sea! The sea! It's so big!"]);
+    await say(["Jovi: Listen, listen! The Parts Shop\nis over there! Hurry, big brother!"]);
+    Screen.say("");
+    Overworld.addObject(Z, { x: at.x + 1, y: at.y + 5, facing: "up" });
+    await Overworld.act([{ who: J, moves: ["walk_fast_down", "walk_fast_down", "walk_fast_down", "walk_fast_down"] }]);
+    await say(["Jovi: Ouchies! Jovi fell down!"]);
+    await say(["Zook: Hey, now! Where do you think\nyou're going?"]);
+    await say(["Jovi: Oh, sorry! Jovi is sorry! It\nwasn't on purpose!"]);
+    await say(["Zook: You've messed up the happening\nlook of Zook, the coolest, baddest,\nand most happening guy around!"]);
+    await say(["Zook: Gnnnnn! Sorry doesn't begin to\ncut it!"]);
+    await say(["Zook: Huh? You there, yeah, you,\npunk. You're with this munchkin,\naren't you?"]);
+    Overworld.addObject(V, { x: at.x + 6, y: at.y + 5, facing: "left" });
+    Overworld.addObject(A1, { x: at.x + 6, y: at.y + 4, facing: "left" });
+    Overworld.addObject(A2, { x: at.x + 7, y: at.y + 5, facing: "left" });
+    Screen.say("");
+    await Overworld.act([{ who: A1, moves: ["walk_left", "walk_left", "walk_left"] }]);
+    await say("Mr. Verich's man stepped in and\nbattled Zook! Zook didn't stand a\nchance!");   // (this game's own: XD shows the battle)
+    await say(["Zook: You've done it now! Don't think\nyou're getting away with messing with\nthe great Zook!", "Zook: Remember this!"]);
+    Screen.say("");
+    await Overworld.act([{ who: Z, moves: ["walk_fast_left", "walk_fast_left", "walk_fast_left", "walk_fast_left", "walk_fast_left", "set_invisible"] }]);
+    Overworld.removeObject(Z);
+    await say(["Ardos: Should I give chase?"]);
+    await say(["Mr. Verich: No, no. That won't be\nnecessary. He won't come back. Leave\nhim be."]);
+    await say(["Ardos: Yes, sir."]);
+    await say(["Mr. Verich: Let us be on our way."]);
+    await say(["Jovi: Uh… Thank you!"]);
+    await say(["Mr. Verich: Hohoho. That hardly\ndeserves such gratitude, my little\nlady."]);
+    Screen.say("");
+    await Overworld.act([{ who: V, moves: ["walk_right", "walk_right", "walk_right", "walk_right", "set_invisible"] },
+      { who: A1, moves: ["walk_right", "walk_right", "walk_right", "walk_right", "walk_right", "walk_right", "walk_right", "set_invisible"] },
+      { who: A2, moves: ["walk_right", "walk_right", "walk_right", "walk_right", "set_invisible"] }]);
+    for (const k of [V, A1, A2]) Overworld.removeObject(k);
+    Overworld.addObject(E, { x: at.x + 3, y: at.y + 5, facing: "left" });
+    await say(["Emili: Jovi?"]);
+    await say(["Jovi: Oh! Emili and Acri!"]);
+    await say(["Emili: So it was you, Jovi, being\nharassed by that big, strange man.\nWere you okay?"]);
+    await say(["Jovi: Yup, strong people helped us.\nBig brother was there, too, so\nnothing bad happened.", "Jovi: Jovi came here on an important\nvisit. Big brother is Jovi's\nassistant today!"]);
+    await say(["Emili: Okay, bye-bye, Jovi!"]);
+    Overworld.removeObject(E);
+    Overworld.removeObject(J);
+    delete f.xdGateonScene;
+    f.xdStory = 8;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Chobin at Kaminko's gate (XD's #44001, #44002, #44005; his line on losing #23501): he takes you for a burglar.
+  async function xdChobin() {
+    const f = player.flags;
+    if (f.xdChobin) return;
+    await say(["Chobin: Wait! Who goes there?!"]);
+    await say(["Chobin: You must be a burglar! Chobin\nwill put you straight! Don't you\nmove!", "Chobin: Chobin is the name! And\nChobin is the number-one assistant to\nDr. Kaminko!",
+      "Chobin: Chobin is the only assistant,\nso Chobin has to be the number-one\nassistant!"]);
+    const t = Orre.XD.trainer(15, null, ["Chobin: Chobin lost!"]);
+    const outcome = await storyBattle({ foe: { name: t.name, team: t.team, pic: "scientist" }, double: t.team.length > 1, prizeClass: "Cooltrainer", noBlackout: true, defeatText: t.defeat });
+    if (outcome !== "won") return;
+    await say(["Chobin: Huh? Closer observation\nreveals that the subject is a child.\nErgo, the subject is not a burglar!", "Chobin: Ahaha! Chobin wishes you\nspoke up right away.",
+      "Chobin: You're {PLAYER}? Chobin\napologizes for jumping to the wrong\nconclusion."]);
+    f.xdChobin = true;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Back at the Lab with the Machine Part (XD's #40496-#40511): it's Lily's, Jovi takes it down to the Purify
+  // Chamber, and Lily sends you to Agate's Eagun to purify your Shadow Pokémon (xdStory 11 -> 12).
+  async function xdHandOver() {
+    const f = player.flags;
+    Overworld.addObject(XD("JOVI"), { x: 2, y: 4, facing: "left" });
+    await say(["Lily: Welcome back, {PLAYER}."]);
+    await say(["Jovi: We ran the errand like you\nwanted, Mommy. A bad guy tried to\nstop us, but a nice person helped us!"]);
+    await say(["Lily: Oh, no! Really?!"]);
+    await say(["Lily: …I'll get the details later.\nWhat about the Machine Part?"]);
+    Player.removeItem(player, "machine-part", 1);
+    await say("{PLAYER} handed the Machine Part to\nLily.");
+    await say(["Lily: Thank you. With this component,\nwe can get down to the finishing\ntouches on the Purify Chamber.", "Lily: I should take this down to the\nPurify Chamber on the ground floor\nnow…"]);
+    await say(["Jovi: Oh! Jovi will take it!"]);
+    await say(["Lily: Jovi, are you sure? Don't drop\nit."]);
+    await say(["Jovi: Jovi can do it!"]);
+    await say(["Lily: {PLAYER}, how is your Shadow\nPokémon doing?", "Lily: Purification progresses if a\nShadow Pokémon spends time together\nwith its Trainer."]);
+    if (await confirm("Lily: Has the Heart Gauge fallen to\nzero?")) await say(["Lily: It has? Well, then it can't\nwait for the Purify Chamber to be\nfinished, can it?"]);   // (#40504)
+    else await say(["Lily: Oh. But by the time the Purify\nChamber is completed, the Heart Gauge\nshould be down to zero."]);
+    await say(["Lily: If the Heart Gauge has fallen\nto zero, that Shadow Pokémon is ready", "to open its heart. But that alone\nisn't enough.",
+      "Lily: To complete the process, the\nPokémon needs to go through a\npurification ceremony. It's basically", "a ritual for it to return to its\nnatural state.",
+      "Lily: If the Purify Chamber were\nready, it could go through the\nceremony there, but…", "Lily: It looks like we'll need a\nlittle more time to get finished.",
+      "Lily: Because of that, I think your\nShadow Pokémon should go through the", "purification ceremony using a\ndifferent process.",
+      "Lily: There is a village called\nAgate. In the village is the Relic\nStone which has the power to restore", "Shadow Pokémon to their natural\nstate."]);
+    if (await confirm("Lily: Still, I think you can do it,\n{PLAYER}. Would you like to go?")) await say(["Lily: Agate Village is southeast of\nhere. It may take you a while. When\nyou get there, go speak with Eagun.",
+      "Lily: I will do my best to get the\nPurify Chamber finished while you're\ngone. Please be careful, {PLAYER}."]);
+    else await say(["Lily: You're right. I don't want you\ngetting into any dangerous\nsituations, {PLAYER}.", "Lily: We should wait until the Purify\nChamber is finished."]);   // (#40509)
+    Overworld.removeObject(XD("JOVI"));
+    Orre.unlock(f, "AgateVillage");
+    f.xdStory = 12;
+    f.xdChamberDue = true;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Pokémon XD's Purify Chamber (game/xd-chamber.js), its control panel: the nine Sets, and on each, its Shadow
+  // Pokémon (from your party), its ring of up to four (from your party; turned round to change its order), its tempo,
+  // and purifying its Shadow Pokémon once its heart is open. (The panel's layout and words this game's own.)
+  async function purifyChamber() {
+    const f = player.flags, sets = XDChamber.sets(f);
+    const name = (r) => (r ? Party.displayName(r) : "—");
+    const open = (r) => (r && r.heartMax ? Math.round(100 * (1 - Math.max(0, r.heart | 0) / r.heartMax)) : 0);
+    for (;;) {
+      const pick = await ask("The Purify Chamber. Which Set?", sets.map((set, i) => ({
+        label: "Set " + (i + 1) + ": " + (set.shadow ? name(set.shadow) + " " + open(set.shadow) + "%" : "—") + " · ring " + set.ring.length + "/4", value: i
+      })).concat([back("Exit")]));
+      if (pick === "back" || pick == null) { clearMenu(); return; }
+      await chamberSet(pick);
+    }
+  }
+  async function chamberSet(i) {
+    const f = player.flags, set = XDChamber.sets(f)[i];
+    const name = (r) => Party.displayName(r);
+    // (Your party keeps at least one Pokémon that isn't an Egg.)
+    const spare = () => player.party.filter((r) => !r.egg).length > 1;
+    const choosePartyMon = async (prompt, ok) => {
+      const list = player.party.map((r, k) => ({ r, k })).filter(({ r }) => !r.egg && ok(r));
+      if (!list.length) { await say("There's no Pokémon in your party\nthat can go there."); return null; }
+      if (!spare()) { await say("You can't leave yourself without a\nPokémon!"); return null; }
+      const k = await ask(prompt, list.map(({ r, k }) => ({ label: name(r) + " Lv." + r.level, value: k })).concat([back("Cancel")]));
+      return k === "back" || k == null ? null : k;
+    };
+    const takeBack = async (r) => {
+      const where = Player.receive(player, r);
+      if (!where) { await say("There's no room for " + name(r) + "!"); return false; }
+      await say(name(r) + (where === "party" ? " returned to your party." : " was sent to " + where.replace("box", "Box") + " on the PC."));
+      return true;
+    };
+    for (;;) {
+      const t = XDChamber.tempo(set);
+      const head = "Set " + (i + 1) + ": " + (set.shadow ? name(set.shadow) : "no Shadow Pokémon") + "\n" +
+        (set.shadow && set.ring.length ? "Tempo " + t.amount + (t.perfect ? ", a perfect circle!" : " (" + t.flows + " flow" + (t.flows === 1 ? "" : "s") + ")") : "Ring: " + (set.ring.map(name).join(", ") || "empty"));
+      const opts = [];
+      if (set.shadow) opts.push({ label: "Take back " + name(set.shadow), value: "takeShadow" });
+      else opts.push({ label: "Place a Shadow Pokémon", value: "putShadow" });
+      if (set.ring.length < 4) opts.push({ label: "Add to the ring", value: "addRing" });
+      if (set.ring.length) opts.push({ label: "Take from the ring", value: "takeRing" });
+      if (set.ring.length > 1) opts.push({ label: "Turn the ring", value: "turn" });
+      if (set.shadow && !((set.shadow.heart | 0) > 0)) opts.push({ label: "Purify " + name(set.shadow), value: "purify" });
+      const v = await ask(head, opts.concat([back()]));
+      if (v === "back" || v == null) return;
+      if (v === "putShadow") {
+        const k = await choosePartyMon("Which Shadow Pokémon?", (r) => r.shadow);
+        if (k != null) { set.shadow = player.party.splice(k, 1)[0]; await persist(); }
+      } else if (v === "takeShadow") {
+        if (await takeBack(set.shadow)) { set.shadow = null; await persist(); }
+      } else if (v === "addRing") {
+        const k = await choosePartyMon("Which Pokémon for the ring?", (r) => !r.shadow);
+        if (k != null) { set.ring.push(player.party.splice(k, 1)[0]); await persist(); }
+      } else if (v === "takeRing") {
+        const k = await ask("Which one?", set.ring.map((r, n) => ({ label: name(r), value: n })).concat([back("Cancel")]));
+        if (k !== "back" && k != null && await takeBack(set.ring[k])) { set.ring.splice(k, 1); await persist(); }
+      } else if (v === "turn") {
+        set.ring.push(set.ring.shift());
+        await persist();
+      } else if (v === "purify") {
+        const r = set.shadow;
+        if (r.hyper) { await say(name(r) + " is in Reverse Mode!\nIt can't be purified now."); continue; }   // (Dragonfly Cave's: purifying waits till it's calm)
+        set.shadow = null;
+        await Overworld.flash();
+        sfx("se_m_reflect");
+        await purifyWithWords(r);
+        await takeBack(r);
+        await persist();
+      }
+    }
   }
   // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.
   async function xdAferd() {
@@ -6458,6 +6745,8 @@
       me.setAttribute("style", icon(r));
       await sleep(1000);
     }
+    // (XD: the Purify Chamber's finished "while you're gone", once Lily's had the Machine Part: you've been away.)
+    if (r && r.map !== here && r.map !== Orre.XD.PLACE.map && player.flags.xdChamberDue) player.flags.xdChamberAway = true;
     return r && r.map !== here ? r : null;
   }
   // ---------- Orre: Colosseum's e-mail (game/orre-mail.js) ----------
@@ -7375,6 +7664,12 @@
     // (The Day-Care Lady's Pokémon grows a step's worth: game/orre-daycare.js.)
     OrreDayCare.step(player, Player.levelCap(player));
     const f = player.flags;
+    // (XD's Purify Chamber opens its Shadow Pokémon's hearts as you walk: game/xd-chamber.js; the P★DA tells you
+    // when one's ready, in this game's own words.)
+    if (f.xdChamber && window.XDChamber) {
+      const ready = XDChamber.step(f);
+      if (ready.length) return { type: "heart-open", text: "The P★DA beeped!\n" + Party.displayName(ready[0]) + " in the Purify\nChamber is ready to be purified!" };
+    }
     f.orreHeartSteps = (f.orreHeartSteps | 0) + 1;
     if (f.orreHeartSteps < OrreHeart.STEPS) return null;
     f.orreHeartSteps = 0;
@@ -7448,7 +7743,8 @@
     const f = player.flags, shadows = player.party.filter((r) => r.shadow);
     // (Colosseum's words for the Relic, and for a heart not yet ready or ready to open.)
     await say(["This is a mystical relic. It seems to\nbe giving off a strange and fantastic\npower."]);
-    if ((f.orreStory | 0) < 30 || !shadows.length) return;
+    // (Colosseum's story from Skrub's visit; XD's from Lily sending you there, xdStory 12.)
+    if (((f.orreStory | 0) < 30 && (f.xdStory | 0) < 12) || !shadows.length) return;
     if (shadows.some((r) => !((r.heart | 0) > 0))) await say(["There's a Pokémon that may open the\ndoor to its heart!"]);
     for (const r of shadows) {
       if ((r.heart | 0) > 0) { await say(["The door to that Pokémon's heart\ncan't be opened yet.", heartDoor(r)]); continue; }

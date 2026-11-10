@@ -849,6 +849,7 @@ window.ITEMS = {
   "excite-scent": { name: "excite-scent", category: "scents", effect: "A Scent that pleases Pokémon. (Pokémon Colosseum's: it opens the door to a Shadow Pokémon's heart a little.)" },
   "vivid-scent": { name: "vivid-scent", category: "scents", effect: "A Scent that greatly pleases Pokémon. (Pokémon Colosseum's: it opens the door to a Shadow Pokémon's heart a lot.)" },
   "powerup-part": { name: "powerup-part", category: "key-items", effect: "A part to be delivered to Nett from Perr. (Pokémon Colosseum's.)" },
+  "machine-part": { name: "machine-part", category: "key-items", effect: "A rare part for the Purify Chamber, from the Parts Shop in Gateon Port. (Pokémon XD's.)" },
   "subway-key": { name: "subway-key", category: "key-items", effect: "The operating key for The Under's subway. (Pokémon Colosseum's.)" },
   "snag-machine": { name: "snag-machine", category: "key-items", effect: "Team Snagem's machine, worn on the arm: it turns Poké Balls into Snag Balls that can catch another Trainer's Pokémon. (Pokémon Colosseum's.)" },
   "sinnoh-ticket": { name: "sinnoh-ticket", category: "key-items", effect: "A ticket for the S.S. Tidal's run to the Sinnoh region, from Lilycove. (This game's own.)" },
