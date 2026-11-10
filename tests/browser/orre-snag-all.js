@@ -40,7 +40,7 @@ const SCENARIOS = [
   S("Skrub", ["Hitmontop"], STORY(29), { at: ["RelicForest", 11, 9, "up"] }),
   S("Dakim", ["Entei"], STORY(32), { at: ["MtBattle", 17, 6, "up"] }),
   // The Under: Kloak by the studio, Venus in it, the Under Subway's four.
-  S("Kloak", ["Ledian"], STORY(34), { at: ["TheUnder", 6, 23, "up"] }),
+  S("Kloak", ["Ledian"], STORY(34, { orreKidsGrid: 3 }), { at: ["TheUnder", 6, 23, "up"] }),
   S("Venus", ["Suicune"], STORY(35), { walk: ["TheUnder", 6, 22, "up"] }),
   ...[["Frena", "Gligar"], ["Liaks", "Stantler"], ["Lonia", "Piloswine"], ["Nelis", "Sneasel"]]
     .map(([who, sp]) => S(who, [sp], STORY(36), { map: "TheUnder_Subway_B2", talk: "LOCALID_ORRE_SHADOW_" + who.toUpperCase() })),
