@@ -9,7 +9,8 @@ no build step and no dependencies.
 Sinnoh’s Platinum campaign, optional quests and offline postgame feature groups
 are complete as the project’s 2D adaptation; see the [completion audit](docs/sinnoh-completion-audit.md)
 for coverage and limitations. Unova’s Black 2 / White 2 opening is playable
-through Cheren and Roxie. Travel there from the researcher in Sinnoh’s Fight
+through Burgh’s Insect Badge, including the opening Pokéstar film, Plasma chase,
+Castelia sewers and city quests. Travel there from the researcher in Sinnoh’s Fight
 Area. See [Unova’s opening](docs/unova-opening.md) for content, rebuilding and
 [remaining work](docs/unova-completion.md).
 

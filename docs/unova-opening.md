@@ -1,9 +1,11 @@
 # Unova opening: Black 2 / White 2
 
-The playable Unova campaign currently runs from Aspertia City through **Roxie’s
-Toxic Badge**. Talk to the regional travel researcher in Sinnoh’s Fight Area
+The playable Unova campaign currently runs from Aspertia City through **Burgh’s
+Insect Badge**. Talk to the regional travel researcher in Sinnoh’s Fight Area
 (24,27); the researcher near Aspertia’s southern entrance returns you there.
-Your existing party, storage, money and other regions’ progress are preserved.
+The next [Castelia chapter](unova-castelia.md) includes the studio, chase, ferry,
+sewers and third Gym. Your existing party, storage, money and other regions’
+progress are preserved.
 Unova has its own Badges and obedience limits. Store extra party members at a
 local Pokémon Center before collecting a starter if your party is full.
 
@@ -40,8 +42,9 @@ local Pokémon Center before collecting a starter if your party is full.
 Data comes from [fuddlesworth/pokebw2](https://github.com/fuddlesworth/pokebw2),
 commit `588c0b937229f5c5cb7abad9bf8070dd2c7d97eb`. The generated file records
 that revision and the paths of the trainer, encounter, learnset, dialogue and
-medal sources. There are 39 trainer records (including deferred later rematches),
-427 dialogue records, eight encounter banks and the 255-entry medal catalog.
+medal sources. The opening imported 39 trainer records (including deferred later rematches),
+427 dialogue records and eight encounter banks. The Castelia expansion raises
+these totals to 65 trainers, 662 dialogue records and 15 encounter banks.
 
 NPC sheets, trainer portraits, Medal Box art and the C-Gear background are
 exported from the source assets. Shop upgrades count only Unova Badges. Maps are
@@ -78,5 +81,5 @@ grass battles; `tests/browser/unova-shop.js` checks purchases and PC withdrawal.
 physical doorway entrances/returns and saved reloads.
 
 Remaining campaign and feature work is tracked in
-[the Unova checklist](unova-completion.md). The current harbor and studio NPCs
-do not unlock unfinished maps.
+[the Unova checklist](unova-completion.md). The playable campaign currently ends at Burgh; the northern road and deeper
+Relic Passage remain closed.

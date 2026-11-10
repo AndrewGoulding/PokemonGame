@@ -32,17 +32,18 @@ module.exports=function(root){
   }
  }
  function outdoor(m){
-  landscape(m);
+  if(!m.unovaTheme)landscape(m);
   const kinds={lawn:'grass',grass:'tallgrass','dark-grass':'tallgrass',paving:'pavement',wood:'bridge',fence:'fence',floor:'pavement',stage:'pavement'};
-  const classes=m.art.tiles.map((k,i)=>k==='lawn'&&m.collision[i]?'tree':kinds[k]||k);
+  const cave=['cave','sewer'].includes(m.unovaTheme),style=cave?'cave':'outdoor';
+  const classes=m.art.tiles.map((k,i)=>k==='lawn'?(m.collision[i]?(cave?'rock':'tree'):(cave?'path':'grass')):k==='grass'&&cave?'path':kinds[k]||k);
   const signs=m.signs.map(s=>[s.x,s.y,'sign']);
   for(const [x,y]of signs)classes[y*m.width+x]='object';
-  const pic=Painter.compose(classes.map(k=>k==='building'?'grass':k),m.width,m.height,{signs,noFill:true});
+  const pic=Painter.compose(classes.map(k=>k==='building'?'grass':k),m.width,m.height,{signs,noFill:true,style});
   // Fixed native stamps avoid borrowing neighbouring buildings or cliff tiles.
   // Their original proportions fit the compact footprints made by house().
   for(const b of m.art.buildings){
    const kind=b.kind==='center'?'pokecenter':b.kind;
-   const st=Painter.stamps.find(s=>s.kind===kind&&s.from===(kind==='house'?'PalletTown':'ViridianCity'));
+   const st=Painter.stamps.find(s=>s.kind===kind&&s.from===(b.source||(kind==='house'?'PalletTown':'ViridianCity')));
    const tileSet=name=>cache[name]||(cache[name]=loadTileset(name));
    const art=renderBlocks(st.blocks.map(v=>v==null?1:v),st.w,st.h,tileSet(st.primary),tileSet(st.secondary),false);
    const ox=(b.doorX-st.door[0])*16,oy=(b.y+b.h-1-st.door[1])*16;
@@ -56,18 +57,19 @@ module.exports=function(root){
   for(let k=0;k<m.art.tiles.length;k++)if(m.art.tiles[k]==='dark-grass'){const ox=(k%m.width)*16,oy=Math.floor(k/m.width)*16;for(let y=0;y<16;y++)for(let x=0;x<16;x++)for(let channel=0;channel<3;channel++){const i=((oy+y)*c.w+ox+x)*4+channel;c.data[i]*=[.62,.74,.7][channel];pic.above[i]*=[.62,.74,.7][channel];}}
   m.top=true;writePng(path.join(out,m.name+'-top.png'),c.w,c.h,pic.above);
   if(pic.anim.pics.length){writeAnimSheet(path.join(out,m.name+'-anim.png'),pic.anim.pics);m.anim={cells:pic.anim.cells,anims:pic.anims};}
-  writePng(path.join(out,m.name+'-border.png'),32,32,Painter.render(Painter.paint(Array(4).fill('tree'),2,2),2,2).below);
+  writePng(path.join(out,m.name+'-border.png'),32,32,Painter.render(Painter.paint(Array(4).fill(cave?'rock':'tree'),2,2,style),2,2,null,style).below);
   return c;
  }
  function indoor(m){
   if(m.name==='UnovaVirbankGym')for(const y of [18,22,26])for(const x of [6,23])m.art.props.push({x,y,kind:'bench'});
   if(m.name==='UnovaAlderHouse'){m.art.props.push({x:9,y:10,kind:'court'},{x:5,y:19,kind:'bench'},{x:21,y:19,kind:'bench'});}
   if(m.name.endsWith('Gate'))m.art.props.push({x:5,y:5,kind:'bench'},{x:13,y:12,kind:'bench'});
-  const c=canvas(m.width*16,m.height*16),center=m.pokemonCenter,school=m.name.includes('School'),home=m.name==='UnovaHome',stage=m.name==='UnovaVirbankGym';
+  const c=canvas(m.width*16,m.height*16),center=m.pokemonCenter,school=m.name.includes('School'),home=m.name==='UnovaHome',stage=m.name==='UnovaVirbankGym'||m.unovaTheme==='studio',silk=m.unovaTheme==='silk';
   for(let y=0;y<m.height;y++)for(let x=0;x<m.width;x++){
    const wall=x<2||y<2||x>=m.width-2||y>=m.height-2;
    if(wall){c.rect(x*16,y*16,16,16,[58,66,82]);if(y===1&&x>=2&&x<m.width-2)tile(c,'PalletTown_PlayersHouse_1F',6,1,x,y);continue;}
-   if(center)tile(c,'ViridianCity_PokemonCenter_1F',2,5,x,y);
+   if(silk){tile(c,'ViridianCity_PokemonCenter_1F',2,5,x,y);const k=(y*16*c.w+x*16)*4;for(let j=0;j<16;j++)for(let i=0;i<16;i++){const o=k+(j*c.w+i)*4;c.data[o]*=.82;c.data[o+1]*=.90;}if((x+y)%4===0)c.line(x*16,y*16,x*16+15,y*16+15,[245,244,221]);}
+   else if(center)tile(c,'ViridianCity_PokemonCenter_1F',2,5,x,y);
    else if(stage){tile(c,'PalletTown_PlayersHouse_1F',2,7,x,y);const raised=m.art.tiles[y*m.width+x]==='stage';for(let j=0;j<16;j++)for(let i=0;i<16;i++){const k=((y*16+j)*c.w+x*16+i)*4;c.data[k]*=raised?.85:.50;c.data[k+1]*=raised?.70:.45;c.data[k+2]*=raised?.95:.65;}}
    else tile(c,'PalletTown_PlayersHouse_1F',2,7,x,y);
   }
@@ -92,8 +94,11 @@ module.exports=function(root){
  }
  function solid(m,x,y,w,h){for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){if(xx<2||yy<2||xx>=m.width-2||yy>=m.height-2||reserved(m,xx,yy,1))continue;m.collision[yy*m.width+xx]=1;}}
  function props(c,m){
-  for(const p of m.art.props){const x=p.x*16,y=p.y*16;const size={bench:[2,2],lamp:[1,2],clock:[2,3],crates:[3,2],amp:[2,2]}[p.kind];if(size)solid(m,p.x,p.y,...size);
-   if(p.kind==='court'){c.box(x,y,160,112,[124,166,142],[238,239,206]);c.line(x+80,y,x+80,y+112,[238,239,206]);c.ellipse(x+80,y+56,20,20,[238,239,206],2);}
+  for(const p of m.art.props){const x=p.x*16,y=p.y*16;const size={bench:[2,2],lamp:[1,2],clock:[2,3],crates:[3,2],amp:[2,2],camera:[2,2],'cinema-screen':[12,4],'green-screen':[22,3]}[p.kind];if(size)solid(m,p.x,p.y,...size);
+   if(p.kind==='cinema-screen'){c.box(x,y,192,64,[26,40,56],[85,91,112]);c.box(x+5,y+5,182,50,[225,234,208],[126,148,153]);c.line(x+20,y+54,x+172,y+54,[190,179,127],2);c.ellipse(x+96,y+29,15,15,[87,150,145]);c.ellipse(x+96,y+29,9,9,[218,230,189]);}
+   else if(p.kind==='green-screen'){c.box(x,y,352,48,[56,132,99],[49,70,72]);for(let i=4;i<348;i+=8)c.line(x+i,y+2,x+i,y+44,[64,143,107]);c.rect(x,y+44,352,4,[123,139,112]);}
+   else if(p.kind==='camera'){c.box(x,y,25,17,[87,100,116],[36,49,65]);c.box(x+19,y+3,10,10,[49,64,79],[23,39,53]);c.ellipse(x+8,y+4,6,6,[133,153,160]);c.line(x+12,y+16,x+3,y+32,[59,74,86],2);c.line(x+12,y+16,x+22,y+32,[59,74,86],2);c.line(x+12,y+16,x+12,y+32,[143,157,156],2);}
+   else if(p.kind==='court'){c.box(x,y,160,112,[124,166,142],[238,239,206]);c.line(x+80,y,x+80,y+112,[238,239,206]);c.ellipse(x+80,y+56,20,20,[238,239,206],2);}
    else if(p.kind==='bench'){c.box(x,y+5,32,11,[130,83,55],[65,71,62]);for(let yy=6;yy<14;yy+=3)c.line(x+2,y+yy,x+29,y+yy,[201,156,94]);c.rect(x+3,y+16,3,5,[58,68,65]);c.rect(x+26,y+16,3,5,[58,68,65]);}
    else if(p.kind==='lamp'){c.box(x+6,y,4,31,[100,117,123],[54,71,78]);c.box(x+2,y-8,12,12,[235,228,154],[59,77,84]);c.rect(x+5,y-5,5,6,[255,249,201]);}
    else if(p.kind==='clock'){c.box(x,y,32,43,[195,183,139],[82,84,76]);c.box(x+3,y+3,26,8,[132,105,79],[77,83,77]);c.ellipse(x+16,y+22,10,10,[248,240,191]);c.line(x+16,y+22,x+16,y+15,[75,83,79]);c.line(x+16,y+22,x+22,y+22,[75,83,79]);}

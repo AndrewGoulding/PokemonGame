@@ -3,7 +3,7 @@
 Black 2 / White 2 is the initial campaign reference. Original Black / White
 story differences will need a separate campaign path. Checked items describe
 playable offline 2D adaptations; importing a dataset alone does not complete its
-feature. See [opening scope and provenance](unova-opening.md).
+feature. See [opening scope and provenance](unova-opening.md) and [the Castelia chapter](unova-castelia.md).
 
 - [x] Aspertia, Route 19, Floccesy, Route 20, Ranch and Virbank opening maps
 - [x] Three starters, opening Hugh battles, lost Herdier and Alder lessons
@@ -12,8 +12,9 @@ feature. See [opening scope and provenance](unova-opening.md).
 - [x] Opening seasonal/version encounter tables, dark grass doubles and rustling grass
 - [x] Adapted C-Gear, regional Trainer Card, Medal Box and walking medals
 - [x] Local Centers/PCs/shops, regional travel and save integration
-- [ ] Pokéstar Studios, Virbank Plasma chase and sailing to Castelia
-- [ ] Castelia, sewers, Burgh, Route 4 and Desert Resort/Relic Castle
+- [x] Opening Pokéstar film/replay, Virbank Plasma chase and sailing to Castelia
+- [x] Castelia, five sewer chambers, Hugh tag event, Burgh, garden, early Relic Passage and city quests
+- [ ] Route 4, Colress battle and Desert Resort/Relic Castle
 - [ ] Join Avenue, Nimbasa, Elesa, amusement attractions and sports stadiums
 - [ ] Driftveil, Clay, PWT, Relic Passage and Chargestone Cave
 - [ ] Mistralton, Celestial Tower, Skyla and eastern-region travel

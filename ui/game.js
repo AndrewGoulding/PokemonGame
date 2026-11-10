@@ -1098,6 +1098,8 @@
       if (wild && !opts.foe) opts = { ...opts, foe: { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } };
       opts = Sinnoh.forestBattle(player, kind, opts, () => { const m = WORLD_MAPS[player.location.map], e = m && m.wild ? World.pickWild(m, Math.random) : null; return wildMon(e ? Party.create(e.species, e.level) : Encounters.wild(partyLevel())); });
     }
+    const unovaPartner=Unova.sewerPartner(player);
+    if(unovaPartner){if(wild&&!opts.foe)opts={...opts,foe:{name:'Wild',team:[wildMon(Encounters.wild(partyLevel()))]}};opts=Unova.escortBattle(player,kind,opts,()=>{const m=WORLD_MAPS[player.location.map],e=m.wild&&World.pickWild(m,Math.random);return wildMon(e?Party.create(e.species,e.level):Encounters.wild(partyLevel()));});}
     const foe = opts.foe || (wild ? { name: "Wild", team: [wildMon(Encounters.wild(partyLevel()))] } : Encounters.trainer(partyLevel()));
     if(wild&&foe.team.length===1)foe.team[0]=Sinnoh.roamerRecord(player,foe.team[0]);
     if(wild && foe.team.length === 1 && SinnohRoamers.eligible(player.location.map) && Sinnoh.isRoamer(player,foe.team[0].species)) opts = {...opts,roamer:true};
@@ -1306,7 +1308,7 @@
         if (evo) await evolve(record, evo, true);
       }
     }
-    if (cheryl && result.outcome !== "lost") player.party.forEach(Party.heal);
+    if ((cheryl||unovaPartner) && result.outcome !== "lost") player.party.forEach(Party.heal);
     SinnohRadar.finish(player,result.outcome,!!opts.radar);
     await persist();
     SinnohLegends.syncForms(player);
@@ -5957,7 +5959,7 @@
   // (The debug menu's way there: Prof. Oak's plane, without his briefing.)
   // ---------- Sinnoh: Platinum's opening chapter (ui/sinnoh-story.js) ----------
 
-  const unovaStory = UnovaStory.create({player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),refreshPeople:()=>Overworld.refreshPeople(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:async loc=>{await Overworld.teleport({...loc});},choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}])),wildEncounter:async record=>{await battle("wild",{foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();}});
+  const unovaStory = UnovaStory.create({player:()=>player,say,confirm,battle,mart,replay:async rec=>{await playRecord(rec);music(WORLD_MAPS[player.location.map].music);},movie:async()=>{Screen.say("");clearMenu();show("field");music("mus_vs_trainer");try{return await UnovaMovie.shoot(player);}finally{music(WORLD_MAPS[player.location.map].music);}},canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),refreshPeople:()=>Overworld.refreshPeople(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:async loc=>{await Overworld.teleport({...loc});},choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}])),wildEncounter:async record=>{await battle("wild",{foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();}});
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
     saveCheckpoint: async()=>{tick();Save.write(player);},
