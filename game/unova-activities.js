@@ -14,6 +14,6 @@
  function roster(p,large){const day=Player.gameTime(p).day,t=tier(p),sport=large?[1,2,3][day%3]:[0,4][day%2],pool=D.stadium.filter(a=>a.unk00>=sport*3&&a.unk00<sport*3+3&&a.unk02===t),out=pool.slice();if(t>=2){const backer=15+sport*2;out.push(...D.stadium.filter(a=>a.unk00>=backer&&a.unk00<=backer+(t===4?1:0)&&a.unk02===t));}if(t===4){const visitors=D.stadium.filter(a=>a.unk00>=25);for(let i=0;i<4;i++)out.push(visitors[(day*7+(large?0:26)+i*13)%visitors.length]);}return{day,tier:t,sport:['Tennis','Baseball','Soccer','Football','Basketball'][sport],trainers:out.slice(0,9)};}
  function sportsEntry(p,large,slot){return roster(p,large).trainers[slot]||null;}
  function sportsDone(p,id){return peek(p).sports?.[id]===Player.gameTime(p).day;}
- function sportsWon(p,id){state(p).sports[id]=Player.gameTime(p).day;}
+ function sportsWon(p,id){if(sportsDone(p,id))return;state(p).sports[id]=Player.gameTime(p).day;window.UnovaRecords?.record(p,'sports');}
  window.UnovaActivities={data:()=>D,peek,state,canEquip,valid,equip,begin,cue,finish,retire,collector,tier,roster,sportsEntry,sportsDone,sportsWon};
 })();

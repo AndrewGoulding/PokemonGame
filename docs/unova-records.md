@@ -18,7 +18,7 @@ all-medal completion awards. These do not manufacture missing challenge wins.
 
 Tracked actions begin after receiving the Medal Box: walking, successful manual
 saves (failed saves are rolled back), accepted Center healing, mounting a bike,
-completed non-facility battles, successful fishing captures, Egg hatches,
+completed native battles, including facilities, successful fishing captures, Egg hatches,
 completed evolutions, Fly travel, successful shop purchases/spending/Premier
 Ball bonuses, Pass Power activation and successful Entree Forest captures.
 Automatic checkpoints, cancelling services and replaying records do not count
@@ -37,10 +37,28 @@ and use the saved team as recorded. Unsupported medals explicitly say they
 are not tracked; they remain unawarded. In particular, local Funfest starts
 never count as 10/30 simultaneous players, and single-player battles do not
 count as Link Battles. Online-only conditions, several field-event counters,
-and Triple/Rotation/Multi-related awards remain on the completion checklist.
+and remaining field/multiplayer conditions remain on the completion checklist.
 
 Validation: `tests/unova-records-test.js` covers milestone boundaries, no
 zero-threshold collection awards, independent facility records, full Funfest
 completion, save persistence, signature bounds and rank/category awards.
 `tests/browser/unova-records.js` exercises the native C-Gear, actual pointer
 signature drawing, Medal Box filters, save/reload and clearing the signature.
+
+
+Native battle events now count actual player Splash/Struggle uses, ineffective
+moves and super-effective hits. NPC partner moves and recorded playback do not
+count, and one battle cannot be applied twice. These follow records 73/74/75/47
+in `src/ov167/btl_server_flow.c`; counting facilities follows the source's
+`IncRecord` playback guard. Counters are applied before the post-battle save.
+The best actual earned EXP in one game day supplies Exp. Millionaire. Earned BP
+is cumulative and survives purchases, Big Stadium/Small Court victories count
+once per opponent per day, and successful rustling encounters count toward
+Superb Locator. All seventeen distinct Type Expert wins supply All Types Champ.
+Old saves retain records but cannot reconstruct previously uncounted actions.
+
+`tests/unova-rentals-records-test.js` checks source pool membership and mixed
+ordering for every entry size, exclusions and IVs, type-win deduplication,
+earned-BP spending, actual engine move events, replay/NPC guards, daily EXP and
+sports boundaries and save persistence. The rental browser test enters a Mixed
+Rotation tournament through native menus and verifies exact party restoration.

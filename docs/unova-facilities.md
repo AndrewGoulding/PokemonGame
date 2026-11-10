@@ -130,8 +130,7 @@ The rental catalog now retains source file order. Normal rentals use files
 Player rental IVs are 20 as in `WbtParty_CreateInitialParty`; opponents use their
 trainer IVs, draw from the corresponding rental pool and exclude the player's
 selected species. This corrects drawing rental teams from the trainer's
-ordinary pool. The source's additional second/mixed rental-group selection UI
-is not yet offered.
+ordinary pool. The second and mixed source pools are described below.
 
 `tests/triples-test.js` verifies range/long-range/spread targeting, two adjacent
 allies, invalid-target rejection, Shift state and action cost, final centering,
@@ -164,3 +163,16 @@ PP and state preservation, paused reserve poison, faint promotion, reserve move
 reordering and 35 randomized/AI battles. The browser test exercises four-member
 entry, six displayed roster members, ROTATE and move selection, a three-match
 bracket, recorded format and original-party/save restoration.
+
+
+## Remaining rental pools and tournament records
+
+Rental and Rental Master reception now offers First pool, Second pool and Mixed
+pools for Singles, Doubles, Triples and Rotation. The second pool uses source
+files 133–208 (normal) or 559–908 (Master). Mixed rentals draw the first three
+from the second pool and any remaining members from the first, as
+`WbtParty_MakeParty` does. Species and held items remain unique across both
+parts. Opponents use the same mode, retain source trainer IVs and exclude the
+player’s selected species. All original party and interrupted-save protections
+continue to apply. Type Expert records retain each of the seventeen completed
+types independently; repeated wins of one type cannot earn All Types Champ.
