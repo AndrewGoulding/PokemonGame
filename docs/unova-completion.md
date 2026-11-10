@@ -33,9 +33,10 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [ ] Remaining distribution-event stories and Memory Link recaps
 - [x] PWT Singles/Doubles tournaments, basic/Super Subway lines, Institute trials and BP exchange ([scope](unova-facilities.md))
 - [ ] Triple/Rotation formats, full multi-partner ladders and online/download facilities
-- [ ] Pokémon Musical, Pokéstar movie catalog and other collection activities
+- [x] Offline Pokémon Musical, source four shows/100 props, saved finales ([scope](unova-activities.md))
+- [ ] Pokéstar movie catalog and other collection activities
 - [x] Offline Funfest/Entralink, Pass Powers and forest/dream research ([scope](unova-funfest.md))
-- [ ] Remaining daily activity rosters
+- [x] Stadium/court source trainer catalogs, daily sports rosters and rematches ([scope](unova-activities.md))
 - [ ] Remaining Medal Rally conditions, native card milestones and rewards
 - [ ] Remaining field items, gifts, optional houses and encounter audit
 - [ ] Challenge/Easy Mode and version-specific campaign events
