@@ -3692,7 +3692,9 @@ for (const mart of ["ViridianCity_Mart", "PewterCity_Mart"]) {
     for (const m of fs.readFileSync(path.join(root, f), "utf8").matchAll(/"(mus_[a-z0-9_]+)"/g)) named.add(m[1]);
   }
   // (Johto's gs_ songs are HGSS's, in assets/audio/johto-music.js: below.)
-  for (const name of named) if (!/^(gs_|em_|dp_)/.test(name)) assert(songs[name], "missing song " + name);
+  for (const name of named) if (!/^(gs_|em_|dp_|bw_)/.test(name)) assert(songs[name], "missing song " + name);
+  vm.runInThisContext(fs.readFileSync(path.join(root,"assets/audio/unova-music.js"),"utf8"),{filename:"assets/audio/unova-music.js"});
+  for(const name of named)if(/^bw_/.test(name))assert(window.UNOVA_MUSIC_DATA.songs[name],"missing Unova song "+name);
   // (Sinnoh's dp_ songs: Ogg files, window.SINNOH_MUSIC.)
   for (const name of named) if (/^dp_/.test(name)) assert(window.SINNOH_MUSIC[name] && fs.existsSync(path.join(root, window.SINNOH_MUSIC[name].file)), "missing song " + name);
   // Pallet Town: a loop, seamless (the loop part is the second time through), and in range.

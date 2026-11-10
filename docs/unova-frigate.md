@@ -45,8 +45,8 @@ day; losses and cancellation allow a retry. His first victory awards one
 Master Ball. If its stack is full, the reward waits for another visit without
 requiring another battle. Later wins never award another copy. The crew bed
 heals on confirmation, and the mess-hall pictures register Reshiram/Zekrom as
-seen without awarding catches. The rooms use the existing Rocket Hideout
-music while dedicated Gen V music coverage is tracked separately.
+seen without awarding catches. The [shared Gen V music import](unova-audio.md) now supplies a labeled BW1
+castle-theme substitute for the unavailable BW2-exclusive Frigate recording.
 
 Validation includes `tests/unova-frigate-test.js`, the complete map and field
 reachability tests, and the browser scenario `tests/browser/unova-frigate.js`.

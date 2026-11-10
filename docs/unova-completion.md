@@ -56,4 +56,5 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [ ] Remaining version-specific geometry and campaign-event audit
 - [ ] Black / White original campaign, gyms, rivals, N ending and postgame
 - [x] Regional Town Map, visited Fly navigation and version/season habitat browser ([scope](unova-town-map.md))
-- [ ] Music coverage, final source audit and browser campaign validation
+- [x] Shared Black/White music, seasonal/version arrangements and native battle/jingle routing ([scope](unova-audio.md))
+- [ ] BW2-exclusive/interactive music coverage, final source audit and browser campaign validation

@@ -120,9 +120,18 @@
   const inJohto = () => { try { return region() === "johto"; } catch (e) { return false; } };
   // Whether `name` is (or, here, stands for) one of HGSS's songs.
   const wantsJohto = (name) => !!name && (/^gs_/.test(name) || (!!JOHTO_SONGS[name] && inJohto()));
+  // Unova uses the available original Black/White archive. The map importer
+  // records explicit substitutes for BW2-exclusive requests.
+  const UNOVA_SONGS=window.UNOVA_DATA?.audio?.aliases||{};
+  let unovaLoading=null,unovaTried=false;
+  function loadUnova(){if(!unovaLoading)unovaLoading=(window.NDS?Promise.resolve(true):loadScript("game/nds-sound.js")).then(ok=>ok&&(window.UNOVA_MUSIC_DATA?true:loadScript("assets/audio/unova-music.js"))).then(ok=>!!(ok&&window.NDS&&window.UNOVA_MUSIC_DATA));return unovaLoading;}
+  const unovaReady=()=>!!(window.NDS&&window.UNOVA_MUSIC_DATA);
+  const inUnova=()=>{try{return region()==="unova";}catch(e){return false;}};
+  const wantsUnova=name=>!!name&&(/^bw_/.test(name)||inUnova()&&!!UNOVA_SONGS[name]);
   // The song that plays for `name` (Johto's loaded, or tried): in Johto,
   // HGSS's for FireRed's; a gs_ song that isn't there, what it falls back to.
   function pick(name) {
+    if(wantsUnova(name)){const bw=/^bw_/.test(name)?name:UNOVA_SONGS[name];return unovaReady()&&window.UNOVA_MUSIC_DATA.songs[bw]?bw:/^bw_/.test(name)?"mus_route1":name;}
     // (Hoenn's: Emerald's song of that name, if it has one; else, as it was.)
     if (wantsHoenn(name)) {
       const em = hoennSong(name);
@@ -186,12 +195,15 @@
     if (/^dp_/.test(name)) return dpSongs.get(name) || null;
     const isSe = /^se_/.test(name);
     if (isSe && seCache.has(name)) return seCache.get(name);
-    if (cache.has(name)) return cache.get(name);
+    if(cache.has(name)){const hit=cache.get(name);cache.delete(name);cache.set(name,hit);return hit;}
     let r;
     if (/^em_/.test(name)) {
       const H = window.HOENN_MUSIC_DATA, data = H && H.songs[name];
       if (!data || !ctx) return null;
       r = window.M4A.render(data, H.bank);
+    } else if (/^bw_/.test(name)) {
+      const U=window.UNOVA_MUSIC_DATA,data=U&&window.NDS&&U.songs[name];if(!data||!ctx)return null;
+      try{r=window.NDS.render(data,U);}catch(e){return null;}
     } else if (/^gs_/.test(name)) {
       const J = window.JOHTO_MUSIC_DATA, data = J && window.NDS && J.songs[name];
       if (!data || !ctx) return null;
@@ -207,7 +219,10 @@
     const s = { buffer, loopStart: r.loopStart != null ? r.loopStart / r.rate : null, loopEnd: r.loopEnd != null ? r.loopEnd / r.rate : null };
     if (isSe) { seCache.set(name, s); return s; }
     cache.set(name, s);
-    if (cache.size > 10) cache.delete(cache.keys().next().value);
+    // Keep the most recent scores within 128 MiB; one long current score
+    // may exceed that budget, but a regional tour cannot retain ten of them.
+    let bytes=[...cache.values()].reduce((n,a)=>n+a.buffer.length*a.buffer.numberOfChannels*4,0);
+    while(cache.size>1&&(cache.size>10||bytes>128*1024*1024)){const key=cache.keys().next().value,a=cache.get(key);bytes-=a.buffer.length*a.buffer.numberOfChannels*4;cache.delete(key);}
     return s;
   }
 
@@ -233,6 +248,7 @@
       });
       return Promise.resolve();
     }
+    if(wantsUnova(name)&&!unovaReady()&&!unovaTried){loadUnova().then(()=>{unovaTried=true;if(enabled&&ctx&&wanted===name&&!fanfareDepth&&(!current||current.name!==name||current.play!==pick(name)))start(name);});return Promise.resolve();}
     if (wantsJohto(name) && !johtoReady() && !johtoTried) {
       // (Not loaded yet: it starts once it is, if it's still the one wanted.)
       loadJohto().then(() => {
@@ -272,18 +288,19 @@
       if (!enabled || !ctx || !window.MUSIC_DATA || fanfareDepth) return;
       if (!name) { stopCurrent(0.5); return; }
       // (The same song; unless it stands for a different one now: off to or from Johto on a bike.)
-      if (current && current.name === name && (johtoTried || !wantsJohto(name)) && (hoennTried || !wantsHoenn(name)) && current.play === pick(name)) return;
+      if (current && current.name === name && (johtoTried || !wantsJohto(name)) && (hoennTried || !wantsHoenn(name)) && (unovaTried || !wantsUnova(name)) && current.play === pick(name)) return;
       start(name);
     },
     // A jingle over the music: the music stops, the jingle plays, the music
     // carries on from where it was. Resolves when the jingle is done.
     async fanfare(name) {
       if (!enabled || !ctx || !window.MUSIC_DATA || ctx.state !== "running") return;
+      if(wantsUnova(name)&&!unovaTried){await loadUnova();unovaTried=true;}
       if (wantsJohto(name) && !johtoTried) { await loadJohto(); johtoTried = true; }
       if (wantsHoenn(name) && !hoennTried) { await loadHoenn(); hoennTried = true; }
       const before = current && { name: current.name, at: position(current) };
       fanfareDepth++;
-      const frames = /^(gs_|em_)/.test(pick(name) || "") ? 0 : FANFARE_FRAMES[name];   // (HGSS's and Emerald's play to their end)
+      const frames = /^(gs_|em_|bw_)/.test(pick(name) || "") ? 0 : FANFARE_FRAMES[name];   // (HGSS's and Emerald's play to their end)
       // (A song that loops never ends by itself: once through it, then; and never more than 20 seconds, whatever it is.)
       const s = pick(name) && song(pick(name)), once = s && s.loopEnd != null ? s.loopEnd * 1000 : 20000;
       await Promise.race([start(name, 0, 0.05), new Promise((r) => setTimeout(r, Math.min(once, 20000)))]
@@ -329,6 +346,7 @@
       volume = Math.max(0, Math.min(1, +v || 0));
       if (master) master.gain.setValueAtTime(MASTER * volume, ctx.currentTime);
     },
+    playing:()=>current?.play||null,
     now: () => (current ? current.name : null),   // the song playing (or null)
     // Where the player is: a function giving the region ("johto" there), so
     // FireRed's songs play as HGSS's (JOHTO_SONGS) in Johto.

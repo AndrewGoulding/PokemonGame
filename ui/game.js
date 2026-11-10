@@ -762,7 +762,7 @@
   // "eyes meet" and jingle songs as HGSS's there).
   // (Is a map in Johto: `map`, or where you are.)
   const inJohto = (map) => !!(map || (player && player.location)) && (window.WORLD_MAPS[map || player.location.map] || {}).region === "johto";
-  if (GA && GA.setRegion) GA.setRegion(() => (inJohto() ? "johto" : ((window.WORLD_MAPS[player && player.location && player.location.map] || {}).region === "hoenn" ? "hoenn" : null)));
+  if(GA&&GA.setRegion)GA.setRegion(()=>{if(inJohto())return "johto";const region=(window.WORLD_MAPS[player?.location?.map]||{}).region;return region==="hoenn"||region==="unova"?region:null;});
   const fanfare = (name) => (GA ? GA.fanfare(name) : Promise.resolve());
   const cry = (species, opts) => { if (GA) GA.cry(species, opts); };
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -1134,8 +1134,9 @@
     // The battle theme (wild, trainer, or Gym Leader), and the one for winning
     // (in Johto, HGSS's: johtoBattleMusic).
     const leader = !wild && /^Leader /.test(foe.name);
+    const unovaMusic=window.UnovaAudio?UnovaAudio.battle(player,wild,foe,opts):{};
     const johtoMusic = inJohto() ? johtoBattleMusic(wild, foe, opts) : {};
-    music(opts.music || johtoMusic.vs || (wild ? "mus_vs_wild" : leader ? "mus_vs_gym_leader" : "mus_vs_trainer"));
+    music(opts.music || unovaMusic.vs || johtoMusic.vs || (wild ? "mus_vs_wild" : leader ? "mus_vs_gym_leader" : "mus_vs_trainer"));
     // From the map: FireRed's flash-and-slice into battle.
     if (!world.classList.contains("hidden")) await Overworld.battleTransition();
     show("field");
@@ -1178,7 +1179,7 @@
       expShare: expShareOn(),
       trainer: Player.LOOKS[player.look].back,
       foeTrainer: foe.pic, defeatText: opts.defeatText && opts.defeatText.map((p) => fill(p)),
-      victoryMusic: opts.victoryMusic || johtoMusic.win || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
+      victoryMusic: opts.victoryMusic || unovaMusic.win || johtoMusic.win || (wild ? "mus_victory_wild" : leader ? "mus_victory_gym_leader" : "mus_victory_trainer"),
       terrain: battleTerrain(opts),
       bag: opts.noBag ? null : opts.bag || player.bag,
       // (The Bag screen: its pockets, and the bag's colours.)
