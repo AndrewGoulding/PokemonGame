@@ -16,8 +16,9 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Castelia, five sewer chambers, Hugh tag event, Burgh, garden, early Relic Passage and city quests
 - [x] Route 4, Colress battle and Desert Resort/Relic Castle
 - [x] Nimbasa/Elesa, adapted coaster and wheel, local sports practice and starter Join Avenue ([scope](unova-nimbasa.md))
-- [ ] Driftveil, Clay, PWT, Relic Passage and Chargestone Cave
-- [ ] Mistralton, Celestial Tower, Skyla and eastern-region travel
+- [x] Driftveil/Clay, opening PWT adaptation, Relic Passage and Chargestone Cave ([scope](unova-west.md))
+- [x] Mistralton, Celestial Tower and Skyla ([scope](unova-west.md))
+- [ ] Eastern-region flight and remaining campaign
 - [ ] Reversal Mountain, Undella, Lacunosa and Village Bridge
 - [ ] Opelucid, Drayden, Humilau and Marlon
 - [ ] Plasma Frigate, Giant Chasm, Colress, Ghetsis and Kyurem climax
