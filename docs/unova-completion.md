@@ -24,6 +24,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Reversal Mountain, Undella, Lacunosa and Village Bridge
 - [x] Opelucid, Drayden, Humilau and Marlon
 - [x] Plasma Frigate, Giant Chasm, Colress, Ghetsis and Kyurem climax
+- [x] All 22 Frigate room banks, native warp/password decks, saved pipe controls, P2 boarding and postgame Colress ([scope](unova-frigate.md))
 - [x] Victory Road, Elite Four and Iris; Hall of Fame and rematches
 - [x] Postgame southern/eastern routes, towns, dungeons, Black City/White Forest ([scope](unova-postgame.md))
 - [x] Ten-area Black Tower / White Treehollow, Benga and shiny gifts ([scope](unova-facilities.md))

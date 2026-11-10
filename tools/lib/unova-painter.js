@@ -131,10 +131,12 @@ module.exports=function(root){
    else if(p.kind==='lamp'){c.box(x+6,y,4,31,[100,117,123],[54,71,78]);c.box(x+2,y-8,12,12,[235,228,154],[59,77,84]);c.rect(x+5,y-5,5,6,[255,249,201]);}
    else if(p.kind==='clock'){c.box(x,y,32,43,[195,183,139],[82,84,76]);c.box(x+3,y+3,26,8,[132,105,79],[77,83,77]);c.ellipse(x+16,y+22,10,10,[248,240,191]);c.line(x+16,y+22,x+16,y+15,[75,83,79]);c.line(x+16,y+22,x+22,y+22,[75,83,79]);}
    else if(p.kind==='crates'){for(let j=0;j<2;j++)for(let i=0;i<3;i++){const xx=x+i*16,yy=y+j*16;c.box(xx,yy,16,16,[175,130,79],[78,77,65]);c.box(xx+2,yy+2,12,12,[145,104,65],[211,173,112]);c.line(xx+3,yy+3,xx+12,yy+12,[208,171,108]);}}
+   else if(p.kind==='bed'){c.box(x,y,32,48,[115,82,62],[52,60,67]);c.box(x+2,y+4,28,40,[220,221,197],[57,86,113]);c.box(x+4,y+6,24,10,[245,240,210],[155,176,176]);c.rect(x+3,y+19,26,24,[96,150,174]);}
+   else if(p.kind==='warp-pad'){c.box(x,y,16,16,[65,108,157],[30,56,94]);c.box(x+3,y+3,10,10,[124,213,219],[209,241,220]);}
    else if(p.kind==='pipe'){c.box(x,y,16,48,[111,138,147],[55,77,90]);for(let i=2;i<14;i++)c.line(x+i,y+1,x+i,y+46,i<5?[165,187,188]:i>10?[74,100,116]:[128,153,162]);for(let j=4;j<48;j+=12)c.box(x,y+j,16,4,[165,180,181],[68,91,108]);}
    else if(p.kind==='amp'){c.box(x,y,32,32,[52,48,66],[26,31,45]);for(let j=6;j<30;j+=2)c.line(x+3,y+j,x+28,y+j,[85,79,94]);for(const yy of [12,24]){c.ellipse(x+16,y+yy,8,6,[32,36,48]);c.ellipse(x+16,y+yy,6,4,[93,94,108],1);}c.rect(x+3,y+2,26,2,[180,149,88]);}
    else if(p.kind==='sign'){c.rect(x+6,y+9,4,7,[98,83,60]);c.box(x+1,y,14,11,[230,213,154],[83,92,77]);c.line(x+4,y+3,x+11,y+3,[94,110,94]);c.line(x+4,y+6,x+9,y+6,[94,110,94]);}
   }
  }
- return function draw(m){const c=m.art.indoor?indoor(m):outdoor(m);props(c,m);for(const w of m.warps)if(m.behavior[w.y*m.width+w.x]===0x61){const x=w.x*16,y=w.y*16,dx=w.x<m.width/3?-1:w.x>m.width*2/3?1:0,dy=dx?0:w.y<m.height/2?-1:1;const ax=x+8,ay=y+8;c.poly(dx?[[ax+dx*5,ay],[ax-dx*2,ay-4],[ax-dx*2,ay+4]]:[[ax,ay+dy*5],[ax-4,ay-dy*2],[ax+4,ay-dy*2]],[247,239,195]);}writePng(path.join(out,m.name+'.png'),c.w,c.h,c.data);delete m.art;};
+ return function draw(m){const c=m.art.indoor?indoor(m):outdoor(m);props(c,m);for(const w of m.warps)if(w.map!==m.name&&m.behavior[w.y*m.width+w.x]===0x61){const x=w.x*16,y=w.y*16,dx=w.x<m.width/3?-1:w.x>m.width*2/3?1:0,dy=dx?0:w.y<m.height/2?-1:1;const ax=x+8,ay=y+8;c.poly(dx?[[ax+dx*5,ay],[ax-dx*2,ay-4],[ax-dx*2,ay+4]]:[[ax,ay+dy*5],[ax-4,ay-dy*2],[ax+4,ay-dy*2]],[247,239,195]);}writePng(path.join(out,m.name+'.png'),c.w,c.h,c.data);delete m.art;};
 };

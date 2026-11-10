@@ -1,11 +1,11 @@
 # Unova source field pickups and Dowsing Machine
 
 This pass imports the pickup entries from source `global_7000.s` and
-`global_8000.s` and matches their script IDs against the 236 mapped source
+`global_8000.s` and matches their script IDs against the 253 mapped source
 event banks. The source script-entry order, item constants, quantities and
 flags are retained, including the original grid/rail coordinates. There are
-400 visible placements and 182 hidden placements, representing 558 unique
-one-time rewards. Twenty-four additional visible placements reuse flags across adjacent/source
+410 visible placements and 182 hidden placements, representing 565 unique
+one-time rewards. Twenty-seven additional visible placements reuse flags across adjacent/source
 version maps and cannot award the same reward twice. The five existing opening
 supply caches remain available separately for save compatibility.
 
@@ -61,3 +61,5 @@ and parallel/legacy-world banks; they have not been silently counted as done.
 The [versioned-area pass](unova-versioned.md) resolves six previously unmapped field-item banks, exposes both Reversal Mountain variants and the Giant Chasm forests, and retains shared source flags across their alternatives.
 
 The [Abyssal treasure pass](unova-ruins.md) maps three more event banks and replaces the earlier simplified treasure set with 45 source placements. Older collected rewards transfer to matching source flags.
+
+The [Frigate import](unova-frigate.md) maps its 17 remaining room banks, including all four remaining Frigate item banks. Version-exclusive pickups are filtered in the native map and journal.

@@ -1,0 +1,29 @@
+(function(){
+ 'use strict';function create({env,fight,report,checkpoint}){const F=Unova,R=UnovaFrigate,p=()=>env.player(),s=()=>R.state(p()),say=t=>env.say(t),d=R.data();
+ async function run(key){if(!key.startsWith('frigate-')||!['engineering-guide','password','card','engineering-intro','engineering-stop','bed-rest','dragon-record','colress-postgame','postgame-board','postgame-disembark'].includes(key.slice(8))&&!/^frigate-(?:pipes|hint|panel-switch)-[0-3]$/.test(key))return false;
+  if(key==='frigate-engineering-intro'){s().introduced=true;await checkpoint();await say('The engineering decks contain\na Plasma Card/password terminal\nand four warp-panel switches.');return true;}
+  if(key==='frigate-engineering-guide'){await say(['Black 2: warp panels on B1F,\nthen pipes and password on B2F.\nWhite 2 reverses those decks.','Find the Plasma Card and ask\nthe crew for password clues.\nReach all four warp switches.', 'Warp switches: '+s().switches.filter(Boolean).length+'/4\nPassword: '+(s().passwordClear?'accepted':'locked')]);return true;}
+  if(key==='frigate-engineering-stop'){await say('Clear the engineering decks:\nall four warp switches and\nthe Plasma Card password.');await env.teleport({map:'UnovaPlasmaFrigateHold',x:19,y:25,facing:'up'});return true;}
+  if(key==='frigate-bed-rest'){if(await env.confirm('Take a quick rest in the unused bed?')){p().party.forEach(Party.heal);await checkpoint();await say('Your Pokémon took a nap\nand regained their energy!');}return true;}
+  if(key==='frigate-dragon-record'){for(const species of ['Reshiram','Zekrom']){const text='A picture of the legendary\n'+species+'!';if(env.frigatePreview)await env.frigatePreview(species,text);else await say(text);Player.markSeen(p(),species);}await checkpoint();await say('Reshiram and Zekrom were\nregistered as seen in the Pokédex.');return true;}
+  if(key==='frigate-postgame-board'||key==='frigate-postgame-disembark'){if(!UnovaPost.unlocked(p())){await say('Return after the Pokémon League.');return true;}if(await env.confirm(key.endsWith('board')&&!key.endsWith('disembark')?'Board the Plasma Frigate?':'Return to P2 Laboratory’s island?')){await env.teleport(key==='frigate-postgame-board'?d.shipBoard:d.postDock);await checkpoint();}return true;}
+  if(key==='frigate-colress-postgame'){
+   if(!UnovaPost.unlocked(p())){await say('Return after the Pokémon League.');return true;}
+   const st=s(),giftKey='frigate-colress-master-ball';
+   if(st.colressRewardDue&&!F.peek(p()).gifts?.[giftKey]){const reward=F.gift(p(),giftKey,'master-ball');await report(reward);if(!reward.full)delete st.colressRewardDue;await checkpoint();return true;}
+   const day=Player.gameTime(p()).day;if(st.colressDay===day){await say('Colress: Return tomorrow\nfor another experiment.');return true;}
+   if(!env.canBattle()||!await env.confirm('Challenge Colress’s postgame team?'))return true;
+   if(await fight(d.colressRematch)!=='won')return true;
+   st.colressDay=day;st.colressWins=(st.colressWins||0)+1;
+   if(!F.peek(p()).gifts?.[giftKey]){st.colressRewardDue=true;await checkpoint();const reward=F.gift(p(),giftKey,'master-ball');await report(reward);if(!reward.full)delete st.colressRewardDue;}
+   await checkpoint();await say('Colress: Your trust in Pokémon\ncontinues to fascinate me!');return true;
+  }
+  if(key==='frigate-card'){if(Player.itemCount(p(),d.card)){await say('You already have the Plasma Card.');return true;}const id=R.cardTrainer(p());if(!p().flags[id]&&(!env.canBattle()||await fight(id)!=='won'))return true;await report(F.gift(p(),'frigate-plasma-card',d.card));return true;}
+  if(key==='frigate-password'){if(s().passwordClear){await say('All password barriers are disabled.');return true;}if(!Player.itemCount(p(),d.card)){await say('A Plasma Card is required\nto enter the password.');return true;}const value=await env.frigatePassword?.();const r=R.enter(p(),value);if(r.canceled)return true;await checkpoint();await say(r.open?'Password accepted!\nThe password barriers are disabled.':'The password is not correct.');return true;}
+  if(key.startsWith('frigate-panel-switch-')){const r=R.switchOn(p(),+key.slice(-1));await checkpoint();await say(r.already?'This switch is already on.':'Barrier switch activated!\nWarp switches: '+r.open+'/4');return true;}
+  if(key.startsWith('frigate-pipes-')){const index=+key.slice(-1),panels=R.toggle(p(),index);await checkpoint();await say('Pipe control '+(index+1)+' toggled.\nNorth / West / East / South:\n'+panels.map(n=>n?'ON':'OFF').join(' / '));return true;}
+  if(key.startsWith('frigate-hint-')){const n=+key.slice(-1),word=R.password(p());await say(/^\d+$/.test(word)?'Password clue: digit '+(n+1)+' is '+word[n]+'.':n===0?'The password names a legendary Pokémon.':n===1?'Its first letter is '+word[0]+'.':n===2?'Its last letter is '+word.at(-1)+'.':word==='RESHIRAM'?'It is the white legendary Pokémon.':'It is the black legendary Pokémon.');return true;}return false;
+ }
+ function step(){const at=p().location;if(!at.map.startsWith('UnovaPlasmaFrigate')||!F.peek(p()).seasideOpen)return null;const trigger=k=>({type:'trigger',map:at.map,trigger:{script:'bw:'+k}});if(!s().introduced)return trigger('frigate-engineering-intro');if(['UnovaPlasmaFrigateLab','UnovaPlasmaFrigateTriad'].includes(at.map)&&!R.ready(p()))return trigger('frigate-engineering-stop');return null;}
+ function visible(a){if(a.unovaFieldVersion&&(F.peek(p()).version||'black2')!==a.unovaFieldVersion)return false;if(a.script==='bw:colress-final'&&UnovaPost.unlocked(p()))return false;if(['bw:frigate-colress-postgame','bw:frigate-postgame-board','bw:frigate-postgame-disembark'].includes(a.script))return UnovaPost.unlocked(p());if(a.unovaFrigateCardVersion)return(F.peek(p()).version||'black2')===a.unovaFrigateCardVersion;return undefined;}return{run,step,visible};}window.UnovaFrigateScenes={create};
+})();
