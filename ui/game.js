@@ -1135,6 +1135,7 @@
     // (in Johto, HGSS's: johtoBattleMusic).
     const leader = !wild && /^Leader /.test(foe.name);
     const unovaMusic=window.UnovaAudio?UnovaAudio.battle(player,wild,foe,opts):{};
+    const trainerItems=!wild&&!opts.noBag&&window.UnovaTrainerItems?UnovaTrainerItems.forTrainer(foe.unovaModeTrainer||opts.trainerId):null;
     const johtoMusic = inJohto() ? johtoBattleMusic(wild, foe, opts) : {};
     music(opts.music || unovaMusic.vs || johtoMusic.vs || (wild ? "mus_vs_wild" : leader ? "mus_vs_gym_leader" : "mus_vs_trainer"));
     // From the map: FireRed's flash-and-slice into battle.
@@ -1187,7 +1188,7 @@
       bagPockets: opts.bag ? () => bagPockets(opts.bag).filter((p) => p.items.length || p.name === "Poké Balls") : bagPockets, bagFemale: !!(Player.LOOKS[player.look] && Player.LOOKS[player.look].girl),
       catchContext: { night: Evolution.timeOfDay() === "night", caughtBefore: (s) => Player.hasCaught(player, s), fishing: !!opts.fishing,rateMultiplier:opts.catchMultiplier||UnovaFunfest.scale(player,"CAPTURE") },
       // (A Tera Raid's Pokémon, or a wild Tera Pokémon, battles as a trainer's does, and Terastallizes.)
-      opponent: opts.roamer ? (b) => OpponentAI.choose(b,"p2") : horde || wildDouble ? (b) => b.randomChoice("p2") : wild && !opts.raid && !wildTera ? randomMove : (b) => OpponentAI.choose(b, "p2"),
+      opponent: opts.roamer ? (b) => OpponentAI.choose(b,"p2") : horde || wildDouble ? (b) => b.randomChoice("p2") : wild && !opts.raid && !wildTera ? randomMove : trainerItems?trainerItems.choose:(b) => OpponentAI.choose(b, "p2"),
       // A new move with four known: the Summary screen picks the one to forget
       // (the record caught up with the battle first: level, moves, PP).
       forgetMove: (i, mon, move) => chooseMoveToForget(Party.syncFromBattle(own[i], mon), move),
