@@ -1,11 +1,11 @@
 # Unova source field pickups and Dowsing Machine
 
 This pass imports the pickup entries from source `global_7000.s` and
-`global_8000.s` and matches their script IDs against the 189 mapped source
+`global_8000.s` and matches their script IDs against the 222 mapped source
 event banks. The source script-entry order, item constants, quantities and
 flags are retained, including the original grid/rail coordinates. There are
-293 visible placements and 155 hidden placements, representing 440 unique
-one-time rewards. Eight visible placements share flags across adjacent/source
+333 visible placements and 171 hidden placements, representing 489 unique
+one-time rewards. Fifteen additional visible placements reuse flags across adjacent/source
 version maps and cannot award the same reward twice. The five existing opening
 supply caches remain available separately for save compatibility.
 
@@ -33,13 +33,13 @@ hidden-item medals, through either path. The C-Gear field journal reports
 current-area progress and counts for previously visited areas. Flags and the
 key item survive ordinary saves.
 
-`field.unmapped` records 56 source event banks with 175 additional placements
+`field.unmapped` records 33 source event banks with 119 additional placements
 that this pass does not project. This includes the original Abyssal Ruins
 pickup layout; the existing four-floor ruins have their own separately
 adapted treasure/pillar/current flow. The audit is deliberately retained and
 is not treated as completed content.
 
-Validation: `tests/unova-field-test.js` checks all 448 positions, items, shared
+Validation: `tests/unova-field-test.js` checks all 504 positions, items, shared
 flags, quantities, source TM mappings, connected land/approaches, source Dowsing
 gift, native hidden-item full-Bag retry/medals, journal and save persistence.
 The browser test covers Bianca, a visible full-Bag retry, registered Dowsing,
@@ -50,3 +50,10 @@ Fourteen optional interiors and the existing garden now expose fourteen addition
 two hidden pickups. The sewer hideout requires the source Surf gift;
 source item flags, quantities and existing-save behavior are preserved. Their
 services and scene scope are described in [optional interiors](unova-interiors.md).
+
+
+The [dungeon alignment pass](unova-dungeons.md) adds forty visible and sixteen
+hidden placements and moves existing source flags to their correct floor. Its
+new room and encounter references come from zone headers and source doorway
+edges. The remaining banks include versioned areas, the original Abyssal layout
+and parallel/legacy-world banks; they have not been silently counted as done.

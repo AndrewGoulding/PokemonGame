@@ -1,0 +1,3 @@
+(function(){
+ 'use strict';function create({env,fight,checkpoint}){const F=Unova,p=()=>env.player(),D=F.data().dungeons,say=x=>env.say(x);async function run(key){if(!key.startsWith('dungeon-healer-'))return false;const id=key.slice(15),a=D.healers.find(a=>a.id===id);if(!a)return false;if(!p().flags[id]){if(!env.canBattle()||!await env.confirm('Battle '+a.name+' before receiving care?'))return true;if(await fight(id)!=='won')return true;}p().party.forEach(Party.heal);await checkpoint();await say(a.name+': Your Pokémon are fully rested!\nReturn whenever you need care.');return true;}function visible(a){if(a.unovaDungeonChampion&&!UnovaPost.unlocked(p()))return false;return undefined;}return{run,visible};}window.UnovaDungeonScenes={create};
+})();

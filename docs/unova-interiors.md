@@ -62,6 +62,6 @@ Validation: the model test covers early/late daily limits, ordered crew battles
 and Surf/loss/repeat gates, Castelia Boss, exact source prices and atomic bulk
 purchases, Expert Belt, Rotom cancellation/forms/moves/PP/state, all 95 TMs and
 six capacity-safe milestone rewards, and saves. The general topology test
-checks all 313 maps; the field test checks 448 positions and 440 unique flags.
+checks the complete map graph; the field test checks all source placements and unique flags.
 The browser test uses native market, form and move menus, claims a TM reward,
 fights postgame Morimoto and the three crew members, and reloads saved rewards.

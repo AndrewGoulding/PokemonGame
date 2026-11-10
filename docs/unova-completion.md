@@ -46,6 +46,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Mapped-area source pickups, native Dowsing Machine and field journal ([scope](unova-field.md))
 - [x] Royal Unova cabin search, daily source crews, cruise timer and weekday prizes ([scope](unova-cruise.md))
 - [x] Optional interiors and garden, Game Freak battles, Castelia Boss, market services, Rotom appliances and TM collection ([scope](unova-interiors.md))
+- [x] Source dungeon-floor alignment, 28 additional rooms, active indoor encounters and five field healers ([scope](unova-dungeons.md))
 - [ ] Remaining field-item banks, gifts, optional houses and encounter audit
 - [x] Source Easy/Challenge levels and alternate teams, saved keys and local sharing ([scope](unova-modes.md))
 - [ ] Remaining version-specific geometry and campaign-event audit
