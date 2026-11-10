@@ -28,7 +28,8 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Postgame legendary quests, DNA Splicers, research/charms and Nature Preserve
 - [x] Twenty source Hidden Grottos, regrowth, Hidden Abilities and item tables
 - [ ] Remaining event stories, N’s wild Pokémon and Memory Link recaps
-- [ ] Full PWT, Battle Subway and Battle Institute
+- [x] PWT Singles/Doubles tournaments, basic/Super Subway lines, Institute trials and BP exchange ([scope](unova-facilities.md))
+- [ ] Triple/Rotation formats, full multi-partner ladders and online/download facilities
 - [ ] Pokémon Musical, Pokéstar movie catalog and other collection activities
 - [ ] Funfest/Entralink, Hidden Grottos, swarms and other daily systems
 - [ ] Remaining Medal Rally conditions, native card milestones and rewards
