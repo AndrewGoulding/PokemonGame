@@ -1,7 +1,7 @@
 (function(){
  'use strict';
  const D=window.UNOVA_DATA;if(!D)return;
- window.REGIONAL_CRIES=Object.assign(window.REGIONAL_CRIES||{},D.cries||{});Object.assign(DEX,D.forms||{});for(const name of Object.keys(D.forms||{}))if(window.LEARNSETS_GEN6)LEARNSETS_GEN6[name]={...LEARNSETS_GEN6.Kyurem,levelup:D.learnsets[name]};
+ window.REGIONAL_CRIES=Object.assign(window.REGIONAL_CRIES||{},D.cries||{});Object.assign(DEX,D.forms||{});for(const name of Object.keys(D.forms||{}))if(window.LEARNSETS_GEN6)LEARNSETS_GEN6[name]={...LEARNSETS_GEN6[name.startsWith('Kyurem-')?'Kyurem':'Basculin'],levelup:D.learnsets[name]};
  Object.assign(WORLD_MAPS,JSON.parse(JSON.stringify(D.maps)));for(const map of Object.values(D.centers))Player.CENTERS[map]={map,x:7,y:4,facing:'up'};Object.assign(WORLD_TRAINERS,D.trainers);
  // Register names before any UI initializes: Trainer Memos and area searches
  // share these sections with the visual Town Map.

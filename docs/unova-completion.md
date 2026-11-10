@@ -22,6 +22,8 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Mistralton, Celestial Tower and Skyla ([scope](unova-west.md))
 - [x] Eastern-region flight through the Champion ([scope](unova-east.md))
 - [x] Reversal Mountain, Undella, Lacunosa and Village Bridge
+- [x] Six-bridge thirsty runner, Fresh Water merchant and saved reward retries ([scope](unova-bridge-runner.md))
+- [x] Source trainer forms and playable Blue-Striped Basculin encounters ([scope](unova-trainer-forms.md))
 - [x] Opelucid, Drayden, Humilau and Marlon
 - [x] Plasma Frigate, Giant Chasm, Colress, Ghetsis and Kyurem climax
 - [x] All 22 Frigate room banks, native warp/password decks, saved pipe controls, P2 boarding and postgame Colress ([scope](unova-frigate.md))
