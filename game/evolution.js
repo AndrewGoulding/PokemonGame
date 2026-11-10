@@ -95,7 +95,7 @@
     // rather than Espeon.
     const specificity = (e) => (e.location ? 4 : 0) + (e.moveType ? 2 : 0) +
       ["partySpecies", "partyType", "item", "move", "time", "stats", "natures"].filter((k) => e[k]).length;
-    const options = (window.EVOLUTIONS[record.species] || []).concat(window.SinnohCompletion ? SinnohCompletion.evolutions(record,ctx) : [])
+    const options = (window.EVOLUTIONS[record.species] || []).concat(window.SinnohCompletion ? SinnohCompletion.evolutions(record,ctx) : []).concat(window.UnovaPost ? UnovaPost.evolutions(record,ctx) : [])
       .sort((a, b) => specificity(b) - specificity(a));
     return options.find((e) => methodMatches(record, e, ctx) && meetsConditions(record, e, ctx)) || null;
   }

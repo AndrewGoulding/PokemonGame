@@ -9,7 +9,7 @@ no build step and no dependencies.
 Sinnoh’s Platinum campaign, optional quests and offline postgame feature groups
 are complete as the project’s 2D adaptation; see the [completion audit](docs/sinnoh-completion-audit.md)
 for coverage and limitations. Unova’s Black 2 / White 2 opening is playable
-through Champion Iris, including the opening Pokéstar film, Plasma chase,
+through Champion Iris with connected [postgame exploration](docs/unova-postgame.md), legendary quests and Hidden Grottos, including the opening Pokéstar film, Plasma chase,
 Castelia, Nimbasa, Driftveil, the eastern Gyms, the Plasma climax and the League. See the [Nimbasa](docs/unova-nimbasa.md) and [western](docs/unova-west.md) chapters and the [eastern campaign](docs/unova-east.md) for their scope. Travel there from the researcher in Sinnoh’s Fight
 Area. See [Unova’s opening](docs/unova-opening.md) for content, rebuilding and
 [remaining work](docs/unova-completion.md).

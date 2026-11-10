@@ -86,6 +86,8 @@ module.exports=function(root){
    if(home){blit(c,picture('PalletTown_PlayersHouse_1F'),64,48,80,64,6*16,9*16);solid(m,7,10,3,2);}
    if(school)for(const [x,y]of [[5,5],[16,5],[5,13],[16,13]]){blit(c,picture('PalletTown_PlayersHouse_1F'),80,64,48,32,x*16,y*16);solid(m,x,y,3,2);}
   }
+  if(!center)for(let y=2;y<m.height-2;y++)for(let x=2;x<m.width-2;x++)if(m.behavior[y*m.width+x]===0x83)tile(c,'ViridianCity_PokemonCenter_1F',2,1,x,y);
+  if(m.unovaTheme==='castle'){for(let y=2;y<m.height-2;y++)for(let x=2;x<m.width-2;x++)c.rect(x*16,y*16,16,16,(x+y)%2?[139,153,153]:[181,187,169]);c.box(8*16,3*16,(m.width-16)*16,6*16,[164,149,118],[224,205,159]);for(const x of [4,m.width-5])for(const y of [5,13,21]){c.box(x*16,y*16,16,32,[144,157,159],[79,98,110]);c.rect(x*16-2,y*16,20,5,[210,210,182]);}}
   if(m.unovaTheme==='marine'){c.rect(2*16,2*16,(m.width-4)*16,(m.height-4)*16,[44,113,143]);for(let x=3;x<m.width-3;x+=4){c.line(x*16,3*16,x*16,14*16,[106,194,202],2);c.ellipse(x*16+20,4*16,10,3,[76,152,166]);}c.box(2*16,6*16,(m.width-4)*16,6*16,[136,192,189],[37,92,121]);c.rect(3*16,8*16,(m.width-6)*16,3*16,[196,212,193]);for(let x=4;x<m.width-3;x+=4)c.line(x*16,6*16,x*16,12*16,[78,140,155],3);}
   if(m.unovaTheme==='lilypad'){for(let y=2;y<m.height-2;y++)for(let x=2;x<m.width-2;x++){const walk=!m.collision[y*m.width+x];c.rect(x*16,y*16,16,16,walk?[126,174,122]:[82,157,188]);if(!walk)c.line(x*16+3,y*16+7,x*16+11,y*16+7,[143,208,211]);else c.line(x*16,y*16+15,x*16+15,y*16+15,[88,138,112]);}for(const y of [13,23,33])for(const x of [8,23])c.ellipse(x*16+8,y*16+4,35,25,[168,202,123],2);}
   if(m.unovaTheme==='dragon'){c.rect(2*16,2*16,(m.width-4)*16,(m.height-4)*16,[53,62,84]);c.rect(13*16,3*16,5*16,(m.height-6)*16,[152,149,130]);for(const y of [13,21,29]){c.ellipse(15*16,y*16,145,49,[131,151,152]);c.ellipse(15*16,y*16,142,46,[167,177,155],3);c.poly([[15*16,y*16-31],[15*16+22,y*16-10],[15*16,y*16+27],[15*16-22,y*16-10]],[86,113,132]);}}
@@ -107,6 +109,7 @@ module.exports=function(root){
  }
  function solid(m,x,y,w,h){for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){if(xx<2||yy<2||xx>=m.width-2||yy>=m.height-2||reserved(m,xx,yy,1))continue;m.collision[yy*m.width+xx]=1;}}
  function props(c,m){
+  if(m.unovaRegiSwitch){const x=16*16,y=13*16;c.ellipse(x+8,y+8,7,5,[212,192,134]);c.ellipse(x+8,y+8,3,4,[65,75,88]);c.box(m.unovaRegiSwitch.x*16,m.unovaRegiSwitch.y*16,16,16,[164,148,112],[104,104,91]);}
   for(const p of m.art.props){const x=p.x*16,y=p.y*16;const size={bench:[2,2],lamp:[1,2],clock:[2,3],crates:[3,2],amp:[2,2],camera:[2,2],'cinema-screen':[12,4],'green-screen':[22,3]}[p.kind];if(size)solid(m,p.x,p.y,...size);
    if(p.kind==='charged-crystal'){c.poly([[x,y+33],[x+6,y+8],[x+14,y],[x+25,y+12],[x+27,y+33]],[75,129,173]);c.poly([[x+14,y+3],[x+13,y+28],[x+4,y+32],[x+8,y+11]],[143,223,222]);c.line(x+15,y+8,x+22,y+29,[190,241,218],2);solid(m,p.x,p.y,2,2);}
    else if(p.kind==='airstrip'){c.box(x,y,112,256,[125,139,146],[208,212,192]);for(let j=8;j<248;j+=24)c.rect(x+53,y+j,6,12,[235,225,167]);for(const xx of [5,100])for(let yy=12;yy<240;yy+=32)c.rect(x+xx,y+yy,6,6,[242,235,173]);}

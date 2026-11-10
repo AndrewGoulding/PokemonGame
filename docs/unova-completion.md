@@ -23,9 +23,11 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Opelucid, Drayden, Humilau and Marlon
 - [x] Plasma Frigate, Giant Chasm, Colress, Ghetsis and Kyurem climax
 - [x] Victory Road, Elite Four and Iris; Hall of Fame and rematches
-- [ ] Postgame southern/eastern routes, towns, dungeons, Black City/White Forest
+- [x] Postgame southern/eastern routes, towns, dungeons, Black City/White Forest ([scope](unova-postgame.md))
 - [ ] Black Tower / White Treehollow, Nature Preserve and other postgame challenges
-- [ ] Legendary/event stories, N’s Pokémon and Memory Link adaptations
+- [x] Postgame legendary quests, DNA Splicers, research/charms and Nature Preserve
+- [x] Twenty source Hidden Grottos, regrowth, Hidden Abilities and item tables
+- [ ] Remaining event stories, N’s wild Pokémon and Memory Link recaps
 - [ ] Full PWT, Battle Subway and Battle Institute
 - [ ] Pokémon Musical, Pokéstar movie catalog and other collection activities
 - [ ] Funfest/Entralink, Hidden Grottos, swarms and other daily systems

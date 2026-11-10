@@ -453,6 +453,7 @@
   }
 
   async function release(r) {
+    if (r.fusionPartner) { await note("Separate the fused Pokémon first.", true); return; }
     if (st.cursor.area === "party" && !partyOk(r)) { await note("That's your last Pokémon!", true); return; }
     if (r.item === "mail") { await note("Please remove the mail.", true); return; }
     if (!(await yesNo("Release this Pokémon?"))) { say(null); return; }

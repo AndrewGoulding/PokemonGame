@@ -159,11 +159,11 @@
   // The Day-Care's step (FireRed's DoEggActions): every 256th step with two
   // Pokémon there and no Egg waiting, `compatibility` percent of the time an
   // Egg turns up. state: { steps, eggWaiting } (player.flags.dayCareEggs).
-  function dayCareStep(state, list, rng) {
+  function dayCareStep(state, list, rng, ovalCharm) {
     rng = rng || Math.random;
     state.steps = ((state.steps | 0) + 1) & 0xff;
     if (state.eggWaiting || !list || list.length < 2 || state.steps !== 0xff) return false;
-    const c = compatibility(list[0].mon, list[1].mon);
+    const base = compatibility(list[0].mon, list[1].mon), c = ovalCharm ? ({20:40,50:80,70:88}[base] || 0) : base;
     if (c > Math.floor(rng() * 100)) { state.eggWaiting = true; return true; }
     return false;
   }

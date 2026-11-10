@@ -234,7 +234,7 @@
 
   function release(player, boxIndex, slot) {
     const box = player.boxes[boxIndex];
-    if (!box || !box[slot]) return null;
+    if (!box || !box[slot] || box[slot].fusionPartner) return null;
     const r = box[slot];
     box[slot] = null;
     return r;
