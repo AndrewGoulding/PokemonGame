@@ -3457,6 +3457,9 @@ if (window.JOHTO_TOWN_MAP) {
         for (const set of [t.story].concat(t.tournaments)) {
           assert(ITEMS[set.first], set.first);
           for (const [cls, , team] of set.rosters) assert(team.every(([sp, lv]) => DEX[sp] && lv >= 30 && lv <= 55), cls);
+          // (Colosseum's own moves for each, one to four, every one a move the engine knows.)
+          for (const [cls, name, team] of set.rosters) assert(team.every(([, , moves]) => Array.isArray(moves) && moves.length >= 1 && moves.length <= 4
+            && moves.every((m) => window.MOVES[m])), cls + " " + name);
         }
         for (const n of [0, 1, 2, 3]) for (const e of Orre.pyriteDraw(t, n, false).entrants) assert(fs.existsSync(path.join(root, "assets/sprites/trainers/front/" + e.pic + ".png")), e.pic);
         // (The gear Silva stole lies at the Construction Lot, Realgam Tower's spot before it opens, on Orre's map once

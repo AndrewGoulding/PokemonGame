@@ -8226,7 +8226,8 @@
     music((window.WORLD_MAPS[player.location.map] || {}).music);
     return outcome;
   };
-  const teamOf = (list) => list.map(([sp, lv]) => Party.create(sp, lv));
+  // (An entry may carry its own moves, as Colosseum's Pyrite entrants do: [species, level, moves].)
+  const teamOf = (list) => list.map(([sp, lv, moves]) => Party.create(sp, lv, moves ? { moves } : undefined));
   // Colosseum's other Trainers (game/orre-trainers*.js): the party of the stage they're at, once a stage; beaten,
   // that stage's words. Also a Shadow Pokémon Trainer's later parties, once theirs is snagged (Orre.REMATCHES).
   // (A stage's words can be a function of the flags: who's left to find, say.)

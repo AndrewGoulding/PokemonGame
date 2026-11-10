@@ -689,37 +689,39 @@
   const TOURNAMENTS = {
     // (Pyrite's: Colosseum's own. Its story challenge, four Trainers in a row, first prize TM06; then, once the story's
     // moved on, its four tournaments in turn, each four Trainers and its own first prize. WikiDex's "Coliseo Pirita",
-    // their names Colosseum's own (common_rel #4343-#4362, in this order); prize money as Bulbapedia gives it.)
+    // their names Colosseum's own (common_rel #4343-#4362, in this order); prize money as Bulbapedia gives it. Each
+    // Pokémon [species, level, moves]: Colosseum's own moves, as WikiDex gives them (none holds an item), some with
+    // fewer than four.)
     PyriteTown_Colosseum_EventScript_Receptionist: {
       key: "pyrite", name: "Pyrite Colosseum", from: 23, prize: 3000,
       items: ["rare-candy", "pp-up", "protein", "iron", "calcium", "zinc", "carbos", "hp-up", "nugget", "ultra-ball"],
       closed: ["The Colosseum's closed for the\nmoment. Come back later, hon."],
       story: { first: "tm06", rosters: [
-        ["Hunter", "Hoks", [["Barboach", 30], ["Sandshrew", 31]]],
-        ["Chaser", "Tisler", [["Natu", 30], ["Meditite", 30]]],
-        ["Bandana Guy", "Vilch", [["Electrike", 30], ["Cacnea", 31], ["Vulpix", 32]]],
-        ["Bodybuilder", "Mirez", [["Bagon", 32], ["Goldeen", 32], ["Magnemite", 31], ["Delibird", 34]]]] },
+        ["Hunter", "Hoks", [["Barboach", 30, ["Water Gun", "Secret Power"]], ["Sandshrew", 31, ["Scratch", "Poison Sting"]]]],
+        ["Chaser", "Tisler", [["Natu", 30, ["Peck", "Leer"]], ["Meditite", 30, ["Hidden Power", "Confusion"]]]],
+        ["Bandana Guy", "Vilch", [["Electrike", 30, ["Quick Attack", "Howl"]], ["Cacnea", 31, ["Absorb", "Poison Sting"]], ["Vulpix", 32, ["Ember", "Quick Attack"]]]],
+        ["Bodybuilder", "Mirez", [["Bagon", 32, ["Headbutt", "Rage", "Ember", "Bite"]], ["Goldeen", 32, ["Surf", "Peck", "Horn Attack"]], ["Magnemite", 31, ["Thunder Shock", "Metal Sound", "Sonic Boom"]], ["Delibird", 34, ["Present"]]]]] },
       tournaments: [
         { first: "tm01", prize: 6308, rosters: [
-          ["Roller Boy", "Azal", [["Linoone", 51], ["Teddiursa", 50]]],
-          ["Rider", "Trona", [["Jigglypuff", 51], ["Delcatty", 52]]],
-          ["Bodybuilder", "Becher", [["Doduo", 52], ["Loudred", 51], ["Furret", 53]]],
-          ["Chaser", "Zime", [["Vigoroth", 52], ["Koffing", 53], ["Combusken", 55], ["Swellow", 54]]]] },
+          ["Roller Boy", "Azal", [["Linoone", 51, ["Headbutt", "Surf", "Cut", "Dig"]], ["Teddiursa", 50, ["Thrash", "Leer", "Fury Swipes", "Feint Attack"]]]],
+          ["Rider", "Trona", [["Jigglypuff", 51, ["Double Slap", "Rollout", "Brick Break", "Pound"]], ["Delcatty", 52, ["Double Slap", "Shock Wave", "Rock Smash", "Frustration"]]]],
+          ["Bodybuilder", "Becher", [["Doduo", 52, ["Rage", "Pursuit", "Fury Attack", "Steel Wing"]], ["Loudred", 51, ["Overheat", "Uproar", "Astonish", "Stomp"]], ["Furret", 53, ["Facade", "Dig", "Quick Attack", "Assist"]]]],
+          ["Chaser", "Zime", [["Vigoroth", 52, ["Slash", "Protect", "Brick Break", "Reversal"]], ["Koffing", 53, ["Explosion", "Sludge", "Psywave", "Shadow Ball"]], ["Combusken", 55, ["Overheat", "Double Kick", "Rock Tomb", "Dig"]], ["Swellow", 54, ["Sky Attack", "Aerial Ace", "Endeavor", "Protect"]]]]] },
         { first: "tm07", prize: 7208, rosters: [
-          ["Hunter", "Muna", [["Shroomish", 51], ["Oddish", 51]], true],
-          ["Chaser", "Kell", [["Spinda", 51], ["Lileep", 52], ["Roselia", 52]]],
-          ["Bodybuilder", "Torf", [["Cacnea", 53], ["Machop", 52], ["Gloom", 52]]],
-          ["Rider", "Ligam", [["Grovyle", 52], ["Lairon", 52], ["Nuzleaf", 53]]]] },
+          ["Hunter", "Muna", [["Shroomish", 51, ["Growth", "Snatch", "Bullet Seed", "Frustration"]], ["Oddish", 51, ["Acid", "Absorb", "Flail", "Frustration"]]], true],
+          ["Chaser", "Kell", [["Spinda", 51, ["Thrash", "Dig", "Feint Attack"]], ["Lileep", 52, ["Ancient Power", "Constrict", "Stockpile", "Spit Up"]], ["Roselia", 52, ["Spikes", "Poison Sting", "Sludge Bomb", "Shadow Ball"]]]],
+          ["Bodybuilder", "Torf", [["Cacnea", 53, ["Dynamic Punch", "Feint Attack", "Needle Arm", "Cotton Spore"]], ["Machop", 52, ["Dynamic Punch", "Karate Chop", "Smelling Salts", "Low Kick"]], ["Gloom", 52, ["Razor Leaf", "Cut", "Sludge Bomb"]]]],
+          ["Rider", "Ligam", [["Grovyle", 52, ["Fury Cutter", "Pursuit", "Solar Beam", "Slam"]], ["Lairon", 52, ["Headbutt", "Metal Claw", "Body Slam", "Take Down"]], ["Nuzleaf", 53, ["Explosion", "Giga Drain", "Nature Power", "Razor Wind"]]]]] },
         { first: "tm05", prize: 5972, rosters: [
-          ["Rider", "Vorem", [["Baltoy", 51], ["Numel", 52], ["Hoothoot", 52]]],
-          ["Bodybuilder", "Seben", [["Rhyhorn", 52], ["Meditite", 53]]],
-          ["Hunter", "Athon", [["Pupitar", 54], ["Graveler", 53]], true],
-          ["Roller Boy", "Arez", [["Gligar", 55], ["Quagsire", 53], ["Pelipper", 53], ["Shelgon", 54]]]] },
+          ["Rider", "Vorem", [["Baltoy", 51, ["Self-Destruct", "Psybeam", "Rock Tomb", "Dig"]], ["Numel", 52, ["Overheat", "Stomp", "Amnesia", "Focus Energy"]], ["Hoothoot", 52, ["Sky Attack", "Aerial Ace", "Shadow Ball", "Take Down"]]]],
+          ["Bodybuilder", "Seben", [["Rhyhorn", 52, ["Stomp", "Fury Attack", "Rock Slide", "Take Down"]], ["Meditite", 53, ["Dynamic Punch", "Revenge", "Detect", "Strength"]]]],
+          ["Hunter", "Athon", [["Pupitar", 54, ["Thrash", "Bite", "Sandstorm", "Secret Power"]], ["Graveler", 53, ["Explosion", "Rock Throw", "Secret Power", "Rollout"]]], true],
+          ["Roller Boy", "Arez", [["Gligar", 55, ["Metal Claw", "Slash", "Feint Attack", "Aerial Ace"]], ["Quagsire", 53, ["Slam", "Mud Shot", "Waterfall", "Sludge Bomb"]], ["Pelipper", 53, ["Ice Beam", "Facade", "Wing Attack", "Surf"]], ["Shelgon", 54, ["Twister", "Bite", "Dragon Breath", "Frustration"]]]]] },
         { first: "tm31", prize: 7020, rosters: [
-          ["Bodybuilder", "Gano", [["Minun", 51], ["Pikachu", 52]]],
-          ["St. Performer", "Balton", [["Voltorb", 53], ["Wailmer", 52]]],
-          ["Hunter", "Argel", [["Magnemite", 53], ["Larvitar", 53], ["Chinchou", 54]]],
-          ["Rider", "Heral", [["Electrode", 54], ["Lunatone", 54], ["Machoke", 54], ["Ampharos", 55]]]] }
+          ["Bodybuilder", "Gano", [["Minun", 51, ["Spark", "Shock Wave", "Quick Attack", "Helping Hand"]], ["Pikachu", 52, ["Reversal", "Shock Wave", "Focus Punch", "Strength"]]]],
+          ["St. Performer", "Balton", [["Voltorb", 53, ["Charge", "Spark", "Rollout", "Torment"]], ["Wailmer", 52, ["Thrash", "Rollout", "Splash", "Whirlpool"]]]],
+          ["Hunter", "Argel", [["Magnemite", 53, ["Lock-On", "Zap Cannon", "Secret Power", "Tackle"]], ["Larvitar", 53, ["Rock Slide", "Outrage", "Rock Smash", "Taunt"]], ["Chinchou", 54, ["Waterfall", "Ice Beam", "Flail", "Frustration"]]]],
+          ["Rider", "Heral", [["Electrode", 54, ["Explosion", "Thunderbolt", "Screech", "Protect"]], ["Lunatone", 54, ["Explosion", "Psywave", "Rock Throw", "Protect"]], ["Machoke", 54, ["Dynamic Punch", "Vital Throw", "Foresight", "Protect"]], ["Ampharos", 55, ["Thunder Punch", "Strength", "Odor Sleuth", "Protect"]]]]] }
       ] },
     TheUnder_DeepColosseum_EventScript_Receptionist: {
       key: "deep", name: "Deep Colosseum", from: 44, min: 52, size: [3, 4, 4, 4], prize: 10000,

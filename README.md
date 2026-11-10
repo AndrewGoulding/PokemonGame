@@ -3306,10 +3306,11 @@ Pokémon back if it was never snagged), whose four ID Badges open the way to the
   Mode instead, at Colosseum's odds by its nature and its heart's bars (from 5% to 70%). In it Shadow Rush lands a
   critical hit 7 times in 8; its other moves may be disobeyed in Colosseum's ways; and it takes no item but a Scent.
   It ends on **CALL** (in RUN's place in a trainer battle), a Scent, the Day Care, fainting, or a 1-in-256 chance a
-  turn. How often it disobeys (half the time) is this game's own.
+  turn. How often it disobeys (half the time) is this game's own: no guide or wiki gives Colosseum's rate.
 - **The Day-Care Lady**, as in Colosseum (`game/orre-daycare.js`, `AgateVillage_DayCare`): in Agate, one Pokémon at a
-  time, at Gen 3's fee and EXP per step (Colosseum doesn't say); a Shadow Pokémon's heart opens there and its Hyper Mode
-  ends.
+  time. A Pokémon left there gains 1 EXP a step, as in Colosseum (the LP Archive's guide), and costs $100 and $100 a
+  level it grew to take back (the Day-Care's usual rule; Colosseum's guides only call her pricey). A Shadow Pokémon's
+  heart opens there, it banks EXP once under three bars, and its Hyper Mode ends.
 - **Celebi**, as in Colosseum: play Vander's **Time Flute** at the Relic Stone and Celebi purifies every Shadow
   Pokémon in your party at once. It can be used only once, and the flute is gone (`orreCelebi`).
 - **The Relic Cave and the Relic Forest**: Agate's west path goes into the Relic Cave (Cipher's Peons there at story
@@ -3362,12 +3363,14 @@ Pokémon back if it was never snagged), whose four ID Badges open the way to the
   Mirez; first prize TM06), and Nore leads you to the Pyrite Building (`orreStory` 24).
   After Miror B., Pyrite's fortune teller **Fateen** sends you north to Agate (`orreStory` 28). The Colosseum's own
   four tournaments follow in turn from then on (`Orre.pyriteDraw`; first prizes TM01, TM07, TM05, TM31; their entrants
-  from WikiDex's "Coliseo Pirita", their names Colosseum's own); Phenac Stadium's after Evice (44). Phenac Stadium's first visit, after the Mayor's,
+  and their Pokémon's moves from WikiDex's "Coliseo Pirita", their names Colosseum's own); Phenac Stadium's after Evice (44). Phenac Stadium's first visit, after the Mayor's,
   comes before Wakin shows up (`orreStadium`).
 - **Colosseum's e-mail** (`game/orre-mail.js`, the Start menu's **E-mail** in Orre): its P★DA e-mails, in its words,
   arrive at its points in the story (one a map change: Duking's, Nett's, Eagun's, Bitt's, Secc's, Marcia's…) and can
   be read again (`player.flags.orreMail`). Which sender a body belongs to is matched by content where Colosseum's
-  text doesn't link them; six e-mails whose bodies aren't in its text are left out.
+  text doesn't link them. Colosseum's text also holds senders and subjects with no bodies (Johnson, Hunter Retay,
+  Malpes the Riddle-Lover, Your Loget, Bandana Kid Longo, Megg, the Shadow Grass Pokémon King, "Live TV News?"): they
+  belong to a cut post-game (The Cutting Room Floor), Colosseum never sends them, and neither does this game.
 - **Mt. Battle's 100-Trainer challenge** (`mtBattleChallenge` in `ui/game.js`, `Orre.MT_BATTLE` in `game/orre.js`).
   From `orreStory` 33, the attendant by Mt. Battle's way in: ten areas of ten double battles, the tenth each area's
   Area Leader (Area 10's is Vander), levels rising from 23 to the 50s and held to Orre's cap, teams growing from two

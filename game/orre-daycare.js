@@ -1,10 +1,11 @@
 // Agate Village's Day-Care Lady (Colosseum's: its M3_houseD_1F), in her cottage (AgateVillage_DayCare, drawn by
 // tools/lib/orre-rooms-agate.js). She raises one Pokémon at a time (player.flags.orreDayCare: { record, steps }).
-// A Pokémon left with her gains 1 Exp. Point a step (Gen 3's Day-Care; Colosseum's text doesn't say), as far as Orre's
-// level cap; a Shadow Pokémon's heart opens by its nature's Day-Care amount every 256 steps (ui/game.js's heartStep;
-// game/orre-heart.js), it gains Exp. Points, kept for it, only once under three bars of its heart are left (the LP
-// Archive's Colosseum guide), and being left with her ends Hyper Mode. Taking it back costs $100 and $100 a level it
-// grew (Gen 3's; Colosseum's text names a price but not how it's reckoned).
+// A Pokémon left with her gains 1 Exp. Point a step (Colosseum's: the LP Archive's Colosseum guide, update 12), as far
+// as Orre's level cap; a Shadow Pokémon's heart opens by its nature's Day-Care amount every 256 steps (ui/game.js's
+// heartStep; game/orre-heart.js), it gains Exp. Points, kept for it, only once under three bars of its heart are left
+// (the LP Archive's Colosseum guide, its side notes), and being left with her ends Hyper Mode. Taking it back costs $100
+// and $100 a level it grew (the Day-Care's rule as WikiDex's "Guardería Pokémon" gives it; Colosseum's guides only
+// call her "pricey", and none gives a different reckoning).
 // Depends on: window.Orre, window.WORLD_MAPS, window.Experience, window.OrreHeart.
 "use strict";
 
