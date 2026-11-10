@@ -33,7 +33,8 @@ const pickups=[['Route2',8,19,'potion'],['SantaluneForest',7,17,'antidote'],['Sa
 for(const w of web.warps)web.behavior[w.y*web.width+w.x]=0x61;
 const cyllage=require('./lib/kalos-cyllage')({A,M,room,actor,door,north,field,trainer,moves,trainers,ctx});
 const lumiose=require('./lib/kalos-lumiose')({A,M,room,actor,door,north,field,trainer,moves,trainers,ctx,resolve});
-for(const m of Object.values(M))A.draw(m);
+// Water blocks walking through its behavior; collision must stay clear for Surf.
+for(const m of Object.values(M)){if(m.kalosWater)for(let i=0;i<m.behavior.length;i++)if(m.behavior[i]===0x10)m.collision[i]=0;A.draw(m);}
 require('./lib/kalos-cliff-art')(root,M.KalosCyllageGym);
 require('./lib/kalos-lumiose-art')(root,M);
 // A custom web image makes pits, silk junctions and the dew trail visible.
