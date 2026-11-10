@@ -28,13 +28,15 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Ten-area Black Tower / White Treehollow, Benga and shiny gifts ([scope](unova-facilities.md))
 - [x] Postgame legendary quests, DNA Splicers, research/charms and Nature Preserve
 - [x] Twenty source Hidden Grottos, regrowth, Hidden Abilities and item tables
-- [ ] Remaining event stories, N’s wild Pokémon and Memory Link recaps
+- [x] N’s 14 released Pokémon, versioned swarms, shard tutors and 31 trade records ([scope](unova-services.md))
+- [x] Dropped-Xtransceiver contact quest, daily Hidden Ability trades, native Dive and Abyssal Ruins ([scope](unova-services.md))
+- [ ] Remaining distribution-event stories and Memory Link recaps
 - [x] PWT Singles/Doubles tournaments, basic/Super Subway lines, Institute trials and BP exchange ([scope](unova-facilities.md))
 - [ ] Triple/Rotation formats, full multi-partner ladders and online/download facilities
 - [ ] Pokémon Musical, Pokéstar movie catalog and other collection activities
-- [ ] Funfest/Entralink, Hidden Grottos, swarms and other daily systems
+- [ ] Funfest/Entralink, Pass Powers and remaining daily activity rosters
 - [ ] Remaining Medal Rally conditions, native card milestones and rewards
-- [ ] Remaining items, trades, gifts, tutors, field puzzles and encounters
+- [ ] Remaining field items, gifts, optional houses and encounter audit
 - [ ] Challenge/Easy Mode and version-specific campaign events
 - [ ] Black / White original campaign, gyms, rivals, N ending and postgame
 - [ ] Full regional map, music coverage, final source audit and browser campaign validation

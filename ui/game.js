@@ -1740,7 +1740,7 @@
   }
 
   const RODS = ["fishing-rod"];
-  const KEY_ITEM_USES = ["unova-cgear", "unova-medal-box","dna-splicers","reveal-glass","white-flute", "black-flute","vs-recorder","poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
+  const KEY_ITEM_USES = ["unova-cgear", "unova-medal-box","dna-splicers","reveal-glass","dropped-item","white-flute", "black-flute","vs-recorder","poffin-case","seal-case","poketch","poke-radar","gracidea","eon-flute", "exp-share", "town-map", "explorer-kit", "berry-pouch", "itemfinder", "bicycle", "poke-flute", "coin-case", "powder-jar", "unown-report", "apricorn-box", "pokeblock-case"].concat(RODS);
   // Key items Select can use (registered from the Bag, as in FireRed).
   const REGISTERABLE = ["eon-flute", "bicycle", "itemfinder", "town-map", "berry-pouch", "explorer-kit"].concat(RODS);
   const STAT_NAMES = { hp: "HP", atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed" };
@@ -1757,7 +1757,8 @@
   // Map opens the map of Kanto; the Explorer Kit digs in a cave wall (and
   // closes the bag afterwards, back to the map: "escaped").
   async function useKeyItem(item) {
-    if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();try{await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}};return "escaped";}
+    if(item==="unova-cgear"||item==="unova-medal-box"||item==="town-map"&&Unova.owns(player.location.map)){fieldAction=async()=>{Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,item==="unova-medal-box"?"medals":item==="town-map"?"map":"gear");}finally{tick();Save.write(player);show("world");await Overworld.resume();}if(action==='receiver-call')await unovaStory.run('bw:receiver-call');};return "escaped";}
+    if(item==="dropped-item"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run("bw:receiver-call");};return "escaped";}
     if(item==="dna-splicers"||item==="reveal-glass"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();await unovaStory.run(item==="dna-splicers"?"bw:use-splicers":"bw:use-reveal-glass");};return "escaped";}
     if(item==="white-flute"||item==="black-flute"){if(SinnohCompletion.flute(player,item)){await message("The "+Bag.name(item)+" sounded.\nWild Pokémon will appear "+(item==="white-flute"?"more":"less")+" often here.");}return;}
     if(item==="vs-recorder"){fieldAction=async()=>{Screen.say("");show("world");await Overworld.resume();const rec=(Unova.owns(player.location.map)&&player.flags.unova?.subwayRecord)||player.flags.sinnoh?.frontier?.lastRecord||player.flags.hoennBattleRecord;if(rec)await playRecord(rec);else await say("No local battle has been recorded yet.");};return "escaped";}
@@ -3095,7 +3096,7 @@
   }
   async function trainerCard() {
     tick();
-    if(Unova.owns(player.location.map)){Screen.say("");show("scene");clearMenu();try{await UnovaDevice.open(scene,player,"card");}finally{tick();Save.write(player);show("world");await Overworld.resume();}return null;}
+    if(Unova.owns(player.location.map)){Screen.say("");show("scene");clearMenu();let action;try{action=await UnovaDevice.open(scene,player,"card");}finally{tick();Save.write(player);show("world");await Overworld.resume();}return null;}
     if(WORLD_MAPS[player.location.map]?.region==='sinnoh'){Screen.say("");show('scene');clearMenu();try{await SinnohOptionalDevice.card(scene,player);}finally{tick();Save.write(player);show('world');await Overworld.resume();}return null;}
     const map = player.location && window.WORLD_MAPS[player.location.map];
     const region = map && map.region === "hoenn" ? "hoenn" : "kanto", K = region === "kanto";
@@ -4786,7 +4787,9 @@
   const DIVEABLE = [0x11, 0x12];
   function diveTarget(avatar) {
     const L = player.location, m = window.WORLD_MAPS[L.map], pos = Overworld.position();
-    if (!m || m.region !== "hoenn") return null;
+    if (!m) return null;
+    if(m.unovaDive){const beh=World.blockAt(L.map,pos.x,pos.y).behavior;if(avatar==='surf'&&DIVEABLE.includes(beh)&&m.unovaDive.down)return{...m.unovaDive.down,down:true};if(avatar==='dive'&&m.unovaDive.up)return{...m.unovaDive.up,down:false};return null;}
+    if(m.region!=="hoenn")return null;
     const beh = window.World.blockAt(L.map, pos.x, pos.y).behavior;
     const down = avatar === "surf";
     if (down ? !DIVEABLE.includes(beh) : (m.type !== "underwater" || beh === 0x19 || beh === 0x2a || beh === 0x69)) return null;
@@ -5962,6 +5965,7 @@
   // (The debug menu's way there: Prof. Oak's plane, without his briefing.)
   // ---------- Sinnoh: Platinum's opening chapter (ui/sinnoh-story.js) ----------
 
+  async function unovaSpecialBattle(map,terrain){const a=UnovaServices.special(player,map);if(!a)return false;if(a.n)await say('A Pokémon with a familiar sparkle!\nIt once traveled with N.');await battle('wild',{foe:{name:'Wild',team:[a.n?a.record:wildMon(a.record)]},terrain,unovaSpecial:!!a.n});return true;}
   async function unovaTournament(ids){
     const chosen=await chooseBattleTeam(3,{check:()=>null});if(!chosen||chosen.length!==3)return 'cancelled';
     const st=Unova.state(player),original=player.party;st.pwtBackup=original;Save.write(player);
@@ -5984,7 +5988,7 @@
     }finally{if(temporary||st.pwtBackup){player.party=original;delete st.pwtBackup;delete st.facilityPending;if(lastRecord){UnovaFacilities.state(player).lastRecord=lastRecord;lastRecord=null;}Save.write(player);}show('world');await Overworld.resume();}
   }
 
-  const unovaStory = UnovaStory.create({hatchEgg:eggHatches,trainLevels:async(mon,count)=>{for(let i=0;i<count&&mon.level<Player.levelCap(player);i++){const moves=Bag.levelUp(mon,{here:player.location.map});await say(Party.displayName(mon)+' grew to Lv. '+mon.level+'!');for(const move of moves)await learnMove(mon,move);const evo=Evolution.find(mon,{trigger:'level',party:player.party,map:player.location.map});if(evo)await evolve(mon,evo,true);}},facility:unovaFacility,chooseParty:choosePartyFor,daycareLady:()=>fourIslandDayCareLady("unova"),daycareMan:()=>fourIslandDayCareMan("unova"),tournament:unovaTournament,recorded:()=>lastRecord,dashing:()=>Overworld.lastStepRunning(),player:()=>player,say,confirm,battle,mart,replay:async rec=>{await playRecord(rec);music(WORLD_MAPS[player.location.map].music);},movie:async()=>{Screen.say("");clearMenu();show("field");music("mus_vs_trainer");try{return await UnovaMovie.shoot(player);}finally{music(WORLD_MAPS[player.location.map].music);}},canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),refreshPeople:()=>Overworld.refreshPeople(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:async loc=>{await Overworld.teleport({...loc});},choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}])),wildEncounter:async(record,opts={})=>{const outcome=await battle("wild",{...opts,foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();return outcome;}});
+  const unovaStory = UnovaStory.create({moveReminder:moveRelearner,moveDeleter,teachMove:async(mon,move)=>{if(Party.knowsMove(mon,move))return false;await learnMove(mon,move);return Party.knowsMove(mon,move);},hatchEgg:eggHatches,trainLevels:async(mon,count)=>{for(let i=0;i<count&&mon.level<Player.levelCap(player);i++){const moves=Bag.levelUp(mon,{here:player.location.map});await say(Party.displayName(mon)+' grew to Lv. '+mon.level+'!');for(const move of moves)await learnMove(mon,move);const evo=Evolution.find(mon,{trigger:'level',party:player.party,map:player.location.map});if(evo)await evolve(mon,evo,true);}},facility:unovaFacility,chooseParty:choosePartyFor,daycareLady:()=>fourIslandDayCareLady("unova"),daycareMan:()=>fourIslandDayCareMan("unova"),tournament:unovaTournament,recorded:()=>lastRecord,dashing:()=>Overworld.lastStepRunning(),player:()=>player,say,confirm,battle,mart,replay:async rec=>{await playRecord(rec);music(WORLD_MAPS[player.location.map].music);},movie:async()=>{Screen.say("");clearMenu();show("field");music("mus_vs_trainer");try{return await UnovaMovie.shoot(player);}finally{music(WORLD_MAPS[player.location.map].music);}},canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),refreshPeople:()=>Overworld.refreshPeople(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:async loc=>{await Overworld.teleport({...loc});},choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}])),wildEncounter:async(record,opts={})=>{const outcome=await battle("wild",{...opts,foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();return outcome;}});
   const sinnohStory = SinnohStory.create({
     player: () => player, avatar:()=>Overworld.avatar(), wildMon, say,
     saveCheckpoint: async()=>{tick();Save.write(player);},
@@ -11804,6 +11808,7 @@
         // (The Battle Pike's hall of wild Pokémon: your challenge's three fight it, and the room's own scripts see how it went.)
         else if (at.map === "BattleFrontier_BattlePikeRoomWildMons" || at.map === PYRAMID_FLOOR) await pikeWildBattle(ev);
         else if (Sinnoh.isRoamer(player,ev.species) && here.region === "sinnoh") await battle("wild", {foe:{name:"Wild",team:[Party.create(ev.species,ev.level)]},terrain,noGimmicks:true});
+        else if(here.region==='unova'&&Overworld.avatar()!=='surf'&&await unovaSpecialBattle(at.map,terrain)) { /* source N Pokémon and daily swarms */ }
         else if (ev.unovaDark && ableToBattle()>=2 && Math.random()<.4) await wildDoubleBattle(ev,at.map,terrain,Unova.landTable(player,at.map));
         // (A Max Lure on: always a horde, from the map's hordes or its own wild Pokémon (on the water, its water's).)
         else if (lureOn() === "max-lure" && !towerGhost() && wildTable(here) && await hordeBattle(at.map, terrain, wildTable(here))) { /* (fought) */ }

@@ -125,7 +125,7 @@
   // Unown's letters ("b" ... "z", "exclamation", "question": 201-b.png ...),
   // and Alcremie's cream and Sweet ("ruby-cream-strawberry-sweet": 869-...;
   // the vanilla cream with a Strawberry Sweet is its own picture).
-  const form = (record) => (record.species === "Arceus" && record.arceusType ? record.arceusType.toLowerCase() : record.cloak && record.cloak !== "plant" ? record.cloak
+  const form = (record) => (["Shellos","Gastrodon"].includes(record.species)&&record.eastSea?"east":record.species === "Arceus" && record.arceusType ? record.arceusType.toLowerCase() : record.cloak && record.cloak !== "plant" ? record.cloak
     : record.species === "Unown" && record.unown ? record.unown
     : record.species === "Alcremie" && record.alcremie && record.alcremie !== "vanilla-cream-strawberry-sweet" ? record.alcremie : "");
   // Alcremie's cream, as Sword and Shield decide it when Milcery spins:

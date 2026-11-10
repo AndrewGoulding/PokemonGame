@@ -63,7 +63,7 @@
     case'preserve-locked':await say('A Nature Preserve Permit is required.');await move(F.data().west.mistraltonReturn);break;
     case'preserve-return':if(await env.confirm('Return to Mistralton?'))await move(F.data().west.mistraltonReturn);break;
     case'alder-postgame':if(!s().alderPostgame){if(await fight(d().alder)!=='won')break;s().alderPostgame=true;await checkpoint();await say('Alder: Benga is exploring the\nBlack Tower and White Treehollow!');}else await say('Alder: Keep enjoying your journey.');break;
-    case'hugh-rematch':await daily(d().hugh[Math.max(0,F.starterNames.indexOf(s().starter))],'hugh');break;
+    case'hugh-rematch':if(await daily(d().hugh[Math.max(0,F.starterNames.indexOf(s().starter))],'hugh'))s().hughDiveUnlocked=true;if((s().hughDiveUnlocked||s().postDaily?.hugh!=null)&&F.data().services)await report(F.gift(p(),'hugh-dive',F.data().services.dive));break;
     case'bianca-rematch':if(![0,6].includes(Player.gameTime(p()).weekday)){await say('Bianca battles on weekends.');break;}if(!s().memoryLink)await memory();if(s().memoryLink)await daily(d().bianca[F.starterNames.indexOf(s().memoryLink.starter)],'bianca');break;
     case'cynthia-unova':if(!['spring','summer'].includes(F.season(p()))){await say('Cynthia visits in spring and summer.');break;}await daily(d().cynthia,'cynthia');break;
     case'memory-link':await memory();break;
