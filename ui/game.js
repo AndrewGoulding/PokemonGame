@@ -1091,9 +1091,9 @@
   let lastRecord = null;   // (the last battle's record, if it was asked for: the Battle Frontier's, for the Frontier Pass)
   let battleCount = 0;   // (how many battles so far: whether a script battled)
   async function battle(kind, opts) {
+    opts = opts || {};
     if(!opts.format&&opts.trainerId&&window.Unova?.data().trainers[opts.trainerId]?.format)opts={...opts,format:Unova.data().trainers[opts.trainerId].format};
     SinnohLegends.syncForms(player);
-    opts = opts || {};
     if (WORLD_MAPS[player.location.map]?.unovaSandstorm && !opts.weather) opts = {...opts,weather:"sandstorm"};
     battleCount++;
     const wild = kind === "wild";

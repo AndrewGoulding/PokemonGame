@@ -41,7 +41,7 @@ cruises, as source record 126 does. Cancelling or failed payment does not count.
 The model test covers 140 seeded weekday rosters, source pools/levels, seasonal
 hours, atomic payment and party checks, saved state, clock penalties/timeouts,
 victories and repeat guards, prizes and Bag retries, the ten-cruise Medal and
-scene dispatch. The general Unova topology test traverses all 299 maps and
+scene dispatch. The general Unova topology test traverses the complete Unova map graph and
 checks connected entrances and NPC approaches. The browser test boards through
 the native UI, talks to a passenger, reloads a saved cruise, plays Tuesday’s
 three source battles, claims its prize and verifies the daily limit and save.

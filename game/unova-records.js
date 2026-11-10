@@ -24,6 +24,7 @@
   if(id===44)return +collection(p,F.data().postgame.regionalDex);if(id===45)return +collection(p,F.data().postgame.nationalDex);
   if(id>=46&&id<=49)return (p.boxes||[]).flat().filter(Boolean).length;
   if(id===93)return +p.party.concat((p.boxes||[]).flat()).some(a=>a&&!a.egg&&a.shiny);
+  if(id===95)return +!!s.interiors?.boss;
   if(id===128)return r.expDailyBest||0;
   if(id===145)return new Set((records['pwt-Type Expert']?.types||[]).filter(t=>types.includes(t.toLowerCase()))).size;
   if(id===123)return Math.max(0,...Object.entries(records).filter(([k])=>k.startsWith('subway-')&&k.endsWith('multi')).map(([,v])=>v.best||0));
