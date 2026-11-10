@@ -30,7 +30,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Twenty source Hidden Grottos, regrowth, Hidden Abilities and item tables
 - [x] N’s 14 released Pokémon, versioned swarms, shard tutors and 31 trade records ([scope](unova-services.md))
 - [x] Dropped-Xtransceiver contact quest, daily Hidden Ability trades, native Dive and Abyssal Ruins ([scope](unova-services.md))
-- [ ] Remaining distribution-event stories and Memory Link recaps
+- [x] Eight source Memory Link conversations, Liberty Garden and offline mythical research quests ([scope](unova-events.md))
 - [x] PWT Singles/Doubles tournaments, basic/Super Subway lines, Institute trials and BP exchange ([scope](unova-facilities.md))
 - [ ] Triple/Rotation formats, full multi-partner ladders and online/download facilities
 - [x] Offline Pokémon Musical, source four shows/100 props, saved finales ([scope](unova-activities.md))

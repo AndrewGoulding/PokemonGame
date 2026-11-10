@@ -4261,3 +4261,5 @@ Unova Entralink/Funfest and Pass Powers: [scope and source notes](docs/unova-fun
 Unova Musical and daily sports: [scope and source notes](docs/unova-activities.md).
 
 Unova Pokéstar catalog: [scope and source notes](docs/unova-movies.md).
+
+Unova Memory Link and event research: [scope and source notes](docs/unova-events.md).

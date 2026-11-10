@@ -19,8 +19,8 @@ Driftveil, Lentimas, Humilau and Nacrene tutors offer all 60 source shard moves,
 source prices and source species compatibility. Payment occurs after successful
 learning, so cancellation does not spend shards. PWT also has a native reminder
 and deleter. Separate tutors handle pledges, starter ultimate moves, Draco Meteor,
-Meloetta’s Relic Song and Keldeo’s Secret Sword. Secret Sword requires the three
-swordsmen in the party, and Keldeo’s form follows whether it knows the move.
+Meloetta’s Relic Song and Keldeo’s Secret Sword. The BW2 Pledge Grove tutor requires only Keldeo; the three other swordsmen
+do not need to be in the party. Keldeo’s form follows whether it knows the move.
 The reminder and level/evolution flows use the shared battle engine.
 
 Seven ordinary trade offers are available across Route 4, Route 7, Humilau,
