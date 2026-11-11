@@ -10,7 +10,8 @@ assert.equal(Alola.data().starters.join(','),'Rowlet,Litten,Popplio');
 assert.equal(Object.keys(Alola.data().maps).length,15);
 for(const [name,m] of Object.entries(Alola.data().maps)){
  assert(Alola.owns(name));assert.equal(m.collision.length,m.width*m.height);
- for(const w of m.warps){const next=WORLD_MAPS[w.map];assert(next,name+' dangling warp');assert(next.warps[w.warp]?.map===name,name+' not reciprocal');}
+ for(const w of m.warps){const next=WORLD_MAPS[w.map];assert(next,name+' dangling warp');assert(next.warps[w.warp]?.map===name,name+' not reciprocal');assert(!m.collision[w.y*m.width+w.x],name+' blocked warp');}
+ for(const npc of m.people){assert(!m.collision[npc.y*m.width+npc.x],name+' blocked NPC '+npc.script);assert(!m.warps.some(w=>w.x===npc.x&&w.y===npc.y),name+' NPC on warp');}
 }
 const p=Player.create('Alola Tester');const before=JSON.stringify(p.flags.kalos||{});
 assert(Alola.starter(p,'Rowlet').mon);assert.equal(Alola.rivalSpecies(p),'Popplio');

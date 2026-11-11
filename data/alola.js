@@ -20,10 +20,13 @@
   delete m.kalosEncounter;delete m.kalosSurfaces;delete m.kalosPickup;delete m.anim;
   delete m.wild;delete m.water;delete m.fishing;maps[name]=m;
  }
- const person=(m,x,y,script,sprite='bw2_lass')=>maps[m].people.push({
-   id:'usum-'+maps[m].people.length,localId:'USUM_'+m+'_'+maps[m].people.length,
-   x,y,script,sprite,width:32,height:32,frames:9,movement:'face_down',rangeX:0,rangeY:0
- });
+ const person=(name,x,y,script,sprite='bw2_lass')=>{
+   const m=maps[name],free=(px,py)=>px>=2&&py>=2&&px<m.width-2&&py<m.height-2&&!m.collision[py*m.width+px]&&!m.warps.some(w=>w.x===px&&w.y===py)&&!m.people.some(p=>p.x===px&&p.y===py);
+   if(!free(x,y)){const cells=[];for(let py=2;py<m.height-2;py++)for(let px=2;px<m.width-2;px++)if(free(px,py))cells.push({x:px,y:py,dist:Math.abs(px-x)+Math.abs(py-y)});
+     cells.sort((a,b)=>a.dist-b.dist);if(!cells.length)throw Error('No safe Alola NPC tile: '+name);({x,y}=cells[0]);}
+   m.people.push({id:'usum-'+m.people.length,localId:'USUM_'+name+'_'+m.people.length,
+     x,y,script,sprite,width:32,height:32,frames:9,movement:'face_down',rangeX:0,rangeY:0});
+ };
  person('AlolaHome',7,7,'usum:mom','bw2_147');
  person('AlolaHauoliOutskirts',25,18,'usum:travel','bw2_lass');
  person('AlolaRoute1',12,11,'usum:kukui','bw2_scientist_m_52');
