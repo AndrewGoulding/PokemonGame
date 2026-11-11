@@ -24,6 +24,13 @@ function npc(map,x,y,script){
 [["LanakilaBase",16,14,"league-exit"],["LanakilaBase",23,15,"lanakila-guide"],["LanakilaCenter",9,7,"league-heal"],["LanakilaSlope",13,15,"lanakila-hau"],["LanakilaCave",15,13,"lanakila-trainer"],["LanakilaSummit",17,15,"league-gate"],["LeagueLobby",15,13,"league-registration"],["LeagueRest",9,7,"league-heal"],["EliteMolayne",15,15,"elite-molayne"],["EliteOlivia",15,15,"elite-olivia"],["EliteAcerola",15,15,"elite-acerola"],["EliteKahili",15,15,"elite-kahili"],["ChampionRoom",15,15,"champion-hau"],["HallOfFame",10,9,"league-hall"],["PostgamePort",15,15,"postgame-exit"],["PostgamePort",21,13,"postgame-guide"],["BattleTree",10,9,"battle-tree"],["RRBase",11,12,"rr-archie"],["RRBase",18,14,"rr-maxie"],["RRLab",12,13,"rr-cyrus"],["RRLab",19,14,"rr-ghetsis"],["RRLab",22,18,"rr-lysandre"],["RRBoss",10,9,"rr-giovanni"],["BeastStation",7,6,"beast-0"],["BeastStation",10,6,"beast-1"],["BeastStation",13,6,"beast-2"],["BeastStation",7,10,"beast-3"],["BeastStation",10,10,"beast-4"],["BeastStation",13,10,"beast-5"],["BeastStation",16,12,"beast-6"],["BeastStation",9,15,"beast-researcher"]].forEach(args=>npc(...args));
 npc('SeafolkVillage',31,18,'league-ferry');
 npc('AetherDock',30,17,'postgame-ferry');
+// Optional postgame guardian and mascot encounters use the same unified save.
+npc('MahaloTrail',22,12,'tapu-0');
+npc('RuinsOfLife',16,13,'tapu-1');
+npc('RuinsAbundance',14,11,'tapu-2');
+npc('RuinsHope',14,11,'tapu-3');
+npc('AltarSunne',18,11,'legend-sun');
+npc('AltarSunne',22,12,'legend-moon');
 for(const [id,pool] of [["LanakilaSlope",[["Sneasel",54,59],["Snorunt",53,58],["Golbat",53,58],["Absol",55,59]]],["LanakilaCave",[["Golbat",55,59],["Sneasel",55,60],["Vanillish",56,60]]],["LanakilaSummit",[["Absol",56,60],["Sneasel",56,60],["Glalie",57,60]]]]){
  const m=maps['Alola'+id],q=Math.floor(100/pool.length);
  m.wild={rate:25,weights:pool.map((_,i)=>i===pool.length-1?100-q*i:q),slots:pool.map(([species,min,max])=>({species,min,max}))};
