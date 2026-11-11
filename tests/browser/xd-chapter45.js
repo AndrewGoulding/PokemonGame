@@ -25,7 +25,9 @@ const OUT = process.env.OUT || "/tmp/pk-xd45";
   const idle = () => s.eval(() => Overworld.idle());
   const where = async () => (await s.player()).location;
   const go = async (map, x, y, facing) => { await s.eval((to) => Overworld.teleport(to), { map, x, y, facing: facing || "up" }); await s.wait(350); };
-  const heal = () => s.eval(() => Game.player.party.forEach(Party.heal));
+  // (Healed, and anything snagged put away in the PC: the party stays the two the battles are mashed through with.)
+  const heal = () => s.eval(() => { const P = Game.player; P.party.forEach(Party.heal);
+    for (const r of P.party.splice(2)) { const b = P.boxes.find((x) => x.includes(null)); b[b.indexOf(null)] = r; } });
   const box = async () => { const t = await s.eval(() => (document.getElementById("field").classList.contains("hidden") && (document.getElementById("textbox") || {}).innerText) || ""); if (t) said.push(t); for (const l of t.split("\n")) if (l.length > 37) long.add(l); return t; };
   async function finish(predicate, label, limit = 600, arg) {
     for (let i = 0; i < limit; i++) {

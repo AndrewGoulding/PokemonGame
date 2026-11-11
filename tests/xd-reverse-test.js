@@ -51,3 +51,20 @@ OrreHeart.snagged(mak);
 const cs = Party.toBattleSet(mak);
 assert(!cs.reverse && cs.ownMoves === 0, "Colosseum's: Hyper Mode, its moves sealed");
 console.log("ok: Colosseum's Hyper Mode as it was");
+
+// The Exp. Share passing on what a Pokémon at the level cap can't take: not to a Shadow Pokémon (it doesn't level).
+{
+  const shadow = Orre.XD.shadowRecord(14);
+  OrreHeart.snagged(shadow);
+  const lead = Party.create("Mewtwo", 22, { moves: ["Psychic"], ivs: 31 });
+  const b = new Battle({ seed: 3, trainer: true, expShare: true, exp: true, levelCap: 22,
+    p1: { name: "YOU", team: [Party.toBattleSet(lead), Party.toBattleSet(shadow)] },
+    p2: { name: "FOE", team: [{ species: "Snorlax", level: 30, moves: ["Splash"] }] } });
+  b.start();
+  for (let i = 0; i < 20 && !b.ended; i++) { b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 }); }
+  assert(b.ended, "won");
+  const s2 = b.sides.p1.pokemon[1];
+  assert.equal(s2.level, 17, "the Shadow Pokémon didn't level");
+  assert.equal(s2.exp, Party.toBattleSet(shadow).exp ?? s2.exp, "no Exp. Points passed on to it");
+  console.log("ok: no Exp. Points passed on to a Shadow Pokémon by the Exp. Share");
+}

@@ -2750,7 +2750,8 @@
       }
       // (The rest shared out: again while any is left and someone can still take some.)
       for (let pass = 0; pass < 6 && unused > 0; pass++) {
-        const able = this.sides.p1.pokemon.filter((m) => !m.fainted && m.owner === 0 && m.level < cap);
+        // (Not one of your Shadow Pokémon: they get no Exp. Points passed on.)
+        const able = this.sides.p1.pokemon.filter((m) => !m.fainted && m.owner === 0 && m.level < cap && !m.shadow);
         if (!able.length) break;
         const each = Math.floor(unused / able.length);
         if (!each) break;
