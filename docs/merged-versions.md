@@ -27,3 +27,7 @@ surface additional edition-only NPC or location events without a version menu.
 
 Tests: `node tests/merged-versions-test.js`. The existing source-version unit
 tests still exercise legacy saves that have not used the unified travel guide.
+
+Kalos's Charmander gift now supplies both Charizardite X and Charizardite Y
+in unified mode. Later-route horde tables merge their X/Y-exclusive groups.
+The Kiloude type quiz alternates the two species by the game clock day.

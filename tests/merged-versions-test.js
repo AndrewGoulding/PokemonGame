@@ -17,6 +17,10 @@ const example=Object.entries(Kalos.data().maps).find(([name,m])=>m.kalosEncounte
 assert(example,'Kalos example');p.location={map:example[0],x:8,y:8};
 Kalos.apply(p);const src=Kalos.data().encounters[example[1].kalosEncounter];
 for(const species of new Set([...src.x.slots,...src.y.slots].map(x=>x.species)))assert(WORLD_MAPS[example[0]].wild.slots.some(x=>x.species===species),'Missing '+species);
+const varied=Player.create('Hordes');Kalos.state(varied).mergedVersions=true;
+varied.location={map:'KalosRoute5',x:23,y:20};Kalos.apply(varied);
+const horde=HORDE_ENCOUNTERS.KalosRoute5;assert(horde.some(h=>h.mons.join(',').includes('Plusle*4')));
+assert(horde.some(h=>h.mons.join(',').includes('Minun*4')));
 const b1=Player.create('BW');UnovaBW.state(b1).mergedVersions=true;
 UnovaBW.state(b1).clear=true;
 assert.equal(UnovaBW.allowed(b1,'BW1BlackCity'),null);
