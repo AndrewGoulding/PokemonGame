@@ -58,7 +58,7 @@
    case'totem':if(s().verdantClear){await say('Both Totem Pokémon acknowledged your victory.');break;}
     if((s().dens||[]).length!==3){await say('Inspect all three occupied dens first.');break;}
     if(!s().totemGumshoos){if(await fight('TOTEM_GUMSHOOS','Totem Gumshoos',[Party.create('Gumshoos',12)])!=='won')break;s().totemGumshoos=true;await save();}
-    if(!s().totemRaticate){if(await fight('TOTEM_RATICATE','Totem Raticate',[Party.create('Raticate',12)])!=='won')break;s().totemRaticate=true;await save();}
+    if(!s().totemRaticate){if(await fight('TOTEM_RATICATE','Totem Raticate',[Party.create('Raticate-Alola',12)])!=='won')break;s().totemRaticate=true;await save();}
     {const z=R.gift(p(),'normalium-z','normalium-z');if(z.full){await say('Make space in your Bag before accepting Normalium Z.');break;}
       s().verdantClear=true;await save();await say('Trial complete! Both Ultra Sun and Ultra Moon Totems were defeated. You earned Normalium Z. Return to Iki Town.');}break;
    case'hala':if(!s().verdantClear){await say('Hala: Complete Ilima’s trial in Verdant Cavern first.');break;}
@@ -72,7 +72,7 @@
    case'gate':await say(R.allowed(p(),p().location.map)||'That way is not open yet.');await env.teleport({...s().lastSafe||D.start});break;
    default:if(k.startsWith('student-')){const i=Number(k.slice(8));if(!Number.isInteger(i)||i<0||i>3)break;if(s().schoolWins.includes(i)){await say('Great battle!');break;}
      if(!s().festival){await say('The school is closed until after the festival.');break;}
-     const roster=['Pikipek','Yungoos','Grubbin','Alolan Meowth'];const species=roster[i]==='Alolan Meowth'?'Meowth':roster[i];
+     const roster=['Pikipek','Yungoos','Grubbin','Meowth-Alola'];const species=roster[i];
      if(await fight('SCHOOL_'+i,'Trainer School Student',[Party.create(species,7+i)])==='won'){s().schoolWins.push(i);await save();await say('Student: You won! Keep up the training.');}
      break;}return false;
   }return true;

@@ -87,8 +87,8 @@
    const m=maps[name];m.wild={rate,weights:pool.map((a,i)=>i===pool.length-1?100-Math.floor(100/pool.length)*i:Math.floor(100/pool.length)),slots:pool.map(([species,min,max])=>({species,min,max}))};
    for(let y=6;y<Math.min(14,m.height-5);y++)for(let x=6;x<Math.min(11,m.width-5);x++){const k=y*m.width+x;if(!m.collision[k]&&!m.warps.some(w=>w.x===x&&w.y===y)&&!m.people.some(a=>a.x===x&&a.y===y))m.behavior[k]=2;}
  };
- grass('AlolaHauoliBeach',[['Wingull',6,8],['Pikipek',6,8],['Yungoos',6,8],['Rattata',6,8]]);
- grass('AlolaRoute2',[['Cutiefly',7,9],['Makuhita',7,10],['Spearow',7,9],['Yungoos',7,9],['Rattata',7,9]]);
+ grass('AlolaHauoliBeach',[['Wingull',6,8],['Pikipek',6,8],['Yungoos',6,8],['Rattata-Alola',6,8]]);
+ grass('AlolaRoute2',[['Cutiefly',7,9],['Makuhita',7,10],['Spearow',7,9],['Yungoos',7,9],['Rattata-Alola',7,9]]);
  grass('AlolaCemetery',[['Gastly',8,10],['Zubat',8,10],['Misdreavus',8,10]]);
  grass('AlolaBerryFields',[['Crabrawler',8,10],['Cutiefly',8,9]]);
  window.ALOLA_DATA={maps,start:{map:'AlolaHome',x:10,y:13,facing:'up'},

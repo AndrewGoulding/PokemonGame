@@ -33,3 +33,6 @@ not claim full Z-Power/Rotom Dex/ride integration. Both versions will remain
 merged rather than becoming separate routes or version selections.
 
 Test: `node tests/alola-test.js`. The general test suite includes this file.
+
+The merged Totem sequence uses Gumshoos and Alolan Raticate, with Alolan
+Rattata and Alolan Meowth represented by their actual Generation VII forms.
