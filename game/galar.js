@@ -7,9 +7,27 @@ const owns=map=>WORLD_MAPS[map]?.galarCampaign==='sword-shield';
 const peek=p=>p.flags.galar||{};
 function state(p){const s=p.flags.galar||(p.flags.galar={});s.visited||(s.visited=[]);s.badges||(s.badges=[]);s.gifts||(s.gifts={});return s;}
 const centers=['GalarHome','GalarMotostokeCenter','GalarTurffieldCenter','GalarHulburyCenter'];
-for(const map of centers){const m=WORLD_MAPS[map],x=map==='GalarHome'?10:9,y=map==='GalarHome'?13:12;Player.CENTERS[map]={map,x,y,facing:'up'};}
+function safeTile(m,x,y){
+ const safe=(a,b)=>a>=1&&b>=1&&a<m.width-1&&b<m.height-1&&
+  !m.collision[b*m.width+a]&&!m.warps.some(w=>w.x===a&&w.y===b)&&
+  !(m.people||[]).some(p=>p.x===a&&p.y===b);
+ if(safe(x,y))return{x,y};
+ const found=[];for(let py=1;py<m.height-1;py++)for(let px=1;px<m.width-1;px++)
+  if(safe(px,py))found.push({x:px,y:py,dist:Math.abs(px-x)+Math.abs(py-y)});
+ found.sort((a,b)=>a.dist-b.dist);
+ if(!found.length)throw Error('No safe Galar tile on '+m.name);
+ return found[0];
+}
+for(const map of centers){
+ const m=WORLD_MAPS[map],desired=map==='GalarHome'?D.start:{x:9,y:12};
+ const at=safeTile(m,desired.x,desired.y);
+ Player.CENTERS[map]={map,x:at.x,y:at.y,facing:'up'};
+}
 const travel={id:'galar-researcher',localId:'SWSH_GALAR_TRAVEL',x:26,y:25,script:'swsh:travel-galar',sprite:'bw2_scientist_f_46',width:32,height:32,frames:9,movement:'face_up',rangeX:0,rangeY:0};
-if(WORLD_MAPS.FightArea&&!WORLD_MAPS.FightArea.people.some(a=>a.script===travel.script))WORLD_MAPS.FightArea.people.push(travel);
+if(WORLD_MAPS.FightArea&&!WORLD_MAPS.FightArea.people.some(a=>a.script===travel.script)){
+ const at=safeTile(WORLD_MAPS.FightArea,travel.x,travel.y);
+ Object.assign(travel,at);WORLD_MAPS.FightArea.people.push(travel);
+}
 function starter(p,species){
  const s=state(p);if(s.starter)return{done:true};
  if(!D.starters.includes(species))return{invalid:true};
