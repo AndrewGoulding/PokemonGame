@@ -26,7 +26,7 @@ authored adaptations rather than complete Ultra Sun/Moon script/ROM imports.
 Hau’oli Beach, Hau’oli City, Route 2, Berry Fields, cemetery, Verdant Cavern,
 Ilima's captain battle, Team Skull battles, three dens, both Ultra Sun and Ultra
 Moon Totem Pokémon, Normalium Z, and Hala's Melemele grand trial now extend the
-first chapter. Akala and the other islands, Ultra Recon Squad, Aether Foundation,
+first chapter. Ula’ula and Poni Islands, Aether Foundation's later chapters,
 Ultra Necrozma, League and postgame remain future implementation.
 Existing Gen VII species, moves and Z-Move systems are reused; this slice does
 not claim full Z-Power/Rotom Dex/ride integration. Both versions will remain
@@ -77,4 +77,6 @@ campaign at its next milestone: Ula’ula Island. Subsequent islands, the
 full Ride Pager, Aether Foundation climax, Ultra Necrozma, League and postgame
 remain unfinished. No Ultra Sun/Ultra Moon version selection is introduced.
 
-Akala regression tests: `node tests/alola-akala-test.js`.
+Akala regression tests: `node tests/alola-akala-test.js` and the native
+Playwright flow `node tests/browser/alola-akala.js` (requires Chromium and
+Playwright). The Playwright flow is not included in `npm test`.
