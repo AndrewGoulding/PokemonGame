@@ -64,6 +64,17 @@ for(const file of ['ui/alola-akala.js','ui/alola-story.js'])
  await go('olivia-konikoni');await go('plumeria');
  await go('olivia-grand');assert(s.oliviaClear);assert(Player.itemCount(p,'rockium-z'));assert.equal(R.cap(p),55);
  for(const map of D.akala.mapNames)assert.equal(A.allowed(p,map),null,map+' should be open');
+ // The Ditto Five side investigation is optional, resumable, and rewarded once.
+ await go('ditto-0');assert(!s.dittoCaught,'officer must start the investigation');
+ await go('ditto-officer');assert(s.dittoQuest);
+ result='lost';await go('ditto-0');assert(!(s.dittoCaught||[]).length,'lost fight must be retryable');
+ result='won';
+ for(let i=0;i<5;i++)await go('ditto-'+i);
+ assert.equal(s.dittoCaught.length,5);
+ await go('ditto-2');assert.equal(battles.filter(x=>x==='USUM_DITTO_IMPOSTOR_2').length,1);
+ await go('ditto-officer');assert(s.dittoReward);assert(Player.itemCount(p,'rare-candy')>=3);
+ const candyCount=Player.itemCount(p,'rare-candy');
+ await go('ditto-officer');assert.equal(Player.itemCount(p,'rare-candy'),candyCount);
  assert(battles.includes('USUM_HAU_AKALA'));
  assert(battles.includes('USUM_TOTEM_ARAQUANID'));
  assert(battles.includes('USUM_TOTEM_MAROWAK'));
@@ -78,6 +89,7 @@ for(const file of ['ui/alola-akala.js','ui/alola-story.js'])
  assert.deepEqual(s.akalaResume,{map:'AlolaRuinsOfLife',x:10,y:10,facing:'down'});
  const reloaded=Player.load(JSON.parse(Player.serialize(p))).player;
  assert(Alola.peek(reloaded).oliviaClear);assert(Alola.peek(reloaded).lanaClear);
+ assert.equal(Alola.peek(reloaded).dittoCaught.length,5);assert(Alola.peek(reloaded).dittoReward);
  assert.deepEqual(reloaded.flags.kalos,p.flags.kalos);assert.equal(JSON.stringify(p.flags.kalos),oldKalos);
  assert.equal(JSON.stringify(p.flags.unovaBW||{}),oldBW);
  assert(saveCount>20);assert(spoken.length>20);assert(finish);

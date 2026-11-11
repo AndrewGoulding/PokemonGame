@@ -49,6 +49,24 @@ function create(env,shared){
     await env.teleport({...R.data().akala.return});await save();
     await say('You arrived at Hau’oli City. Your Akala progress is saved.');break;
    }
+   case'ditto-officer':{
+    if(!s().dittoQuest){s().dittoQuest=true;await save();await say('Officer: Five Ditto are impersonating residents around Akala! Talk to suspicious people across Route 4, Paniola, Royal Avenue, Route 8 and Konikoni.');break;}
+    const count=(s().dittoCaught||[]).length;
+    if(count<5){await say('Officer: You have exposed '+count+'/5 impostors. Find the rest on Akala Island.');break;}
+    if(s().dittoReward){await say('Officer: You caught all five impostors. Excellent detective work!');break;}
+    const reward=R.gift(p(),'akala-ditto-reward','rare-candy',3);
+    if(reward.full){await say('Officer: Your Bag is full. Make room for three Rare Candies and return.');break;}
+    s().dittoReward=true;await save();await say('Officer: All five Ditto have been exposed! Take three Rare Candies as your reward.');break;
+   }
+   case'ditto-0':case'ditto-1':case'ditto-2':case'ditto-3':case'ditto-4':{
+    const i=+key.slice(-1);
+    if(!s().dittoQuest){await say('This resident seems a little unusual... An officer in Heahea City may know more.');break;}
+    s().dittoCaught||(s().dittoCaught=[]);
+    if(s().dittoCaught.includes(i)){await say('The impostor has already been exposed.');break;}
+    if(!await battle('DITTO_IMPOSTOR_'+i,'Ditto Impostor',[['Ditto',17+i*2]]))break;
+    s().dittoCaught.push(i);await save();
+    await say('The suspicious resident transformed into Ditto! '+s().dittoCaught.length+'/5 impostors exposed.');break;
+   }
    case'hau-akala':
     if(s().hauAkala){await say('Hau: Paniola is the next stop! Look out for the Ultra Recon Squad.');break;}
     if(!await battle('HAU_AKALA','Hau',[['Pikachu',15],[R.rivalSpecies(p()),16]]))break;

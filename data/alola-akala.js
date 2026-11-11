@@ -56,6 +56,16 @@ const npcs=[
 ['KonikoniCity',20,12,'olivia-konikoni','bw2_147'],['KonikoniCenter',9,7,'akala-heal','bw2_147'],['MemorialHill',15,11,'plumeria'],['RuinsOfLife',11,9,'olivia-grand','bw2_147']
 ];
 npcs.forEach(n=>npc(...n));
+// Optional Akala-wide Ditto Five investigation, available once you reach Heahea.
+// Each impostor can be defeated once, in any order; the officer awards the prize.
+[
+ ['HeaheaCity',32,14,'ditto-officer','bw2_105'],
+ ['Route4',21,13,'ditto-0','bw2_lass'],
+ ['PaniolaTown',25,12,'ditto-1','bw2_147'],
+ ['RoyalAvenue',26,16,'ditto-2','bw2_youngster'],
+ ['Route8',20,12,'ditto-3','bw2_scientist_f_46'],
+ ['KonikoniCity',27,12,'ditto-4','bw2_105']
+].forEach(a=>npc(...a));
 if(!A.AlolaHauoliCity.people.some(p=>p.script==='usum:akala-ferry')){
  const m=A.AlolaHauoliCity;let x=37,y=21;
  if(!free(m,x,y)){const spots=[];for(let cy=2;cy<m.height-2;cy++)for(let cx=2;cx<m.width-2;cx++)if(free(m,cx,cy))spots.push([cx,cy,Math.abs(cx-x)+Math.abs(cy-y)]);spots.sort((a,b)=>a[2]-b[2]);if(!spots.length)throw Error('No ferry tile');[x,y]=spots[0];}

@@ -89,3 +89,10 @@ an original schematic island illustration rather than a 3DS screenshot.
 Fly destinations at Iki Town, Hau’oli City, Heahea City, Paniola Town and
 Konikoni City unlock only after visiting those towns; return maps and story
 progress are unchanged. Regression: `node tests/alola-town-map-test.js`.
+
+## Akala optional investigation
+A police officer in Heahea City offers an optional **Ditto Five** investigation.
+Five disguised residents on Route 4, in Paniola Town, Royal Avenue, Route 8,
+and Konikoni City each reveal a Ditto battle. The five encounters can be
+completed in any order, retry after a loss and persist through save/reload.
+Reporting all five to the officer awards three Rare Candies once.
