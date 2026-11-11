@@ -134,3 +134,42 @@ After Nanu’s grand trial, sail from Malie City to Aether Paradise. Defeat the 
 The story includes Hapu’s grand trial (Groundium Z), Totem Kommo-o (Dragonium Z), Ultra Necrozma, and Mina’s petal trial with Totem Ribombee (Fairium Z). The cap rises progressively to 75, 80, 85 and 90. Z-Crystal rewards and progress are save-safe. Seafolk Village gains a Town Map Fly spot.
 
 The layouts reuse existing 2D templates and boss battles are native adaptations. The Pokémon League, Tapu guardians, Rainbow Rocket and postgame remain unfinished. Regression: `node tests/alola-poni-test.js`.
+
+## Mount Lanakila, Alola League and postgame
+
+After Mina's trial, a ferry guide in Seafolk Village opens **Mount Lanakila**.
+Hau challenges the player on the mountain before entry into the newly founded
+**Alola Pokémon League**. The player registers in the lobby, then defeats
+the Elite Four in order: **Molayne (Steel), Olivia (Rock), Acerola (Ghost),
+and Kahili (Flying)**. Hau is the merged Ultra Sun/Ultra Moon Champion
+challenger. Winning records the Champion title and unlocks a Hall of Fame
+scene, a one-time Rare Candy gift and optional title defenses. Re-entering
+the League through the registration NPC resets only the current Elite Four
+challenge flags; prior Champion titles, island trials and save data persist.
+
+The expansion adds **19 connected maps**, bringing the shared Alola campaign
+to **100 maps**: Mount Lanakila base, Center, slopes, cave and summit,
+League lobby and recovery room, the four Elite Four chambers, Champion room,
+Hall of Fame, postgame expedition hub, Battle Tree, Rainbow Rocket base,
+laboratory and boss room, plus an Ultra Beast research station. The Seafolk
+and Aether ferries preserve separate League and postgame resume positions.
+The Town Map shows these destinations, with League and postgame Fly spots
+unlocking once the player visits those locations. Postgame lifts the
+Alola level cap to 100.
+
+**Postgame activities:** a repeatable native Battle Tree trainer-battle
+streak with a recorded best score and milestone rewards; the Team Rainbow
+Rocket sequence of Archie, Maxie, Cyrus, Ghetsis, Lysandre and Giovanni;
+seven one-time Ultra Beast research battles; optional battles against all
+four Tapu guardians; and battles with both Solgaleo and Lunala in the same
+merged campaign. NPC events save and guard their completion flags.
+No version selection is introduced.
+
+**Scope:** These are authored 2D/native battle-engine adaptations, not
+3DS maps, a faithful four-way battle format, literal cutscenes, the complete
+USUM postgame script, or guaranteed catchable Ultra Beast/Tapu encounters.
+The Hall of Fame celebration is dialogue/state based rather than the full
+cinematic. This implementation completes an initial playable League and
+postgame chapter without claiming parity with the full original games.
+
+Regression: `node tests/alola-league-test.js`, added to `npm test`.
