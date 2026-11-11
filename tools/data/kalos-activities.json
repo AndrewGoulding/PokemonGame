@@ -1,0 +1,2212 @@
+{
+  "source": {
+    "references": [
+      "https://bulbapedia.bulbagarden.net/wiki/Battle_Chateau",
+      "https://bulbapedia.bulbagarden.net/wiki/Restaurant_Le_Nah",
+      "https://bulbapedia.bulbagarden.net/wiki/Restaurant_Le_Yeah",
+      "https://bulbapedia.bulbagarden.net/wiki/Restaurant_Le_Wow",
+      "https://bulbapedia.bulbagarden.net/wiki/Hotel_Richissime",
+      "https://bulbapedia.bulbagarden.net/wiki/Lumiose_City",
+      "https://bulbapedia.bulbagarden.net/wiki/Lost_Hotel",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_22",
+      "https://bulbapedia.bulbagarden.net/wiki/Coiffure_Clips",
+      "https://bulbapedia.bulbagarden.net/wiki/Boutique_Couture",
+      "https://bulbapedia.bulbagarden.net/wiki/Sushi_High_Roller_(Lumiose_City)"
+    ],
+    "sha256": {
+      "Battle_Chateau": "6cec7867a193f3dba2a982c7dae512a4c0e73bf936aea2380eb64097a27c8f7b",
+      "Restaurant_Le_Nah": "74779c91aec908cd08162d3a9a7a982479e57a350b6c39519ca494196b8b5588",
+      "Restaurant_Le_Yeah": "c6e020b71a91eafd0d8cf65200dc9ce671406d87bedcfcf63a48af30e47498f4",
+      "Restaurant_Le_Wow": "b400cc84168f1f62ffc3185517def229aee2713f171c32af18cad3f413e6511e",
+      "Hotel_Richissime": "589bcce203001bc8d5227761729e392c4557f3ff01b7c7111534475e8f08fe04",
+      "Lumiose_City": "e39cf9d1906881965192ddc0c577222424e7ca854d5ed7fb07bc8c6dbdfedb71",
+      "Lost_Hotel": "1531db4f7dfbad77a6d943c52f23a4a86f43872dbf222cbe5854202395ca5c77",
+      "Kalos_Route_22": "f43ebbc99b757e446592a55ca8dfde50f41b3f27b7c83e9edd9674f6d84db961",
+      "Coiffure_Clips": "f4fda8baf634f93a0b27128e4cacec51b4196a58ae77a604fa9281bc07d8cd22",
+      "Boutique_Couture": "af6f5af6709a3145e6d0e975952ad09818af0545ef966b594f6bcbbd630d60a5",
+      "Sushi_High_Roller_(Lumiose_City)": "780d7277d218d3ec50fcaa9b925adb2d34eb90f9dc3292eff6b2a7629b1c203c"
+    }
+  },
+  "chateau": [
+    {
+      "name": "Baroness Cadette",
+      "prize": 1800,
+      "party": [
+        [
+          "Burmy",
+          15,
+          "♀"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baroness Camille",
+      "prize": 960,
+      "party": [
+        [
+          "Bidoof",
+          15,
+          "♀"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baroness Estelle",
+      "prize": 1800,
+      "party": [
+        [
+          "Hoppip",
+          15,
+          "♀"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baroness Francine",
+      "prize": 1800,
+      "party": [
+        [
+          "Flabébé",
+          15,
+          "♀"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baroness Maelys",
+      "prize": 1800,
+      "party": [
+        [
+          "Spoink",
+          15,
+          "♀"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baroness Maryline",
+      "prize": 1800,
+      "party": [
+        [
+          "Ledyba",
+          15,
+          "♀"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baroness Renée",
+      "prize": 3000,
+      "party": [
+        [
+          "Scatterbug",
+          15,
+          "♀"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baron Denis",
+      "prize": 3000,
+      "party": [
+        [
+          "Riolu",
+          15,
+          "♂"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baron Evran",
+      "prize": 1800,
+      "party": [
+        [
+          "Budew",
+          15,
+          "♂"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baron Herisson",
+      "prize": 1800,
+      "party": [
+        [
+          "Horsea",
+          15,
+          "♂"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baron Lyon",
+      "prize": 1800,
+      "party": [
+        [
+          "Ralts",
+          15,
+          "♂"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baron Marseille",
+      "prize": 1800,
+      "party": [
+        [
+          "Clauncher",
+          15,
+          "♂"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baron Moray",
+      "prize": 1200,
+      "party": [
+        [
+          "Fletchling",
+          15,
+          "♂"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Baron Orvault",
+      "prize": 1800,
+      "party": [
+        [
+          "Psyduck",
+          15,
+          "♂"
+        ]
+      ],
+      "rank": 0
+    },
+    {
+      "name": "Viscountess Anne-Laure",
+      "prize": 2400,
+      "party": [
+        [
+          "Eevee",
+          20,
+          "♂"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscountess Ayla",
+      "prize": 4000,
+      "party": [
+        [
+          "Swirlix",
+          20,
+          "♀"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscountess Beatrice",
+      "prize": 2400,
+      "party": [
+        [
+          "Tentacool",
+          20,
+          "♀"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscountess Danielle",
+      "prize": 2400,
+      "party": [
+        [
+          "Kecleon",
+          20,
+          "♀"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscountess Julia",
+      "prize": 1920,
+      "party": [
+        [
+          "Skiddo",
+          20,
+          "♀"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscountess Mathilde",
+      "prize": 4000,
+      "party": [
+        [
+          "Venipede",
+          20,
+          "♀"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscountess Regine",
+      "prize": 4000,
+      "party": [
+        [
+          "Dwebble",
+          20,
+          "♀"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscount Ardmore",
+      "prize": 1600,
+      "party": [
+        [
+          "Espurr",
+          20,
+          "♂"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscount Braine",
+      "prize": 2400,
+      "party": [
+        [
+          "Skrelp",
+          20,
+          "♂"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscount Cullinan",
+      "prize": 4000,
+      "party": [
+        [
+          "Pancham",
+          20,
+          "♀"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscount Gourdon",
+      "prize": 2400,
+      "party": [
+        [
+          "Oddish",
+          20,
+          "♂"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscount Herault",
+      "prize": 2400,
+      "party": [
+        [
+          "Litleo",
+          20,
+          "♀"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscount Orloff",
+      "prize": 4000,
+      "party": [
+        [
+          "Mienfoo",
+          20,
+          "♂"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Viscount Tolkowsky",
+      "prize": 4000,
+      "party": [
+        [
+          "Axew",
+          20,
+          "♂"
+        ]
+      ],
+      "rank": 1
+    },
+    {
+      "name": "Countess Adele",
+      "prize": 5000,
+      "party": [
+        [
+          "Shelgon",
+          25,
+          "♀"
+        ],
+        [
+          "Magcargo",
+          25,
+          "♀"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Countess Anita",
+      "prize": 3000,
+      "party": [
+        [
+          "Ledian",
+          25,
+          "♀"
+        ],
+        [
+          "Mr. Mime",
+          25,
+          "♀"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Countess Edith",
+      "prize": 5000,
+      "party": [
+        [
+          "Whirlipede",
+          25,
+          "♀"
+        ],
+        [
+          "Graveler",
+          25,
+          "♀"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Countess Eliane",
+      "prize": 5000,
+      "party": [
+        [
+          "Lairon",
+          25,
+          "♀"
+        ],
+        [
+          "Sudowoodo",
+          25,
+          "♀"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Countess Ida",
+      "prize": 1600,
+      "party": [
+        [
+          "Marill",
+          25,
+          "♀"
+        ],
+        [
+          "Loudred",
+          25,
+          "♀"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Countess Mira",
+      "prize": 5000,
+      "party": [
+        [
+          "Sandslash",
+          25,
+          "♀"
+        ],
+        [
+          "Skarmory",
+          25,
+          "♀"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Countess Patricia",
+      "prize": 5000,
+      "party": [
+        [
+          "Torkoal",
+          25,
+          "♀"
+        ],
+        [
+          "Doublade",
+          25,
+          "♀"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Earl Glen",
+      "prize": 2000,
+      "party": [
+        [
+          "Dedenne",
+          25,
+          "♂"
+        ],
+        [
+          "Staravia",
+          25,
+          "♂"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Earl Gruosi",
+      "prize": 5000,
+      "party": [
+        [
+          "Weepinbell",
+          25,
+          "♂"
+        ],
+        [
+          "Gurdurr",
+          25,
+          "♂"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Earl Lesotho",
+      "prize": 5000,
+      "party": [
+        [
+          "Machoke",
+          25,
+          "♂"
+        ],
+        [
+          "Fraxure",
+          25,
+          "♂"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Earl Nassak",
+      "prize": 5000,
+      "party": [
+        [
+          "Zangoose",
+          25,
+          "♂"
+        ],
+        [
+          "Pupitar",
+          25,
+          "♂"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Earl Nizam",
+      "prize": 5000,
+      "party": [
+        [
+          "Carnivine",
+          25,
+          "♂"
+        ],
+        [
+          "Rhydon",
+          25,
+          "♂"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Earl Royan",
+      "prize": 3000,
+      "party": [
+        [
+          "Haunter",
+          25,
+          "♂"
+        ],
+        [
+          "Vanillish",
+          25,
+          "♂"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Earl Sancy",
+      "prize": 5000,
+      "party": [
+        [
+          "Dragonair",
+          25,
+          "♂"
+        ],
+        [
+          "Krokorok",
+          25,
+          "♂"
+        ]
+      ],
+      "rank": 2
+    },
+    {
+      "name": "Marchioness Alyssa",
+      "prize": 4200,
+      "party": [
+        [
+          "Altaria",
+          35,
+          "♀"
+        ],
+        [
+          "Sylveon",
+          35,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Amandine",
+      "prize": 7000,
+      "party": [
+        [
+          "Leafeon",
+          35,
+          "♂"
+        ],
+        [
+          "Avalugg",
+          35,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Amelie",
+      "prize": 2240,
+      "party": [
+        [
+          "Wailord",
+          35,
+          "♀"
+        ],
+        [
+          "Kangaskhan",
+          35,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Fiona",
+      "prize": 2520,
+      "party": [
+        [
+          "Audino",
+          35,
+          "♀"
+        ],
+        [
+          "Audino",
+          35,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Keira",
+      "prize": 2520,
+      "party": [
+        [
+          "Audino",
+          35,
+          "♀"
+        ],
+        [
+          "Audino",
+          35,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Meriel",
+      "prize": 2520,
+      "party": [
+        [
+          "Audino",
+          35,
+          "♀"
+        ],
+        [
+          "Audino",
+          35,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Yolande",
+      "prize": 2520,
+      "party": [
+        [
+          "Audino",
+          35,
+          "♀"
+        ],
+        [
+          "Audino",
+          35,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Arran",
+      "prize": 2800,
+      "party": [
+        [
+          "Accelgor",
+          35,
+          "♂"
+        ],
+        [
+          "Aerodactyl",
+          35,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Caen",
+      "prize": 4200,
+      "party": [
+        [
+          "Sigilyph",
+          35,
+          "♂"
+        ],
+        [
+          "Glaceon",
+          35,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Grisognono",
+      "prize": 10500,
+      "party": [
+        [
+          "Yanmega",
+          35,
+          "♂"
+        ],
+        [
+          "Pangoro",
+          35,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Duchess Elise",
+      "prize": 2880,
+      "party": [
+        [
+          "Azumarill",
+          45,
+          "♀"
+        ],
+        [
+          "Nidoqueen",
+          45,
+          "♀"
+        ],
+        [
+          "Exploud",
+          45,
+          "♀"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duchess Ione",
+      "prize": 3240,
+      "party": [
+        [
+          "Audino",
+          45,
+          "♀"
+        ],
+        [
+          "Audino",
+          45,
+          "♀"
+        ],
+        [
+          "Audino",
+          45,
+          "♀"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duchess Nicolette",
+      "prize": 3240,
+      "party": [
+        [
+          "Audino",
+          45,
+          "♀"
+        ],
+        [
+          "Audino",
+          45,
+          "♀"
+        ],
+        [
+          "Audino",
+          45,
+          "♀"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duchess Odele",
+      "prize": 9000,
+      "party": [
+        [
+          "Golem",
+          45,
+          "♀"
+        ],
+        [
+          "Aggron",
+          45,
+          "♀"
+        ],
+        [
+          "Poliwrath",
+          45,
+          "♀"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duchess Robin",
+      "prize": 5400,
+      "party": [
+        [
+          "Bellossom",
+          45,
+          "♀"
+        ],
+        [
+          "Goodra",
+          45,
+          "♀"
+        ],
+        [
+          "Florges",
+          45,
+          "♀"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duchess Rosalie",
+      "prize": 3240,
+      "party": [
+        [
+          "Audino",
+          45,
+          "♀"
+        ],
+        [
+          "Audino",
+          45,
+          "♀"
+        ],
+        [
+          "Audino",
+          45,
+          "♀"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duchess Sabine",
+      "prize": 3240,
+      "party": [
+        [
+          "Audino",
+          45,
+          "♀"
+        ],
+        [
+          "Audino",
+          45,
+          "♀"
+        ],
+        [
+          "Audino",
+          45,
+          "♀"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duke Hennessy",
+      "prize": 12000,
+      "party": [
+        [
+          "Staraptor",
+          50,
+          "♂"
+        ],
+        [
+          "Nidoking",
+          50,
+          "♂"
+        ],
+        [
+          "Haxorus",
+          50,
+          "♂"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duke Lormont",
+      "prize": 5400,
+      "party": [
+        [
+          "Roserade",
+          45,
+          "♂"
+        ],
+        [
+          "Magnezone",
+          45,
+          "M"
+        ],
+        [
+          "Alakazam",
+          45,
+          "♂"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duke Turner",
+      "prize": 5400,
+      "party": [
+        [
+          "Scolipede",
+          45,
+          "♂"
+        ],
+        [
+          "Raichu",
+          45,
+          "♂"
+        ],
+        [
+          "Jumpluff",
+          45,
+          "♂"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Marchioness Viola",
+      "prize": 6400,
+      "party": [
+        [
+          "Masquerain",
+          40,
+          "♀"
+        ],
+        [
+          "Vivillon",
+          40,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Grant",
+      "prize": 6400,
+      "party": [
+        [
+          "Aurorus",
+          40,
+          "♂"
+        ],
+        [
+          "Tyrantrum",
+          40,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Korrina",
+      "prize": 6400,
+      "party": [
+        [
+          "Hawlucha",
+          40,
+          "♀"
+        ],
+        [
+          "Machamp",
+          40,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Ramos",
+      "prize": 6400,
+      "party": [
+        [
+          "Jumpluff",
+          40,
+          "♂"
+        ],
+        [
+          "Gogoat",
+          40,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Clemont",
+      "prize": 6400,
+      "party": [
+        [
+          "Magneton",
+          40,
+          "M"
+        ],
+        [
+          "Heliolisk",
+          40,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Valerie",
+      "prize": 6400,
+      "party": [
+        [
+          "Mawile",
+          40,
+          "♀"
+        ],
+        [
+          "Sylveon",
+          40,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Olympia",
+      "prize": 6400,
+      "party": [
+        [
+          "Sigilyph",
+          40,
+          "♀"
+        ],
+        [
+          "Meowstic",
+          40,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Wulfric",
+      "prize": 6400,
+      "party": [
+        [
+          "Cryogonal",
+          40,
+          "M"
+        ],
+        [
+          "Avalugg",
+          40,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Viola",
+      "prize": 8000,
+      "party": [
+        [
+          "Masquerain",
+          50,
+          "♀"
+        ],
+        [
+          "Vivillon",
+          50,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Grant",
+      "prize": 8000,
+      "party": [
+        [
+          "Aurorus",
+          50,
+          "♂"
+        ],
+        [
+          "Tyrantrum",
+          50,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Korrina",
+      "prize": 8000,
+      "party": [
+        [
+          "Hawlucha",
+          50,
+          "♀"
+        ],
+        [
+          "Lucario",
+          50,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Ramos",
+      "prize": 8000,
+      "party": [
+        [
+          "Victreebel",
+          50,
+          "♂"
+        ],
+        [
+          "Gogoat",
+          50,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Clemont",
+      "prize": 8000,
+      "party": [
+        [
+          "Magnezone",
+          50,
+          "M"
+        ],
+        [
+          "Heliolisk",
+          50,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Valerie",
+      "prize": 8000,
+      "party": [
+        [
+          "Mawile",
+          50,
+          "♀"
+        ],
+        [
+          "Sylveon",
+          50,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marchioness Olympia",
+      "prize": 8000,
+      "party": [
+        [
+          "Slowking",
+          50,
+          "♀"
+        ],
+        [
+          "Meowstic",
+          50,
+          "♀"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Marquis Wulfric",
+      "prize": 8000,
+      "party": [
+        [
+          "Abomasnow",
+          50,
+          "♂"
+        ],
+        [
+          "Avalugg",
+          50,
+          "♂"
+        ]
+      ],
+      "rank": 3
+    },
+    {
+      "name": "Duchess Malva",
+      "prize": 11000,
+      "party": [
+        [
+          "Pyroar",
+          55,
+          "♀"
+        ],
+        [
+          "Talonflame",
+          55,
+          "♀"
+        ],
+        [
+          "Chandelure",
+          55,
+          "♀"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duke Siebold",
+      "prize": 11000,
+      "party": [
+        [
+          "Clawitzer",
+          55,
+          "♂"
+        ],
+        [
+          "Barbaracle",
+          55,
+          "♂"
+        ],
+        [
+          "Starmie",
+          55,
+          "M"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duke Wikstrom",
+      "prize": 11000,
+      "party": [
+        [
+          "Scizor",
+          55,
+          "♂"
+        ],
+        [
+          "Aegislash",
+          55,
+          "♂"
+        ],
+        [
+          "Probopass",
+          55,
+          "♂"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Duchess Drasna",
+      "prize": 11000,
+      "party": [
+        [
+          "Dragalge",
+          55,
+          "♀"
+        ],
+        [
+          "Altaria",
+          55,
+          "♀"
+        ],
+        [
+          "Noivern",
+          55,
+          "♀"
+        ]
+      ],
+      "rank": 4
+    },
+    {
+      "name": "Grand Duchess Diantha",
+      "prize": 14400,
+      "party": [
+        [
+          "Hawlucha",
+          60,
+          "♀"
+        ],
+        [
+          "Gourgeist",
+          60,
+          "♀"
+        ],
+        [
+          "Goodra",
+          60,
+          "♀"
+        ],
+        [
+          "Gardevoir",
+          60,
+          "♀"
+        ]
+      ],
+      "rank": 5
+    }
+  ],
+  "restaurants": {
+    "nah": [
+      {
+        "name": "Chef Roger",
+        "prize": 640,
+        "party": [
+          {
+            "species": "Pansage",
+            "gender": "♂",
+            "level": 10,
+            "ability": "Gluttony",
+            "item": "None",
+            "moves": [
+              "Play Nice",
+              "Leer",
+              "Lick",
+              "Vine Whip"
+            ]
+          },
+          {
+            "species": "Pansear",
+            "gender": "♂",
+            "level": 10,
+            "ability": "Gluttony",
+            "item": "None",
+            "moves": [
+              "Play Nice",
+              "Leer",
+              "Lick",
+              "Incinerate"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Chef Roger",
+        "prize": 640,
+        "party": [
+          {
+            "species": "Pansear",
+            "gender": "♂",
+            "level": 10,
+            "ability": "Gluttony",
+            "item": "None",
+            "moves": [
+              "Play Nice",
+              "Leer",
+              "Lick",
+              "Incinerate"
+            ]
+          },
+          {
+            "species": "Panpour",
+            "gender": "♂",
+            "level": 10,
+            "ability": "Gluttony",
+            "item": "None",
+            "moves": [
+              "Play Nice",
+              "Leer",
+              "Lick",
+              "Water Gun"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Chef Roger",
+        "prize": 640,
+        "party": [
+          {
+            "species": "Pansage",
+            "gender": "♂",
+            "level": 10,
+            "ability": "Gluttony",
+            "item": "None",
+            "moves": [
+              "Play Nice",
+              "Leer",
+              "Lick",
+              "Vine Whip"
+            ]
+          },
+          {
+            "species": "Panpour",
+            "gender": "♂",
+            "level": 10,
+            "ability": "Gluttony",
+            "item": "None",
+            "moves": [
+              "Play Nice",
+              "Leer",
+              "Lick",
+              "Water Gun"
+            ]
+          }
+        ]
+      }
+    ],
+    "yeah": [
+      {
+        "name": "Waitress Talia",
+        "prize": 1984,
+        "party": [
+          {
+            "species": "Mantine",
+            "gender": "♀",
+            "level": 31,
+            "ability": "Swift Swim",
+            "item": "King's Rock",
+            "moves": [
+              "Air Slash",
+              "Water Pulse",
+              "Protect",
+              "Wide Guard"
+            ]
+          },
+          {
+            "species": "Emolga",
+            "gender": "♀",
+            "level": 31,
+            "ability": "Static",
+            "item": "King's Rock",
+            "moves": [
+              "Air Slash",
+              "Spark"
+            ]
+          },
+          {
+            "species": "Sigilyph",
+            "gender": "♀",
+            "level": 31,
+            "ability": "Magic Guard",
+            "item": "King's Rock",
+            "moves": [
+              "Air Slash",
+              "Psybeam"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Garçon Georges",
+        "prize": 1984,
+        "party": [
+          {
+            "species": "Shuckle",
+            "gender": "♂",
+            "level": 31,
+            "ability": "Sturdy",
+            "item": "None",
+            "moves": [
+              "Toxic",
+              "Bulldoze",
+              "Bide",
+              "Protect"
+            ]
+          },
+          {
+            "species": "Pidgeot",
+            "gender": "♂",
+            "level": 31,
+            "ability": "Keen Eye",
+            "item": "None",
+            "moves": [
+              "Toxic",
+              "Fly",
+              "Protect"
+            ]
+          },
+          {
+            "species": "Dugtrio",
+            "gender": "♂",
+            "level": 31,
+            "ability": "Arena Trap",
+            "item": "None",
+            "moves": [
+              "Toxic",
+              "Dig",
+              "Protect"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Owner Yannick",
+        "prize": 4960,
+        "party": [
+          {
+            "species": "Zangoose",
+            "gender": "♂",
+            "level": 31,
+            "ability": "Immunity",
+            "item": "None",
+            "moves": [
+              "Fire Punch",
+              "Quick Attack",
+              "Brick Break",
+              "Rock Slide"
+            ]
+          },
+          {
+            "species": "Zangoose",
+            "gender": "♂",
+            "level": 31,
+            "ability": "Immunity",
+            "item": "None",
+            "moves": [
+              "Ice Punch",
+              "Quick Attack",
+              "X-Scissor",
+              "Poison Jab"
+            ]
+          },
+          {
+            "species": "Zangoose",
+            "gender": "♂",
+            "level": 31,
+            "ability": "Immunity",
+            "item": "None",
+            "moves": [
+              "Thunder Punch",
+              "Quick Attack",
+              "Shadow Claw",
+              "Protect"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Chef Albern",
+        "prize": 1984,
+        "party": [
+          {
+            "species": "Simisage",
+            "gender": "♂",
+            "level": 31,
+            "ability": "Gluttony",
+            "item": "Liechi Berry",
+            "moves": [
+              "Seed Bomb",
+              "Shadow Claw",
+              "Round",
+              "Crunch"
+            ]
+          },
+          {
+            "species": "Simisear",
+            "gender": "♂",
+            "level": 31,
+            "ability": "Gluttony",
+            "item": "Petaya Berry",
+            "moves": [
+              "Flamethrower",
+              "Focus Blast",
+              "Round",
+              "Crunch"
+            ]
+          },
+          {
+            "species": "Simipour",
+            "gender": "♂",
+            "level": 31,
+            "ability": "Gluttony",
+            "item": "Salac Berry",
+            "moves": [
+              "Waterfall",
+              "Rock Slide",
+              "Round",
+              "Crunch"
+            ]
+          }
+        ]
+      }
+    ],
+    "wow": [
+      {
+        "name": "Owner Christophe",
+        "prize": 10080,
+        "party": [
+          {
+            "species": "Qwilfish",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Poison Point",
+            "item": "None",
+            "moves": [
+              "Protect",
+              "Aqua Tail",
+              "Confide",
+              "Venoshock"
+            ]
+          },
+          {
+            "species": "Druddigon",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Rough Skin",
+            "item": "None",
+            "moves": [
+              "Taunt",
+              "Confide",
+              "Dragon Claw",
+              "Revenge"
+            ]
+          },
+          {
+            "species": "Ferrothorn",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Iron Barbs",
+            "item": "None",
+            "moves": [
+              "Gyro Ball",
+              "Payback",
+              "Curse",
+              "Confide"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Owner Christophe",
+        "prize": 10080,
+        "party": [
+          {
+            "species": "Audino",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Klutz",
+            "item": "None",
+            "moves": [
+              "Protect",
+              "Dazzling Gleam",
+              "Entrainment",
+              "Pain Split"
+            ]
+          },
+          {
+            "species": "Alomomola",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Healer",
+            "item": "None",
+            "moves": [
+              "Aqua Ring",
+              "Scald",
+              "Psychic",
+              "Heal Pulse"
+            ]
+          },
+          {
+            "species": "Amoonguss",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Effect Spore",
+            "item": "None",
+            "moves": [
+              "Feint Attack",
+              "Spore",
+              "Ingrain",
+              "Giga Drain"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Garçon Morris",
+        "prize": 4032,
+        "party": [
+          {
+            "species": "Shieldon",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Sturdy",
+            "item": "None",
+            "moves": [
+              "Iron Head",
+              "Protect",
+              "Metal Burst",
+              "Taunt"
+            ]
+          },
+          {
+            "species": "Wobbuffet",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Shadow Tag",
+            "item": "None",
+            "moves": [
+              "Mirror Coat",
+              "Counter",
+              "Safeguard",
+              "Destiny Bond"
+            ]
+          },
+          {
+            "species": "Milotic",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Marvel Scale",
+            "item": "None",
+            "moves": [
+              "Blizzard",
+              "Hydro Pump",
+              "Dragon Pulse",
+              "Mirror Coat"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Garçon Morris",
+        "prize": 4032,
+        "party": [
+          {
+            "species": "Togekiss",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Serene Grace",
+            "item": "None",
+            "moves": [
+              "Extreme Speed",
+              "Protect",
+              "Follow Me"
+            ]
+          },
+          {
+            "species": "Lucario",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Inner Focus",
+            "item": "None",
+            "moves": [
+              "Protect",
+              "Extreme Speed",
+              "Bullet Punch",
+              "Me First"
+            ]
+          },
+          {
+            "species": "Floatzel",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Swift Swim",
+            "item": "None",
+            "moves": [
+              "Protect",
+              "Aqua Jet",
+              "Quick Attack"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Waitress Paula",
+        "prize": 4032,
+        "party": [
+          {
+            "species": "Chatot",
+            "gender": "♀",
+            "level": 63,
+            "ability": "Keen Eye",
+            "item": "None",
+            "moves": [
+              "Echoed Voice"
+            ]
+          },
+          {
+            "species": "Exploud",
+            "gender": "♀",
+            "level": 63,
+            "ability": "Scrappy",
+            "item": "None",
+            "moves": [
+              "Echoed Voice"
+            ]
+          },
+          {
+            "species": "Aurorus",
+            "gender": "♂",
+            "level": 63,
+            "ability": "Refrigerate",
+            "item": "None",
+            "moves": [
+              "Echoed Voice"
+            ]
+          }
+        ]
+      }
+    ],
+    "sushi": [
+      {
+        "name": "Furisode Girl Gwyneth",
+        "prize": 4680,
+        "party": [
+          {
+            "species": "Cherrim",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Flower Gift",
+            "item": "None",
+            "moves": [
+              "Seed Bomb",
+              "Return",
+              "Morning Sun",
+              "Sunny Day"
+            ]
+          },
+          {
+            "species": "Ninetales",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Drought",
+            "item": "None",
+            "moves": [
+              "Grudge",
+              "Heat Wave",
+              "Protect",
+              "Quick Attack"
+            ]
+          },
+          {
+            "species": "Tropius",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Chlorophyll",
+            "item": "None",
+            "moves": [
+              "Tailwind",
+              "Air Slash",
+              "Solar Beam",
+              "Sunny Day"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Furisode Girl Cliantha",
+        "prize": 4680,
+        "party": [
+          {
+            "species": "Scizor",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Technician",
+            "item": "None",
+            "moves": [
+              "Bullet Punch",
+              "Double Hit",
+              "X-Scissor",
+              "Sandstorm"
+            ]
+          },
+          {
+            "species": "Hippowdon",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Sand Stream",
+            "item": "None",
+            "moves": [
+              "Fire Fang",
+              "Thunder Fang",
+              "Protect",
+              "Crunch"
+            ]
+          },
+          {
+            "species": "Gliscor",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Sand Veil",
+            "item": "None",
+            "moves": [
+              "Aerial Ace",
+              "Dig",
+              "Rock Slide",
+              "Sandstorm"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Furisode Girl Thalassa",
+        "prize": 4680,
+        "party": [
+          {
+            "species": "Ludicolo",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Rain Dish",
+            "item": "None",
+            "moves": [
+              "Giga Drain",
+              "Grass Knot",
+              "Protect",
+              "Rain Dance"
+            ]
+          },
+          {
+            "species": "Politoed",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Drizzle",
+            "item": "None",
+            "moves": [
+              "Hyper Voice",
+              "Scald",
+              "Protect",
+              "Ice Beam"
+            ]
+          },
+          {
+            "species": "Beartic",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Swift Swim",
+            "item": "None",
+            "moves": [
+              "Icicle Crash",
+              "Rock Slide",
+              "Dive",
+              "Rain Dance"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Furisode Girl Nerissa",
+        "prize": 4680,
+        "party": [
+          {
+            "species": "Froslass",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Snow Cloak",
+            "item": "None",
+            "moves": [
+              "Blizzard",
+              "Thunderbolt",
+              "Shadow Ball",
+              "Hail"
+            ]
+          },
+          {
+            "species": "Abomasnow",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Snow Warning",
+            "item": "None",
+            "moves": [
+              "Blizzard",
+              "Energy Ball",
+              "Protect",
+              "Focus Blast"
+            ]
+          },
+          {
+            "species": "Mamoswine",
+            "gender": "♀",
+            "level": 65,
+            "ability": "Snow Cloak",
+            "item": "None",
+            "moves": [
+              "Ice Fang",
+              "Stone Edge",
+              "Earthquake",
+              "Hail"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Owner Kazu",
+        "prize": 10400,
+        "party": [
+          {
+            "species": "Slowking",
+            "gender": "♂",
+            "level": 65,
+            "ability": "Oblivious",
+            "item": "None",
+            "moves": [
+              "Trick Room",
+              "Zen Headbutt",
+              "Scald",
+              "Brick Break"
+            ]
+          },
+          {
+            "species": "Bronzong",
+            "gender": null,
+            "level": 65,
+            "ability": "Heatproof",
+            "item": "None",
+            "moves": [
+              "Trick Room",
+              "Extrasensory",
+              "Flash Cannon",
+              "Protect"
+            ]
+          },
+          {
+            "species": "Cofagrigus",
+            "gender": "♂",
+            "level": 65,
+            "ability": "Mummy",
+            "item": "None",
+            "moves": [
+              "Trick Room",
+              "Shadow Ball",
+              "Dark Pulse",
+              "Energy Ball"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "route22": [
+    {
+      "name": "Rising Star Louise",
+      "prize": 420,
+      "party": [
+        [
+          "Psyduck",
+          6,
+          "♀"
+        ],
+        [
+          "Litleo",
+          7,
+          "♀"
+        ]
+      ]
+    },
+    {
+      "name": "Lass Elin",
+      "prize": 144,
+      "party": [
+        [
+          "Goldeen",
+          6,
+          "♀"
+        ],
+        [
+          "Marill",
+          6,
+          "♀"
+        ]
+      ]
+    },
+    {
+      "name": "Rising Star Loïc",
+      "prize": 540,
+      "party": [
+        [
+          "Riolu",
+          9,
+          "♂"
+        ]
+      ]
+    },
+    {
+      "name": "Schoolboy Rabbie",
+      "prize": 160,
+      "party": [
+        [
+          "Pidgey",
+          7,
+          "♂"
+        ],
+        [
+          "Metapod",
+          5,
+          "♂"
+        ]
+      ]
+    },
+    {
+      "name": "Schoolgirl Mackenzie",
+      "prize": 256,
+      "party": [
+        [
+          "Bunnelby",
+          8,
+          "♀"
+        ]
+      ]
+    },
+    {
+      "name": "Lass Elsa",
+      "prize": 192,
+      "party": [
+        [
+          "Flabébé",
+          8,
+          "♀"
+        ]
+      ]
+    },
+    {
+      "name": "Ace Trainer Adelbert",
+      "prize": 3100,
+      "party": [
+        [
+          "Lucario",
+          31,
+          "♂"
+        ]
+      ]
+    },
+    {
+      "name": "Ace Trainer Hilde",
+      "prize": 3000,
+      "party": [
+        [
+          "Sharpedo",
+          29,
+          "♀"
+        ],
+        [
+          "Gardevoir",
+          30,
+          "♀"
+        ]
+      ]
+    }
+  ]
+}

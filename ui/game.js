@@ -3148,6 +3148,7 @@
       badges: cardImage(dir + "-badges.png"), star: cardImage(dir + "-star.png"),
       me: cardImage("assets/sprites/trainers/front/" + Player.LOOKS[player.look].front + ".png") };
     await Promise.all(Object.values(pics).map((p) => p.loaded));
+    if(player.look==="custom"&&window.CharacterStyle)pics.me=CharacterStyle.render(pics.me,player);
     const ok = (img) => img.complete && img.naturalWidth > 0;
     const BADGES = { kanto: ["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"],
       hoenn: ["stone", "knuckle", "dynamo", "heat", "balance", "feather", "mind", "rain"] }[region];

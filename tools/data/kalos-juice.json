@@ -1,0 +1,268 @@
+{
+  "source": {
+    "url": "https://bulbapedia.bulbagarden.net/wiki/Juice_Shoppe",
+    "sha256": "22b2eda17773c1fd792f464d71e7ed607c9504035b6accc501420841f520893e"
+  },
+  "berries": {
+    "cheri-berry": {
+      "color": "Red",
+      "group": 0
+    },
+    "leppa-berry": {
+      "color": "Red",
+      "group": 0
+    },
+    "spelon-berry": {
+      "color": "Red",
+      "group": 0
+    },
+    "chople-berry": {
+      "color": "Red",
+      "group": 1
+    },
+    "haban-berry": {
+      "color": "Red",
+      "group": 1
+    },
+    "occa-berry": {
+      "color": "Red",
+      "group": 1
+    },
+    "custap-berry": {
+      "color": "Red",
+      "group": 2
+    },
+    "figy-berry": {
+      "color": "Red",
+      "group": 2
+    },
+    "lansat-berry": {
+      "color": "Red",
+      "group": 2
+    },
+    "liechi-berry": {
+      "color": "Red",
+      "group": 2
+    },
+    "pomeg-berry": {
+      "color": "Red",
+      "group": 2
+    },
+    "tamato-berry": {
+      "color": "Red",
+      "group": 2
+    },
+    "belue-berry": {
+      "color": "Purple",
+      "group": 0
+    },
+    "bluk-berry": {
+      "color": "Purple",
+      "group": 0
+    },
+    "chesto-berry": {
+      "color": "Purple",
+      "group": 0
+    },
+    "cornn-berry": {
+      "color": "Purple",
+      "group": 0
+    },
+    "pamtre-berry": {
+      "color": "Purple",
+      "group": 0
+    },
+    "colbur-berry": {
+      "color": "Purple",
+      "group": 1
+    },
+    "kasib-berry": {
+      "color": "Purple",
+      "group": 1
+    },
+    "payapa-berry": {
+      "color": "Purple",
+      "group": 1
+    },
+    "enigma-berry": {
+      "color": "Purple",
+      "group": 2
+    },
+    "ganlon-berry": {
+      "color": "Purple",
+      "group": 2
+    },
+    "wiki-berry": {
+      "color": "Purple",
+      "group": 2
+    },
+    "magost-berry": {
+      "color": "Pink",
+      "group": 0
+    },
+    "pecha-berry": {
+      "color": "Pink",
+      "group": 0
+    },
+    "watmel-berry": {
+      "color": "Pink",
+      "group": 0
+    },
+    "persim-berry": {
+      "color": "Pink",
+      "group": 1
+    },
+    "mago-berry": {
+      "color": "Pink",
+      "group": 2
+    },
+    "petaya-berry": {
+      "color": "Pink",
+      "group": 2
+    },
+    "roseli-berry": {
+      "color": "Pink",
+      "group": 2
+    },
+    "durin-berry": {
+      "color": "Green",
+      "group": 0
+    },
+    "rabuta-berry": {
+      "color": "Green",
+      "group": 0
+    },
+    "rawst-berry": {
+      "color": "Green",
+      "group": 0
+    },
+    "wepear-berry": {
+      "color": "Green",
+      "group": 0
+    },
+    "babiri-berry": {
+      "color": "Green",
+      "group": 1
+    },
+    "kebia-berry": {
+      "color": "Green",
+      "group": 1
+    },
+    "lum-berry": {
+      "color": "Green",
+      "group": 1
+    },
+    "rindo-berry": {
+      "color": "Green",
+      "group": 1
+    },
+    "tanga-berry": {
+      "color": "Green",
+      "group": 1
+    },
+    "aguav-berry": {
+      "color": "Green",
+      "group": 2
+    },
+    "hondew-berry": {
+      "color": "Green",
+      "group": 2
+    },
+    "micle-berry": {
+      "color": "Green",
+      "group": 2
+    },
+    "salac-berry": {
+      "color": "Green",
+      "group": 2
+    },
+    "starf-berry": {
+      "color": "Green",
+      "group": 2
+    },
+    "aspear-berry": {
+      "color": "Yellow",
+      "group": 0
+    },
+    "nomel-berry": {
+      "color": "Yellow",
+      "group": 0
+    },
+    "pinap-berry": {
+      "color": "Yellow",
+      "group": 0
+    },
+    "charti-berry": {
+      "color": "Yellow",
+      "group": 1
+    },
+    "chilan-berry": {
+      "color": "Yellow",
+      "group": 1
+    },
+    "shuca-berry": {
+      "color": "Yellow",
+      "group": 1
+    },
+    "sitrus-berry": {
+      "color": "Yellow",
+      "group": 1
+    },
+    "wacan-berry": {
+      "color": "Yellow",
+      "group": 1
+    },
+    "grepa-berry": {
+      "color": "Yellow",
+      "group": 2
+    },
+    "iapapa-berry": {
+      "color": "Yellow",
+      "group": 2
+    },
+    "jaboca-berry": {
+      "color": "Yellow",
+      "group": 2
+    },
+    "kee-berry": {
+      "color": "Yellow",
+      "group": 2
+    },
+    "qualot-berry": {
+      "color": "Yellow",
+      "group": 2
+    },
+    "oran-berry": {
+      "color": "Blue",
+      "group": 0
+    },
+    "coba-berry": {
+      "color": "Blue",
+      "group": 1
+    },
+    "passho-berry": {
+      "color": "Blue",
+      "group": 1
+    },
+    "yache-berry": {
+      "color": "Blue",
+      "group": 1
+    },
+    "apicot-berry": {
+      "color": "Blue",
+      "group": 2
+    },
+    "kelpsy-berry": {
+      "color": "Blue",
+      "group": 2
+    },
+    "maranga-berry": {
+      "color": "Blue",
+      "group": 2
+    },
+    "rowap-berry": {
+      "color": "Blue",
+      "group": 2
+    }
+  }
+}

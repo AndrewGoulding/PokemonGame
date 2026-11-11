@@ -2960,7 +2960,8 @@
     const foeTerrain = el.field.querySelector(".terrain.foe"), playerTerrain = el.field.querySelector(".terrain.player");
     const movers = [];
     if (cfg.trainer) {
-      trainer.style.backgroundImage = "url(assets/sprites/trainers/back/" + cfg.trainer + ".png)";
+      const trainerSrc="assets/sprites/trainers/back/" + cfg.trainer + ".png";
+      trainer.style.backgroundImage = "url("+(cfg.trainer==="player_character"&&window.CharacterStyle?await CharacterStyle.url(trainerSrc,window.Game?.player):trainerSrc)+")";
       trainer.style.backgroundPositionY = "0%";
       trainer.classList.toggle("four", !!cfg.oldMan || !!cfg.wally);   // (his picture has 4 frames, not 5; Wally's too)
       trainer.classList.remove("hidden", "leaving");

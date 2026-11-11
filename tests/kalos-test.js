@@ -1,7 +1,7 @@
 'use strict';const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');global.window=global;global.localStorage={getItem:()=>null,setItem(){},removeItem(){}};for(const[,f]of fs.readFileSync('index.html','utf8').matchAll(/<script src="([^"]+)"><\/script>/g))if(!f.startsWith('ui/')||f.startsWith('ui/kalos-'))vm.runInThisContext(fs.readFileSync(f,'utf8'),{filename:f});const R=Kalos,D=R.data();
 function fixture(){const p=Player.create('XY');p.party=[];p.location={...D.start};return p;}
 (async()=>{
- assert.equal(Object.keys(D.learnsets).length,721);assert.deepEqual(R.moves("Fennekin",5),["Scratch","Tail Whip","Ember"]);assert.equal(Object.keys(D.maps).length,190);assert.equal(Object.keys(D.trainers).length,340);
+ assert.equal(Object.keys(D.learnsets).length,721);assert.deepEqual(R.moves("Fennekin",5),["Scratch","Tail Whip","Ember"]);assert.equal(Object.keys(D.maps).length,216);assert.equal(Object.keys(D.trainers).length,348);
  for(const m of Object.values(D.maps)){
   const seen=new Set();for(const w of m.warps){assert(!seen.has(w.x+','+w.y),'overlapping warp '+m.name);seen.add(w.x+','+w.y);assert(!m.collision[w.y*m.width+w.x],'blocked warp '+m.name);assert([0x61,0x65,0x69].includes(m.behavior[w.y*m.width+w.x]),'missing warp behavior '+m.name);const back=D.maps[w.map].warps[w.warp];assert.equal(back.map,m.name);assert.equal(m.warps[back.warp],w);}
   for(const a of m.people){assert(!m.collision[a.y*m.width+a.x],'blocked actor '+m.name+' '+a.script);assert(fs.existsSync('assets/world/sprites/'+a.sprite+'.png'),'sprite '+a.sprite);}
@@ -18,5 +18,5 @@ function fixture(){const p=Player.create('XY');p.party=[];p.location={...D.start
  for(const m of Object.values(D.maps))assert(D.townMap.at[m.name]&&D.townMap.names[D.townMap.mapSections[m.name]]);
  for(const at of Object.values(D.townMap.fly)){const m=D.maps[at.map];assert(!m.collision[at.y*m.width+at.x]);assert.notEqual(m.behavior[at.y*m.width+at.x],16);assert(!m.people.some(a=>a.x===at.x&&a.y===at.y),'Fly arrival on NPC '+at.map);assert(!m.warps.some(w=>w.x===at.x&&w.y===at.y));}
  assert(R.moves('Chespin',8).includes('Rollout'));const chespin=Party.create('Chespin',7,{moves:R.moves('Chespin',7)});assert(Party.movesLearnedAt(chespin,8,'KalosRoute2').includes('Rollout'));
- console.log('Kalos: 190 connected maps, 340 trainer teams, X/Y source encounters and learnsets, all six starter/version paths through Viola, retries, independent progress and save round trips passed.');
+ console.log('Kalos: 216 connected maps, 348 trainer teams, X/Y source encounters and learnsets, all six starter/version paths through Viola, retries, independent progress and save round trips passed.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

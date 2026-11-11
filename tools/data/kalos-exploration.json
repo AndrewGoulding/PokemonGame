@@ -1,0 +1,1048 @@
+{
+  "source": {
+    "references": [
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_7",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_8",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_10",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_11",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_12",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_14",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_15",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_16",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_18",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_19",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_20",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_21",
+      "https://bulbapedia.bulbagarden.net/wiki/Kalos_Route_22",
+      "https://bulbapedia.bulbagarden.net/wiki/Terminus_Cave",
+      "https://bulbapedia.bulbagarden.net/wiki/Frost_Cavern",
+      "https://bulbapedia.bulbagarden.net/wiki/Lost_Hotel"
+    ],
+    "sha256": {
+      "Kalos_Route_7": "39eaa8afe2aa3607bea20642b74c31a6023c420df6b24367e595c944f542f148",
+      "Kalos_Route_8": "063ce7ab070ab5cce9eb9eba029bc16d6f8290120dce10287658616c48149ca3",
+      "Kalos_Route_10": "f4e82834b88ef119232d1adad2ee393e7f07aac2f7198d9f699af0b0e19e2a91",
+      "Kalos_Route_11": "2fd5b34e4bdfdb3374be1a66705a395b0b3ea194ff5dbb69379285f59c1f8c1e",
+      "Kalos_Route_12": "166896fff6094c9535e492a20b9bd5079216bd238d8199035b402dac62b28bfe",
+      "Kalos_Route_14": "6720a2c936381cb92df259fa0ddcb436182ef6a93a805955deb7f1f13b9a1dd9",
+      "Kalos_Route_15": "ec7fae6ce17844380771e5c20a70ffd111d27f5171d1fb626b9bd8601a3e8602",
+      "Kalos_Route_16": "953f3aa2d1cac61d87e13b53dca7fb247caa483b636eb10a8facd26381aed6dc",
+      "Kalos_Route_18": "920b6077a5b4f9c340c1d668cfafcdc2e1c2ef3fda2243dbf310a663259b1750",
+      "Kalos_Route_19": "7a13ea3cf5218c519596efd4eb408d1d7a304559d4a7d284a62b2669d254b836",
+      "Kalos_Route_20": "bf2a467a3f73be92f6ecafbc2be9c7f59a4432fd9ae96ef39bb70fb968086820",
+      "Kalos_Route_21": "16d48cf581053b3cae3a1ba33a1b8146749be29fcd65e420ed0845502d30bc4f",
+      "Kalos_Route_22": "f43ebbc99b757e446592a55ca8dfde50f41b3f27b7c83e9edd9674f6d84db961",
+      "Terminus_Cave": "08d9994000b01ea33ace5e6a6f70dd0abf414c78efc3878565e24b52e5d5a831",
+      "Frost_Cavern": "1893e1201da8c48f19c58de9b1f24d5e268b3aa7ab3ed0cfc1896357268bc71d",
+      "Lost_Hotel": "1531db4f7dfbad77a6d943c52f23a4a86f43872dbf222cbe5854202395ca5c77"
+    }
+  },
+  "hordes": {
+    "7": {
+      "x": [
+        {
+          "mons": [
+            "Hoppip*5"
+          ],
+          "lv": [
+            7,
+            7
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Psyduck*5"
+          ],
+          "lv": [
+            7,
+            7
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Roselia*5"
+          ],
+          "lv": [
+            8,
+            8
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Hoppip*5"
+          ],
+          "lv": [
+            7,
+            7
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Psyduck*5"
+          ],
+          "lv": [
+            8,
+            8
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Roselia*5"
+          ],
+          "lv": [
+            7,
+            7
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "8": {
+      "x": [
+        {
+          "mons": [
+            "Wingull*5"
+          ],
+          "lv": [
+            7,
+            7
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Zangoose*4",
+            "Seviper"
+          ],
+          "lv": [
+            8,
+            8
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Taillow*5"
+          ],
+          "lv": [
+            7,
+            7
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Wingull*5"
+          ],
+          "lv": [
+            7,
+            7
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Seviper*4",
+            "Zangoose"
+          ],
+          "lv": [
+            8,
+            8
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Taillow*5"
+          ],
+          "lv": [
+            7,
+            7
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "10": {
+      "x": [
+        {
+          "mons": [
+            "Nosepass*5"
+          ],
+          "lv": [
+            10,
+            10
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Yanma*5"
+          ],
+          "lv": [
+            10,
+            10
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Houndour*5"
+          ],
+          "lv": [
+            11,
+            11
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Nosepass*5"
+          ],
+          "lv": [
+            10,
+            10
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Yanma*5"
+          ],
+          "lv": [
+            10,
+            10
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Electrike*5"
+          ],
+          "lv": [
+            11,
+            11
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "11": {
+      "x": [
+        {
+          "mons": [
+            "Nidoran-F*4",
+            "Nidoran-M"
+          ],
+          "lv": [
+            11,
+            11
+          ],
+          "weight": 30
+        },
+        {
+          "mons": [
+            "Nidoran-M*4",
+            "Nidoran-F"
+          ],
+          "lv": [
+            11,
+            11
+          ],
+          "weight": 30
+        },
+        {
+          "mons": [
+            "Stunky*5"
+          ],
+          "lv": [
+            11,
+            11
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Starly*5"
+          ],
+          "lv": [
+            12,
+            12
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Nidoran-F*4",
+            "Nidoran-M"
+          ],
+          "lv": [
+            11,
+            11
+          ],
+          "weight": 30
+        },
+        {
+          "mons": [
+            "Nidoran-M*4",
+            "Nidoran-F"
+          ],
+          "lv": [
+            11,
+            11
+          ],
+          "weight": 30
+        },
+        {
+          "mons": [
+            "Stunky*5"
+          ],
+          "lv": [
+            11,
+            11
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Starly*5"
+          ],
+          "lv": [
+            12,
+            12
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "12": {
+      "x": [
+        {
+          "mons": [
+            "Wingull*5"
+          ],
+          "lv": [
+            13,
+            13
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Mareep*5"
+          ],
+          "lv": [
+            13,
+            13
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Tauros*4",
+            "Miltank"
+          ],
+          "lv": [
+            14,
+            14
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Wingull*5"
+          ],
+          "lv": [
+            13,
+            13
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Mareep*5"
+          ],
+          "lv": [
+            13,
+            13
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Tauros*4",
+            "Miltank"
+          ],
+          "lv": [
+            14,
+            14
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "14": {
+      "x": [
+        {
+          "mons": [
+            "Bellsprout*5"
+          ],
+          "lv": [
+            16,
+            16
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Skorupi*5"
+          ],
+          "lv": [
+            16,
+            16
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Ekans*5"
+          ],
+          "lv": [
+            17,
+            17
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Bellsprout*5"
+          ],
+          "lv": [
+            16,
+            16
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Skorupi*5"
+          ],
+          "lv": [
+            16,
+            16
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Ekans*5"
+          ],
+          "lv": [
+            17,
+            17
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "15": {
+      "x": [
+        {
+          "mons": [
+            "Murkrow*5"
+          ],
+          "lv": [
+            18,
+            18
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Foongus*5"
+          ],
+          "lv": [
+            18,
+            18
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Klefki*5"
+          ],
+          "lv": [
+            19,
+            19
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Murkrow*5"
+          ],
+          "lv": [
+            18,
+            18
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Foongus*5"
+          ],
+          "lv": [
+            18,
+            18
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Klefki*5"
+          ],
+          "lv": [
+            19,
+            19
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "16": {
+      "x": [
+        {
+          "mons": [
+            "Murkrow*5"
+          ],
+          "lv": [
+            18,
+            18
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Foongus*5"
+          ],
+          "lv": [
+            18,
+            18
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Klefki*5"
+          ],
+          "lv": [
+            19,
+            19
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Murkrow*5"
+          ],
+          "lv": [
+            18,
+            18
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Foongus*5"
+          ],
+          "lv": [
+            18,
+            18
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Klefki*5"
+          ],
+          "lv": [
+            19,
+            19
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "18": {
+      "x": [
+        {
+          "mons": [
+            "Geodude*5"
+          ],
+          "lv": [
+            23,
+            23
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Durant*5"
+          ],
+          "lv": [
+            23,
+            23
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Durant*4",
+            "Heatmor"
+          ],
+          "lv": [
+            23,
+            23
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Geodude*5"
+          ],
+          "lv": [
+            23,
+            23
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Durant*5"
+          ],
+          "lv": [
+            23,
+            23
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Durant*4",
+            "Heatmor"
+          ],
+          "lv": [
+            24,
+            24
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "19": {
+      "x": [
+        {
+          "mons": [
+            "Weepinbell*5"
+          ],
+          "lv": [
+            24,
+            24
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Gligar*5"
+          ],
+          "lv": [
+            24,
+            24
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Arbok*5"
+          ],
+          "lv": [
+            25,
+            25
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Weepinbell*5"
+          ],
+          "lv": [
+            24,
+            24
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Gligar*5"
+          ],
+          "lv": [
+            24,
+            24
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Arbok*5"
+          ],
+          "lv": [
+            25,
+            25
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "20": {
+      "x": [
+        {
+          "mons": [
+            "Foongus*5"
+          ],
+          "lv": [
+            25,
+            25
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Trevenant*5"
+          ],
+          "lv": [
+            25,
+            25
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Trevenant*4",
+            "Sudowoodo"
+          ],
+          "lv": [
+            25,
+            25
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Foongus*5"
+          ],
+          "lv": [
+            25,
+            25
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Trevenant*5"
+          ],
+          "lv": [
+            25,
+            25
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Trevenant*4",
+            "Sudowoodo"
+          ],
+          "lv": [
+            25,
+            25
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "21": {
+      "x": [
+        {
+          "mons": [
+            "Spinda*5"
+          ],
+          "lv": [
+            26,
+            26
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Swablu*5"
+          ],
+          "lv": [
+            26,
+            26
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Scyther*5"
+          ],
+          "lv": [
+            27,
+            27
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Spinda*5"
+          ],
+          "lv": [
+            26,
+            26
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Swablu*5"
+          ],
+          "lv": [
+            26,
+            26
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Scyther*5"
+          ],
+          "lv": [
+            27,
+            27
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "Terminus": {
+      "x": [
+        {
+          "mons": [
+            "Durant*5"
+          ],
+          "lv": [
+            23,
+            23
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Geodude*5"
+          ],
+          "lv": [
+            23,
+            23
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Aron*5"
+          ],
+          "lv": [
+            24,
+            24
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Durant*5"
+          ],
+          "lv": [
+            23,
+            23
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Geodude*5"
+          ],
+          "lv": [
+            23,
+            23
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Larvitar*5"
+          ],
+          "lv": [
+            24,
+            24
+          ],
+          "weight": 5
+        }
+      ]
+    },
+    "Frost": {
+      "x": [
+        {
+          "mons": [
+            "Vanillite*5"
+          ],
+          "lv": [
+            20,
+            20
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Cubchoo*5"
+          ],
+          "lv": [
+            20,
+            20
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Smoochum*5"
+          ],
+          "lv": [
+            21,
+            21
+          ],
+          "weight": 5
+        }
+      ],
+      "y": [
+        {
+          "mons": [
+            "Vanillite*5"
+          ],
+          "lv": [
+            20,
+            20
+          ],
+          "weight": 60
+        },
+        {
+          "mons": [
+            "Cubchoo*5"
+          ],
+          "lv": [
+            20,
+            20
+          ],
+          "weight": 35
+        },
+        {
+          "mons": [
+            "Smoochum*5"
+          ],
+          "lv": [
+            21,
+            21
+          ],
+          "weight": 5
+        }
+      ]
+    }
+  },
+  "route22Flowers": [
+    [
+      "Psyduck",
+      25,
+      26,
+      20
+    ],
+    [
+      "Farfetch'd",
+      26,
+      26,
+      10
+    ],
+    [
+      "Azumarill",
+      25,
+      26,
+      20
+    ],
+    [
+      "Dunsparce",
+      26,
+      26,
+      5
+    ],
+    [
+      "Bibarel",
+      26,
+      27,
+      20
+    ],
+    [
+      "Riolu",
+      25,
+      26,
+      5
+    ],
+    [
+      "Diggersby",
+      27,
+      27,
+      10
+    ],
+    [
+      "Litleo",
+      25,
+      25,
+      10
+    ]
+  ]
+}

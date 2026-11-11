@@ -312,7 +312,7 @@
   // Party icons (tools/build-party-menu.js): assets/sprites/icons/<dex id>[-<form>].png.
   function iconUrl(species, form) {
     const dex = window.DEX[species];
-    return "assets/sprites/icons/" + (dex ? dex.id : 0) + (form ? "-" + form : "") + ".png";
+    return "assets/sprites/icons/" + (dex ? dex.id : 0) + (form && species!=="Furfrou" ? "-" + form : "") + ".png";
   }
   // (tint [r, g, b]: the picture blended halfway to that colour, as a
   // Terastallized Pokémon's is: BlendPalette(..., 8, its Tera Type's colour).
