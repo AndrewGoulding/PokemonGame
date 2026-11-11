@@ -59,7 +59,7 @@ function create(env,{fight}){
    if(!s().championClear){await say('The island guardians will test you after you become Champion.');return true;}
    const i=Number(key.slice(-1));s().tapuWins||(s().tapuWins=[]);
    if(s().tapuWins.includes(i)){await say(names[i]+' has already acknowledged your strength.');return true;}
-   if(await battle('TAPU_'+i,'Guardian '+names[i],[[names[i].replace(' ','-'),65+i]])){
+   if(await battle('TAPU_'+i,'Guardian '+names[i],[[names[i],65+i]])){
     s().tapuWins.push(i);await save();await say(names[i]+' acknowledged you. Guardians faced: '+s().tapuWins.length+'/4.');}
    return true;
   }
