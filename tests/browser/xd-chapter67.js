@@ -55,20 +55,20 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
     assert(spot, "somewhere to stand by " + localId);
     await go((await where()).map, spot.x, spot.y, spot.facing);
   }
+  // (Anything open, the save reminder among them, answered with B till you're free to walk.)
+  async function settle() { for (let i = 0; i < 40 && !(await idle()); i++) await s.press("x", 120); }
   // (Onto the door from the tile below it: its scene as you come in.)
   async function walkIn(fromMap, toMap) {
     const w = await s.eval(([a, b]) => World.map(a).warps.find((q) => q.map === b), [fromMap, toMap]);
     assert(w, "a door from " + fromMap + " to " + toMap);
     await go(fromMap, w.x, w.y + 1, "up");
-    await s.walk("up", 1);
+    for (let i = 0; i < 4 && (await where()).map === fromMap; i++) { await settle(); await s.walk("up", 1); await s.wait(300); }
   }
   // (Out through a door below: stepping down till you're out.)
   async function walkOut(map) {
     for (let i = 0; i < 6 && (await where()).map === map; i++) { await settle(); await s.walk("down", 1); await s.wait(300); }
     assert.notEqual((await where()).map, map, "out of " + map);
   }
-  // (Anything open, the save reminder among them, answered with B till you're free to walk.)
-  async function settle() { for (let i = 0; i < 40 && !(await idle()); i++) await s.press("x", 120); }
   const story = () => s.eval(() => Game.player.flags.xdStory | 0);
   try {
     await s.page.reload(); await s.boot();
