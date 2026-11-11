@@ -60,6 +60,11 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
     await go(fromMap, w.x, w.y + 1, "up");
     await s.walk("up", 1);
   }
+  // (Out through a door below: stepping down till you're out.)
+  async function walkOut(map) {
+    for (let i = 0; i < 6 && (await where()).map === map; i++) { await s.page.waitForFunction(() => Overworld.idle()); await s.walk("down", 1); await s.wait(300); }
+    assert.notEqual((await where()).map, map, "out of " + map);
+  }
   const story = () => s.eval(() => Game.player.flags.xdStory | 0);
   try {
     await s.page.reload(); await s.boot();
@@ -92,8 +97,7 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
     assert(await s.eval(() => !Game.player.bag["data-rom"]), "the Data ROM given");
     // ---- Out, and back in: Cipher's raid. ----
     await go("PyriteTown_PyriteBuilding_1F", 5, 7, "down");
-    await s.walk("down", 2);
-    await s.wait(600);
+    await walkOut("PyriteTown_PyriteBuilding_1F");
     assert.equal((await where()).map, "PyriteTown");
     await walkIn("PyriteTown", "PyriteTown_PyriteBuilding_1F");
     await finish(() => (Game.player.flags.xdStory | 0) === 24, "Cipher's raid on ONBS");
@@ -114,7 +118,7 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
     await heal(); await go("PhenacCity_PreGym", 7, 5, "up");
     await finish(() => (Game.player.flags.xdStory | 0) === 27, "the fake Justy beaten", 1500);
     await go("PhenacCity_PreGym", 7, 10, "down");
-    await s.walk("down", 2);
+    await walkOut("PhenacCity_PreGym");
     await finish(() => !!Game.player.flags.xdJustyGang, "the Justy Gang counts off");
     await s.shot("xd67-gang");
     await heal(); await standBy("LOCALID_XD_TRAINER_EXINN");
@@ -126,7 +130,7 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
     assert(said.some((t) => /Marcia/.test(t)), "Marcia's thanks");
     // ---- The Pre Gym's basement: the Mayor, Justy. ----
     await go("PhenacCity_Stadium", 11, 15, "down");
-    await s.walk("down", 2);
+    await walkOut("PhenacCity_Stadium");
     await walkIn("PhenacCity", "PhenacCity_PreGym");
     await finish(() => (Game.player.flags.xdStory | 0) === 29, "the Pre Gym's basement: the Mayor and Justy free", 800);
     await go("PhenacCity_MayorsHouse", 4, 4, "up");
