@@ -7,11 +7,11 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const [,src] of html.matchAll(/<script src="([^"]+)"><\/script>/g)){
  if(!src.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,src),'utf8'),{filename:src});
 }
-for(const file of ['ui/alola-akala.js','ui/alola-ulaula.js','ui/alola-story.js'])
+for(const file of ['ui/alola-akala.js','ui/alola-ulaula.js','ui/alola-poni.js','ui/alola-story.js'])
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 (async()=>{
  const R=Alola,D=R.data(),A=AlolaAkala;
- assert.equal(D.akala.mapNames.length,24);assert.equal(Object.keys(D.maps).length,62);
+ assert.equal(D.akala.mapNames.length,24);assert.equal(Object.keys(D.maps).length,81);
  for(const name of D.akala.mapNames){
   const m=WORLD_MAPS[name];assert(A.owns(name));assert(R.owns(name));
   assert.equal(m.collision.length,m.width*m.height);
