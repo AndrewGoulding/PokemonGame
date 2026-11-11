@@ -63,7 +63,14 @@ const OUT = process.env.OUT || "/tmp/pk-xd45";
       window.BagScreen.open = (o) => (ball ? (ball = false, Promise.resolve({ pocket: "Poké Balls", id: "master-ball" })) : bagOpen(o));
       // (The first move with PP left.)
       const mv = G.battleMoves;
-      G.battleMoves = (c, o) => { const i = o.moves.findIndex((m) => m.pp > 0 && !m.disabled); return i >= 0 ? Promise.resolve({ index: i, cursor: i }) : mv(c, o); };
+      // (The move with PP left that hits the first foe hardest by type.)
+      G.battleMoves = (c, o) => {
+        const b = BattleScreen._test.battle, foe = b && [].concat(b.sides.p2.actives || b.sides.p2.active).find((m) => m && !m.fainted);
+        const types = foe ? (foe.getTypes ? foe.getTypes() : foe.types) : [];
+        const score = (m) => (window.MOVES[m.name] || {}).cat === "Status" ? -1 : types.reduce((n, t) => n * ((window.TYPE_CHART[m.type] || {})[t] ?? 1), 1);
+        const ranked = o.moves.map((m, i) => ({ m, i })).filter(({ m }) => m.pp > 0 && !m.disabled).sort((a, z) => score(z.m) - score(a.m));
+        return ranked.length ? Promise.resolve({ index: ranked[0].i, cursor: ranked[0].i }) : mv(c, o);
+      };
     });
     // ---- Agate's villagers: Clerr and Belish. ----
     for (const k of ["CLERR", "BELISH"]) {
