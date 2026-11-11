@@ -6,11 +6,11 @@ global.localStorage={getItem:()=>null,setItem(){},removeItem(){}};
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const [,src] of html.matchAll(/<script src="([^"]+)"><\/script>/g))
  if(!src.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,src),'utf8'),{filename:src});
-for(const file of ['ui/alola-akala.js','ui/alola-ulaula.js','ui/alola-poni.js','ui/alola-story.js'])
+for(const file of ['ui/alola-akala.js','ui/alola-ulaula.js','ui/alola-poni.js','ui/alola-league.js','ui/alola-story.js'])
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 (async()=>{
  const D=Alola.data(),U=AlolaUlaula,R=TOWN_MAP.alola;
- assert.equal(D.ulaula.mapNames.length,23);assert.equal(Object.keys(D.maps).length,81);
+ assert.equal(D.ulaula.mapNames.length,23);assert.equal(Object.keys(D.maps).length,100);
  for(const name of D.ulaula.mapNames){
   const m=WORLD_MAPS[name],cell=R.at[name];assert(U.owns(name)&&Alola.owns(name));
   assert(cell&&R.map[cell[1]][cell[0]],name+' absent from Town Map');
