@@ -7,7 +7,7 @@ Sun and Moon are **not** separate campaigns.
 ## Implemented opening slice
 - Access through a new researcher in Sinnoh's Fight Area; return from Hau’oli
   Outskirts with separate resume and healing locations.
-- Seven independent Alola maps: home, outskirts, Route 1, Iki Town, Mahalo
+- Fifteen connected Alola maps: home, outskirts, Route 1, Iki Town, Mahalo
   Trail, Pokémon Center and Trainer School.
 - Rowlet, Litten or Popplio gift with party-capacity guard, Pokédex credit and
   persistent campaign flags; Hau uses the starter weak to the player's choice.
@@ -23,9 +23,11 @@ Map layouts and backgrounds are borrowed from existing Kalos 2D maps as
 **placeholders**, not claimed to match actual Alola geography or Nintendo's
 3DS geometry. Dialogue, trainer rosters and encounter tables are initial
 authored adaptations rather than complete Ultra Sun/Moon script/ROM imports.
-The current story ends after Trainer School; Hau’oli City, the four islands,
-trials, kahunas, Ultra Recon Squad, Aether Foundation, Ultra Necrozma, League,
-postgame and all island-specific mechanics remain future implementation.
+Hau’oli Beach, Hau’oli City, Route 2, Berry Fields, cemetery, Verdant Cavern,
+Ilima's captain battle, Team Skull battles, three dens, both Ultra Sun and Ultra
+Moon Totem Pokémon, Normalium Z, and Hala's Melemele grand trial now extend the
+first chapter. Akala and the other islands, Ultra Recon Squad, Aether Foundation,
+Ultra Necrozma, League and postgame remain future implementation.
 Existing Gen VII species, moves and Z-Move systems are reused; this slice does
 not claim full Z-Power/Rotom Dex/ride integration. Both versions will remain
 merged rather than becoming separate routes or version selections.

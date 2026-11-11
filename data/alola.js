@@ -42,6 +42,52 @@
  maps.AlolaMahaloTrail.wild={rate:20,weights:[30,25,20,15,10],slots:[
   {species:'Pikipek',min:3,max:5},{species:'Caterpie',min:3,max:5},
   {species:'Grubbin',min:3,max:5},{species:'Ledyba',min:3,max:5},{species:'Spinarak',min:3,max:5}]};
+
+ // The next two chapters: Hau’oli City/Route 2, then Verdant Cavern and Hala.
+ const additions=[
+ ['AlolaHauoliBeach','KalosRoute3','Hau’oli Beachfront',[['AlolaIkiTown',4],['AlolaHauoliCity',0]]],
+ ['AlolaHauoliCity','KalosSantaluneCity','Hau’oli City',[['AlolaHauoliBeach',1],['AlolaRoute2',0],['AlolaHauoliCenter',0]]],
+ ['AlolaHauoliCenter','KalosSantaluneCenter','Hau’oli · Pokémon Center',[['AlolaHauoliCity',2]]],
+ ['AlolaRoute2','KalosRoute22','Route 2 · Melemele',[['AlolaHauoliCity',1],['AlolaVerdantEntrance',0],['AlolaBerryFields',0],['AlolaCemetery',0]]],
+ ['AlolaBerryFields','KalosAquacordeShop','Berry Fields',[['AlolaRoute2',2]]],
+ ['AlolaCemetery','KalosSantaluneSchool','Hau’oli Cemetery',[['AlolaRoute2',3]]],
+ ['AlolaVerdantEntrance','KalosGymGallery','Verdant Cavern · Entrance',[['AlolaRoute2',1],['AlolaVerdantCavern',0]]],
+ ['AlolaVerdantCavern','KalosGymWeb','Verdant Cavern',[['AlolaVerdantEntrance',1]]]
+ ];
+ const create=(name,template,title,targets)=>{
+   const original=source[template],m=JSON.parse(JSON.stringify(original));
+   m.name=name;m.title=title;m.region='alola';m.alolaCampaign='ultra';m.image=template;
+   m.people=[];m.signs=[];m.triggers=[];m.hidden=[];m.connections=[];
+   m.warps=targets.map(([map,warp],i)=>({...original.warps[i],map,warp}));
+   delete m.kalosEncounter;delete m.kalosSurfaces;delete m.kalosPickup;delete m.anim;
+   delete m.wild;delete m.water;delete m.fishing;maps[name]=m;
+ };
+ for(const a of additions)create(...a);
+ // Add a second north exit to Iki Town without moving existing doors/saves.
+ maps.AlolaIkiTown.warps.push({x:30,y:3,map:'AlolaHauoliBeach',warp:0});
+ person('AlolaIkiTown',29,18,'usum:hala','bw2_105');
+ person('AlolaHauoliBeach',15,15,'usum:beach-hau','bw2_youngster');
+ person('AlolaHauoliCity',22,17,'usum:ilima','bw2_105');
+ person('AlolaHauoliCity',27,20,'usum:skull-intro','bw2_youngster');
+ person('AlolaHauoliCenter',8,6,'usum:hauoli-heal','bw2_147');
+ person('AlolaHauoliCenter',14,6,'usum:mart','bw2_scientist_m_52');
+ person('AlolaRoute2',17,18,'usum:route2-hau','bw2_youngster');
+ person('AlolaRoute2',21,11,'usum:skull-route2','bw2_youngster');
+ person('AlolaBerryFields',9,7,'usum:berries','bw2_147');
+ person('AlolaCemetery',10,8,'usum:cemetery','bw2_lass');
+ person('AlolaVerdantEntrance',12,11,'usum:trial-guide','bw2_105');
+ person('AlolaVerdantCavern',11,11,'usum:den-0','bw2_youngster');
+ person('AlolaVerdantCavern',23,12,'usum:den-1','bw2_youngster');
+ person('AlolaVerdantCavern',16,21,'usum:den-2','bw2_youngster');
+ person('AlolaVerdantCavern',18,27,'usum:totem','bw2_105');
+ const grass=(name,pool,rate=25)=>{
+   const m=maps[name];m.wild={rate,weights:pool.map((a,i)=>i===pool.length-1?100-Math.floor(100/pool.length)*i:Math.floor(100/pool.length)),slots:pool.map(([species,min,max])=>({species,min,max}))};
+   for(let y=6;y<Math.min(14,m.height-5);y++)for(let x=6;x<Math.min(11,m.width-5);x++){const k=y*m.width+x;if(!m.collision[k]&&!m.warps.some(w=>w.x===x&&w.y===y)&&!m.people.some(a=>a.x===x&&a.y===y))m.behavior[k]=2;}
+ };
+ grass('AlolaHauoliBeach',[['Wingull',6,8],['Pikipek',6,8],['Yungoos',6,8],['Rattata',6,8]]);
+ grass('AlolaRoute2',[['Cutiefly',7,9],['Makuhita',7,10],['Spearow',7,9],['Yungoos',7,9],['Rattata',7,9]]);
+ grass('AlolaCemetery',[['Gastly',8,10],['Zubat',8,10],['Misdreavus',8,10]]);
+ grass('AlolaBerryFields',[['Crabrawler',8,10],['Cutiefly',8,9]]);
  window.ALOLA_DATA={maps,start:{map:'AlolaHome',x:10,y:13,facing:'up'},
   return:{map:'FightArea',x:30,y:25,facing:'down'},starters:['Rowlet','Litten','Popplio']};
 })();
