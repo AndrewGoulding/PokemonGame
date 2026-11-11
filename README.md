@@ -3194,9 +3194,18 @@ floors inside): the Hexagon Brothers counting off out front, one short (18), eac
 Peons and researchers (XD's lines don't say which of a floor's Trainers says which: matched by floor), Cabol by the
 chest with the ID Card, which opens the way down; on B2 Lovrina pressing Prof. Krane to help with XD001 and Naps
 taking the blame, then Naps's battle, and Krane with you (19); making for the way out, Lovrina's battle and her Shadow
-Delcatty, the Data ROM she drops, and Krane home at the HQ Lab (20) (`tests/browser/xd-chapter45.js`). A Trainer whose
-Shadow Pokémon isn't snagged battles you again, as Colosseum's do. Orre's level cap in XD's story rises with it: 20
-at Mt. Battle, 22 at the Cipher Lab. XD's text: `assets/text/xd.json`, XD's
+Delcatty, the Data ROM she drops, and Krane home at the HQ Lab (20) (`tests/browser/xd-chapter45.js`). Its sixth,
+**ONBS** (Colosseum's Pyrite Building, five years on): Datan can't crack the Data ROM, so Krane sends you with it to
+Nett at ONBS (21); Secc sends you up (22); Nett takes it and your P★DA number (23); out and back in, Cipher holds the
+building (24), its Peons on every floor, and on the top floor Commander Exol, holding Megg, takes the Data ROM back and
+wipes ONBS's data; beaten, and Nett tells you what he did read: the S.S. Libra, and Cipher's attack on Phenac (25). Its
+seventh, **Phenac City**: Cipher's Peons in its citizens' places; the Mayor's letter to Justy, and Ezin (26); the fake
+Justy in the Pre Gym (27); out front, the "Justy Gang", the Hexagon Brothers in Justy's clothes, counting off; in the
+Stadium, Snattle and Egrog holding ONBS's Marcia and Cameran, and the Elevator Key Snattle drops (28); the Pre Gym's
+basement, where the Mayor, Justy and the townspeople were held (29) (`tests/browser/xd-chapter67.js`). (XD's side trip
+back to Secc with the Mayor's note, and its Poké Spots, are left out.) A Trainer whose Shadow Pokémon isn't snagged
+battles you again, as Colosseum's do. Orre's level cap in XD's story rises with it: 20 at Mt. Battle, 22 at the Cipher
+Lab, 24 at ONBS, 28 at Phenac. XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
 `node tools/build-colosseum-text.js --out xd.json <the disc's files folder>` (as Colosseum's are, into
 `assets/text/colosseum.json`; a European disc's other-language archives are left out). Its Trainers and Shadow

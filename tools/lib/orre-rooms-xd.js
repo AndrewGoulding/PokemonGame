@@ -185,4 +185,8 @@ module.exports = function ({ changed, room, drawings, block, A, emerald }) {
       [{ x: 17, y: 1, map: CL + "_B1", warp: 1 }]);
     for (const n of ["_1F", "_B1", "_B2"]) changed[CL + n].orrePlace = CL;
   }
+  // Phenac's Pre Gym's basement (XD's M1_gym_B1), where Cipher held the Mayor, Justy and the townspeople: Mossdeep's
+  // Game Corner's basement, its stairs up to the Pre Gym's door (it's reached by the elevator, in XD's story).
+  changed.PhenacCity_PreGym_B1 = Object.assign(room("MossdeepCity_GameCorner_B1F", "PhenacCity_PreGym_B1", "Phenac City · Pre Gym", "mus_gym",
+    [{ x: 3, y: 1, map: "PhenacCity_PreGym", warp: 0 }]), { orrePlace: "PhenacCity" });
 };

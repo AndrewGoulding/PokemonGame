@@ -6339,7 +6339,49 @@
         return;
       case "enter:CipherLab_B1": await xdLovrina(); return;
       case "XD_EventScript_KraneLab": await say(L.kraneOut); return;
-      case "XD_EventScript_KraneHome": await say(L.kraneTough.slice(0, 3)); return;
+      case "XD_EventScript_KraneHome":
+        await say(story >= 29 ? L.kraneFree : story >= 25 ? L.kranePhenac : story >= 21 ? L.kraneOnbsAgain : L.kraneTough.slice(0, 3));
+        return;
+      // ---- The Data ROM to ONBS in Pyrite (XD's chapter 6). ----
+      case "XD_EventScript_Datan":
+        if (story === 20) { await xdDatan(); return; }
+        await say(L.datanSorry);
+        return;
+      case "XD_EventScript_Megg": await say(story >= 25 ? L.meggSafe : story === 21 ? L.meggWelcome.concat(L.meggNett) : L.meggNett); return;
+      case "XD_EventScript_Secc":
+        if (story === 21) {
+          await say(L.secc); await say(L.seccTold); await say(L.seccRom);
+          f.xdStory = 22;
+          await persist();
+          return;
+        }
+        await say(story === 24 ? L.seccHurt : L.seccLater);
+        return;
+      case "XD_EventScript_Bitt": await say(story >= 25 ? L.nettPhenac : L.bitt); return;
+      case "XD_EventScript_Nett":
+        if (story === 22) { await xdNett(); return; }
+        await say(story === 21 ? L.bitt : story >= 29 ? L.nettPhenacDone : story >= 25 ? L.nettPhenac : L.nettLater);
+        return;
+      case "enter:PyriteTown": case "arrive:PyriteTown":
+        if (story === 23) { f.xdOnbsOut = true; await persist(); }
+        return;
+      case "enter:PyriteTown_PyriteBuilding_1F":
+        // Back at ONBS: Cipher's raid (XD's #37155-#37161).
+        for (const page of L.raid) await say(page);
+        f.xdStory = 24;
+        Overworld.refreshPeople();
+        await persist();
+        return;
+      case "enter:PyriteTown_PyriteBuilding_4F": await xdExol(); return;
+      // ---- Phenac City (XD's chapter 7). ----
+      case "XD_EventScript_Letter": await xdLetter(); return;
+      case "XD_EventScript_Fostin": await xdFakeJusty(); return;
+      case "enter:PhenacCity": case "arrive:PhenacCity": await xdJustyGang(); return;
+      case "enter:PhenacCity_Stadium": await xdSnattle(); return;
+      case "enter:PhenacCity_PreGym": await xdPreGymB1(); return;
+      case "XD_EventScript_TrestHome": await say(L.trestHome); return;
+      case "XD_EventScript_Trest": case "XD_EventScript_Held": await say(L.trestThanks.slice(0, 1)); return;
+      case "XD_EventScript_Snattle": return;
       case "PokemonHQLab_1F_EventScript_Jovi":
         await say(f.xdChamber ? ["Jovi: That Machine Part Jovi carried\nis on that big machine. They put it\non the middle part with the ring.", "Jovi: It went right in the middle. It\nmust be the most important part!"]
           : ["Jovi: Jovi can do it!"]);
@@ -6909,6 +6951,177 @@
     Overworld.removeObject(K);
     f.xdStory = 20;
     Overworld.refreshPeople();
+    await persist();
+  }
+  // A battle of XD's story with a Trainer of its decks (`index`), their Shadow Pokémon to snag (game/xd.js's trainer):
+  // the outcome; anything snagged is recorded (player.flags.xdShadowSnagged).
+  async function xdFight(index, defeat, { pic, prize = "Team Rocket" } = {}) {
+    const f = player.flags, t = Orre.XD.trainer(index, f.xdShadowSnagged, defeat);
+    const opts = { foe: { name: t.name, team: t.team, pic: pic || t.pic }, double: t.team.length > 1, prizeClass: prize, noBlackout: true,
+      snag: t.team.filter((r) => r.shadow).map((r) => r.species), defeatText: t.defeat };
+    const outcome = await storyBattle(opts);
+    const got = t.shadows.filter((id) => (opts.snagged || []).includes(window.XD_DECKS.shadow[id].species));
+    if (got.length) (f.xdShadowSnagged = f.xdShadowSnagged || []).push(...got);
+    return outcome;
+  }
+  // Datan outside the HQ Lab: he can't crack the Data ROM; Prof. Krane sends you with it to Nett at ONBS in Pyrite
+  // (XD's #40314-#40322; xdStory 20 -> 21).
+  async function xdDatan() {
+    const f = player.flags, L = Orre.XD.LINES, K = ORRE_XD("KRANE_OUT");
+    await say(L.datan);
+    Overworld.addObject(K, { x: 14, y: 9, facing: "down" });
+    for (const page of L.datanKrane) await say(page);
+    Player.addItem(player, "data-rom", 1);
+    await sayWithJingle("mus_obtain_key_item", L.gotRom);
+    await say(L.kraneOnbs);
+    Overworld.removeObject(K);
+    Orre.unlock(f, "PyriteTown");
+    f.xdStory = 21;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Nett on ONBS's top floor: the Data ROM's his to decipher, and your P★DA number (XD's #37132-#37145; 22 -> 23).
+  async function xdNett() {
+    const f = player.flags, L = Orre.XD.LINES;
+    for (const page of L.nett) await say(page);
+    Player.removeItem(player, "data-rom", 1);
+    await say(L.gaveRom);
+    for (const page of L.nettWait) await say(page);
+    await say(L.gavePda);
+    await say(L.nettThanks);
+    await say(["Nett: Okay, {PLAYER}. Have a look\naround town while I work on it."]);   // (this game's own: XD's Poké Spot isn't here)
+    f.xdStory = 23;
+    delete f.xdOnbsOut;
+    await persist();
+  }
+  // ONBS's top floor while Cipher holds it: Exol with Megg, the Data ROM taken back and ONBS's data wiped; his battle;
+  // Nett's word of what he did read: the S.S. Libra, and Cipher's attack on Phenac (XD's #37195-#37217; 24 -> 25).
+  async function xdExol() {
+    const f = player.flags, L = Orre.XD.LINES, E = ORRE_XD("EXOL"), M = ORRE_XD("MEGG_4F"), P = ORRE_XD("CAPTAIN_PEON");
+    if ((f.xdStory | 0) !== 24) return;
+    xdCap(24);
+    Overworld.addObject(E, { x: 13, y: 5, facing: "up" });
+    Overworld.addObject(M, { x: 12, y: 5, facing: "up" });
+    if (!f.xdExolScene) {
+      Overworld.addObject(P, { x: 11, y: 6, facing: "up" });
+      for (const page of L.exolScene) await say(page);
+      Overworld.removeObject(P);
+      f.xdExolScene = true;
+    }
+    await say(L.exolSees);
+    const outcome = await xdFight(87, L.exolDefeat, { prize: "Leader" });
+    if (outcome !== "won") { Overworld.removeObject(E); Overworld.removeObject(M); await persist(); return; }
+    await say(L.exolAfter);
+    Screen.say("");
+    await Overworld.act([{ who: E, moves: ["walk_fast_left", "walk_fast_left", "set_invisible"] }]);
+    Overworld.removeObject(E);
+    for (const page of L.meggFree) await say(page);
+    Overworld.removeObject(M);
+    for (const page of L.nettAfter) await say(page);
+    Orre.unlock(f, "PhenacCity");
+    f.xdStory = 25;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // The Mayor's house: his letter to Justy, and Ezin, who finds you reading it (XD's #36041-#36048; 25 -> 26).
+  async function xdLetter() {
+    const f = player.flags, L = Orre.XD.LINES, E = ORRE_XD("EZIN");
+    if ((f.xdStory | 0) !== 25) return;
+    xdCap(28);
+    for (const page of L.letter) await say(page);
+    Overworld.addObject(E, { x: 15, y: 3, facing: "right" });
+    for (const page of L.ezinCaught) await say(page);
+    const outcome = await xdFight(101, L.ezinDefeat);
+    if (outcome !== "won") { Overworld.removeObject(E); await persist(); return; }
+    await say(L.ezinAfter);
+    Overworld.removeObject(E);
+    f.xdStory = 26;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // The fake Justy in the Pre Gym: laughing you off (25); with the Mayor's letter, his battle (XD's #36084-#36086;
+  // 26 -> 27), and he's off to the Stadium.
+  async function xdFakeJusty() {
+    const f = player.flags, L = Orre.XD.LINES, J = ORRE_XD("FOSTIN");
+    if ((f.xdStory | 0) === 25) { await say(L.fakeJustyBefore); return; }
+    if ((f.xdStory | 0) !== 26) return;
+    await say(L.fostinIntro);
+    const outcome = await xdFight(100, L.fostinDefeat);
+    if (outcome !== "won") return;
+    await say(L.fostinAfter);
+    Screen.say("");
+    await Overworld.act([{ who: J, moves: ["walk_fast_down", "walk_fast_down", "walk_fast_down", "set_invisible"] }]);
+    f.xdStory = 27;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Out of the Pre Gym: the Justy Gang, the Hexagon Brothers in Justy's clothes, counting off (XD's #36144-#36155).
+  async function xdJustyGang() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if ((f.xdStory | 0) !== 27 || f.xdJustyGang) return;
+    for (const page of L.gangCount) await say(page);
+    for (const page of L.gangSees) await say(page);
+    f.xdJustyGang = true;
+    await persist();
+  }
+  // The Stadium: Snattle and his Peon Egrog with ONBS's Marcia and Cameran, held for their tapes; Egrog's battle, then
+  // Snattle's; Marcia's thanks, and what Snattle dropped: the Elevator Key (XD's #36096-#36119; 27 -> 28).
+  async function xdSnattle() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if ((f.xdStory | 0) !== 27) return;
+    const S = ORRE_XD("SNATTLE"), E = ORRE_XD("EGROG"), M = ORRE_XD("MARCIA"), C = ORRE_XD("CAMERAN");
+    Overworld.addObject(S, { x: 11, y: 11, facing: "down" });
+    Overworld.addObject(M, { x: 10, y: 12, facing: "right" });
+    Overworld.addObject(C, { x: 12, y: 12, facing: "left" });
+    const gone = () => { for (const k of [S, E, M, C]) Overworld.removeObject(k); };
+    if (!f.xdEgrog) {
+      Overworld.addObject(E, { x: 11, y: 13, facing: "down" });
+      if (f.xdStadiumScene) await say(L.egrogAgain);
+      else { for (const page of L.stadium) await say(page); f.xdStadiumScene = true; }
+      const outcome = await xdFight(103, L.egrogDefeat);
+      if (outcome !== "won") { gone(); await persist(); return; }
+      f.xdEgrog = true;
+      Overworld.removeObject(E);
+      for (const page of L.stadium2) await say(page);
+    } else await say(L.snattleAgain);
+    const outcome = await xdFight(104, L.snattleDefeat, { pic: "gentleman", prize: "Leader" });
+    if (outcome !== "won") { gone(); await persist(); return; }
+    await say(L.snattleAfter);
+    Screen.say("");
+    await Overworld.act([{ who: S, moves: ["walk_fast_down", "walk_fast_down", "set_invisible"] }]);
+    Overworld.removeObject(S);
+    for (const page of L.marcia) await say(page);
+    Screen.say("");
+    await Overworld.act([{ who: M, moves: ["walk_fast_down", "walk_fast_down", "set_invisible"] }, { who: C, moves: ["walk_fast_down", "walk_fast_down", "set_invisible"] }]);
+    gone();
+    await say(L.floor);
+    Player.addItem(player, "elevator-key", 1);
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} found the Elevator Key!");   // (this game's own: XD's item on the floor)
+    f.xdStory = 28;
+    await persist();
+  }
+  // The Pre Gym with the Elevator Key: down to its basement, where Cipher held the Mayor, Justy and the townspeople;
+  // the Mayor's thanks, Justy's P★DA number (XD's #36121-#36131, #36335-#36336; 28 -> 29). Phenac is free.
+  async function xdPreGymB1() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if ((f.xdStory | 0) !== 28) return;
+    await say(L.key);
+    await say(L.turnKey);
+    await Overworld.fadeToBlack();
+    player.location = { map: "PhenacCity_PreGym_B1", x: 6, y: 6, facing: "up" };
+    await Overworld.teleport(player.location);
+    await Overworld.fadeFromBlack();
+    for (const page of L.trest) await say(page);
+    await say(L.trestThanks);
+    await say(L.justy);
+    await say(L.gaveJusty);
+    await say(L.justyAfter);
+    Player.removeItem(player, "elevator-key", 1);
+    await Overworld.fadeToBlack();
+    f.xdStory = 29;
+    player.location = { map: "PhenacCity_PreGym", x: 7, y: 9, facing: "up" };
+    await Overworld.teleport(player.location);
+    await Overworld.fadeFromBlack();
     await persist();
   }
   // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.

@@ -141,7 +141,8 @@
     "excite-scent": "A Scent that\npleases Pok\u00e9mon.", "vivid-scent": "A Scent that\ngreatly pleases\nPok\u00e9mon.",
     "powerup-part": "A part to be\ndelivered to\nNett from Perr.",
     "machine-part": "A rare part for\nthe Purify Chamber.\nFor Lily at the Lab.",
-    "id-card": "An ID card that\nopens a locked door\nin the Cipher Lab."
+    "id-card": "An ID card that\nopens a locked door\nin the Cipher Lab.",
+    "elevator-key": "The key to the\nPre Gym's elevator\nin Phenac City."
   };
   const description = (item) => ((window.ITEMS[item] || {}).category === "evolution" ? EVOLUTION_ITEM_TEXT : "") ||
     ORRE_ITEM_TEXT[item] || (window.ITEM_DESCRIPTIONS && window.ITEM_DESCRIPTIONS[item]) ||
