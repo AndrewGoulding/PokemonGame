@@ -5,7 +5,7 @@ const root=path.join(__dirname,'..');global.window=global;
 global.localStorage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const [,src] of html.matchAll(/<script src="([^"]+)"><\/script>/g)){if(src.startsWith('ui/'))continue;vm.runInThisContext(fs.readFileSync(path.join(root,src),'utf8'),{filename:src});}
-assert(Alola&&AlolaStory===undefined);
+assert(Alola && typeof AlolaStory === 'undefined');
 assert.equal(Alola.data().starters.join(','),'Rowlet,Litten,Popplio');
 assert.equal(Object.keys(Alola.data().maps).length,7);
 for(const [name,m] of Object.entries(Alola.data().maps)){
