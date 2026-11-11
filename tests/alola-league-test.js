@@ -74,6 +74,11 @@ for(const file of ['ui/alola-akala.js','ui/alola-ulaula.js','ui/alola-poni.js','
  for(const key of ['rr-archie','rr-maxie','rr-cyrus','rr-ghetsis','rr-lysandre','rr-giovanni'])await go(key);
  assert(s.rrGiovanniWon);
  await go('rr-giovanni');assert.equal(battles.filter(x=>x==='USUM_RR_GIOVANNI').length,1);
+ for(let i=0;i<4;i++)await go('tapu-'+i);
+ assert.equal(s.tapuWins.length,4);
+ await go('legend-sun');await go('legend-moon');
+ assert(s.solgaleoWon&&s.lunalaWon,'Both USUM mascots should be available');
+ await go('tapu-0');assert.equal(battles.filter(x=>x==='USUM_TAPU_0').length,1);
  for(let i=0;i<7;i++)await go('beast-'+i);
  assert.equal(s.beastWins.length,7);
  await go('beast-1');assert.equal(battles.filter(x=>x==='USUM_BEAST_1').length,1);
