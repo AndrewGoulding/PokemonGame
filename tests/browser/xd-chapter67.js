@@ -10,10 +10,10 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
 (async () => {
   const s = await T.start((p) => {
     // (Strong at Lv. 22, XD's cap here, with a strong move that lasts: mashing A only ever picks the first.)
-    p.party = [Party.create("Mewtwo", 28, { moves: ["Swift", "Psychic", "Recover", "Barrier"], ivs: 31 }),
-      Party.create("Alakazam", 28, { moves: ["Shock Wave", "Psychic", "Recover", "Reflect"], ivs: 31 })];
+    p.party = [Party.create("Mewtwo", 32, { moves: ["Swift", "Psychic", "Recover", "Barrier"], ivs: 31 }),
+      Party.create("Alakazam", 32, { moves: ["Shock Wave", "Psychic", "Recover", "Reflect"], ivs: 31 })];
     p.bag = { "snag-machine": 1, "master-ball": 20 };
-    Object.assign(p.flags, { starter: "Charmander", orre: 3, orreStory: 44, orreLanded: true, orreLevelCap: 100, xdStory: 20, xdBriefed: true, xdLevelCap: 28,
+    Object.assign(p.flags, { starter: "Charmander", orre: 3, orreStory: 44, orreLanded: true, orreLevelCap: 100, xdStory: 20, xdBriefed: true, xdLevelCap: 32,
       xdShadowSnagged: [1, 14, 12], xdChamber: true, xdEagun: true, xdIdCard: true,
       orreMap: ["PhenacCity", "PyriteTown", "AgateVillage", "PokemonHQLab", "GateonPort", "KaminkosHouse", "MtBattle", "CipherLab"] });
   }, { map: "PokemonHQLab", x: 13, y: 12, facing: "up" }, {

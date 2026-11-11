@@ -108,10 +108,10 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
     // ---- Secc; Hordel; Gonzap. ----
     await go("PyriteTown_PyriteBuilding_2F", 12, 6, "up");
     await step(35, "Secc: Hordel at the Outskirt Stand");
-    await standBy("LOCALID_XD_HORDEL");
+    await go("OutskirtStand", 20, 19, "up"); await standBy("LOCALID_XD_HORDEL");
     await step(36, "Hordel: his Shadow Togepi, and Team Snagem's hideout");
     assert((await flags()).xdShadowSnagged.includes(81), "Togepi (#81)");
-    await heal(); await standBy("LOCALID_XD_GONZAP");
+    await heal(); await go("SnagemHideout", 12, 10, "up"); await standBy("LOCALID_XD_GONZAP");
     await step(37, "Gonzap: the Snag Machine back, the Key Lair");
     assert(await s.eval(() => !!Game.player.bag["snag-machine"]), "the Snag Machine back");
     // ---- The Key Lair: Gorigan, Greevil. ----
