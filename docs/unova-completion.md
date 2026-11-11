@@ -67,3 +67,5 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Shared Black/White music, seasonal/version arrangements and native battle/jingle routing ([scope](unova-audio.md))
 - [x] Village Bridge/Accumula interactive musicians, pianist cry quest and four city proximity layers ([scope](unova-music-layers.md))
 - [ ] BW2-exclusive music coverage, remaining interactive sound events, final source audit and browser campaign validation
+
+Paired Black/White and Black 2/White 2 encounters are unified on regional entry. BW and BW2 remain distinct story campaigns. See [merged versions](merged-versions.md).

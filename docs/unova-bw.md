@@ -32,3 +32,7 @@ Native Playwright checks:
 - `tests/browser/unova-bw-gyms.js`: ordered library checkpoints, original Carter/Lydia/Satomi battles, legal move selection with Choice Specs and Lenora’s Badge.
 - `tests/browser/unova-bw-white.js`: actual loss with a BW2 Center saved, original-region respawn, Iris battle/portrait/Badge, White music and independent level cap.
 - `tests/browser/unova-bw-ending.js`: actual original Elite Four, mandatory Reshiram catch with a full party/PC delivery, N/Zekrom and Ghetsis, ending, all League rematch teams/Alder and saved Hall of Fame.
+
+## Unified editions
+
+The original campaign now merges Black/White version-exclusive wild tables and makes both Black City and White Forest accessible; its sequel remains a separate campaign. See [merged versions](merged-versions.md).

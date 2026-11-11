@@ -107,3 +107,7 @@ Maison sets preserve source moves, held items, natures and EVs, including the fo
 `tests/kalos-fashion-test.js` obtains every purchasable piece across all six towns/seven weekdays and both artist gifts, checks default ownership, prices, coupons, insufficient funds, duplicate purchases, story/style gates, non-destructive previews, dress/optional-slot rules, named outfits and old-save/other-region isolation. All 307 pieces exercise portrait, back, walking and bicycle garment rendering. `tests/browser/kalos-fashion.js` uses native shop controls for previewing, multi-item purchasing with a coupon, wearing both collections, saving/restoring an outfit, Boutique Couture's style gate, the artist gift and reload persistence.
 
 Regional [team outfitters](team-fashion.md) add 90 authored uniform pieces to the shared wardrobe, separately from the 307 source X/Y pieces. They unlock after regional villain storylines; no Johto duplicate is added.
+
+## Unified editions
+
+Kalos's travel guide no longer asks X/Y. See [merged version behavior](merged-versions.md) for mixed wild tables, the counterpart legendary and legacy-save handling.

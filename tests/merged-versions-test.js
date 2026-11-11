@@ -1,0 +1,25 @@
+'use strict';
+const assert=require('assert'),fs=require('fs'),vm=require('vm'),path=require('path');
+const root=path.join(__dirname,'..');global.window=global;
+global.localStorage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+for(const [,src] of html.matchAll(/<script src="([^"]+)"><\/script>/g)){if(!src.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,src),'utf8'),{filename:src});}
+const a={rate:20,slots:[{species:'Pikachu',min:5,max:5},{species:'Eevee',min:5,max:5}],weights:[99,1]};
+const b={rate:20,slots:[{species:'Pikachu',min:5,max:5},{species:'Vulpix',min:5,max:5}],weights:[99,1]};
+const both=MergedVersions.union(a,b);assert.equal(both.weights.reduce((x,y)=>x+y,0),100);
+assert(both.slots.some(x=>x.species==='Eevee'&&both.weights[both.slots.indexOf(x)]>0));
+assert(both.slots.some(x=>x.species==='Vulpix'&&both.weights[both.slots.indexOf(x)]>0));
+assert.deepEqual(a.weights,[99,1]);assert.deepEqual(b.weights,[99,1]);
+assert.equal(MergedVersions.hordes([{mons:['Plusle*4','Minun'],lv:[6,6],weight:100}],[{mons:['Minun*4','Plusle'],lv:[6,6],weight:100}]).length,2);
+const p=Player.create('Combined');
+Kalos.state(p).mergedVersions=true;Kalos.state(p).version='x';
+const example=Object.entries(Kalos.data().maps).find(([name,m])=>m.kalosEncounter&&Kalos.data().encounters[m.kalosEncounter]?.x&&Kalos.data().encounters[m.kalosEncounter]?.y);
+assert(example,'Kalos example');p.location={map:example[0],x:8,y:8};
+Kalos.apply(p);const src=Kalos.data().encounters[example[1].kalosEncounter];
+for(const species of new Set([...src.x.slots,...src.y.slots].map(x=>x.species)))assert(WORLD_MAPS[example[0]].wild.slots.some(x=>x.species===species),'Missing '+species);
+const b1=Player.create('BW');UnovaBW.state(b1).mergedVersions=true;
+UnovaBW.state(b1).clear=true;
+assert.equal(UnovaBW.allowed(b1,'BW1BlackCity'),true);
+assert.equal(UnovaBW.allowed(b1,'BW1WhiteForest'),true);
+const legacy=Player.create('Legacy');assert.equal(UnovaBW.peek(legacy).mergedVersions,undefined);
+console.log('Unified-version encounter and compatibility checks passed');
