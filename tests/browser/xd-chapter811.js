@@ -98,7 +98,8 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
     // ---- The S.S. Libra: the deck, Smarton; Team Snagem's ambush. ----
     await heal(); await walkIn("SSLibra", "SSLibra_Deck");
     await step(33, "the S.S. Libra's deck: Smarton beaten");
-    await go("SSLibra_Deck", 15, 3, "up"); await s.walk("up", 1);
+    await go("SSLibra_Deck", 15, 3, "up");
+    for (let i = 0; i < 6 && (await where()).map === "SSLibra_Deck"; i++) { await s.page.waitForFunction(() => Overworld.idle()); await s.walk("up", 1); await s.wait(300); }
     await step(34, "Team Snagem's ambush: the Snag Machine taken");
     assert(await s.eval(() => !Game.player.bag["snag-machine"]), "the Snag Machine gone");
     // ---- Secc; Hordel; Gonzap. ----
@@ -121,7 +122,8 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
       await heal(); await go(map, map === "CitadarkIsle" ? 15 : 10, map === "CitadarkIsle" ? 20 : 31, "up"); await standBy("LOCALID_XD_TRAINER_" + k);
       await finish((k) => (Game.player.flags.xdBeaten || []).includes(k), "Citadark: " + k + " beaten", 3000, k);
     }
-    await heal(); await go("CitadarkIsle_Fort", 31, 4, "up"); await s.walk("up", 1);
+    await heal(); await go("CitadarkIsle_Fort", 31, 4, "up");
+    for (let i = 0; i < 6 && (await where()).map === "CitadarkIsle_Fort"; i++) { await s.page.waitForFunction(() => Overworld.idle()); await s.walk("up", 1); await s.wait(300); }
     await finish(() => !!Game.player.flags.xdClear, "the dome: Eldes, Shadow Lugia, Greevil; Cipher's end", 6000);
     assert((await flags()).xdShadowSnagged.includes(73), "Shadow Lugia (#73) snagged");
     assert.equal(await s.eval(() => Player.levelCap(Game.player)) > 50, true, "XD's level cap lifted");
