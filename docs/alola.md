@@ -124,3 +124,13 @@ Aether Foundation climax, Lusamine, Poni, Ultra Necrozma, League, and
 postgame remain future chapters; Tapu Bulu’s ruins are exploratory only.
 
 Regression: `node tests/alola-ulaula-test.js` (also included in `npm test`).
+
+## Aether Paradise and Poni Island (unified Ultra Sun/Ultra Moon)
+
+After Nanu’s grand trial, sail from Malie City to Aether Paradise. Defeat the guards and Lusamine, then sail to Seafolk Village on Poni Island. Each ferry retains a separate resume point and healing location within the existing Alola save.
+
+**19 connected maps (81 Alola maps total)** include Aether Paradise Dock, Lobby and Laboratory, Seafolk Village and Pokémon Center, Poni Wilds, Ancient Poni Path, Poni Breaker Coast, Ruins of Hope, Poni Grove, Poni Plains, Poni Meadow, Resolution Cave, Vast Poni Canyon, Dragon Trial, Altar of Sunne/Moone, Ultra Space and Poni Gauntlet.
+
+The story includes Hapu’s grand trial (Groundium Z), Totem Kommo-o (Dragonium Z), Ultra Necrozma, and Mina’s petal trial with Totem Ribombee (Fairium Z). The cap rises progressively to 75, 80, 85 and 90. Z-Crystal rewards and progress are save-safe. Seafolk Village gains a Town Map Fly spot.
+
+The layouts reuse existing 2D templates and boss battles are native adaptations. The Pokémon League, Tapu guardians, Rainbow Rocket and postgame remain unfinished. Regression: `node tests/alola-poni-test.js`.
