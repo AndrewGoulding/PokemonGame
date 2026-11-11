@@ -54,6 +54,24 @@ function create(env,{fight}){
    if(await battle(id,'Team Rainbow Rocket '+name,mons)){s()[flag]=true;await save();await say(name+' retreated. Rainbow Rocket’s control is weakening!');}
    return true;
   }
+  if(/^tapu-[0-3]$/.test(key)){
+   const names=['Tapu Koko','Tapu Lele','Tapu Bulu','Tapu Fini'];
+   if(!s().championClear){await say('The island guardians will test you after you become Champion.');return true;}
+   const i=Number(key.slice(-1));s().tapuWins||(s().tapuWins=[]);
+   if(s().tapuWins.includes(i)){await say(names[i]+' has already acknowledged your strength.');return true;}
+   if(await battle('TAPU_'+i,'Guardian '+names[i],[[names[i].replace(' ','-'),65+i]])){
+    s().tapuWins.push(i);await save();await say(names[i]+' acknowledged you. Guardians faced: '+s().tapuWins.length+'/4.');}
+   return true;
+  }
+  if(key==='legend-sun'||key==='legend-moon'){
+   if(!s().championClear){await say('The altar’s legendary light will awaken after the Pokémon League.');return true;}
+   const isSun=key==='legend-sun',flag=isSun?'solgaleoWon':'lunalaWon';
+   const mon=isSun?'Solgaleo':'Lunala';
+   if(s()[flag]){await say(mon+' has already acknowledged your strength.');return true;}
+   if(await battle(isSun?'LEGEND_SOLGALEO':'LEGEND_LUNALA','Legendary '+mon,[[mon,65]])){
+    s()[flag]=true;await save();await say(mon+' was defeated in the unified Alola legendary encounter.');}
+   return true;
+  }
   if(/^beast-[0-6]$/.test(key)){
    if(!s().championClear){await say('The Ultra Beast missions are available after the League.');return true;}
    const i=Number(key.slice(-1));s().beastWins||(s().beastWins=[]);
