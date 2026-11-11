@@ -4,9 +4,10 @@
  function create(env){const R=Alola,D=R.data(),p=()=>env.player(),s=()=>R.state(p()),say=env.say,save=env.saveCheckpoint;
  async function fight(id,name,team){if(!env.canBattle())return null;const result=await env.battle('trainer',{foe:{name,team},trainerId:'USUM_'+id,prizeClass:'Youngster'});env.showWorld();await env.resume();if(result==='won')p().flags['USUM_'+id]=true;await save();return result;}
  const akala=AlolaAkalaStory.create(env,{fight});
+ const ulaula=AlolaUlaulaStory.create(env,{fight});
  async function guide(){await say('Ultra Alola · combined Ultra Sun / Ultra Moon\nLevel cap: '+R.cap(p())+'\nSchool: '+s().schoolWins.length+'/4');
-  await say(!s().starter?'Find Kukui on Route 1 for your starter.':!s().hauFirst?'Meet Hau in Iki Town.':!s().nebby?'Help Lillie and Nebby on Mahalo Trail.':!s().festival?'Return to Iki Town for the festival.':!s().schoolClear?'Visit Iki Town’s Trainer School.':!s().ilimaWon?'Meet Ilima in Hau’oli City.':!s().skullRoute2?'Stop Team Skull in Hau’oli and on Route 2.':!s().verdantClear?'Complete Verdant Cavern’s trial.':!s().halaClear?'Challenge Kahuna Hala in Iki Town.':akala.goal());}
- async function run(script){if(!script?.startsWith('usum:'))return false;const k=script.slice(5);if(await akala.run(k))return true;
+  await say(!s().starter?'Find Kukui on Route 1 for your starter.':!s().hauFirst?'Meet Hau in Iki Town.':!s().nebby?'Help Lillie and Nebby on Mahalo Trail.':!s().festival?'Return to Iki Town for the festival.':!s().schoolClear?'Visit Iki Town’s Trainer School.':!s().ilimaWon?'Meet Ilima in Hau’oli City.':!s().skullRoute2?'Stop Team Skull in Hau’oli and on Route 2.':!s().verdantClear?'Complete Verdant Cavern’s trial.':!s().halaClear?'Challenge Kahuna Hala in Iki Town.':!s().oliviaClear?akala.goal():ulaula.goal());}
+ async function run(script){if(!script?.startsWith('usum:'))return false;const k=script.slice(5);if(await akala.run(k))return true;if(await ulaula.run(k))return true;
   switch(k){
    case'travel-alola':if(!s().started){s().started=true;s().returnCenter=p().flags.lastCenter||null;}
     if(!await env.confirm('Travel to Alola? Ultra Sun and Ultra Moon content is combined.'))break;
