@@ -24,7 +24,7 @@
   const SPECIAL_NAMES = {
     "poke-ball": "Poké Ball", "kings-rock": "King's Rock", "up-grade": "Up-Grade", "hp-up": "HP Up",
     "lab-card-key": "Card Key", "down-st-key": "Down St. Key", "data-rom": "Data ROM", "dna-sample": "DNA Sample",   // (Orre's Shadow Pokémon Lab)
-    "id-card": "ID Card", "poke-snack": "Poké Snack", "mayors-note": "Mayor's Note",   // (Pokémon XD's)
+    "id-card": "ID Card", "poke-snack": "Poké Snack", "miror-radar": "Miror Radar", "mayors-note": "Mayor's Note",   // (Pokémon XD's)
     "pp-up": "PP Up", "pp-max": "PP Max", "never-melt-ice": "Never-Melt Ice", "exp-share": "Exp. Share", "oaks-parcel": "Oak's Parcel", "ss-ticket": "S.S. Ticket", "gs-ball": "GS Ball", "vs-seeker": "VS Seeker", "poke-flute": "Poké Flute", "guard-spec": "Guard Spec.",
     "x-accuracy": "X Accuracy", "x-attack": "X Attack", "x-defense": "X Defense", "x-speed": "X Speed",
     "x-sp-atk": "X Sp. Atk", "x-sp-def": "X Sp. Def", "poke-doll": "Poké Doll", "oddish-ball": "Oddish Ball",
@@ -144,7 +144,7 @@
     "machine-part": "A rare part for\nthe Purify Chamber.\nFor Lily at the Lab.",
     "id-card": "An ID card that\nopens a locked door\nin the Cipher Lab.",
     "elevator-key": "The key to the\nPre Gym's elevator\nin Phenac City.",
-    "poke-snack": "Laid out at a\nPoké Spot, it brings\nwild Pokémon.", "system-lever": "The lever for the\nKey Lair's Control\nMachine.",
+    "poke-snack": "Laid out at a\nPoké Spot, it brings\nwild Pokémon.", "miror-radar": "Miror B.'s posse's\nradar, for finding\nwhere he is.", "system-lever": "The lever for the\nKey Lair's Control\nMachine.",
     "mayors-note": "Phenac's Mayor's\nletter to Justy,\nwarning of Cipher."
   };
   const description = (item) => ((window.ITEMS[item] || {}).category === "evolution" ? EVOLUTION_ITEM_TEXT : "") ||

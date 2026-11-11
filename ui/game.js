@@ -6296,7 +6296,10 @@
         await eagunsHouseScene();   // (Colosseum's)
         return;
       case "AgateVillage_EaguansHouse_EventScript_Eagun":
-        if (story >= 15) { await say(["Eagun: Fine! If I hear of anything, I\nwill make certain to get in touch\nwith you."]); return; }
+        if (story >= 15) {
+          if (f.xdClear) { await say(L.orreColosseumHi); await xdRematch(222, ["Eagun: Oh! I knew it, but bravo! I\nrepeat, bravo!"]); return; }   // (XD's #23104)
+          await say(["Eagun: Fine! If I hear of anything, I\nwill make certain to get in touch\nwith you."]); return;
+        }
         await eagunsHouse(script);   // (Colosseum's)
         return;
       case "AgateVillage_EaguansHouse_EventScript_Beluh":
@@ -6327,6 +6330,7 @@
       case "RelicForest_EventScript_XD_EAGUN": await xdShrine(); return;
       // ---- Mt. Battle (XD's chapter 4): reception, Vander and his trainee Bardo. ----
       case "XD_EventScript_Reception":
+        if (story >= 20) { await say(L.mtWelcome); await mtBattleChallenge(true); return; }
         if (story === 15) { await say(L.reception); f.xdStory = 16; Overworld.refreshPeople(); await persist(); return; }
         await say(story >= 17 ? L.receptionLater : L.receptionAfter);
         return;
@@ -6355,6 +6359,7 @@
       case "enter:CipherLab_B1": await xdLovrina(); return;
       case "XD_EventScript_KraneLab": await say(L.kraneOut); return;
       case "XD_EventScript_KraneHome":
+        if (f.xdClear) Orre.unlock(f, Orre.XD.ORRE_COLOSSEUM.map);
         await say(story >= 40 ? L.lugiaPurified : story >= 38 ? L.kraneCitadark : story >= 34 ? L.kraneSnagem : story >= 33 ? L.kraneLibra : story >= 29 ? L.kraneFree : story >= 25 ? L.kranePhenac : story >= 21 ? L.kraneOnbsAgain : L.kraneTough.slice(0, 3));
         return;
       // ---- The Data ROM to ONBS in Pyrite (XD's chapter 6). ----
@@ -6420,6 +6425,8 @@
       case "XD_EventScript_Gorigan": await xdGorigan(); return;
       case "enter:CitadarkIsle_Dome": await xdDome(); return;
       case "XD_EventScript_Greevil": return;
+      case "XD_EventScript_Cry_azumarill": case "XD_EventScript_Cry_castform": case "XD_EventScript_Cry_linoone": case "XD_EventScript_Cry_seedot":
+      case "XD_EventScript_Cry_shroomish": await xdCryQuiz(script.replace("XD_EventScript_Cry_", "")); return;
       // ---- The extras: Bonsly, the Key Lair's System Lever, Team Snagem's door, Duking and the Poké Spots. ----
       case "XD_EventScript_BonslyOwners": await xdBonslyOwners(); return;
       case "XD_EventScript_Bonsly": await xdBonsly(); return;
@@ -6439,6 +6446,26 @@
         return;
       case "XD_EventScript_Duking": await xdDuking(); return;
       case "XD_EventScript_PokeSpot": await xdPokeSpot(); return;
+      // ---- Miror B., Willie, Chobin; the post-game's desks; the cry quizzes. ----
+      case "XD_EventScript_MirorCave": await xdMirorCave(); return;
+      case "XD_EventScript_MirorStand": await xdMirorStand(); return;
+      case "XD_EventScript_MirorTower": await xdMirorTower(); return;
+      case "XD_EventScript_Willie": await xdWillie(); return;
+      case "XD_EventScript_ChobinRG":
+        await say(L.chobin);
+        if (!(await confirm("Battle Chobin's Robo Groudon?"))) { await say(L.chobinNo); return; }   // (this game's own prompt)
+        await say(L.chobinFight);
+        await xdRematch(f.xdChobinRG ? 167 : 166, ["Chobin: Chobin lost! Chobin, no!"], { asked: true });   // (XD's #23508)
+        f.xdChobinRG = true;
+        await say(L.chobinAfter);
+        await persist();
+        return;
+      case "XD_EventScript_OrreColosseum": await xdOrreColosseum(); return;
+      case "XD_EventScript_OrreColosseumEagun": await say((f.xdColosseumWins || []).length ? L.orreColosseumTitle.slice(0, 1) : L.orreColosseumHi); return;
+      case "XD_EventScript_BattleSim": await xdBattleSim(); return;
+      case "XD_EventScript_Bingo": await xdBingo(); return;
+      case "XD_EventScript_RealgamCup": await xdCup("Realgam Colosseum", 25, 40, [5, 6, 7, 8]); return;
+      case "XD_EventScript_PyriteCup": await xdCup("Pyrite Colosseum", 9, 24, [1, 2, 3, 4]); return;
       case "enter:RockPokeSpot": case "arrive:RockPokeSpot": case "enter:OasisPokeSpot": case "arrive:OasisPokeSpot":
       case "enter:CavePokeSpot": case "arrive:CavePokeSpot": await xdSpotVisitor(); return;
       case "PokemonHQLab_1F_EventScript_Jovi":
@@ -6884,7 +6911,7 @@
   // One of XD's Agate villagers (game/xd.js's VILLAGERS): a battle, once, if you like; their after-words then.
   async function xdVillager(key) {
     const f = player.flags, v = Orre.XD.VILLAGERS[key], beaten = (f.xdBeaten = f.xdBeaten || []);
-    if (beaten.includes(key)) { await say(v.after); return; }
+    if (beaten.includes(key)) { await say(v.after); if (v.rematch && f.xdClear) await xdRematch(v.rematch, v.defeat); return; }
     if (v.ask.length > 1) await say(v.ask.slice(0, -1));
     if (!(await confirm(v.ask[v.ask.length - 1]))) { await say(v.no); return; }
     await say(v.yes);
@@ -6901,7 +6928,7 @@
   // those who ask); beaten, their after-words. A Trainer whose Shadow Pokémon wasn't snagged battles you again.
   async function xdTrainer(key) {
     const f = player.flags, t = Orre.XD.TRAINERS[key], beaten = (f.xdBeaten = f.xdBeaten || []);
-    if (beaten.includes(key)) { await say(t.after); return; }
+    if (beaten.includes(key)) { await say(t.after); if (t.rematch && f.xdClear) await xdRematch(t.rematch, t.defeat); return; }
     await say(t.intro);
     if (t.ask) {
       if (!(await confirm(t.ask))) { await say(t.no); return; }
@@ -7386,6 +7413,7 @@
     gone();
     f.xdStory = 40;
     f.xdClear = true;
+    Orre.unlock(f, Orre.XD.ORRE_COLOSSEUM.map);
     player.location = { map: "PokemonHQLab_2F", x: 4, y: 5, facing: "up" };
     await Overworld.teleport(player.location);
     await Overworld.fadeFromBlack();
@@ -7496,6 +7524,243 @@
     const level = 10 + Math.floor(Math.random() * 14);
     await say("A wild " + species + " came to the\nPoké Snacks!");   // (this game's own)
     await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level))] } });
+    await persist();
+  }
+  // A Lv. 50 rematch (XD's decks #203-#230, or any story deck) once XD's story's over: asked first, unless `asked`.
+  async function xdRematch(index, defeat, { asked } = {}) {
+    if (!asked && !(await confirm("Battle again?"))) return "declined";   // (this game's own prompt)
+    const t = Orre.XD.trainer(index, player.flags.xdShadowSnagged, defeat);
+    const opts = { foe: { name: t.name, team: t.team, pic: t.pic }, double: t.team.length > 1, prizeClass: "Cooltrainer", noBlackout: true,
+      snag: Player.itemCount(player, "snag-machine") ? t.team.filter((r) => r.shadow).map((r) => r.species) : [], defeatText: t.defeat };
+    const outcome = await storyBattle(opts);
+    const got = t.shadows.filter((id) => (opts.snagged || []).includes(window.XD_DECKS.shadow[id].species));
+    if (got.length) (player.flags.xdShadowSnagged = player.flags.xdShadowSnagged || []).push(...got);
+    await persist();
+    return outcome;
+  }
+  // Miror B. at the Cave Poké Spot with Folly and Trudly: his offer, and his battle (XD's #45701-#45717, deck #72, his
+  // Shadow Voltorb); beaten, he leaves the Miror Radar behind.
+  async function xdMirorCave() {
+    const f = player.flags, L = Orre.XD.LINES, M = ORRE_XD("MIROR_C");
+    if ((f.xdMiror | 0) !== 0) return;
+    Overworld.addObject(M, { x: 9, y: 9, facing: "left" });
+    if (!f.xdMirorMet) {
+      for (const page of L.mirorCave) await say(page);
+      await say(L.mirorAsk.slice(0, -1));
+      if (await confirm(L.mirorAsk[L.mirorAsk.length - 1])) await say(L.mirorYes);
+      f.xdMirorMet = true;
+    }
+    await say(L.mirorFight);
+    const outcome = await xdFight(72, ["Miror B.: Humph! I may have lost at\nbattling, but on the dance floor I\nhave you beat! Fuhohoho!"]);   // (XD's #23207)
+    Overworld.removeObject(M);
+    if (outcome !== "won") { await say(L.mirorWon); await persist(); return; }
+    for (const page of L.mirorLost) await say(page);
+    await say(L.radarFound);
+    Player.addItem(player, "miror-radar", 1);
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} found the Miror Radar!");   // (this game's own)
+    f.xdMiror = 1;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Miror B. at the Outskirt Stand, after his meal (XD's #42001-#42012, deck #134, his Shadow Nosepass).
+  async function xdMirorStand() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if ((f.xdMiror | 0) !== 1) return;
+    if (!f.xdMirorStandMet) { for (const page of L.mirorStand) await say(page); f.xdMirorStandMet = true; }
+    await say(L.mirorStandFight);
+    const outcome = await xdFight(134, ["Miror B.: I shouldn't have done\nsomething this strenuous right after\neating…"]);   // (XD's #23301)
+    if (outcome !== "won") { await say(L.mirorStandAgain); await persist(); return; }
+    await say(L.mirorStandLost);
+    f.xdMiror = 2;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Miror B. dancing on Gateon's lighthouse once XD's story's over, Cipher's last Shadow Pokémon with him (XD's #41321-#41339,
+  // deck #221, his Shadow Dragonite).
+  async function xdMirorTower() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if ((f.xdMiror | 0) !== 2) return;
+    if (!f.xdMirorTowerMet) { for (const page of L.mirorTower) await say(page); f.xdMirorTowerMet = true; } else await say(L.mirorTowerAgain);
+    const outcome = await xdFight(221, ["Miror B.: Battling with you, I can't\nfind the right groove at all."]);   // (XD's #23206)
+    if (outcome !== "won") { await persist(); return; }
+    for (const page of L.mirorTowerLost) await say(page);
+    f.xdMiror = 3;
+    Overworld.refreshPeople();
+    await say(L.mirorTowerAfter);
+    await persist();
+  }
+  // Willie at the Outskirt Stand (XD's #42019-#42028, deck #135; his Lv. 50 rematch, #226, once XD's story's over).
+  async function xdWillie() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if (f.xdWillie) { await say(L.willieAfter.slice(-1)); if (f.xdClear) { await say(L.willieAgain); await xdRematch(226, ["Willie: Tch… I get handed the loss. I\nstill need seasoning."], { asked: true }); } return; }
+    for (const page of L.willie) await say(page);
+    if (!(await confirm(L.willieAsk[L.willieAsk.length - 1]))) { await say(L.willieNo); return; }
+    for (const page of L.willieYes) await say(page);
+    const outcome = await xdFight(135, ["Willie: Tch… I get handed the loss. I\nstill need seasoning."]);   // (XD's #23302)
+    if (outcome !== "won") return;
+    await say(L.willieAfter);
+    f.xdWillie = true;
+    await persist();
+  }
+  // The Pyrite and Realgam Colosseums' Colosseum Battles (XD's colosseum decks #9-#24 and #25-#40, Miror B. now and
+  // then in the last round, #1-#8): four double battles in a row, healed between.
+  async function xdCup(name, lo, hi, mirors) {
+    const f = player.flags, wins = (f.xdCups = f.xdCups || {});
+    await say(["Welcome to the " + name + "'s\nColosseum Battles!", "Four double battles in a row. Win\nthem all and you're the day's\nchampion!"]);   // (this game's own)
+    if (player.party.filter((r) => !r.egg).length < 2) { await say(["You'll need at least two Pokémon to\nenter."]); return; }
+    if (!(await confirm("Enter the Colosseum Battles?"))) return;
+    const pool = []; for (let i = lo; i <= hi; i++) pool.push(i);
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    const draw = pool.slice(0, 4);
+    if (Math.random() < 0.25) draw[3] = mirors[Math.floor(Math.random() * mirors.length)];
+    const heal = () => player.party.forEach(Party.heal);
+    heal();
+    for (let round = 0; round < 4; round++) {
+      const t = Orre.XD.deckTrainer("colosseum", draw[round]);
+      await say([(round === 3 ? "The final! " : "Round " + (round + 1) + "! ") + "Your opponent:\n" + t.name + "!"]);
+      Screen.say("");
+      const outcome = await storyBattle({ foe: { name: t.name, team: t.team, pic: t.pic }, double: t.team.length > 1, prizeClass: t.cls, noBlackout: true,
+        defeatText: ["Well fought!"] });
+      heal();
+      if (outcome !== "won") { await say(["Oh, what a shame! Please try again!"]); await persist(); return; }
+    }
+    wins[name] = (wins[name] | 0) + 1;
+    await sayWithJingle("mus_obtain_badge", ["Congratulations! You're today's\n" + name + " champion!"]);
+    const item = wins[name] === 1 ? "rare-candy" : pickOne(["pp-up", "hp-up", "protein", "iron", "calcium", "zinc", "carbos"]);
+    Player.addItem(player, item, 1);
+    await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
+    await persist();
+  }
+  // The Orre Colosseum, once XD's story's over (XD's #35501-#35574): seven sets of four double battles, each ending
+  // with one of its admins (colosseum decks #41-#68), and, once all seven are won, the "?????" set, the seven admins in a
+  // row; no Shadow Pokémon. Each set's first win, Eagun's title for it (#35560-#35566) and a Rare Candy.
+  async function xdOrreColosseum() {
+    const f = player.flags, L = Orre.XD.LINES, won = (f.xdColosseumWins = f.xdColosseumWins || []);
+    const SETS = [["Lovrina", 41, "Lovrina Fan Club Member No. 1"], ["Snattle", 45, "Orre Governor's Secretary Candidate"], ["Gorigan", 49, "Hexagonal Bolt of Friendship Holder"],
+      ["Chobin & Robo Groudon", 53, "Defeater of Chobin"], ["Gonzap", 57, "Honorary Team Snagem Member"], ["Ardos", 61, "Cipher's Biggest Enemy"], ["Eldes", 65, "Eldes's Top Rival"]];
+    await say(L.orreColosseumWelcome);
+    if (player.party.some((r) => r.shadow)) { await say(["There is at least one Shadow\nPokémon in your party. Shadow", "Pokémon are prohibited. Please store\nyour Shadow Pokémon in the PC."]); return; }   // (XD's #35539)
+    if (player.party.filter((r) => !r.egg).length < 2) { await say(["You'll need at least two Pokémon to\nenter."]); return; }
+    const all = won.length >= 7;
+    const labels = SETS.map((st) => st[0] + (won.includes(st[0]) ? " ✓" : "")).concat(all ? ["?????"] : [], ["Cancel"]);
+    const pick = await multichoice("Which set would you like to\nchallenge?", 0, 0, labels);   // (XD's #35523)
+    if (pick < 0 || pick >= SETS.length + (all ? 1 : 0)) { await say(L.orreColosseumRules.slice(-1)); return; }
+    const secret = pick === SETS.length, set = secret ? null : SETS[pick];
+    const rounds = secret ? [44, 48, 52, 56, 60, 64, 68] : [set[1], set[1] + 1, set[1] + 2, set[1] + 3];
+    await say(L.orreColosseumGo);
+    const heal = () => player.party.forEach(Party.heal);
+    heal();
+    for (let i = 0; i < rounds.length; i++) {
+      const t = Orre.XD.deckTrainer("colosseum", rounds[i]);
+      await say([(i === rounds.length - 1 ? "This is it! The final battle!\n" : "Next! ") + t.name + "!"]);   // (XD's #35572-#35574, near enough)
+      Screen.say("");
+      const outcome = await storyBattle({ foe: { name: t.name, team: t.team, pic: t.pic }, double: true, prizeClass: "Leader", noBlackout: true, defeatText: ["Well fought!"] });
+      heal();
+      if (outcome !== "won") { await say(L.orreColosseumLost); await persist(); return; }
+    }
+    await say(L.orreColosseumWon);
+    const key = secret ? "?????" : set[0];
+    if (!won.includes(key)) {
+      won.push(key);
+      await say(L.orreColosseumEagun);
+      await say(["Eagun: Congratulations! My hat's off\nto you for a most splendid victory!"]);
+      await sayWithJingle("mus_obtain_badge", "{PLAYER} received the title\n\u201c" + (secret ? "Orre Colosseum Champion" : set[2]) + "\u201d\nfrom Eagun!");   // (XD's #35504)
+      Player.addItem(player, "rare-candy", 1);
+      await sayWithJingle(itemJingle("rare-candy"), "{PLAYER} received a Rare Candy!");
+    }
+    await persist();
+  }
+  // Realgam Tower's Battle Sim (XD's #33028): its Battle CDs, each a battle with a team lent to you against another
+  // (data/xd-decks.js's virtual decks, in pairs: yours, then theirs); your own Pokémon are untouched.
+  async function xdBattleSim() {
+    const f = player.flags, L = Orre.XD.LINES, V = window.XD_DECKS.virtual, cleared = (f.xdCDs = f.xdCDs || []);
+    await say(L.sim);
+    const count = Math.floor(Object.keys(V).length / 2), page = (f.xdSimPage | 0) % Math.ceil(count / 10);
+    const ids = []; for (let n = page * 10 + 1; n <= Math.min(count, page * 10 + 10); n++) ids.push(n);
+    const labels = ids.map((n) => "Battle CD " + String(n).padStart(2, "0") + (cleared.includes(n) ? " ✓" : "")).concat(["More…", "Cancel"]);
+    const pick = await multichoice("Which Battle CD?", 0, 0, labels);
+    if (pick === ids.length) { f.xdSimPage = page + 1; await persist(); return xdBattleSim(); }
+    if (pick < 0 || pick > ids.length) return;
+    const n = ids[pick], mine = V[n * 2 - 1], theirs = V[n * 2];
+    const make = (t) => t.party.map((p) => { const r = Party.create(p.species, p.level, { moves: p.moves }); if (p.item) r.item = p.item; return r; });
+    const own = player.party;
+    player.party = make(mine);
+    let outcome;
+    try {
+      outcome = await battle("trainer", { foe: { name: theirs.name || "Opponent", team: make(theirs), pic: "cooltrainer_m" }, double: theirs.party.length > 1 && mine.party.length > 1,
+        noExp: true, noPrize: true, noBlackout: true, noBag: true, defeatText: ["Battle Sim complete!"] });
+    } finally { player.party = own; }
+    show("world"); await Overworld.resume();
+    if (outcome === "won") { if (!cleared.includes(n)) cleared.push(n); await say(["Congratulations! You cleared Battle\nCD " + String(n).padStart(2, "0") + "!"]); }
+    else await say(["Too bad! Please try that Battle CD\nagain."]);
+    await persist();
+  }
+  // Battle Bingo (XD's #56008-#56120), as near as this game can: a card of 16 panels, each a Pokémon to beat with the
+  // one Pokémon the card lends you (the bingo deck's six, Lv. 15); each one beaten turns its panel over and joins you
+  // for the rest of the card. Lines of panels turned over are Bingos; the card's over when you lose.
+  async function xdBingo() {
+    const f = player.flags, L = Orre.XD.LINES, B = Object.values(window.XD_DECKS.bingo)[0], H = window.XD_DECKS.hundred;
+    await say(L.bingo);
+    const card = await multichoice("Which card?", 0, 0, ["Novice", "Easy", "Normal", "Hard", "Extra", "Rules", "Cancel"]);
+    if (card === 5) { for (const page of L.bingoRules) await say(page); return; }
+    if (card < 0 || card > 4) return;
+    if (!(await confirm("Play with this Bingo card?"))) return;   // (XD's #56030)
+    // (The card's panels: sixteen of Mt. Battle's Pokémon, by the card, at Lv. 15.)
+    const species = [];
+    for (const t of Object.values(H)) for (const p of t.party) if (!species.includes(p.species)) species.push(p.species);
+    const panels = Array.from({ length: 16 }, (_, i) => species[(card * 37 + i * 11) % species.length]);
+    const lent = B.party[card % B.party.length];
+    const team = [Party.create(lent.species, 15, { moves: lent.moves })];
+    const flipped = new Set(), lines = () => {
+      const L4 = []; for (let i = 0; i < 4; i++) { L4.push([0, 1, 2, 3].map((k) => i * 4 + k)); L4.push([0, 1, 2, 3].map((k) => k * 4 + i)); }
+      L4.push([0, 5, 10, 15], [3, 6, 9, 12]);
+      return L4.filter((l) => l.every((p) => flipped.has(p))).length;
+    };
+    const own = player.party;
+    try {
+      while (flipped.size < 16) {
+        const open = panels.map((sp, i) => ({ sp, i })).filter((p) => !flipped.has(p.i));
+        const pick = await multichoice("Which panel next? (" + flipped.size + "/16)", 0, 0, open.slice(0, 8).map((p) => "Panel " + (p.i + 1) + ": " + p.sp).concat(["Quit"]));
+        if (pick < 0 || pick >= Math.min(8, open.length)) break;
+        const target = open[pick];
+        player.party = team;
+        team.forEach(Party.heal);
+        const outcome = await battle("trainer", { foe: { name: "Bingo", team: [Party.create(target.sp, 15)], pic: "cooltrainer_m" }, noExp: true, noPrize: true, noBlackout: true, noBag: true,
+          defeatText: ["The panel turns over!"] });
+        player.party = own;
+        show("world"); await Overworld.resume();
+        if (outcome !== "won") break;
+        const before = lines();
+        flipped.add(target.i);
+        if (team.length < 6) team.push(Party.create(target.sp, 15));
+        if (lines() > before) await say(L.bingoLine.concat(["That made " + lines() + " Bingo line(s)!"]));   // (XD's #56053, #56054)
+      }
+    } finally { player.party = own; }
+    const n = lines(), best = (f.xdBingo = f.xdBingo || {});
+    best[card] = Math.max(best[card] | 0, n);
+    await say(["Thank you for playing. You completed\n" + n + " Bingo line(s)!"]);   // (XD's #56062, near enough)
+    if (n) { Player.addItem(player, "rare-candy", Math.min(3, n)); await say(["{PLAYER} received " + Math.min(3, n) + " Rare Cand" + (Math.min(3, n) > 1 ? "ies" : "y") + "!"]); }
+    await persist();
+  }
+  // The Pokémon that won't cry (XD's #36339-#36394, #37508-#37516): the Cry Analyzer's question about it, and, answered,
+  // its Pokémon Translator comes off and it cries again. (Megg's Shroomish needs no question.)
+  async function xdCryQuiz(key) {
+    const f = player.flags, L = Orre.XD.LINES, done = (f.xdCries = f.xdCries || []);
+    const Q = { azumarill: ["Azumarill", ["Marill", "Azurill"], 0], castform: ["Castform", ["Carefree Pokémon", "Weather Pokémon", "Shadow Pokémon"], 1],
+      linoone: ["Linoone", ["No. 1", "No. 2"], 0], seedot: ["Seedot", ["Nuzleaf", "Seedot", "Shiftry"], 1], shroomish: ["Shroomish", null, 0] }[key];
+    if (done.includes(key)) { await say(L[key + "After"] || L.shroomishOk.slice(-1)); return; }
+    if (key === "shroomish" && (f.xdStory | 0) < 29) return;
+    await say(L[key]);
+    if (Q[1]) {
+      await say(L.analyzer);
+      if (key === "linoone") { cry("Linoone"); await say(["The cries of two Pokémon will now be\nplayed."]); cry("Zigzagoon"); }
+      else await say(L[key + "Q"].slice(0, -1));
+      const pick = await multichoice(L[key + "Q"][L[key + "Q"].length - 1], 0, 0, Q[1].concat(["Cancel"]));
+      if (pick !== Q[2]) { await say(L.noReaction); return; }
+    }
+    cry(Q[0]);
+    for (const page of L[key + "Ok"]) await say(page);
+    done.push(key);
     await persist();
   }
   // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.
@@ -8653,7 +8918,11 @@
   // Purified at the Relic Stone, or by Celebi: Colosseum's words for it (M3_shrine_1F_rl #15120, #15115, #17614, #15116,
   // #15117).
   async function purifyWithWords(r) {
+    // (XD001, Shadow Lugia, that Cipher said could never be purified: XD's #53587, and the HQ Lab's word of it, #40117.)
+    const lugia = r.xdShadow === 73;
+    if (lugia) await say(Orre.XD.LINES.lugiaChanged);
     const name = Party.displayName(r), got = purify(r);
+    if (lugia) { player.flags.xdLugiaPurified = true; await say(Orre.XD.LINES.lugiaLab); }
     await sayWithJingle("mus_heal", [name + " opened the door to its\nheart!"].concat(got.move ? [name + " regained the move\n" + got.move + "!"] : []));
     if (got.exp) await say(name + " regained " + got.exp + "\nEXP Points!");
     if (got.level) await say(name + " was elevated to Lv. " + got.level + ".");
@@ -8731,8 +9000,11 @@
   // healed only between areas, where you may stop. player.flags.orreMtBattle: { best (the furthest area cleared),
   // cleared (areas whose first-clear prize you've had), hooh (Ho-Oh given) }.
   async function mtBattleChallenge() {
-    const f = player.flags, M = Orre.MT_BATTLE, rec = (f.orreMtBattle = f.orreMtBattle || { best: 0, cleared: [] });
-    if ((f.orreStory | 0) < M.from) { await say(["The challenge is closed while those\npurple crooks are on the mountain.", "Sorry, kid. Come back once they're\ngone."]); return; }
+    // (xd: Pokémon XD's own hundred, its Area Leaders every tenth (data/xd-decks.js's hundred), its own record
+    // player.flags.xdMtBattle and its Ho-Oh once XD's story's over: XD's #31044-#31081.)
+    const xd = arguments[0] === true;
+    const f = player.flags, M = Orre.MT_BATTLE, rec = xd ? (f.xdMtBattle = f.xdMtBattle || { best: 0, cleared: [] }) : (f.orreMtBattle = f.orreMtBattle || { best: 0, cleared: [] });
+    if (!xd && (f.orreStory | 0) < M.from) { await say(["The challenge is closed while those\npurple crooks are on the mountain.", "Sorry, kid. Come back once they're\ngone."]); return; }
     await say(["Welcome to Mt. Battle's challenge!", "Ten areas, ten Trainers each, all\ndouble battles. The tenth in each\narea is its Area Leader.",
       "Your Pokémon are only healed between\nareas, and you can stop there.", "Beat all 100 in one go and, they say,\nsomething wonderful happens!"]);
     if (player.party.filter((r) => !r.egg).length < 2) { await say(["You'll need at least two Pokémon.\nThey're double battles!"]); return; }
@@ -8743,13 +9015,14 @@
     heal();
     await say(["Your Pokémon have been restored to\nfull health. Good luck!"]);
     for (let area = from; area <= 10; area++) {
-      const foes = Orre.mtBattleArea(area, Player.levelCap(player));
+      const foes = xd ? Array.from({ length: 10 }, (_, k) => { const t = Orre.XD.deckTrainer("hundred", (area - 1) * 10 + k + 1); return { name: t.name, team: t.team, pic: t.pic, cls: t.cls, leader: k === 9, xd: true }; })
+        : Orre.mtBattleArea(area, Player.levelCap(player));
       await say(["Area " + area + "! Ten Trainers stand\nbetween you and the next area."]);
       for (let k = 0; k < 10; k++) {
         const e = foes[k];
         await say([e.leader ? "Area " + area + "'s Area Leader steps up:\n" + e.name + "!" : "Battle " + ((area - 1) * 10 + k + 1) + ": " + e.name + "!"]);
         Screen.say("");
-        const outcome = await storyBattle({ foe: { name: e.name, team: teamOf(e.team), pic: e.pic }, prizeClass: e.leader ? "Leader" : e.cls, noBlackout: true,
+        const outcome = await storyBattle({ foe: { name: e.name, team: e.xd ? e.team : teamOf(e.team), pic: e.pic }, double: e.xd ? e.team.length > 1 : undefined, prizeClass: e.leader ? "Leader" : e.cls, noBlackout: true,
           defeatText: [e.leader ? "You've earned the next area. Go on!" : pickOne(["Whoa! You're strong!", "Hmph. Good luck up there.", "My training wasn't enough…"])] });
         if (outcome !== "won") {
           heal();
@@ -8775,8 +9048,9 @@
     await say(["Incredible! You've beaten all of Mt.\nBattle's Trainers!"]);
     // (As in Colosseum: all 100 in one go, once all 48 Shadow Pokémon have been purified. Its Ho-Oh, Lv. 70, knows
     // Recover, Fire Blast, Sunny Day and Swift: Serebii's Colosseum Ho-Oh page.)
+    if (xd && from === 1) await say(Orre.XD.LINES.mtHundred);
     const allPurified = Orre.SHADOW.every((s) => (f.orrePurified || []).includes(s.species));
-    if (from === 1 && !rec.hooh && (f.orreStory | 0) >= 44 && allPurified) {
+    if (from === 1 && !rec.hooh && (xd ? !!f.xdClear && !(f.orreMtBattle || {}).hooh : (f.orreStory | 0) >= 44 && allPurified)) {
       await say(["…Huh? Look at the sky!", "A rainbow… and something's flying out\nof it!"]);
       await Overworld.flash();
       cry("Ho-Oh");

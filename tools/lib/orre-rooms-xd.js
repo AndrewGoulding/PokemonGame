@@ -129,6 +129,12 @@ module.exports = function ({ changed, room, drawings, block, A, emerald, maps, c
     o.signs.push({ x: 18, y: 17, script: "GateonPort_EventScript_Sign", text: ["GATEON PORT", "A lively seaport with active trade."] });
     for (const [x, y] of [[1, 8], [14, 9], [22, 9], [13, 16], [1, 16]]) { palm(oz, x * 16 + 8, y * 16 + 12); block(o, x, y, 1, 1); }
     const PORT_WARPS = { pc, mart, parts, emili };
+    // (The lighthouse's door, up to its top: Miror B.'s dance floor once XD's story's over.)
+    o.collision[15 * GW + 27] = 0; o.behavior[15 * GW + 27] = 0x69;
+    door(oz, 27 * 16 + 8, 16 * 16 - 1, 14, C.dark);
+    const light = o.warps.push({ x: 27, y: 15, map: GP + "_Lighthouse", warp: 0 }) - 1;
+    changed[GP + "_Lighthouse"] = Object.assign(room("LilycoveCity_DepartmentStoreRooftop", GP + "_Lighthouse", "Gateon Port", "em_slateport",
+      [{ x: 13, y: 3, map: GP, warp: light }]), { orrePlace: GP });
     changed[GP + "_PokemonCenter_1F"] = pcRoom(GP + "_PokemonCenter_1F", "Gateon Port", "mus_poke_center", GP, PORT_WARPS.pc);
     changed[GP + "_Mart"] = room("PetalburgCity_Mart", GP + "_Mart", "Gateon Port", "em_poke_mart",
       [{ x: 3, y: 7, map: GP, warp: PORT_WARPS.mart }, { x: 4, y: 7, map: GP, warp: PORT_WARPS.mart }]);
@@ -281,6 +287,17 @@ module.exports = function ({ changed, room, drawings, block, A, emerald, maps, c
     // The plate.
     oc.ellipse(9 * 16, 5 * 16 + 8, 22, 9, C.metal[0]); oc.ellipse(9 * 16, 5 * 16 + 7, 18, 7, C.cream);
     o.signs.push({ x: 8, y: 5, script: "XD_EventScript_PokeSpot", text: null }, { x: 9, y: 5, script: "XD_EventScript_PokeSpot", text: null });
+  }
+  // ---- The Orre Colosseum (XD's D7): out in the desert, open once XD's story's over; Eagun its president. ----
+  {
+    const OC = "OrreColosseum", W2 = 26, H2 = 20;
+    const { o, oc, oz } = outdoors(OC, "Orre Colosseum", "mus_vs_champion", W2, H2,
+      (x, y) => x === 0 || x === W2 - 1 || y === 0 || (y === H2 - 1 && (x < 11 || x > 14)), [11, 12, 13, 14].map((x) => [x, H2 - 1]));
+    block(o, 5, 2, 16, 8);
+    oc.ellipse(13 * 16, 6 * 16, 128, 66, C.stone[2]); oc.ellipse(13 * 16, 6 * 16, 118, 58, C.stone[0]);
+    for (let i = 0; i < 12; i++) oc.rect(5 * 16 + 10 + i * 20, 9 * 16 - 6, 8, 12, C.stone[2]);
+    text(oc, "ORRE COLOSSEUM", 8 * 16, 5 * 16, C.gold);
+    oc.rect(9 * 16, 11 * 16, 8 * 16, 4 * 16, C.stone[1]);
   }
   // Phenac's Pre Gym's basement (XD's M1_gym_B1), where Cipher held the Mayor, Justy and the townspeople: Mossdeep's
   // Game Corner's basement, its stairs up to the Pre Gym's door (it's reached by the elevator, in XD's story).

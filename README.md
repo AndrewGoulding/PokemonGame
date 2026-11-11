@@ -3222,7 +3222,21 @@ Secc with the Mayor's letter before the fake Justy will take it; **Bonsly**, los
 ONBS, startled off in the ship's hold the first time, caught the second and taken home; Team Snagem's **three-floor
 building** behind its hideout's grounds (the Abandoned Ship's rooms), Gonzap on its second floor; and the Key Lair's
 **System Lever**, fetched from a researcher's desk on its ground floor, the researcher battled, the Control Machine on
-its production floor raised till it goes wild and Gorigan comes out. A Trainer whose Shadow Pokémon isn't snagged
+its production floor raised till it goes wild and Gorigan comes out. **Miror B.**, XD's: with Folly and Trudly at the Cave Poké
+Spot (his Shadow Voltorb; beaten, he leaves the Miror Radar), at the Outskirt Stand after his meal (Shadow Nosepass),
+and, once the story's over, dancing on Gateon Port's lighthouse with Cipher's last Shadow Pokémon (Dragonite) and his
+recruits Cyle and Kilen (Shadow Ledyba and Poochyena): all 83 of XD's Shadow Pokémon can be snagged. Its optional
+Trainers: Pyrite's Duel Square, Willie at the Outskirt Stand, Phenac's Eroll and Equin, and each with XD's Lv. 50
+rematch once the story's over (as have the Hexagon Brothers, Agate's villagers, Eagun at home and Chobin's rebuilt
+Robo Groudon outside Kaminko's). Its post-game: the **Orre Colosseum** (Eagun's, out west: seven sets of four double
+battles, each ending with an admin, then the "?????" set of all seven; no Shadow Pokémon; Eagun's titles), Mt.
+Battle's challenge with XD's own hundred Trainers (and Ho-Oh for all 100 in one go), Realgam Tower's **Battle Sim**
+(XD's Battle CDs: a lent team against another, your own untouched), **Battle Bingo** (as near as this game can: XD's
+cards aren't in its extracted data, so each card's sixteen panels are Mt. Battle's Pokémon, beaten one by one with the
+card's lent Pokémon, each beaten one joining you, Bingos counted by lines), and Colosseum Battles at the Pyrite and
+Realgam Colosseums (XD's decks, Miror B. now and then in the final). Shadow Lugia's purification has XD's words for it.
+Its side quests: the Pokémon that won't cry (Phenac's four, the Cry Analyzer's questions; Megg's Shroomish), and XD's
+seventeen e-mails, in Orre's E-mail, each arriving at its point in the story. A Trainer whose Shadow Pokémon isn't snagged
 battles you again, as Colosseum's do. Orre's level cap in XD's story rises with it: 20 at Mt. Battle, 22 at the Cipher
 Lab, 24 at ONBS, 28 at Phenac, 30 at the S.S. Libra, 33 at the Snagem Hideout, 37 at the Key Lair, 50 on Citadark Isle. XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by

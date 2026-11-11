@@ -850,6 +850,7 @@ window.ITEMS = {
   "vivid-scent": { name: "vivid-scent", category: "scents", effect: "A Scent that greatly pleases Pokémon. (Pokémon Colosseum's: it opens the door to a Shadow Pokémon's heart a lot.)" },
   "powerup-part": { name: "powerup-part", category: "key-items", effect: "A part to be delivered to Nett from Perr. (Pokémon Colosseum's.)" },
   "id-card": { name: "id-card", category: "key-items", effect: "An ID card that opens a locked door in the Cipher Lab. (Pokémon XD's.)" },
+  "miror-radar": { name: "miror-radar", category: "key-items", effect: "A radar Miror B.'s posse used to know where he was. Found at the Cave Poké Spot. (Pokémon XD's.)" },
   "poke-snack": { name: "poke-snack", category: "spelunking", effect: "Duking's brand of snack, laid out at a Poké Spot to bring wild Pokémon. (Pokémon XD's.)" },
   "system-lever": { name: "system-lever", category: "key-items", effect: "The lever for the Key Lair's Control Machine, left on a researcher's desk. (Pokémon XD's.)" },
   "mayors-note": { name: "mayors-note", category: "key-items", effect: "Phenac's Mayor's unfinished letter to Justy, warning of Cipher. (Pokémon XD's.)" },
