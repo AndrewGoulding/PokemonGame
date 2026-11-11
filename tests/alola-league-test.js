@@ -45,6 +45,8 @@ for(const file of ['ui/alola-akala.js','ui/alola-ulaula.js','ui/alola-poni.js','
  assert(L.allowed(p,'AlolaLanakilaBase'));
  await go('league-ferry');assert.equal(p.location.map,'AlolaSeafolkVillage');
  s.minaClear=true;assert.equal(Alola.cap(p),90);
+ assert.equal(L.allowed(p,'AlolaLanakilaSlope'),null,'Hau must be reachable before his battle');
+ assert(L.allowed(p,'AlolaLanakilaSummit'),'Summit is gated by Hau');
  yes=false;await go('league-ferry');assert.equal(p.location.map,'AlolaSeafolkVillage');
  yes=true;await go('league-ferry');assert.equal(p.location.map,'AlolaLanakilaBase');
  assert(L.allowed(p,'AlolaEliteMolayne'));
