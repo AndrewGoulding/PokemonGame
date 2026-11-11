@@ -1,0 +1,5506 @@
+{
+  "source": {
+    "references": [
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_15",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_16",
+      "https://bulbapedia.bulbagarden.net/wiki/Appendix:X_and_Y_walkthrough/Section_17",
+      "https://bulbapedia.bulbagarden.net/wiki/List_of_Battle_Maison_Pokémon",
+      "https://bulbapedia.bulbagarden.net/wiki/Nita"
+    ],
+    "curated": "2026-11-11"
+  },
+  "story": {
+    "15-Malva": [
+      [
+        [
+          "Pyroar",
+          63,
+          "F",
+          [
+            "Hyper Voice",
+            "Flamethrower",
+            "Wild Charge",
+            "Noble Roar"
+          ],
+          "Rivalry",
+          "None"
+        ],
+        [
+          "Torkoal",
+          63,
+          "F",
+          [
+            "Curse",
+            "Earthquake",
+            "Stone Edge",
+            "Flame Wheel"
+          ],
+          "White Smoke",
+          "None"
+        ],
+        [
+          "Chandelure",
+          63,
+          "F",
+          [
+            "Flamethrower",
+            "Shadow Ball",
+            "Confuse Ray",
+            "Confide"
+          ],
+          "Flame Body",
+          "None"
+        ],
+        [
+          "Talonflame",
+          65,
+          "F",
+          [
+            "Brave Bird",
+            "Quick Attack",
+            "Flare Blitz",
+            "Flail"
+          ],
+          "Flame Body",
+          "None"
+        ]
+      ]
+    ],
+    "15-Siebold": [
+      [
+        [
+          "Clawitzer",
+          63,
+          "M",
+          [
+            "Water Pulse",
+            "Dark Pulse",
+            "Dragon Pulse",
+            "Aura Sphere"
+          ],
+          "Mega Launcher",
+          "None"
+        ],
+        [
+          "Gyarados",
+          63,
+          "M",
+          [
+            "Waterfall",
+            "Ice Fang",
+            "Earthquake",
+            "Dragon Dance"
+          ],
+          "Intimidate",
+          "None"
+        ],
+        [
+          "Starmie",
+          63,
+          "N",
+          [
+            "Dazzling Gleam",
+            "Psychic",
+            "Surf",
+            "Light Screen"
+          ],
+          "Illuminate",
+          "None"
+        ],
+        [
+          "Barbaracle",
+          65,
+          "M",
+          [
+            "Cross Chop",
+            "Stone Edge",
+            "Razor Shell",
+            "X-Scissor"
+          ],
+          "Tough Claws",
+          "None"
+        ]
+      ]
+    ],
+    "15-Wikstrom": [
+      [
+        [
+          "Klefki",
+          63,
+          "M",
+          [
+            "Dazzling Gleam",
+            "Flash Cannon",
+            "Torment",
+            "Spikes"
+          ],
+          "Prankster",
+          "None"
+        ],
+        [
+          "Probopass",
+          63,
+          "M",
+          [
+            "Earth Power",
+            "Power Gem",
+            "Discharge",
+            "Flash Cannon"
+          ],
+          "Sturdy",
+          "None"
+        ],
+        [
+          "Scizor",
+          63,
+          "M",
+          [
+            "Bullet Punch",
+            "X-Scissor",
+            "Iron Head",
+            "Night Slash"
+          ],
+          "Technician",
+          "None"
+        ],
+        [
+          "Aegislash",
+          65,
+          "M",
+          [
+            "King's Shield",
+            "Sacred Sword",
+            "Shadow Claw",
+            "Iron Head"
+          ],
+          "Stance Change",
+          "None"
+        ]
+      ]
+    ],
+    "15-Drasna": [
+      [
+        [
+          "Dragalge",
+          63,
+          "F",
+          [
+            "Dragon Pulse",
+            "Surf",
+            "Sludge Bomb",
+            "Thunderbolt"
+          ],
+          "Poison Point",
+          "None"
+        ],
+        [
+          "Druddigon",
+          63,
+          "F",
+          [
+            "Dragon Tail",
+            "Revenge",
+            "Retaliate",
+            "Chip Away"
+          ],
+          "Rough Skin",
+          "None"
+        ],
+        [
+          "Altaria",
+          63,
+          "F",
+          [
+            "Moonblast",
+            "Dragon Pulse",
+            "Cotton Guard",
+            "Sing"
+          ],
+          "Natural Cure",
+          "None"
+        ],
+        [
+          "Noivern",
+          65,
+          "F",
+          [
+            "Air Slash",
+            "Dragon Pulse",
+            "Flamethrower",
+            "Super Fang"
+          ],
+          "Frisk",
+          "None"
+        ]
+      ]
+    ],
+    "15-Diantha": [
+      [
+        [
+          "Hawlucha",
+          64,
+          "F",
+          [
+            "Swords Dance",
+            "Flying Press",
+            "X-Scissor",
+            "Poison Jab"
+          ],
+          "Limber",
+          "None"
+        ],
+        [
+          "Tyrantrum",
+          65,
+          "M",
+          [
+            "Head Smash",
+            "Earthquake",
+            "Dragon Claw",
+            "Crunch"
+          ],
+          "Strong Jaw",
+          "None"
+        ],
+        [
+          "Aurorus",
+          65,
+          "M",
+          [
+            "Thunder",
+            "Blizzard",
+            "Light Screen",
+            "Reflect"
+          ],
+          "Refrigerate",
+          "None"
+        ],
+        [
+          "Gourgeist",
+          65,
+          "F",
+          [
+            "Trick-or-Treat",
+            "Phantom Force",
+            "Seed Bomb",
+            "Shadow Sneak"
+          ],
+          "Pickup",
+          "None"
+        ],
+        [
+          "Goodra",
+          66,
+          "F",
+          [
+            "Dragon Pulse",
+            "Muddy Water",
+            "Fire Blast",
+            "Focus Blast"
+          ],
+          "Sap Sipper",
+          "None"
+        ],
+        [
+          "Gardevoir",
+          68,
+          "F",
+          [
+            "Moonblast",
+            "Psychic",
+            "Shadow Ball",
+            "Thunderbolt"
+          ],
+          "Trace",
+          "Gardevoirite"
+        ]
+      ]
+    ],
+    "15-AZ": [
+      [
+        [
+          "Torkoal",
+          60,
+          "M",
+          [
+            "Lava Plume",
+            "Stone Edge",
+            "Body Slam",
+            "Return"
+          ],
+          "White Smoke",
+          "None"
+        ],
+        [
+          "Golurk",
+          60,
+          "N",
+          [
+            "Phantom Force",
+            "Heavy Slam",
+            "Mega Punch",
+            "Return"
+          ],
+          "No Guard",
+          "None"
+        ],
+        [
+          "Sigilyph",
+          60,
+          "M",
+          [
+            "Psychic",
+            "Air Slash",
+            "Cosmic Power",
+            "Return"
+          ],
+          "Magic Guard",
+          "None"
+        ]
+      ]
+    ],
+    "16-Calem": [
+      [
+        [
+          "Meowstic",
+          66,
+          "M",
+          [
+            "Fake Out",
+            "Psychic",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye",
+          "None"
+        ],
+        [
+          "Clefable",
+          68,
+          "F",
+          [
+            "Moonblast",
+            "Focus Blast",
+            "Meteor Mash",
+            "Sing"
+          ],
+          "Magic Guard",
+          "None"
+        ],
+        [
+          "Jolteon",
+          66,
+          "M",
+          [
+            "Thunder",
+            "Double Kick",
+            "Quick Attack"
+          ],
+          "Volt Absorb",
+          "None"
+        ],
+        [
+          "Absol",
+          68,
+          "M",
+          [
+            "Night Slash",
+            "Swords Dance",
+            "Slash",
+            "Quick Attack"
+          ],
+          "Super Luck",
+          "Absolite"
+        ],
+        [
+          "Altaria",
+          67,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure",
+          "None"
+        ],
+        [
+          "Delphox",
+          70,
+          "M",
+          [
+            "Fire Blast",
+            "Psychic",
+            "Shadow Ball"
+          ],
+          "Blaze",
+          "None"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          66,
+          "M",
+          [
+            "Fake Out",
+            "Psychic",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye",
+          "None"
+        ],
+        [
+          "Clefable",
+          68,
+          "F",
+          [
+            "Moonblast",
+            "Focus Blast",
+            "Meteor Mash",
+            "Sing"
+          ],
+          "Magic Guard",
+          "None"
+        ],
+        [
+          "Flareon",
+          66,
+          "M",
+          [
+            "Fire Blast",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Flash Fire",
+          "None"
+        ],
+        [
+          "Absol",
+          68,
+          "M",
+          [
+            "Night Slash",
+            "Swords Dance",
+            "Slash",
+            "Quick Attack"
+          ],
+          "Super Luck",
+          "Absolite"
+        ],
+        [
+          "Altaria",
+          67,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure",
+          "None"
+        ],
+        [
+          "Greninja",
+          70,
+          "M",
+          [
+            "Hydro Pump",
+            "Dark Pulse",
+            "Ice Beam"
+          ],
+          "Torrent",
+          "None"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          66,
+          "M",
+          [
+            "Fake Out",
+            "Psychic",
+            "Disarming Voice",
+            "Shadow Ball"
+          ],
+          "Keen Eye",
+          "None"
+        ],
+        [
+          "Clefable",
+          68,
+          "F",
+          [
+            "Moonblast",
+            "Focus Blast",
+            "Meteor Mash",
+            "Sing"
+          ],
+          "Magic Guard",
+          "None"
+        ],
+        [
+          "Vaporeon",
+          66,
+          "M",
+          [
+            "Hydro Pump",
+            "Aurora Beam",
+            "Quick Attack"
+          ],
+          "Water Absorb",
+          "None"
+        ],
+        [
+          "Absol",
+          68,
+          "M",
+          [
+            "Night Slash",
+            "Swords Dance",
+            "Slash",
+            "Quick Attack"
+          ],
+          "Super Luck",
+          "Absolite"
+        ],
+        [
+          "Altaria",
+          67,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure",
+          "None"
+        ],
+        [
+          "Chesnaught",
+          70,
+          "M",
+          [
+            "Wood Hammer",
+            "Brick Break",
+            "Body Slam"
+          ],
+          "Overgrow",
+          "None"
+        ]
+      ]
+    ],
+    "16-Serena": [
+      [
+        [
+          "Meowstic",
+          66,
+          "F",
+          [
+            "Fake Out",
+            "Psychic",
+            "Shadow Ball",
+            "Disarming Voice"
+          ],
+          "Keen Eye",
+          "None"
+        ],
+        [
+          "Clefable",
+          68,
+          "F",
+          [
+            "Moonblast",
+            "Focus Blast",
+            "Meteor Mash",
+            "Sing"
+          ],
+          "Magic Guard",
+          "None"
+        ],
+        [
+          "Jolteon",
+          66,
+          "M",
+          [
+            "Thunder",
+            "Double Kick",
+            "Quick Attack"
+          ],
+          "Volt Absorb",
+          "None"
+        ],
+        [
+          "Absol",
+          68,
+          "M",
+          [
+            "Night Slash",
+            "Swords Dance",
+            "Slash",
+            "Quick Attack"
+          ],
+          "Super Luck",
+          "Absolite"
+        ],
+        [
+          "Altaria",
+          67,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure",
+          "None"
+        ],
+        [
+          "Delphox",
+          70,
+          "M",
+          [
+            "Fire Blast",
+            "Psychic",
+            "Shadow Ball"
+          ],
+          "Blaze",
+          "None"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          66,
+          "F",
+          [
+            "Fake Out",
+            "Psychic",
+            "Shadow Ball",
+            "Disarming Voice"
+          ],
+          "Keen Eye",
+          "None"
+        ],
+        [
+          "Clefable",
+          68,
+          "F",
+          [
+            "Moonblast",
+            "Focus Blast",
+            "Meteor Mash",
+            "Sing"
+          ],
+          "Magic Guard",
+          "None"
+        ],
+        [
+          "Flareon",
+          66,
+          "M",
+          [
+            "Fire Blast",
+            "Quick Attack",
+            "Bite"
+          ],
+          "Flash Fire",
+          "None"
+        ],
+        [
+          "Absol",
+          68,
+          "M",
+          [
+            "Night Slash",
+            "Swords Dance",
+            "Slash",
+            "Quick Attack"
+          ],
+          "Super Luck",
+          "Absolite"
+        ],
+        [
+          "Altaria",
+          67,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure",
+          "None"
+        ],
+        [
+          "Greninja",
+          70,
+          "M",
+          [
+            "Hydro Pump",
+            "Dark Pulse",
+            "Ice Beam"
+          ],
+          "Torrent",
+          "None"
+        ]
+      ],
+      [
+        [
+          "Meowstic",
+          66,
+          "F",
+          [
+            "Fake Out",
+            "Psychic",
+            "Shadow Ball",
+            "Disarming Voice"
+          ],
+          "Keen Eye",
+          "None"
+        ],
+        [
+          "Clefable",
+          68,
+          "F",
+          [
+            "Moonblast",
+            "Focus Blast",
+            "Meteor Mash",
+            "Sing"
+          ],
+          "Magic Guard",
+          "None"
+        ],
+        [
+          "Vaporeon",
+          66,
+          "M",
+          [
+            "Hydro Pump",
+            "Aurora Beam",
+            "Quick Attack",
+            "Muddy Water"
+          ],
+          "Water Absorb",
+          "None"
+        ],
+        [
+          "Absol",
+          68,
+          "M",
+          [
+            "Night Slash",
+            "Swords Dance",
+            "Slash",
+            "Quick Attack"
+          ],
+          "Super Luck",
+          "Absolite"
+        ],
+        [
+          "Altaria",
+          67,
+          "F",
+          [
+            "Dragon Pulse",
+            "Dazzling Gleam",
+            "Confide"
+          ],
+          "Natural Cure",
+          "None"
+        ],
+        [
+          "Chesnaught",
+          70,
+          "M",
+          [
+            "Wood Hammer",
+            "Brick Break",
+            "Body Slam"
+          ],
+          "Overgrow",
+          "None"
+        ]
+      ]
+    ],
+    "16-Malva": [
+      [
+        [
+          "Pyroar",
+          63,
+          "F",
+          [
+            "Hyper Voice",
+            "Flamethrower",
+            "Wild Charge",
+            "Noble Roar"
+          ],
+          "Rivalry",
+          "None"
+        ]
+      ]
+    ],
+    "16-Essentia": [
+      [
+        [
+          "Jellicent",
+          64,
+          "M",
+          [
+            "Rain Dance",
+            "Hex",
+            "Hydro Pump",
+            "Wring Out"
+          ],
+          "Water Absorb",
+          "None"
+        ],
+        [
+          "Volcarona",
+          66,
+          "F",
+          [
+            "Whirlwind",
+            "Silver Wind",
+            "Quiver Dance",
+            "Heat Wave"
+          ],
+          "Flame Body",
+          "None"
+        ]
+      ],
+      [
+        [
+          "Whimsicott",
+          63,
+          "F",
+          [
+            "Gust",
+            "Tailwind",
+            "Hurricane",
+            "Moonblast"
+          ],
+          "Prankster",
+          "None"
+        ],
+        [
+          "Mawile",
+          63,
+          "F",
+          [
+            "Swallow",
+            "Spit Up",
+            "Iron Head",
+            "Play Rough"
+          ],
+          "Hyper Cutter",
+          "None"
+        ],
+        [
+          "Granbull",
+          63,
+          "M",
+          [
+            "Rage",
+            "Play Rough",
+            "Payback",
+            "Crunch"
+          ],
+          "Intimidate",
+          "None"
+        ]
+      ],
+      [
+        [
+          "Persian",
+          66,
+          "F",
+          [
+            "Assurance",
+            "Captivate",
+            "Night Slash",
+            "Feint"
+          ],
+          "Limber",
+          "None"
+        ]
+      ],
+      [
+        [
+          "Crobat",
+          68,
+          "M",
+          [
+            "Mean Look",
+            "Poison Fang",
+            "Haze",
+            "Air Slash"
+          ],
+          "Inner Focus",
+          "None"
+        ],
+        [
+          "Malamar",
+          70,
+          "M",
+          [
+            "Psycho Cut",
+            "Slash",
+            "Night Slash",
+            "Superpower"
+          ],
+          "Contrary",
+          "None"
+        ]
+      ],
+      [
+        [
+          "Crobat",
+          73,
+          "M",
+          [
+            "Mean Look",
+            "Poison Fang",
+            "Haze",
+            "Air Slash"
+          ],
+          "Inner Focus",
+          "None"
+        ],
+        [
+          "Malamar",
+          75,
+          "M",
+          [
+            "Psycho Cut",
+            "Slash",
+            "Night Slash",
+            "Superpower"
+          ],
+          "Contrary",
+          "None"
+        ]
+      ]
+    ]
+  },
+  "field": {
+    "Anton": [
+      {
+        "name": "Anton",
+        "className": "Ace Trainer",
+        "party": [
+          [
+            "Weezing",
+            65,
+            "M"
+          ],
+          [
+            "Bronzong",
+            65,
+            "N"
+          ],
+          [
+            "Eelektross",
+            66,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Children": [
+      {
+        "name": "Natalie",
+        "className": "Preschooler",
+        "party": [
+          [
+            "Swinub",
+            53,
+            "F"
+          ],
+          [
+            "Bonsly",
+            53,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Lily",
+        "className": "Preschooler",
+        "party": [
+          [
+            "Igglybuff",
+            55,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Callie",
+        "className": "Schoolgirl",
+        "party": [
+          [
+            "Rapidash",
+            53,
+            "F"
+          ],
+          [
+            "Leavanny",
+            53,
+            "F"
+          ],
+          [
+            "Kingler",
+            53,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Macon",
+        "className": "Schoolboy",
+        "party": [
+          [
+            "Spiritomb",
+            56,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Gang": [
+      {
+        "name": "Sedna",
+        "className": "Lumiose Gang Member",
+        "party": [
+          [
+            "Mandibuzz",
+            58,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Eris",
+        "className": "Lumiose Gang Member",
+        "party": [
+          [
+            "Pangoro",
+            56,
+            "M"
+          ],
+          [
+            "Bouffalant",
+            56,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Nix",
+        "className": "Lumiose Gang Member",
+        "party": [
+          [
+            "Druddigon",
+            56,
+            "M"
+          ],
+          [
+            "Krookodile",
+            56,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Disguises": [
+      {
+        "name": "\"???\"",
+        "className": "Suspicious Woman",
+        "party": [
+          [
+            "Jellicent",
+            58,
+            "M"
+          ],
+          [
+            "Volcarona",
+            60,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "\"???\"",
+        "className": "Suspicious Child",
+        "party": [
+          [
+            "Whimsicott",
+            57,
+            "F"
+          ],
+          [
+            "Mawile",
+            57,
+            "F"
+          ],
+          [
+            "Granbull",
+            57,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "\"???\"",
+        "className": "Suspicious Lady",
+        "party": [
+          [
+            "Persian",
+            60,
+            "F"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Chalmers": [
+      {
+        "name": "Chalmers",
+        "className": "Butler",
+        "party": [
+          [
+            "Braviary",
+            62,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "LabGuards": [
+      {
+        "name": "Sonia",
+        "className": "Scientist",
+        "party": [
+          [
+            "Elgyem",
+            60,
+            "F"
+          ],
+          [
+            "Klinklang",
+            60,
+            "N"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Ernst",
+        "className": "Scientist",
+        "party": [
+          [
+            "Weezing",
+            61,
+            "M"
+          ],
+          [
+            "Heliolisk",
+            59,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Sedna",
+        "className": "Lumiose Gang Member",
+        "party": [
+          [
+            "Mandibuzz",
+            62,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Eris",
+        "className": "Lumiose Gang Member",
+        "party": [
+          [
+            "Pangoro",
+            60,
+            "M"
+          ],
+          [
+            "Bouffalant",
+            60,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Justus",
+        "className": "Scientist",
+        "party": [
+          [
+            "Muk",
+            62,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Nix",
+        "className": "Lumiose Gang Member",
+        "party": [
+          [
+            "Druddigon",
+            59,
+            "M"
+          ],
+          [
+            "Krookodile",
+            61,
+            "M"
+          ]
+        ],
+        "double": false
+      }
+    ],
+    "Terminus": [
+      {
+        "name": "Narek",
+        "className": "Worker",
+        "party": [
+          [
+            "Graveler",
+            46,
+            "M"
+          ],
+          [
+            "Graveler",
+            47,
+            "M"
+          ],
+          [
+            "Golem",
+            48,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Aaron",
+        "className": "Hiker",
+        "party": [
+          [
+            "Rhydon",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Bergin",
+        "className": "Hiker",
+        "party": [
+          [
+            "Boldore",
+            48,
+            "M"
+          ],
+          [
+            "Steelix",
+            48,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Dimitri",
+        "className": "Worker",
+        "party": [
+          [
+            "Octillery",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Yusif",
+        "className": "Worker",
+        "party": [
+          [
+            "Probopass",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Andrea",
+        "className": "Battle Girl",
+        "party": [
+          [
+            "Throh",
+            49,
+            "M"
+          ],
+          [
+            "Conkeldurr",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Gunnar",
+        "className": "Black Belt",
+        "party": [
+          [
+            "Toxicroak",
+            49,
+            "M"
+          ],
+          [
+            "Sawk",
+            50,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Hailey",
+        "className": "Battle Girl",
+        "party": [
+          [
+            "Medicham",
+            48,
+            "F"
+          ],
+          [
+            "Hawlucha",
+            51,
+            "F"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Ricardo",
+        "className": "Black Belt",
+        "party": [
+          [
+            "Hariyama",
+            52,
+            "M"
+          ]
+        ],
+        "double": false
+      },
+      {
+        "name": "Fern & Lee",
+        "className": "Rangers",
+        "party": [
+          [
+            "Nidoqueen",
+            51,
+            "F"
+          ],
+          [
+            "Nidoking",
+            51,
+            "M"
+          ]
+        ],
+        "double": true
+      }
+    ]
+  },
+  "legends": {
+    "Articuno": {
+      "level": 70,
+      "moves": [
+        "Ice Beam",
+        "Reflect",
+        "Hail",
+        "Tailwind"
+      ]
+    },
+    "Zapdos": {
+      "level": 70,
+      "moves": [
+        "Agility",
+        "Discharge",
+        "Rain Dance",
+        "Light Screen"
+      ]
+    },
+    "Moltres": {
+      "level": 70,
+      "moves": [
+        "Safeguard",
+        "Air Slash",
+        "Sunny Day",
+        "Heat Wave"
+      ]
+    },
+    "Mewtwo": {
+      "level": 70,
+      "moves": [
+        "Recover",
+        "Psychic",
+        "Barrier",
+        "Aura Sphere"
+      ]
+    },
+    "Zygarde": {
+      "level": 70,
+      "moves": [
+        "Crunch",
+        "Earthquake",
+        "Camouflage",
+        "Dragon Pulse"
+      ]
+    }
+  },
+  "maison": [
+    {
+      "species": "Rattata",
+      "item": "Cheri Berry",
+      "moves": [
+        "Super Fang",
+        "Bite",
+        "Quick Attack",
+        "Focus Energy"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Venipede",
+      "item": "Chesto Berry",
+      "moves": [
+        "Venoshock",
+        "Struggle Bug",
+        "Protect",
+        "Toxic"
+      ],
+      "nature": "Impish",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Pidgey",
+      "item": "Sharp Beak",
+      "moves": [
+        "Air Slash",
+        "Quick Attack",
+        "Twister",
+        "Sand Attack"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Bunnelby",
+      "item": "Rawst Berry",
+      "moves": [
+        "Mud-Slap",
+        "Super Fang",
+        "Double Kick",
+        "Agility"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Honedge",
+      "item": "Persim Berry",
+      "moves": [
+        "Fury Cutter",
+        "Shadow Sneak",
+        "Aerial Ace",
+        "Metal Sound"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Geodude",
+      "item": "Shuca Berry",
+      "moves": [
+        "Smack Down",
+        "Bulldoze",
+        "Strength",
+        "Rock Polish"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Oddish",
+      "item": "Big Root",
+      "moves": [
+        "Giga Drain",
+        "Double Team",
+        "Confide",
+        "Poison Powder"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 170,
+        "atk": 0,
+        "def": 170,
+        "spa": 0,
+        "spd": 170,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Cherrim",
+      "item": "Persim Berry",
+      "moves": [
+        "Magical Leaf",
+        "Helping Hand",
+        "Sunny Day",
+        "Attract"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Meditite",
+      "item": "Cheri Berry",
+      "moves": [
+        "Low Sweep",
+        "Feint",
+        "Confusion",
+        "Detect"
+      ],
+      "nature": "Lonely",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Poochyena",
+      "item": "Black Glasses",
+      "moves": [
+        "Bite",
+        "Incinerate",
+        "Scary Face",
+        "Snarl"
+      ],
+      "nature": "Hardy",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Gothorita",
+      "item": "Persim Berry",
+      "moves": [
+        "Psybeam",
+        "Charge Beam",
+        "Fake Tears",
+        "Trick Room"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Solosis",
+      "item": "Quick Claw",
+      "moves": [
+        "Psywave",
+        "Round",
+        "Pain Split",
+        "Light Screen"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Natu",
+      "item": "TwistedSpoon",
+      "moves": [
+        "Stored Power",
+        "Ominous Wind",
+        "Reflect",
+        "Double Team"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Swinub",
+      "item": "Persim Berry",
+      "moves": [
+        "Mud Bomb",
+        "Ice Shard",
+        "Hail",
+        "Protect"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Poliwag",
+      "item": "Cheri Berry",
+      "moves": [
+        "Bubble Beam",
+        "Round",
+        "Hypnosis",
+        "Mud Shot"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Shroomish",
+      "item": "Big Root",
+      "moves": [
+        "Giga Drain",
+        "Venoshock",
+        "Toxic",
+        "Leech Seed"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Electrike",
+      "item": "Magnet",
+      "moves": [
+        "Spark",
+        "Quick Attack",
+        "Thunder Wave",
+        "Bite"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Snubbull",
+      "item": "Pecha Berry",
+      "moves": [
+        "Confide",
+        "Rage",
+        "Bite",
+        "Charm"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Magnemite",
+      "item": "Metal Coat",
+      "moves": [
+        "Mirror Shot",
+        "Charge Beam",
+        "Metal Sound",
+        "Reflect"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Larvitar",
+      "item": "Passho Berry",
+      "moves": [
+        "Rock Slide",
+        "Bite",
+        "Bulldoze",
+        "Scary Face"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Pansage",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Seed Bomb",
+        "Acrobatics",
+        "Leer",
+        "Grass Knot"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Pansear",
+      "item": "Passho Berry",
+      "moves": [
+        "Flame Burst",
+        "Fury Swipes",
+        "Leer",
+        "Hone Claws"
+      ],
+      "nature": "Bashful",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Panpour",
+      "item": "Cheri Berry",
+      "moves": [
+        "Scald",
+        "Taunt",
+        "Water Sport",
+        "Leer"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Duskull",
+      "item": "Ganlon Berry",
+      "moves": [
+        "Hex",
+        "Will-O-Wisp",
+        "Curse",
+        "Toxic"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Gastly",
+      "item": "Lax Incense",
+      "moves": [
+        "Hypnosis",
+        "Confuse Ray",
+        "Hex",
+        "Taunt"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Machop",
+      "item": "Payapa Berry",
+      "moves": [
+        "Low Kick",
+        "Bulldoze",
+        "Retaliate",
+        "Scary Face"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Wingull",
+      "item": "Sharp Beak",
+      "moves": [
+        "Aerial Ace",
+        "Water Pulse",
+        "Quick Attack",
+        "Supersonic"
+      ],
+      "nature": "Serious",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Snorunt",
+      "item": "Petaya Berry",
+      "moves": [
+        "Ice Fang",
+        "Headbutt",
+        "Bite",
+        "Hail"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Pineco",
+      "item": "Rocky Helmet",
+      "moves": [
+        "Gyro Ball",
+        "Struggle Bug",
+        "Iron Defense",
+        "Spikes"
+      ],
+      "nature": "Brave",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Snover",
+      "item": "Occa Berry",
+      "moves": [
+        "Razor Leaf",
+        "Ice Shard",
+        "Ingrain",
+        "Swagger"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Spinarak",
+      "item": "Binding Band",
+      "moves": [
+        "Infestation",
+        "Poison Jab",
+        "Spider Web",
+        "Shadow Sneak"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Chespin",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Vine Whip",
+        "Tackle",
+        "Pin Missile",
+        "Rock Smash"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Fennekin",
+      "item": "Charcoal",
+      "moves": [
+        "Fire Spin",
+        "Psybeam",
+        "Will-O-Wisp",
+        "Lucky Chant"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Froakie",
+      "item": "Wacan Berry",
+      "moves": [
+        "Quick Attack",
+        "Water Pulse",
+        "Round",
+        "U-turn"
+      ],
+      "nature": "Hasty",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Flabébé",
+      "item": "Miracle Seed",
+      "moves": [
+        "Fairy Wind",
+        "Razor Leaf",
+        "Round",
+        "Wish"
+      ],
+      "nature": "Docile",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Bronzor",
+      "item": "Rawst Berry",
+      "moves": [
+        "Psywave",
+        "Charge Beam",
+        "Metal Sound",
+        "Confuse Ray"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 170,
+        "spd": 170,
+        "spe": 170
+      }
+    },
+    {
+      "species": "Litleo",
+      "item": "Persim Berry",
+      "moves": [
+        "Fire Fang",
+        "Headbutt",
+        "Retaliate",
+        "Roar"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Ledyba",
+      "item": "SilverPowder",
+      "moves": [
+        "Swift",
+        "Silver Wind",
+        "Baton Pass",
+        "Double Team"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Joltik",
+      "item": "Liechi Berry",
+      "moves": [
+        "Electroweb",
+        "Bug Bite",
+        "String Shot",
+        "Gastro Acid"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Gible",
+      "item": "Dragon Fang",
+      "moves": [
+        "Twister",
+        "Sandstorm",
+        "Sand Tomb",
+        "Rock Tomb"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Skorupi",
+      "item": "Poison Barb",
+      "moves": [
+        "Bug Bite",
+        "Poison Fang",
+        "Aerial Ace",
+        "Leer"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Shinx",
+      "item": "Razor Fang",
+      "moves": [
+        "Bite",
+        "Spark",
+        "Thunder Wave",
+        "Baby-Doll Eyes"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Baltoy",
+      "item": "Rindo Berry",
+      "moves": [
+        "Ancient Power",
+        "Psybeam",
+        "Cosmic Power",
+        "Trick Room"
+      ],
+      "nature": "Quiet",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Grimer",
+      "item": "Payapa Berry",
+      "moves": [
+        "Sludge",
+        "Mud-Slap",
+        "Incinerate",
+        "Minimize"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Stunky",
+      "item": "Black Glasses",
+      "moves": [
+        "Snarl",
+        "Incinerate",
+        "Acid Spray",
+        "Torment"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Phantump",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Ingrain",
+        "Shadow Claw",
+        "Grass Knot",
+        "Leech Seed"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Frillish",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Bubble Beam",
+        "Night Shade",
+        "Attract",
+        "Flash"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Espurr",
+      "item": "Persim Berry",
+      "moves": [
+        "Psybeam",
+        "Fake Out",
+        "Thunder Wave",
+        "Round"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Pawniard",
+      "item": "Chople Berry",
+      "moves": [
+        "Feint Attack",
+        "Metal Claw",
+        "Torment",
+        "Iron Defense"
+      ],
+      "nature": "Impish",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Pancham",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Comet Punch",
+        "Karate Chop",
+        "Swagger",
+        "Leer"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Fletchinder",
+      "item": "Sharp Beak",
+      "moves": [
+        "Aerial Ace",
+        "Flame Charge",
+        "U-turn",
+        "Agility"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Carvanha",
+      "item": "Mystic Water",
+      "moves": [
+        "Aqua Jet",
+        "Bite",
+        "Swagger",
+        "Screech"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Omanyte",
+      "item": "Shell Bell",
+      "moves": [
+        "Brine",
+        "Ancient Power",
+        "Protect",
+        "Shell Smash"
+      ],
+      "nature": "Bold",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Staravia",
+      "item": "Cheri Berry",
+      "moves": [
+        "Aerial Ace",
+        "Quick Attack",
+        "Whirlwind",
+        "Steel Wing"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Kricketune",
+      "item": "Coba Berry",
+      "moves": [
+        "Sing",
+        "Fell Stinger",
+        "Screech",
+        "Slash"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Houndour",
+      "item": "Chesto Berry",
+      "moves": [
+        "Fire Fang",
+        "Bite",
+        "Payback",
+        "Howl"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Drowzee",
+      "item": "Focus Band",
+      "moves": [
+        "Psybeam",
+        "Hypnosis",
+        "Round",
+        "Light Screen"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Lampent",
+      "item": "Absorb Bulb",
+      "moves": [
+        "Flame Burst",
+        "Hex",
+        "Confuse Ray",
+        "Will-O-Wisp"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Hoothoot",
+      "item": "Cheri Berry",
+      "moves": [
+        "Hypnosis",
+        "Reflect",
+        "Confusion",
+        "Echoed Voice"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Glameow",
+      "item": "Silk Scarf",
+      "moves": [
+        "Fury Swipes",
+        "Attract",
+        "Feint Attack",
+        "Torment"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Skiploom",
+      "item": "Occa Berry",
+      "moves": [
+        "Bullet Seed",
+        "Acrobatics",
+        "Stun Spore",
+        "Fairy Wind"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Marill",
+      "item": "Rindo Berry",
+      "moves": [
+        "Round",
+        "Bubble Beam",
+        "Helping Hand",
+        "Aqua Ring"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Boldore",
+      "item": "Rocky Helmet",
+      "moves": [
+        "Smack Down",
+        "Headbutt",
+        "Sand Attack",
+        "Iron Defense"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Kirlia",
+      "item": "Tanga Berry",
+      "moves": [
+        "Confusion",
+        "Magical Leaf",
+        "Charge Beam",
+        "Charm"
+      ],
+      "nature": "Mild",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Spheal",
+      "item": "Pecha Berry",
+      "moves": [
+        "Defense Curl",
+        "Ice Ball",
+        "Encore",
+        "Bulldoze"
+      ],
+      "nature": "Careful",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Cranidos",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Rock Slide",
+        "Headbutt",
+        "Assurance",
+        "Scary Face"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Rattata",
+      "item": "Razor Fang",
+      "moves": [
+        "Hyper Fang",
+        "U-turn",
+        "Crunch",
+        "Wild Charge"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Venipede",
+      "item": "Poison Barb",
+      "moves": [
+        "Sludge Bomb",
+        "Steamroller",
+        "Payback",
+        "Screech"
+      ],
+      "nature": "Impish",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Pidgey",
+      "item": "Scope Lens",
+      "moves": [
+        "Fly",
+        "Facade",
+        "Steel Wing",
+        "Feather Dance"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Bunnelby",
+      "item": "Silk Scarf",
+      "moves": [
+        "Return",
+        "Grass Knot",
+        "Dig",
+        "Bounce"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Honedge",
+      "item": "Quick Claw",
+      "moves": [
+        "Iron Head",
+        "Swords Dance",
+        "Night Slash",
+        "Slash"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Geodude",
+      "item": "Smooth Rock",
+      "moves": [
+        "Stone Edge",
+        "Earthquake",
+        "Protect",
+        "Sandstorm"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Oddish",
+      "item": "Big Root",
+      "moves": [
+        "Giga Drain",
+        "Substitute",
+        "Toxic",
+        "Protect"
+      ],
+      "nature": "Bold",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Cherrim",
+      "item": "Rose Incense",
+      "moves": [
+        "Energy Ball",
+        "Round",
+        "Dazzling Gleam",
+        "Sunny Day"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Meditite",
+      "item": "Muscle Band",
+      "moves": [
+        "High Jump Kick",
+        "Psyshock",
+        "Rock Slide",
+        "Grass Knot"
+      ],
+      "nature": "Lonely",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Poochyena",
+      "item": "Razor Fang",
+      "moves": [
+        "Sucker Punch",
+        "Crunch",
+        "Dig",
+        "Frustration"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Gothorita",
+      "item": "Colbur Berry",
+      "moves": [
+        "Psychic",
+        "Thunderbolt",
+        "Heal Block",
+        "Trick Room"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Solosis",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Psychic",
+        "Shadow Ball",
+        "Recover",
+        "Wonder Room"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Natu",
+      "item": "Wise Glasses",
+      "moves": [
+        "Psychic",
+        "Dazzling Gleam",
+        "Shadow Ball",
+        "Calm Mind"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Swinub",
+      "item": "Never-Melt Ice",
+      "moves": [
+        "Earthquake",
+        "Blizzard",
+        "Rock Slide",
+        "Hail"
+      ],
+      "nature": "Hardy",
+      "evs": {
+        "hp": 0,
+        "atk": 170,
+        "def": 0,
+        "spa": 170,
+        "spd": 0,
+        "spe": 170
+      }
+    },
+    {
+      "species": "Poliwag",
+      "item": "Damp Rock",
+      "moves": [
+        "Surf",
+        "Ice Beam",
+        "Mud Bomb",
+        "Rain Dance"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Shroomish",
+      "item": "Bright Powder",
+      "moves": [
+        "Seed Bomb",
+        "Return",
+        "Flash",
+        "Spore"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Electrike",
+      "item": "Air Balloon",
+      "moves": [
+        "Discharge",
+        "Leer",
+        "Snarl",
+        "Light Screen"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Snubbull",
+      "item": "King's Rock",
+      "moves": [
+        "Ice Fang",
+        "Fire Fang",
+        "Thunder Fang",
+        "Play Rough"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Magnemite",
+      "item": "Light Clay",
+      "moves": [
+        "Thunderbolt",
+        "Flash Cannon",
+        "Reflect",
+        "Light Screen"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Larvitar",
+      "item": "Hard Stone",
+      "moves": [
+        "Stone Edge",
+        "Crunch",
+        "Power-Up Punch",
+        "Thrash"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Pansage",
+      "item": "Salac Berry",
+      "moves": [
+        "Seed Bomb",
+        "Crunch",
+        "Acrobatics",
+        "Torment"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Pansear",
+      "item": "Liechi Berry",
+      "moves": [
+        "Flame Charge",
+        "Shadow Claw",
+        "Acrobatics",
+        "Yawn"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Panpour",
+      "item": "Shell Bell",
+      "moves": [
+        "Waterfall",
+        "Acrobatics",
+        "Crunch",
+        "Taunt"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Duskull",
+      "item": "Spell Tag",
+      "moves": [
+        "Shadow Ball",
+        "Psychic",
+        "Infestation",
+        "Will-O-Wisp"
+      ],
+      "nature": "Bold",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Gastly",
+      "item": "Spell Tag",
+      "moves": [
+        "Shadow Ball",
+        "Sucker Punch",
+        "Curse",
+        "Protect"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Machop",
+      "item": "Black Belt",
+      "moves": [
+        "Cross Chop",
+        "Revenge",
+        "Earthquake",
+        "Bulk Up"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Wingull",
+      "item": "Wacan Berry",
+      "moves": [
+        "Air Slash",
+        "Scald",
+        "Ice Beam",
+        "Roost"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Snorunt",
+      "item": "Icy Rock",
+      "moves": [
+        "Ice Beam",
+        "Shadow Ball",
+        "Protect",
+        "Hail"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Pineco",
+      "item": "Rocky Helmet",
+      "moves": [
+        "Toxic",
+        "Venoshock",
+        "Payback",
+        "Bug Bite"
+      ],
+      "nature": "Impish",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Snover",
+      "item": "Expert Belt",
+      "moves": [
+        "Ice Beam",
+        "Shadow Ball",
+        "Energy Ball",
+        "Round"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Spinarak",
+      "item": "Coba Berry",
+      "moves": [
+        "Pin Missile",
+        "Cross Poison",
+        "Sticky Web",
+        "Sucker Punch"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Chespin",
+      "item": "Miracle Seed",
+      "moves": [
+        "Seed Bomb",
+        "Body Slam",
+        "Power-Up Punch",
+        "Bulk Up"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Fennekin",
+      "item": "Passho Berry",
+      "moves": [
+        "Flamethrower",
+        "Psychic",
+        "Will-O-Wisp",
+        "Sunny Day"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Froakie",
+      "item": "Rindo Berry",
+      "moves": [
+        "Waterfall",
+        "Acrobatics",
+        "Grass Knot",
+        "Quick Attack"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Flabébé",
+      "item": "Babiri Berry",
+      "moves": [
+        "Dazzling Gleam",
+        "Energy Ball",
+        "Psychic",
+        "Safeguard"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Bronzor",
+      "item": "Salac Berry",
+      "moves": [
+        "Extrasensory",
+        "Flash Cannon",
+        "Payback",
+        "Bulldoze"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Litleo",
+      "item": "Heat Rock",
+      "moves": [
+        "Flamethrower",
+        "Snarl",
+        "Hyper Voice",
+        "Sunny Day"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Ledyba",
+      "item": "Charti Berry",
+      "moves": [
+        "Mach Punch",
+        "U-turn",
+        "Acrobatics",
+        "Swords Dance"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Joltik",
+      "item": "Salac Berry",
+      "moves": [
+        "Signal Beam",
+        "Electro Ball",
+        "Energy Ball",
+        "Agility"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Gible",
+      "item": "Yache Berry",
+      "moves": [
+        "Dragon Claw",
+        "Bulldoze",
+        "Aerial Ace",
+        "Shadow Claw"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Skorupi",
+      "item": "Razor Claw",
+      "moves": [
+        "X-Scissor",
+        "Swords Dance",
+        "Cross Poison",
+        "Night Slash"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Shinx",
+      "item": "Magnet",
+      "moves": [
+        "Wild Charge",
+        "Crunch",
+        "Thunder Wave",
+        "Roar"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Baltoy",
+      "item": "Quick Claw",
+      "moves": [
+        "Extrasensory",
+        "Earth Power",
+        "Charge Beam",
+        "Power Split"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Grimer",
+      "item": "Black Sludge",
+      "moves": [
+        "Sludge Bomb",
+        "Confide",
+        "Acid Armor",
+        "Flamethrower"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Stunky",
+      "item": "Scope Lens",
+      "moves": [
+        "Slash",
+        "Night Slash",
+        "Shadow Claw",
+        "Feint"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Phantump",
+      "item": "Kasib Berry",
+      "moves": [
+        "Feint Attack",
+        "Horn Leech",
+        "Rock Slide",
+        "Poison Jab"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Frillish",
+      "item": "Shell Bell",
+      "moves": [
+        "Surf",
+        "Shadow Ball",
+        "Psychic",
+        "Recover"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Espurr",
+      "item": "TwistedSpoon",
+      "moves": [
+        "Psychic",
+        "Thunderbolt",
+        "Energy Ball",
+        "Psyshock"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Pawniard",
+      "item": "Black Glasses",
+      "moves": [
+        "Iron Head",
+        "Night Slash",
+        "Aerial Ace",
+        "Swords Dance"
+      ],
+      "nature": "Impish",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Pancham",
+      "item": "Black Glasses",
+      "moves": [
+        "Power-Up Punch",
+        "Crunch",
+        "Shadow Claw",
+        "Rock Slide"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Fletchinder",
+      "item": "King's Rock",
+      "moves": [
+        "Flame Charge",
+        "Quick Attack",
+        "Steel Wing",
+        "Fly"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Carvanha",
+      "item": "Chople Berry",
+      "moves": [
+        "Crunch",
+        "Waterfall",
+        "Aqua Jet",
+        "Ice Fang"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Omanyte",
+      "item": "Rindo Berry",
+      "moves": [
+        "Ice Beam",
+        "Rock Blast",
+        "Mud Shot",
+        "Surf"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Staravia",
+      "item": "Liechi Berry",
+      "moves": [
+        "Endeavor",
+        "Aerial Ace",
+        "Facade",
+        "Quick Attack"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Kricketune",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Bide",
+        "Bug Buzz",
+        "Taunt",
+        "Round"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Houndour",
+      "item": "Charti Berry",
+      "moves": [
+        "Foul Play",
+        "Flamethrower",
+        "Dark Pulse",
+        "Nasty Plot"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Drowzee",
+      "item": "TwistedSpoon",
+      "moves": [
+        "Zen Headbutt",
+        "Power-Up Punch",
+        "Hypnosis",
+        "Headbutt"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Lampent",
+      "item": "Absorb Bulb",
+      "moves": [
+        "Inferno",
+        "Shadow Ball",
+        "Confuse Ray",
+        "Curse"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Hoothoot",
+      "item": "Yache Berry",
+      "moves": [
+        "Air Slash",
+        "Shadow Ball",
+        "Hypnosis",
+        "Dream Eater"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Glameow",
+      "item": "Razor Claw",
+      "moves": [
+        "Slash",
+        "Shadow Claw",
+        "U-turn",
+        "Fake Out"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Skiploom",
+      "item": "Charti Berry",
+      "moves": [
+        "Energy Ball",
+        "Round",
+        "Fairy Wind",
+        "Dazzling Gleam"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Marill",
+      "item": "Muscle Band",
+      "moves": [
+        "Aqua Tail",
+        "Brick Break",
+        "Strength",
+        "Aqua Ring"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Boldore",
+      "item": "Air Balloon",
+      "moves": [
+        "Rock Blast",
+        "Bulldoze",
+        "Stealth Rock",
+        "Sandstorm"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Kirlia",
+      "item": "TwistedSpoon",
+      "moves": [
+        "Psyshock",
+        "Psychic",
+        "Thunderbolt",
+        "Dazzling Gleam"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Spheal",
+      "item": "Icy Rock",
+      "moves": [
+        "Frost Breath",
+        "Waterfall",
+        "Double Team",
+        "Hail"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Cranidos",
+      "item": "Petaya Berry",
+      "moves": [
+        "Ancient Power",
+        "Flamethrower",
+        "Ice Beam",
+        "Thunderbolt"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Gurdurr",
+      "item": "Zoom Lens",
+      "moves": [
+        "Dynamic Punch",
+        "Poison Jab",
+        "Smack Down",
+        "Mach Punch"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Sliggoo",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Bide",
+        "Toxic",
+        "Flail",
+        "Dragon Pulse"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Primeape",
+      "item": "Persim Berry",
+      "moves": [
+        "Karate Chop",
+        "Rock Slide",
+        "Thrash",
+        "U-turn"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Quilladin",
+      "item": "Leftovers",
+      "moves": [
+        "Wood Hammer",
+        "Leech Seed",
+        "Protect",
+        "Dig"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Frogadier",
+      "item": "Power Herb",
+      "moves": [
+        "Dig",
+        "Power-Up Punch",
+        "Waterfall",
+        "Bounce"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Braixen",
+      "item": "Light Clay",
+      "moves": [
+        "Flamethrower",
+        "Psychic",
+        "Safeguard",
+        "Light Screen"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Bibarel",
+      "item": "Chesto Berry",
+      "moves": [
+        "Shadow Ball",
+        "Surf",
+        "Thunderbolt",
+        "Ice Beam"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Gabite",
+      "item": "Yache Berry",
+      "moves": [
+        "Dragon Claw",
+        "Slash",
+        "Earthquake",
+        "Sand Tomb"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Golbat",
+      "item": "Bright Powder",
+      "moves": [
+        "Poison Fang",
+        "Steel Wing",
+        "Fly",
+        "Protect"
+      ],
+      "nature": "Impish",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Pachirisu",
+      "item": "Bright Powder",
+      "moves": [
+        "Electro Ball",
+        "Hyper Fang",
+        "Double Team",
+        "Swagger"
+      ],
+      "nature": "Hardy",
+      "evs": {
+        "hp": 0,
+        "atk": 170,
+        "def": 0,
+        "spa": 170,
+        "spd": 0,
+        "spe": 170
+      }
+    },
+    {
+      "species": "Klefki",
+      "item": "Apicot Berry",
+      "moves": [
+        "Flash Cannon",
+        "Recycle",
+        "Draining Kiss",
+        "Metal Sound"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Wigglytuff",
+      "item": "Shell Bell",
+      "moves": [
+        "Disarming Voice",
+        "Round",
+        "Focus Blast",
+        "Thunderbolt"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Mightyena",
+      "item": "Salac Berry",
+      "moves": [
+        "Snarl",
+        "Shadow Ball",
+        "Frustration",
+        "Incinerate"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Qwilfish",
+      "item": "Focus Band",
+      "moves": [
+        "Ice Beam",
+        "Toxic Spikes",
+        "Venoshock",
+        "Brine"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Carnivine",
+      "item": "Big Root",
+      "moves": [
+        "Leaf Tornado",
+        "Sludge Bomb",
+        "Stockpile",
+        "Ingrain"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Sharpedo",
+      "item": "Focus Band",
+      "moves": [
+        "Ice Beam",
+        "Scald",
+        "Dark Pulse",
+        "Aqua Jet"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Magcargo",
+      "item": "Bright Powder",
+      "moves": [
+        "Double Team",
+        "Stone Edge",
+        "Earthquake",
+        "Shell Smash"
+      ],
+      "nature": "Hasty",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Lumineon",
+      "item": "Expert Belt",
+      "moves": [
+        "Rain Dance",
+        "Surf",
+        "Ice Beam",
+        "Silver Wind"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Floette",
+      "item": "Petaya Berry",
+      "moves": [
+        "Round",
+        "Confide",
+        "Moonblast",
+        "Grass Knot"
+      ],
+      "nature": "Quiet",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Magneton",
+      "item": "Shuca Berry",
+      "moves": [
+        "Thunderbolt",
+        "Flash Cannon",
+        "Screech",
+        "Metal Sound"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Purugly",
+      "item": "Lax Incense",
+      "moves": [
+        "Slash",
+        "Fake Out",
+        "Shadow Claw",
+        "Attract"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Octillery",
+      "item": "Cell Battery",
+      "moves": [
+        "Soak",
+        "Bullet Seed",
+        "Rock Blast",
+        "Waterfall"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Stunfisk",
+      "item": "Focus Band",
+      "moves": [
+        "Thunderbolt",
+        "Earthquake",
+        "Flail",
+        "Endure"
+      ],
+      "nature": "Quiet",
+      "evs": {
+        "hp": 170,
+        "atk": 170,
+        "def": 0,
+        "spa": 170,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Heliolisk",
+      "item": "King's Rock",
+      "moves": [
+        "Volt Switch",
+        "U-turn",
+        "Quick Attack",
+        "Rock Slide"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Mantine",
+      "item": "Wacan Berry",
+      "moves": [
+        "Air Slash",
+        "Scald",
+        "Wide Guard",
+        "Aqua Ring"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Swalot",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Stockpile",
+        "Shadow Ball",
+        "Yawn",
+        "Belch"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Scolipede",
+      "item": "Scope Lens",
+      "moves": [
+        "X-Scissor",
+        "Poison Jab",
+        "Rock Slide",
+        "Swords Dance"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Rhydon",
+      "item": "Quick Claw",
+      "moves": [
+        "Stone Edge",
+        "Megahorn",
+        "Drill Run",
+        "Earthquake"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Sawsbuck",
+      "item": "Lum Berry",
+      "moves": [
+        "Horn Leech",
+        "Double-Edge",
+        "Wild Charge",
+        "Jump Kick"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Whimsicott",
+      "item": "Coba Berry",
+      "moves": [
+        "Solar Beam",
+        "Psychic",
+        "Dazzling Gleam",
+        "Sunny Day"
+      ],
+      "nature": "Naive",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Dragalge",
+      "item": "Bright Powder",
+      "moves": [
+        "Waterfall",
+        "Facade",
+        "Double Team",
+        "Poison Tail"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Heatmor",
+      "item": "Lax Incense",
+      "moves": [
+        "Flame Burst",
+        "Stockpile",
+        "Swallow",
+        "Spit Up"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Grumpig",
+      "item": "Leftovers",
+      "moves": [
+        "Rest",
+        "Sleep Talk",
+        "Psychic",
+        "Shadow Ball"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 170,
+        "spa": 170,
+        "spd": 170,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Piloswine",
+      "item": "Persim Berry",
+      "moves": [
+        "Blizzard",
+        "Thrash",
+        "Earthquake",
+        "Hail"
+      ],
+      "nature": "Bashful",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Vigoroth",
+      "item": "Salac Berry",
+      "moves": [
+        "Shadow Claw",
+        "Counter",
+        "Endure",
+        "Return"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Cacturne",
+      "item": "Razor Claw",
+      "moves": [
+        "Sandstorm",
+        "Ingrain",
+        "Spikes",
+        "Payback"
+      ],
+      "nature": "Brave",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Girafarig",
+      "item": "Ganlon Berry",
+      "moves": [
+        "Calm Mind",
+        "Baton Pass",
+        "Psychic",
+        "Shadow Ball"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Persian",
+      "item": "Rocky Helmet",
+      "moves": [
+        "Taunt",
+        "Slash",
+        "U-turn",
+        "Payback"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Gurdurr",
+      "item": "White Herb",
+      "moves": [
+        "Superpower",
+        "Stone Edge",
+        "Chip Away",
+        "Bulk Up"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Sliggoo",
+      "item": "Wise Glasses",
+      "moves": [
+        "Dragon Pulse",
+        "Ice Beam",
+        "Thunderbolt",
+        "Muddy Water"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Primeape",
+      "item": "Scope Lens",
+      "moves": [
+        "Cross Chop",
+        "Stone Edge",
+        "Retaliate",
+        "Earthquake"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Quilladin",
+      "item": "Expert Belt",
+      "moves": [
+        "Mud Shot",
+        "Energy Ball",
+        "Sludge Bomb",
+        "Round"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Frogadier",
+      "item": "King's Rock",
+      "moves": [
+        "Hydro Pump",
+        "Ice Beam",
+        "Dark Pulse",
+        "Round"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Braixen",
+      "item": "Wide Lens",
+      "moves": [
+        "Fire Blast",
+        "Psychic",
+        "Psyshock",
+        "Round"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Bibarel",
+      "item": "Quick Claw",
+      "moves": [
+        "Waterfall",
+        "Super Fang",
+        "Superpower",
+        "Curse"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Gabite",
+      "item": "Haban Berry",
+      "moves": [
+        "Dragon Rush",
+        "Sandstorm",
+        "Stone Edge",
+        "Earthquake"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Golbat",
+      "item": "Razor Fang",
+      "moves": [
+        "Giga Drain",
+        "Air Slash",
+        "Confuse Ray",
+        "Shadow Ball"
+      ],
+      "nature": "Naive",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Pachirisu",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Volt Switch",
+        "U-turn",
+        "Super Fang",
+        "Light Screen"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Klefki",
+      "item": "Occa Berry",
+      "moves": [
+        "Flash Cannon",
+        "Dazzling Gleam",
+        "Psychic",
+        "Crafty Shield"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Wigglytuff",
+      "item": "Babiri Berry",
+      "moves": [
+        "Play Rough",
+        "Brick Break",
+        "Body Slam",
+        "Grass Knot"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Mightyena",
+      "item": "Razor Claw",
+      "moves": [
+        "Crunch",
+        "Sucker Punch",
+        "Frustration",
+        "Taunt"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Qwilfish",
+      "item": "Cell Battery",
+      "moves": [
+        "Aqua Tail",
+        "Poison Jab",
+        "Pin Missile",
+        "Stockpile"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Carnivine",
+      "item": "Binding Band",
+      "moves": [
+        "Infestation",
+        "Swords Dance",
+        "Crunch",
+        "Power Whip"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 252,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Sharpedo",
+      "item": "Muscle Band",
+      "moves": [
+        "Night Slash",
+        "Waterfall",
+        "Earthquake",
+        "Ice Fang"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Magcargo",
+      "item": "White Herb",
+      "moves": [
+        "Overheat",
+        "Earth Power",
+        "Gyro Ball",
+        "Body Slam"
+      ],
+      "nature": "Quiet",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Lumineon",
+      "item": "Shell Bell",
+      "moves": [
+        "Waterfall",
+        "Attract",
+        "Bounce",
+        "Aqua Ring"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Floette",
+      "item": "Kebia Berry",
+      "moves": [
+        "Grassy Terrain",
+        "Misty Terrain",
+        "Dazzling Gleam",
+        "Petal Blizzard"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Magneton",
+      "item": "Quick Claw",
+      "moves": [
+        "Magnet Rise",
+        "Flash Cannon",
+        "Thunder",
+        "Metal Sound"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Purugly",
+      "item": "Big Root",
+      "moves": [
+        "Hypnosis",
+        "Dream Eater",
+        "Shadow Ball",
+        "Round"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Octillery",
+      "item": "Razor Claw",
+      "moves": [
+        "Flamethrower",
+        "Ice Beam",
+        "Flash Cannon",
+        "Signal Beam"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Stunfisk",
+      "item": "Wide Lens",
+      "moves": [
+        "Thunderbolt",
+        "Muddy Water",
+        "Scald",
+        "Fissure"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Heliolisk",
+      "item": "Wide Lens",
+      "moves": [
+        "Round",
+        "Focus Blast",
+        "Dark Pulse",
+        "Thunder"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Mantine",
+      "item": "Cell Battery",
+      "moves": [
+        "Rain Dance",
+        "Hydro Pump",
+        "Ice Beam",
+        "Earthquake"
+      ],
+      "nature": "Mild",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Swalot",
+      "item": "Black Sludge",
+      "moves": [
+        "Stockpile",
+        "Toxic",
+        "Protect",
+        "Earthquake"
+      ],
+      "nature": "Calm",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Scolipede",
+      "item": "King's Rock",
+      "moves": [
+        "Steamroller",
+        "Poison Tail",
+        "Earthquake",
+        "Rock Slide"
+      ],
+      "nature": "Jolly",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Rhydon",
+      "item": "Rocky Helmet",
+      "moves": [
+        "Horn Drill",
+        "Dragon Tail",
+        "Payback",
+        "Hammer Arm"
+      ],
+      "nature": "Impish",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 252,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Sawsbuck",
+      "item": "Shell Bell",
+      "moves": [
+        "Horn Leech",
+        "Double-Edge",
+        "Megahorn",
+        "Leech Seed"
+      ],
+      "nature": "Adamant",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 0,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Whimsicott",
+      "item": "Sitrus Berry",
+      "moves": [
+        "Energy Ball",
+        "Moonblast",
+        "Leech Seed",
+        "Tailwind"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Dragalge",
+      "item": "Payapa Berry",
+      "moves": [
+        "Dragon Pulse",
+        "Sludge Wave",
+        "Surf",
+        "Thunderbolt"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Heatmor",
+      "item": "Shuca Berry",
+      "moves": [
+        "Inferno",
+        "Night Slash",
+        "Focus Blast",
+        "Aerial Ace"
+      ],
+      "nature": "Hardy",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Grumpig",
+      "item": "Wise Glasses",
+      "moves": [
+        "Psychic",
+        "Shadow Ball",
+        "Power Gem",
+        "Energy Ball"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Piloswine",
+      "item": "Zoom Lens",
+      "moves": [
+        "Hail",
+        "Stone Edge",
+        "Blizzard",
+        "Fissure"
+      ],
+      "nature": "Relaxed",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 252,
+        "spa": 0,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Vigoroth",
+      "item": "Bright Powder",
+      "moves": [
+        "Ice Beam",
+        "Thunderbolt",
+        "Flamethrower",
+        "Shadow Ball"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Cacturne",
+      "item": "Scope Lens",
+      "moves": [
+        "Dark Pulse",
+        "Energy Ball",
+        "Sucker Punch",
+        "Focus Blast"
+      ],
+      "nature": "Quiet",
+      "evs": {
+        "hp": 0,
+        "atk": 252,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Girafarig",
+      "item": "Colbur Berry",
+      "moves": [
+        "Psychic",
+        "Thunderbolt",
+        "Energy Ball",
+        "Dazzling Gleam"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Persian",
+      "item": "Life Orb",
+      "moves": [
+        "Round",
+        "Fake Out",
+        "Power Gem",
+        "Dark Pulse"
+      ],
+      "nature": "Timid",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    }
+  ],
+  "nita": [
+    {
+      "species": "Purugly",
+      "item": "Big Root",
+      "moves": [
+        "Hypnosis",
+        "Dream Eater",
+        "Shadow Ball",
+        "Round"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    },
+    {
+      "species": "Wigglytuff",
+      "item": "Shell Bell",
+      "moves": [
+        "Disarming Voice",
+        "Round",
+        "Focus Blast",
+        "Thunderbolt"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 252,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 0
+      }
+    },
+    {
+      "species": "Grumpig",
+      "item": "Wise Glasses",
+      "moves": [
+        "Psychic",
+        "Shadow Ball",
+        "Power Gem",
+        "Energy Ball"
+      ],
+      "nature": "Modest",
+      "evs": {
+        "hp": 0,
+        "atk": 0,
+        "def": 0,
+        "spa": 252,
+        "spd": 0,
+        "spe": 252
+      }
+    }
+  ]
+}

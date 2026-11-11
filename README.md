@@ -15,8 +15,8 @@ Area. See [Unova’s opening](docs/unova-opening.md) for content, rebuilding and
 [remaining work](docs/unova-completion.md). Its offline postgame also includes [battle facilities](docs/unova-facilities.md),
 [eight-family Join Avenue](docs/unova-avenue.md), and [N’s Pokémon, swarms, tutors, trades and Abyssal Ruins](docs/unova-services.md).
 
-Kalos’s X/Y campaign reaches all eight Gyms and the League entrance, including
-Mega Evolution, the Team Flare finale, Xerneas/Yveltal and Victory Road. Start with the Kalos
+Kalos’s X/Y campaign reaches Diantha and AZ’s ending, with Kiloude, the Looker
+case, legendary quests, Mega Stone hunts and normal Maison Singles after the League. Start with the Kalos
 researcher in Fight Area; see [Kalos’s campaign](docs/kalos.md) for content and limits.
 
 ## Running it
