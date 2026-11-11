@@ -139,6 +139,11 @@ function create(env,{fight}){
     await say('Champion activities: challenge the Battle Tree, stop Team Rainbow Rocket, or investigate seven Ultra Beasts at the Research Station.');break;
    case'battle-tree':{
     if(!s().championClear){await say('Only Champions can challenge the Battle Tree.');break;}
+    if(s().battleTreePending){
+     const n=s().battleTreePending,r=R.gift(p(),'battle-tree-'+n,'rare-candy',2);
+     if(r.full){await say('Your milestone reward is waiting. Make room for two Rare Candies.');break;}
+     delete s().battleTreePending;await save();await say('You claimed your two Rare Candies for the '+n+'-win milestone!');
+    }
     if(!env.canBattle()){await say('You need a healthy Pokémon for the Battle Tree.');break;}
     const streak=s().battleTreeStreak||0,index=streak%4;
     const opponents=[
@@ -158,7 +163,7 @@ function create(env,{fight}){
     if(s().battleTreeStreak%4===0){
      const n=s().battleTreeStreak,r=R.gift(p(),'battle-tree-'+n,'rare-candy',2);
      if(!r.full){await save();await say('Four-win streak reward: two Rare Candies!');}
-     else await say('Your Bag is full. The streak is saved; no candy was awarded.');
+     else{s().battleTreePending=n;await save();await say('Your Bag is full. Your two Rare Candies can be claimed on your next visit.');}
     }
     break;
    }
