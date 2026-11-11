@@ -83,7 +83,7 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
       window.PartyMenu.open = (o) => {
         const b = BattleScreen._test.battle;
         if (b && !o.canCancel && o.mons) {
-          const out = b.sides.p1.pokemon.filter((m) => m.active && !m.fainted).map((m) => m.name);
+          const out = [].concat(b.sides.p1.actives || b.sides.p1.active).filter((m) => m && !m.fainted).map((m) => m.name);
           const slot = o.mons.findIndex((m) => m.hp > 0 && !out.includes(m.name));
           if (slot >= 0) return Promise.resolve({ slot, cursor: slot, action: "shift" });
         }
