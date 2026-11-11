@@ -104,7 +104,7 @@ const OUT = process.env.OUT || "/tmp/pk-xd45";
     console.log("ok: browser XD Krane home at the HQ Lab");
     assert.deepEqual(errors, []);
     assert.deepEqual([...missing], []);
-    assert.deepEqual([...long], [], "every line fits the box");
+    assert.deepEqual([...long], [], "every line fits the box: " + JSON.stringify([...long]));
   } catch (error) { await s.shot("xd45-failure"); throw error; }
   finally { await s.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });
