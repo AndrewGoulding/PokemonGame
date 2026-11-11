@@ -36,3 +36,45 @@ Test: `node tests/alola-test.js`. The general test suite includes this file.
 
 The merged Totem sequence uses Gumshoos and Alolan Raticate, with Alolan
 Rattata and Alolan Meowth represented by their actual Generation VII forms.
+
+## Akala Island chapter
+
+The single Ultra Alola campaign continues from Hala's Melemele Grand Trial.
+Board the ferry at Hau’oli City's harbor, then meet Hau in Heahea City.
+The return ferry in Heahea saves the current Akala position and remembers the
+separate island Pokémon Center, without resetting Melemele or other regions.
+
+The chapter adds **24 connected Akala maps** (39 Alola maps total): Heahea
+City, Tide Song Hotel, Route 4, Paniola Town and Ranch, Route 5, Brooklet
+Hill's entrance, hill and Totem Pool, Route 6, Royal Avenue and Battle Royal
+Dome, Route 7, Wela Volcano, Route 8, Lush Jungle, Konikoni City, Memorial
+Hill and Ruins of Life. Three new Pokémon Centers heal and set local respawns.
+The map graph has reciprocal warps; existing Melemele warp indices stay intact.
+
+Playable story, in order:
+
+- Heahea arrival and Hau battle, plus Ultra Recon Squad/Necrozma introduction
+- Paniola Hau rematch, ranch healing and Route 5 Gladion confrontation
+- Lana's two Brooklet Hill splashes, Totem Araquanid with Masquerain,
+  and Waterium Z
+- Route 6 Team Skull and a Battle Royal Dome **single-trainer exhibition**
+  (the original four-way Battle Royal format is *not* claimed as implemented)
+- Kiawe's two dance fights, Totem Alolan Marowak with Salazzle, and Firium Z
+- Ultra Recon Squad battle on Route 8; Mallow's four ingredient locations,
+  Totem Lurantis and Castform, and Grassium Z
+- Olivia's invitation in Konikoni, Plumeria at Memorial Hill, then Olivia's
+  three-Pokémon Grand Trial at Ruins of Life, awarding Rockium Z
+
+Battles use the existing native battle engine and preserve retryable boss
+progress when a reward is blocked by Bag capacity. Special battles use
+single/trainer-battle adaptations in place of the original cinematic, ally
+and multi-trainer presentation. The island uses authored level ranges, wild
+pools and existing Gen VII sprites/moves; it does not yet reproduce the full
+Ultra Sun/Ultra Moon encounter databases or 3DS map geometry.
+
+Akala completion raises the Alola level cap progressively and leaves the
+campaign at its next milestone: Ula’ula Island. Subsequent islands, the
+full Ride Pager, Aether Foundation climax, Ultra Necrozma, League and postgame
+remain unfinished. No Ultra Sun/Ultra Moon version selection is introduced.
+
+Akala regression tests: `node tests/alola-akala-test.js`.

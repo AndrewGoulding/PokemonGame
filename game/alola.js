@@ -28,9 +28,9 @@
   if(['AlolaHauoliCity','AlolaHauoliCenter','AlolaRoute2','AlolaBerryFields','AlolaCemetery','AlolaVerdantEntrance','AlolaVerdantCavern'].includes(map)&&!s.schoolClear)return'Finish the Trainer School first.';
   if(['AlolaRoute2','AlolaBerryFields','AlolaCemetery','AlolaVerdantEntrance','AlolaVerdantCavern'].includes(map)&&!s.ilimaWon)return'Battle Captain Ilima in Hau’oli City.';
   if(['AlolaVerdantEntrance','AlolaVerdantCavern'].includes(map)&&!s.skullRoute2)return'Drive Team Skull away from Route 2 before the trial.';
-  return null;}
+  return window.AlolaAkala?.owns(map)?AlolaAkala.allowed(p,map):null;}
  function visit(p,map){if(!owns(map))return;const s=state(p);if(!s.visited.includes(map))s.visited.push(map);s.resume={...p.location};}
- function cap(p){const s=peek(p);return s.halaClear?35:s.verdantClear?25:s.schoolClear?20:s.festival?15:s.starter?12:7;}
+ function cap(p){const s=peek(p);return s.halaClear&&window.AlolaAkala?AlolaAkala.cap(p):s.halaClear?35:s.verdantClear?25:s.schoolClear?20:s.festival?15:s.starter?12:7;}
  function sourceWild(p,r){if(!owns(p.location.map))return r;r.met={...r.met,map:p.location.map,level:r.level,game:'ultra-alola'};return r;}
  function recover(p){if(!owns(p.location?.map))return false;const m=WORLD_MAPS[p.location.map],a=p.location;
   if(a.x>=0&&a.x<m.width&&a.y>=0&&a.y<m.height&&!m.collision[a.y*m.width+a.x])return false;
