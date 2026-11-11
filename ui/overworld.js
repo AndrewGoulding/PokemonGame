@@ -275,7 +275,9 @@
     }).filter(Boolean).map((def) => ({
       def, x: def.x, y: def.y, ox: def.x, oy: def.y, move: null,
       facing: (/^face_(up|down|left|right)/.exec(def.movement || "") || [, "down"])[1],
-      timer: 60 + Math.floor(Math.random() * 120)
+      // (Those who roam, the Three Island biker riding up and down and the like, set off as you arrive, a few at a
+      // time; those who stand and look about wait a moment first.)
+      timer: /^(wander_|walk_)/.test(def.movement || "") ? 1 + Math.floor(Math.random() * 12) : 60 + Math.floor(Math.random() * 120)
     }));
     // The people on the maps joined to this one, standing where they are (a
     // cut tree at the edge of the next route is there before you cross):
