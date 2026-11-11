@@ -4460,8 +4460,6 @@
         if (lvl <= record.level && window.MOVES[move] && !known.has(move) && !out.includes(move)) out.push(move);
       }
     }
-    // (And any of XD's tutor moves it was taught and has since forgotten: record.tutored.)
-    for (const move of record.tutored || []) if (window.MOVES[move] && !known.has(move) && !out.includes(move)) out.push(move);
     return out;
   }
   async function moveRelearner() {
@@ -7825,7 +7823,6 @@
     await learnMove(record, move);
     if (!Party.knowsMove(record, move)) return;
     Orre.XD.addCoupons(f, -cost);
-    if (!(record.tutored || []).includes(move)) record.tutored = (record.tutored || []).concat([move]);
     await say("{PLAYER} handed over " + cost.toLocaleString("en-US") + "\nPoké Coupons.");
     await persist();
   }
