@@ -6463,6 +6463,8 @@
       case "XD_EventScript_OrreColosseum": await xdOrreColosseum(); return;
       case "XD_EventScript_OrreColosseumEagun": await say((f.xdColosseumWins || []).length ? L.orreColosseumTitle.slice(0, 1) : L.orreColosseumHi); return;
       case "XD_EventScript_BattleSim": await xdBattleSim(); return;
+      case "XD_EventScript_CouponExchange": await xdCouponExchange(); return;
+      case "XD_EventScript_MoveTeacher": await xdMoveTeacher(); return;
       case "XD_EventScript_Bingo": await xdBingo(); return;
       case "XD_EventScript_RealgamCup": await xdCup("Realgam Colosseum", 25, 40, [5, 6, 7, 8]); return;
       case "XD_EventScript_PyriteCup": await xdCup("Pyrite Colosseum", 9, 24, [1, 2, 3, 4]); return;
@@ -7626,9 +7628,7 @@
     }
     wins[name] = (wins[name] | 0) + 1;
     await sayWithJingle("mus_obtain_badge", ["Congratulations! You're today's\n" + name + " champion!"]);
-    const item = wins[name] === 1 ? "rare-candy" : pickOne(["pp-up", "hp-up", "protein", "iron", "calcium", "zinc", "carbos"]);
-    Player.addItem(player, item, 1);
-    await sayWithJingle(itemJingle(item), "{PLAYER} received " + article(Bag.name(item)) + "!");
+    await xdGiveCoupons(lo < 25 ? 300 : 600);
     await persist();
   }
   // The Orre Colosseum, once XD's story's over (XD's #35501-#35574): seven sets of four double battles, each ending
@@ -7659,14 +7659,13 @@
       if (outcome !== "won") { await say(L.orreColosseumLost); await persist(); return; }
     }
     await say(L.orreColosseumWon);
+    await xdGiveCoupons(secret ? 5000 : 1000);
     const key = secret ? "?????" : set[0];
     if (!won.includes(key)) {
       won.push(key);
       await say(L.orreColosseumEagun);
       await say(["Eagun: Congratulations! My hat's off\nto you for a most splendid victory!"]);
       await sayWithJingle("mus_obtain_badge", "{PLAYER} received the title\n\u201c" + (secret ? "Orre Colosseum Champion" : set[2]) + "\u201d\nfrom Eagun!");   // (XD's #35504)
-      Player.addItem(player, "rare-candy", 1);
-      await sayWithJingle(itemJingle("rare-candy"), "{PLAYER} received a Rare Candy!");
     }
     await persist();
   }
@@ -7691,7 +7690,13 @@
         noExp: true, noPrize: true, noBlackout: true, noBag: true, defeatText: ["Battle Sim complete!"] });
     } finally { player.party = own; }
     show("world"); await Overworld.resume();
-    if (outcome === "won") { if (!cleared.includes(n)) cleared.push(n); await say(["Congratulations! You cleared Battle\nCD " + String(n).padStart(2, "0") + "!"]); }
+    if (outcome === "won") {
+      const first = !cleared.includes(n);
+      if (first) cleared.push(n);
+      await say(["Congratulations! You cleared Battle\nCD " + String(n).padStart(2, "0") + "!"]);
+      if (first) await xdGiveCoupons(200);
+      if (first && cleared.length === count) { await say(L.simAll.slice(0, -1)); await xdGiveCoupons(15000); }   // (XD's #58090)
+    }
     else await say(["Too bad! Please try that Battle CD\nagain."]);
     await persist();
   }
@@ -7739,7 +7744,8 @@
     const n = lines(), best = (f.xdBingo = f.xdBingo || {});
     best[card] = Math.max(best[card] | 0, n);
     await say(["Thank you for playing. You completed\n" + n + " Bingo line(s)!"]);   // (XD's #56062, near enough)
-    if (n) { Player.addItem(player, "rare-candy", Math.min(3, n)); await say(["{PLAYER} received " + Math.min(3, n) + " Rare Cand" + (Math.min(3, n) > 1 ? "ies" : "y") + "!"]); }
+    if (n) await xdGiveCoupons(n * 100 + (flipped.size === 16 ? 1000 : 0));   // (XD's #56060-#56062: so many a line, more for a whole card)
+    else await say(L.bingoNone);
     await persist();
   }
   // The Pokémon that won't cry (XD's #36339-#36394, #37508-#37516): the Cry Analyzer's question about it, and, answered,
@@ -7761,6 +7767,55 @@
     cry(Q[0]);
     for (const page of L[key + "Ok"]) await say(page);
     done.push(key);
+    await persist();
+  }
+  // Poké Coupons given (XD's #35547), and what you have now.
+  async function xdGiveCoupons(n, pages) {
+    if (pages && pages[0]) await say(pages);
+    Orre.XD.addCoupons(player.flags, n);
+    await sayWithJingle("mus_obtain_item", "{PLAYER} received\n" + n.toLocaleString("en-US") + " Poké Coupons!");
+    await persist();
+  }
+  const couponsText = () => "(You have " + Orre.XD.coupons(player.flags).toLocaleString("en-US") + " Poké Coupons.)";
+  // Mt. Battle's Coupon Exchange (XD's #50615-#50626): its prizes for Poké Coupons.
+  async function xdCouponExchange() {
+    const f = player.flags, L = Orre.XD.LINES, P = Orre.XD.COUPON_PRIZES;
+    await say(L.exchange.concat([couponsText()]));
+    for (;;) {
+      const at = await multichoice(L.exchangeWhat[L.exchangeWhat.length - 1], 0, 0,
+        P.map(([id, c]) => Bag.name(id) + " " + c.toLocaleString("en-US")).concat(["Info", "Cancel"]));
+      if (at === P.length) { await say(L.exchangeInfo); continue; }
+      if (at < 0 || at > P.length) return;
+      const [id, cost] = P[at];
+      if (Orre.XD.coupons(f) < cost) { await say(L.exchangePrizeShort); continue; }
+      if (!(await confirm("Exchange " + cost.toLocaleString("en-US") + " Poké Coupons for\n" + article(Bag.name(id)) + "?"))) continue;
+      Orre.XD.addCoupons(f, -cost);
+      Player.addItem(player, id, 1);
+      await sayWithJingle(itemJingle(id), "{PLAYER} received " + article(Bag.name(id)) + "!");
+      await persist();
+      if (!(await confirm(L.exchangeMore[L.exchangeMore.length - 1]))) return;
+    }
+  }
+  // Mt. Battle's Move Teacher (XD's #50901-#50908): a move for Poké Coupons.
+  async function xdMoveTeacher() {
+    const f = player.flags, L = Orre.XD.LINES, M = Orre.XD.MOVE_TEACHER, cost = Orre.XD.MOVE_TEACHER_PRICE;
+    await say(L.teacher.slice(0, -1).concat([couponsText()]));
+    if (!(await confirm(L.teacher[L.teacher.length - 1]))) return;
+    const at = await multichoice("Which move? (" + cost.toLocaleString("en-US") + " Poké\nCoupons each)", 0, 0, M.concat(["Cancel"]));
+    if (at < 0 || at >= M.length) return;
+    const move = M[at];
+    if (Orre.XD.coupons(f) < cost) { await say(L.teacherShort); return; }
+    const notes = player.party.map((r) => (r.egg || !tutorCanLearn(r, move) ? "NOT ABLE" : Party.knowsMove(r, move) ? "LEARNED" : "ABLE"));
+    const record = await choosePartyFor("Teach which {PKMN}?", null, notes);
+    show("world");
+    if (!record || record.egg) return;
+    const name = Party.displayName(record);
+    if (Party.knowsMove(record, move)) { await say(name + " already knows " + move + "."); return; }
+    if (!tutorCanLearn(record, move)) { await say(name + " can't learn " + move + "."); return; }
+    await learnMove(record, move);
+    if (!Party.knowsMove(record, move)) return;
+    Orre.XD.addCoupons(f, -cost);
+    await say("{PLAYER} handed over " + cost.toLocaleString("en-US") + "\nPoké Coupons.");
     await persist();
   }
   // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.
@@ -9034,6 +9089,7 @@
       rec.best = Math.max(rec.best, area);
       heal();
       await sayWithJingle("mus_obtain_badge", ["You've cleared Area " + area + "!"]);
+      if (xd) await xdGiveCoupons(area * 200, ["You've cleared Area " + area + "! Here\nyou go! Accept your Poké Coupons!"]);   // (XD's #31072-#31081)
       if (!rec.cleared.includes(area)) {
         rec.cleared.push(area);
         Player.addMoney(player, M.money(area));

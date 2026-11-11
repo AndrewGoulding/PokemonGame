@@ -3236,7 +3236,12 @@ cards aren't in its extracted data, so each card's sixteen panels are Mt. Battle
 card's lent Pokémon, each beaten one joining you, Bingos counted by lines), and Colosseum Battles at the Pyrite and
 Realgam Colosseums (XD's decks, Miror B. now and then in the final). Shadow Lugia's purification has XD's words for it.
 Its side quests: the Pokémon that won't cry (Phenac's four, the Cry Analyzer's questions; Megg's Shroomish), and XD's
-seventeen e-mails, in Orre's E-mail, each arriving at its point in the story. A Trainer whose Shadow Pokémon isn't snagged
+seventeen e-mails, in Orre's E-mail, each arriving at its point in the story. **Poké Coupons** (`player.flags.xdCoupons`), XD's
+prize money: from Mt. Battle's areas (200 an area, times the area), Pyrite's and Realgam's Colosseum Battles (300,
+600), the Orre Colosseum's sets (1,000; the ????? set 5,000), Battle Bingo (100 a line, 1,000 more for a whole card)
+and each Battle CD's first clear (200; 15,000 for all of them, as XD's clerk says); spent at Mt. Battle's Coupon
+Exchange (battle items, vitamins, PP Ups, Rare Candies, a few TMs) and on its Move Teacher (XD's tutor moves, 1,000
+each). XD's own prices aren't in its extracted text, so these are this game's. A Trainer whose Shadow Pokémon isn't snagged
 battles you again, as Colosseum's do. Orre's level cap in XD's story rises with it: 20 at Mt. Battle, 22 at the Cipher
 Lab, 24 at ONBS, 28 at Phenac, 30 at the S.S. Libra, 33 at the Snagem Hideout, 37 at the Key Lair, 50 on Citadark Isle. XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
