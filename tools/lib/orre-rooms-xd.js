@@ -156,4 +156,33 @@ module.exports = function ({ changed, room, drawings, block, A, emerald }) {
     changed[KH + "_1F"] = Object.assign(room("SlateportCity_OceanicMuseum_1F", KH + "_1F", "Kaminko's House", "em_lilycove_museum",
       [{ x: 9, y: 8, map: KH, warp: manor }, { x: 10, y: 8, map: KH, warp: manor }]), { orrePlace: KH });
   }
+
+  // ---- The Cipher Lab (XD's D1): Cipher's old lab out in the desert south of Mt. Battle, back in use; the Hexagon
+  // Brothers lounging out front. Inside: 1F (the Weather Institute's 1F), B1 (Devon's 2F: the ID Card's chest, and
+  // the stairs down that need the ID Card) and B2 (the Weather Institute's 2F: where Prof. Krane's kept). ----
+  {
+    const CL = "CipherLab", CW = 30, CH = 24;
+    const { o, oc, oz } = outdoors(CL, "Cipher Lab", "em_aqua_magma_hideout", CW, CH,
+      (x, y) => x === 0 || x === CW - 1 || y === 0 || (y === CH - 1 && (x < 12 || x > 17)), [12, 13, 14, 15, 16, 17].map((x) => [x, CH - 1]));
+    // Cracked concrete before it; the lab low and grey, its sign half gone, a vent stack.
+    oc.rect(7 * 16, 11 * 16, 16 * 16, 6 * 16, C.metal[2]);
+    for (let i = 0; i < 40; i++) { const x = 7 * 16 + ((i * 53) % (16 * 16)), y = 11 * 16 + ((i * 37) % (6 * 16)); oc.line(x, y, x + 9, y + 4, C.metal[1], 1); }
+    block(o, 8, 3, 14, 8);
+    oc.rect(8 * 16 + 4, 3 * 16 + 4, 14 * 16, 8 * 16, [0, 0, 0, 60]);
+    oc.box(8 * 16, 3 * 16, 14 * 16, 8 * 16, C.metal[2], C.metal[0]);
+    oc.rect(8 * 16 + 2, 3 * 16 + 2, 14 * 16 - 4, 12, C.metal[1]);
+    text(oc, "LAB", 8 * 16 + 8, 3 * 16 + 4, C.cream);
+    for (let i = 0; i < 6; i++) if (i !== 3) oc.box(8 * 16 + 14 + i * 34, 3 * 16 + 30, 20, 14, [53, 67, 62], C.metal[0]);
+    door(oc, 15 * 16 + 8, 11 * 16 - 1, 24, C.dark);
+    o.warps.push({ x: 15, y: 10, map: CL + "_1F", warp: 0 });
+    oz.rect(19 * 16, 1 * 16, 20, 3 * 16, C.metal[1]); oz.rect(19 * 16 - 2, 1 * 16, 24, 5, C.metal[0]);
+    for (const [x, y] of [[3, 6], [25, 15], [4, 18]]) { oz.ellipse(x * 16 + 8, y * 16 + 10, 14, 7, C.rock[1]); block(o, x, y, 1, 1); }
+    changed[CL + "_1F"] = room("Route119_WeatherInstitute_1F", CL + "_1F", "Cipher Lab", "em_aqua_magma_hideout",
+      [{ x: 9, y: 12, map: CL, warp: 0 }, { x: 10, y: 12, map: CL, warp: 0 }, { x: 17, y: 1, map: CL + "_B1", warp: 0 }]);
+    changed[CL + "_B1"] = room("RustboroCity_DevonCorp_2F", CL + "_B1", "Cipher Lab", "em_aqua_magma_hideout",
+      [{ x: 14, y: 1, map: CL + "_1F", warp: 2 }, { x: 2, y: 1, map: CL + "_B2", warp: 0 }]);
+    changed[CL + "_B2"] = room("Route119_WeatherInstitute_2F", CL + "_B2", "Cipher Lab", "em_aqua_magma_hideout",
+      [{ x: 17, y: 1, map: CL + "_B1", warp: 1 }]);
+    for (const n of ["_1F", "_B1", "_B2"]) changed[CL + n].orrePlace = CL;
+  }
 };

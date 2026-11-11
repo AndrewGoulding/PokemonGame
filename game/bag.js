@@ -140,7 +140,8 @@
     "cologne-case": "A case for carrying\nScents that appeal\nto Pok\u00e9mon.", "joy-scent": "A Scent that\nslightly pleases\nPok\u00e9mon.",
     "excite-scent": "A Scent that\npleases Pok\u00e9mon.", "vivid-scent": "A Scent that\ngreatly pleases\nPok\u00e9mon.",
     "powerup-part": "A part to be\ndelivered to\nNett from Perr.",
-    "machine-part": "A rare part for\nthe Purify Chamber.\nFor Lily at the Lab."
+    "machine-part": "A rare part for\nthe Purify Chamber.\nFor Lily at the Lab.",
+    "id-card": "An ID card that\nopens a locked door\nin the Cipher Lab."
   };
   const description = (item) => ((window.ITEMS[item] || {}).category === "evolution" ? EVOLUTION_ITEM_TEXT : "") ||
     ORRE_ITEM_TEXT[item] || (window.ITEM_DESCRIPTIONS && window.ITEM_DESCRIPTIONS[item]) ||

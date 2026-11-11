@@ -6194,8 +6194,14 @@
   // Lily in the lobby, Krane's welcome and his Eevee upstairs, the Snag Machine in the lobby, Cipher's raid, and Spy
   // Naps and his Shadow Teddiursa outside. (player.flags.xdStory 2 to 6.)
   const XD = (k) => "LOCALID_XD_" + k;
+  const ORRE_XD = XD;
   async function xdScene(script) {
     const f = player.flags, story = f.xdStory | 0;
+    const trainer = /^XD_EventScript_Trainer_(\w+)$/.exec(script);
+    if (trainer && Orre.XD.TRAINERS[trainer[1]]) { await xdTrainer(trainer[1]); return; }
+    const L = Orre.XD.LINES;
+    const villager = /^AgateVillage_EventScript_XD_(\w+)$/.exec(script);
+    if (villager && Orre.XD.VILLAGERS[villager[1]]) { await xdVillager(villager[1]); return; }
     switch (script) {
       case "enter:PokemonHQLab_1F":
         if (f.xdChamberDue && f.xdChamberAway) {
@@ -6303,6 +6309,36 @@
         yes: ["Cron: Bring it on!"], no: ["Cron: What, you don't want to do\nthis? I'm all pumped up and ready to\ngo!"], defeat: ["Cron: Hot! A hot battle that was!"],
         after: ["Cron: It dismays me to see that\nShadow Pokémon have appeared again.\nIt's a sad world we live in."] }); return;
       case "RelicForest_EventScript_XD_EAGUN": await xdShrine(); return;
+      // ---- Mt. Battle (XD's chapter 4): reception, Vander and his trainee Bardo. ----
+      case "XD_EventScript_Reception":
+        if (story === 15) { await say(L.reception); f.xdStory = 16; Overworld.refreshPeople(); await persist(); return; }
+        await say(story >= 17 ? L.receptionLater : L.receptionAfter);
+        return;
+      case "XD_EventScript_Vander": await xdVander(); return;
+      case "XD_EventScript_VanderPC": await say(L.vanderLater); return;
+      // ---- The Cipher Lab (XD's chapter 5). ----
+      case "enter:CipherLab": case "arrive:CipherLab": await xdHexagon(); return;
+      case "XD_EventScript_IdCard":
+        if (!(f.xdBeaten || []).includes("CABOL")) { await xdTrainer("CABOL"); return; }
+        Player.addItem(player, "id-card", 1);
+        f.xdIdCard = true;
+        Overworld.refreshPeople();
+        await sayWithJingle("mus_obtain_key_item", "{PLAYER} found the ID Card!");   // (this game's own: XD's chest)
+        await persist();
+        return;
+      case "enter:CipherLab_B2":
+        if (!f.xdIdCard) {
+          await say(L.locked);
+          player.location = { map: "CipherLab_B1", x: 2, y: 2, facing: "down" };
+          await Overworld.teleport(player.location);
+          return;
+        }
+        if (!f.xdIdCardUsed) { f.xdIdCardUsed = true; await say(L.usedCard); }
+        await xdKraneRoom();
+        return;
+      case "enter:CipherLab_B1": await xdLovrina(); return;
+      case "XD_EventScript_KraneLab": await say(L.kraneOut); return;
+      case "XD_EventScript_KraneHome": await say(L.kraneTough.slice(0, 3)); return;
       case "PokemonHQLab_1F_EventScript_Jovi":
         await say(f.xdChamber ? ["Jovi: That Machine Part Jovi carried\nis on that big machine. They put it\non the middle part with the ring.", "Jovi: It went right in the middle. It\nmust be the most important part!"]
           : ["Jovi: Jovi can do it!"]);
@@ -6733,6 +6769,145 @@
     await say(["Eagun: Fine! If I hear of anything, I\nwill make certain to get in touch\nwith you."]);
     Orre.unlock(f, "MtBattle");
     f.xdStory = 15;
+    await persist();
+  }
+  // One of XD's Agate villagers (game/xd.js's VILLAGERS): a battle, once, if you like; their after-words then.
+  async function xdVillager(key) {
+    const f = player.flags, v = Orre.XD.VILLAGERS[key], beaten = (f.xdBeaten = f.xdBeaten || []);
+    if (beaten.includes(key)) { await say(v.after); return; }
+    if (v.ask.length > 1) await say(v.ask.slice(0, -1));
+    if (!(await confirm(v.ask[v.ask.length - 1]))) { await say(v.no); return; }
+    await say(v.yes);
+    const t = Orre.XD.trainer(v.index, null, v.defeat);
+    const outcome = await storyBattle({ foe: { name: t.name, team: t.team, pic: t.pic }, double: t.team.length > 1, prizeClass: "Cooltrainer", noBlackout: true, defeatText: t.defeat });
+    if (outcome !== "won") return;
+    beaten.push(key);
+    await say(v.after);
+    await persist();
+  }
+  // Orre's level cap in XD's story (player.flags.xdLevelCap), raised as it goes on, never lowered.
+  function xdCap(n) { const f = player.flags; if ((f.xdLevelCap | 0) < n) f.xdLevelCap = n; }
+  // One of XD's chapter 4 and 5 Trainers (game/xd.js's TRAINERS): their words and a battle (a question first, for
+  // those who ask); beaten, their after-words. A Trainer whose Shadow Pokémon wasn't snagged battles you again.
+  async function xdTrainer(key) {
+    const f = player.flags, t = Orre.XD.TRAINERS[key], beaten = (f.xdBeaten = f.xdBeaten || []);
+    if (beaten.includes(key)) { await say(t.after); return; }
+    await say(t.intro);
+    if (t.ask) {
+      if (!(await confirm(t.ask))) { await say(t.no); return; }
+      await say(t.yes);
+    }
+    const d = Orre.XD.trainer(t.index, f.xdShadowSnagged, t.defeat);
+    const opts = { foe: { name: d.name, team: d.team, pic: d.pic }, double: d.team.length > 1, prizeClass: "Team Rocket", noBlackout: true,
+      snag: d.team.filter((r) => r.shadow).map((r) => r.species), defeatText: d.defeat };
+    const outcome = await storyBattle(opts);
+    const snagged = opts.snagged || [];
+    const got = d.shadows.filter((id) => snagged.includes(window.XD_DECKS.shadow[id].species));
+    if (got.length) (f.xdShadowSnagged = f.xdShadowSnagged || []).push(...got);
+    if (outcome !== "won") return;
+    // (Their Shadow Pokémon not snagged: still theirs, and they'll battle again.)
+    if (d.shadows.length > got.length) { await persist(); return; }
+    beaten.push(key);
+    await say(t.after);
+    await persist();
+  }
+  // Vander with his trainee on Mt. Battle's first terrace (XD's #31027-#31033): a battle with Bardo, then, back at
+  // reception, what he saw: Cipher's old lab in the desert south of here (xdStory 16 -> 17).
+  async function xdVander() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if ((f.xdStory | 0) !== 16) return;
+    await say(L.vanderTeach);
+    await say(L.bardoGets);
+    await say(L.vanderAsk);
+    xdCap(20);
+    const t = Orre.XD.trainer(32, null, L.bardoDefeat);
+    const outcome = await storyBattle({ foe: { name: t.name, team: t.team, pic: t.pic }, double: t.team.length > 1, prizeClass: "Cooltrainer", noBlackout: true, defeatText: t.defeat });
+    if (outcome !== "won") return;
+    await say(L.bardoAfter);
+    await say(L.vanderAfter);
+    await Overworld.fadeToBlack();
+    player.location = { map: "MtBattle_PokemonCenter_1F", x: 4, y: 5, facing: "up" };
+    f.xdStory = 17;
+    await Overworld.teleport(player.location);
+    await Overworld.fadeFromBlack();
+    await say(L.vanderLab);
+    Orre.unlock(f, Orre.XD.CIPHER_LAB.map);
+    await say("The Cipher Lab was marked on the\nOrre Map!");   // (this game's own, as Orre's other places are)
+    await persist();
+  }
+  // The Cipher Lab: the Hexagon Brothers counting off as you arrive (XD's #30001-#30016): five, one short; the sixth,
+  // Greesix, back once they've gone over it again (xdStory 17 -> 18).
+  async function xdHexagon() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if ((f.xdStory | 0) !== 17) return;
+    xdCap(22);
+    await say(L.count1);
+    for (const k of ["countOne", "countTwo", "countThree", "countFour", "countFive"]) await say(L[k]);
+    await say(L.count2);
+    for (const k of ["countOne", "countTwo", "countThree", "countFour", "countFive"]) await say(L[k]);
+    await say(L.count3);
+    f.xdStory = 18;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // B2: Lovrina pressing Krane to help with XD001, Naps taking the blame; then Naps, alone with Krane, sees you, and
+  // battles you (XD's #30069-#30113); Krane joins you (xdStory 18 -> 19).
+  async function xdKraneRoom() {
+    const f = player.flags, L = Orre.XD.LINES, K = ORRE_XD("KRANE_LAB"), LO = ORRE_XD("LOVRINA"), N = ORRE_XD("NAPS_LAB");
+    if ((f.xdStory | 0) !== 18) return;
+    if (!f.xdKraneScene) {
+      Overworld.addObject(LO, { x: 17, y: 5, facing: "right" });
+      Overworld.addObject(N, { x: 17, y: 4, facing: "right" });
+      for (const page of L.b2) await say(page);
+      Screen.say("");
+      await Overworld.act([{ who: LO, moves: ["walk_up", "walk_up", "walk_up", "set_invisible"] }]);
+      Overworld.removeObject(LO);
+      for (const page of L.b2b) await say(page);
+      f.xdKraneScene = true;
+    } else {
+      Overworld.addObject(N, { x: 17, y: 4, facing: "right" });
+      await say(L.napsAgain);
+    }
+    for (const page of L.napsSees) await say(page);
+    const t = Orre.XD.trainer(60, null, L.napsDefeat);
+    const outcome = await storyBattle({ foe: { name: t.name, team: t.team, pic: t.pic }, double: t.team.length > 1, prizeClass: "Team Rocket", noBlackout: true, defeatText: t.defeat });
+    if (outcome !== "won") { Overworld.removeObject(N); return; }
+    await say(L.napsAfter);
+    Screen.say("");
+    await Overworld.act([{ who: N, moves: ["walk_fast_up", "walk_fast_up", "walk_fast_up", "set_invisible"] }]);
+    Overworld.removeObject(N);
+    await say(L.kraneFree);
+    await sayWithJingle("mus_obtain_key_item", L.kraneJoins);
+    f.xdStory = 19;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // B1, making for the way out with Krane: Lovrina and Naps; Lovrina's battle; she lets you go "this one time", and
+  // drops the Data ROM, which Krane takes (XD's #30115-#30133). Krane's home at the HQ Lab (xdStory 19 -> 20).
+  async function xdLovrina() {
+    const f = player.flags, L = Orre.XD.LINES, LO = ORRE_XD("LOVRINA_B1"), N = ORRE_XD("NAPS_B1"), K = ORRE_XD("KRANE_B1");
+    if ((f.xdStory | 0) !== 19) return;
+    Overworld.addObject(LO, { x: 13, y: 2, facing: "down" });
+    Overworld.addObject(N, { x: 15, y: 2, facing: "down" });
+    Overworld.addObject(K, { x: player.location.x + 1, y: player.location.y, facing: "up" });
+    for (const page of L.escape) await say(page);
+    const t = Orre.XD.trainer(61, f.xdShadowSnagged, L.lovrinaDefeat);
+    const opts = { foe: { name: t.name, team: t.team, pic: "cipher_peon_f" }, double: t.team.length > 1, prizeClass: "Leader", noBlackout: true,
+      snag: t.team.filter((r) => r.shadow).map((r) => r.species), defeatText: t.defeat };
+    const outcome = await storyBattle(opts);
+    const got = t.shadows.filter((id) => (opts.snagged || []).includes(window.XD_DECKS.shadow[id].species));
+    if (got.length) (f.xdShadowSnagged = f.xdShadowSnagged || []).push(...got);
+    if (outcome !== "won") { for (const k of [LO, N, K]) Overworld.removeObject(k); await persist(); return; }
+    await say(L.lovrinaAfter);
+    await say(L.napsCries);
+    Screen.say("");
+    await Overworld.act([{ who: LO, moves: ["walk_fast_up", "set_invisible"] }, { who: N, moves: ["walk_fast_up", "set_invisible"] }]);
+    Overworld.removeObject(LO); Overworld.removeObject(N);
+    for (const page of L.dropped) await say(page);
+    await say(L.kraneTough);
+    Overworld.removeObject(K);
+    f.xdStory = 20;
+    Overworld.refreshPeople();
     await persist();
   }
   // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.

@@ -3185,7 +3185,17 @@ four friends in the Relic Cave (Jols, Gorps, Ladi, Cron) battle you as often as 
 Pokémon's heart, if you've one in your party; Eagun and his Pikachu at the Relic Stone, then, its heart ready, your
 Shadow Pokémon purified there (14); back at his house, Vander on Mt. Battle, who saw sinister characters in the desert,
 and your P★DA number (15) (`tests/browser/xd-chapter3.js`). Eagun's house is Colosseum's, its own scenes as before
-outside XD's story. XD's text: `assets/text/xd.json`, XD's
+outside XD's story. Agate's villagers (Clerr, Belish, Cida, Dosk, Hebon) battle you once each if you like (Belish's
+first words are her later ones: XD's offer a prize its text doesn't name). Its fourth chapter, **Mt. Battle**: its
+reception sends you in to Vander (16); his rookies Miru and Cridel; Vander has you battle his trainee Bardo, then
+tells you of Cipher's old lab in the desert to the south (17). Its fifth, the **Cipher Lab** (drawn outside, three
+floors inside): the Hexagon Brothers counting off out front, one short (18), each with a Shadow Pokémon; inside its
+Peons and researchers (XD's lines don't say which of a floor's Trainers says which: matched by floor), Cabol by the
+chest with the ID Card, which opens the way down; on B2 Lovrina pressing Prof. Krane to help with XD001 and Naps
+taking the blame, then Naps's battle, and Krane with you (19); making for the way out, Lovrina's battle and her Shadow
+Delcatty, the Data ROM she drops, and Krane home at the HQ Lab (20) (`tests/browser/xd-chapter45.js`). A Trainer whose
+Shadow Pokémon isn't snagged battles you again, as Colosseum's do. Orre's level cap in XD's story rises with it: 20
+at Mt. Battle, 22 at the Cipher Lab. XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
 `node tools/build-colosseum-text.js --out xd.json <the disc's files folder>` (as Colosseum's are, into
 `assets/text/colosseum.json`; a European disc's other-language archives are left out). Its Trainers and Shadow

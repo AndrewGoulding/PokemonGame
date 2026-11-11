@@ -12,7 +12,7 @@
 
 const path = require("path");
 
-const KEEP = new Set(["TV", "OK", "PC", "HQ", "HP", "PP", "TM", "HM", "PDA", "ID", "EXP", "KO", "SP", "UFO", "DNA", "P★DA"]);
+const KEEP = new Set(["TV", "OK", "PC", "HQ", "XD", "ROM", "HP", "PP", "TM", "HM", "PDA", "ID", "EXP", "KO", "SP", "UFO", "DNA", "P★DA"]);
 const WORDS = { "POKéMON": "Pokémon", "POKéBALL": "Poké Ball", "POKé": "Poké", "MIROR": "Miror", "ES": "Es", "PRE": "Pre", "B.": "B." };
 
 function caseWord(w) {
