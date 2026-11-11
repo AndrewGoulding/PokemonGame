@@ -5,7 +5,7 @@ if(!window.Alola||!window.ALOLA_DATA?.league)return;
 const names=new Set(ALOLA_DATA.league.mapNames),owns=m=>names.has(m);
 const postgame=new Set(['AlolaPostgamePort','AlolaBattleTree','AlolaRRBase','AlolaRRLab','AlolaRRBoss','AlolaBeastStation']);
 const gates={
- AlolaLanakilaSlope:'lanakilaHau',AlolaLanakilaCave:'lanakilaHau',
+ AlolaLanakilaCave:'lanakilaHau',
  AlolaLanakilaSummit:'lanakilaHau',AlolaLeagueLobby:'lanakilaHau',AlolaLeagueRest:'lanakilaHau',
  AlolaEliteMolayne:'leagueRegistered',AlolaEliteOlivia:'eliteMolayneWon',
  AlolaEliteAcerola:'eliteOliviaWon',AlolaEliteKahili:'eliteAcerolaWon',
