@@ -78,9 +78,10 @@
   // the game is opened straight from disk.
   const tintCache = new Map();
   function tinted(name, color, amount) {
-    const i = img(name);
+    const i = typeof name === "string" ? img(name) : name;
     if (!ready(i)) return i;
-    const key = name + color + Math.round(amount * 64);
+    // (A picture drawn in your colors, not one of the preloaded ones: keyed by itself.)
+    const key = (typeof name === "string" ? name : "styled" + (name.styleKey || "")) + color + Math.round(amount * 64);
     if (tintCache.has(key)) return tintCache.get(key);
     const c = document.createElement("canvas");
     c.width = i.naturalWidth; c.height = i.naturalHeight;
@@ -889,6 +890,31 @@
     await fadePic(1, 24);
     await wait(32);
 
+    // Your look: hair, skin and eye colors (this game's own), your picture drawn in them as you choose
+    // (game/character-style.js; the clothes are the fashion boutiques' to change later).
+    const appearance = { hair: "original", skin: "original", eyes: "original" };
+    if (window.CharacterStyle && window.GbaMenus && window.GbaMenus.listMenu) {
+      const C = window.CharacterStyle, base = img(playerPic), me = { look: "custom", appearance };
+      const repaint = () => { const styled = C.render(base, me); if (styled !== base) styled.styleKey = JSON.stringify(appearance); s.pic = styled === base ? playerPic : styled; };
+      await say(["Let's take a good look at you.", "Tell me, what do you look like?"]);
+      const parts = [["hair", "What color is\nyour hair?", C.HAIR], ["skin", "And your skin\ntone?", C.SKIN], ["eyes", "And what color\nare your eyes?", C.EYES]];
+      for (let at = 0; at < parts.length;) {
+        const [part, question, table] = parts[at], keys = Object.keys(table);
+        // (The question written out in full before the colors come up beside it.)
+        if (window.Screen.prompt) await window.Screen.prompt(question); else show(question);
+        const frame = window.GameOptions ? window.GameOptions.get().frame : 0;
+        const index = await window.GbaMenus.multichoice(document.getElementById("overlay"), { left: 20, top: 1, width: 9, frame, shown: 7,
+          items: keys.map((k) => table[k].name), cursor: Math.max(0, keys.indexOf(appearance[part])),
+          onMove: (i) => { appearance[part] = keys[i]; repaint(); } });
+        window.Screen.clearMenu();
+        if (index < 0) { if (at > 0) at--; continue; }   // (B: back to the one before)
+        appearance[part] = keys[index]; repaint();
+        at++;
+        if (at === parts.length && !(await window.Screen.yesNo("Is this what you look like?"))) at = 0;
+      }
+      show("");
+    }
+
     // The player's name.
     const pickFrom = (list) => list[Math.floor(Math.random() * list.length)];
     // FireRed's naming screen (ui/naming-screen.js), between fades to black;
@@ -949,7 +975,7 @@
     await Promise.all([darken, whiten, shrink]);
     show("");
     await fadeTo("#000", 0, 16, 2);
-    return { name, look };
+    return { name, look, appearance };
   }
 
   async function oakSpeech() {

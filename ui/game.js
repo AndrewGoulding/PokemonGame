@@ -1024,6 +1024,8 @@
     show("intro");
     const r = await Intro.oakSpeech();
     player = old ? Player.newGamePlus(old, r.name, r.look) : Player.create(r.name, r.look);   // the rival is Gary (Player.RIVAL_NAME)
+    // (Your hair, skin and eye colors from Oak's speech: game/character-style.js.)
+    if (r.appearance) player.appearance = Object.assign({}, r.appearance);
     await persist();
   }
 

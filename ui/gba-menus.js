@@ -431,6 +431,7 @@
   // ("{FONT_SMALL}", "{CLEAR_TO 72}"), as FireRed's prices do.
   // opts.shown: a scrolling list of that many rows instead (the ListMenu
   // special, Silph Co.'s floors: 14 pixels a row, arrows when there's more).
+  // opts.onMove(cursor): called as the cursor moves (Oak's speech's look, drawn as you choose).
   // -> the index chosen, or -1 (B, unless opts.ignoreB)
   const MC_HEIGHT = [1, 2, 4, 6, 7, 9, 11, 13, 14];
   function richParts(str) {
@@ -490,7 +491,7 @@
       const to = k === "up" ? cursor - 1 : k === "down" ? cursor + 1 : null;
       if (to != null) {
         const c = wrap ? (to + n) % n : to;
-        if (c >= 0 && c < n && c !== cursor) { cursor = c; if (opts.shown) se(); draw(); }
+        if (c >= 0 && c < n && c !== cursor) { cursor = c; if (opts.shown) se(); draw(); if (opts.onMove) opts.onMove(cursor); }
       } else if (k === "a") { se(); return cursor; }
       else if (k === "b" && !opts.ignoreB) { se(); return -1; }
       return undefined;

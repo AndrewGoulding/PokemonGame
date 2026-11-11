@@ -388,6 +388,11 @@
     for (const s of dex.caught || []) markCaught(player, s);
     player.badges = Array.isArray(data.badges) ? data.badges.slice() : [];
     player.flags = Object.assign({}, data.flags);
+    // (Your hair, skin and eye colors from Oak's speech, game/character-style.js: only the known keys kept.)
+    if (data.appearance && typeof data.appearance === "object") {
+      const S = window.CharacterStyle, pick = (table, k) => (typeof k === "string" && (!S || table[k]) ? k : "original");
+      player.appearance = { hair: pick(S ? S.HAIR : {}, data.appearance.hair), skin: pick(S ? S.SKIN : {}, data.appearance.skin), eyes: pick(S ? S.EYES : {}, data.appearance.eyes) };
+    }
     // (Nothing kept of the other realms the game once had: their bags, cards, stories and the Time Machine.)
     for (const k of Object.keys(player.flags)) if (/^(realm|bagRealm|yugioh|kamurocho|kmr|timeMachine|ultimax)/i.test(k)) delete player.flags[k];
     if (RENAMED[player.flags.registered]) player.flags.registered = RENAMED[player.flags.registered];

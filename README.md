@@ -1390,8 +1390,17 @@ lines come from `window.WORLD_TEXT`, and cutscenes play FireRed's movement scrip
 `window.WORLD_MOVEMENTS`; the converter writes both alongside the maps. Running
 uses the frames from `assets/sprites/overworld/player_character_surf_run.png`.
 You play as a custom character (Red and Leaf aren't playable: they're rivals
-in this game), and your rival is always Gary. Oak's speech asks only your
-name, and doesn't introduce your rival. At the start, Leaf is in Oak's lab
+in this game), and your rival is always Gary. Oak's speech asks what you look
+like, then your name, and doesn't introduce your rival: your hair color (twelve,
+silver the sprite's own), skin tone (six) and eye color (nine), your picture
+redrawn in them as you scroll (B goes back a question; `player.appearance`,
+kept in the save). `game/character-style.js` repaints every picture of you, the
+speech portrait, the battle front and back and the overworld sheets, each from
+its own palette's shades of hair and skin; the eyes, the same near-black as the
+outline, are found by where they sit (beside the hair, by an eye-white or between
+skin). It sits under the fashion systems: Kalos's outfits and 307 X/Y clothing
+pieces dress you over it, and its salon's hair colors, the fitting room's skin
+tones and its new eye colors (the same lists) change it later. At the start, Leaf is in Oak's lab
 instead of Gary: she takes the starter that beats yours and battles you on
 the way out, with Gary's FireRed lines in her name ("Prof. Oak" for his
 "Gramps"). Gary turns up later, from the Pokédex scene on. The character's pictures: `assets/sprites/trainers/back/player_character.png`,
