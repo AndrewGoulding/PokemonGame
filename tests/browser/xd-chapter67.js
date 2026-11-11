@@ -77,6 +77,17 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
       const G = window.GbaMenus, act = G.battleAction, bagOpen = window.BagScreen.open;
       let thrown = -1, ball = false;
       G.battleAction = (c, o) => { const b = BattleScreen._test.battle; if (b && o.name && b.snag && thrown !== b.turn && [].concat(b.sides.p2.actives || b.sides.p2.active).some((m) => m && !m.fainted && b.snaggable(m))) { thrown = b.turn; ball = true; return Promise.resolve({ action: "bag", cursor: 1 }); } return act(c, o); };
+      // (Sending one in after a faint: the first that can still battle and isn't out already.)
+      const partyOpen = window.PartyMenu.open;
+      window.PartyMenu.open = (o) => {
+        const b = BattleScreen._test.battle;
+        if (b && !o.canCancel && o.mons) {
+          const out = b.sides.p1.pokemon.filter((m) => m.active && !m.fainted).map((m) => m.name);
+          const slot = o.mons.findIndex((m) => m.hp > 0 && !out.includes(m.name));
+          if (slot >= 0) return Promise.resolve({ slot, cursor: slot, action: "shift" });
+        }
+        return partyOpen(o);
+      };
       window.BagScreen.open = (o) => (ball ? (ball = false, Promise.resolve({ pocket: "Poké Balls", id: "master-ball" })) : bagOpen(o));
       // (The first move with PP left.)
       const mv = G.battleMoves;
