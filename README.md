@@ -19,6 +19,7 @@ Kalos’s X/Y campaign reaches Diantha and AZ’s ending, with Kiloude, the Look
 case, Zygarde and all five Normal/Super Maison formats after the League. Battle Chateau,
 Lumiose restaurants/jobs/shops, the full 307-piece X/Y clothing catalogue and expanded route exploration are also playable. Start with the Kalos
 researcher in Fight Area; see [Kalos’s campaign](docs/kalos.md) for content and limits.
+[Regional team outfitters](docs/team-fashion.md) sell 90 additional uniform pieces after their storylines, with shared wardrobe access.
 
 ## Running it
 

@@ -1,12 +1,12 @@
 // Complete X/Y catalogue and individual clothing ownership, independent of Pokémon/items.
 (function () {
   'use strict';
-  const data=()=>Kalos.data().activities.clothing, items=()=>data().items;
+  const data=()=>Kalos.data().activities.clothing, items=()=>data().items,allItems=()=>items().concat(window.TeamFashion?.items||[]);
   const categories={hat:'Hats',shirt:'Shirts',pants:'Pants and skirts',dress:'Dresses',socks:'Socks',shoes:'Shoes',bag:'Bags',accessory:'Hat accessories'};
   const cities={santalune:'Santalune',cyllage:'Cyllage',laverre:'Laverre',anistar:'Anistar',snowbelle:'Snowbelle',lumiose:'Lumiose'};
   const clone=x=>JSON.parse(JSON.stringify(x));
   let index;
-  const item=id=>(index||(index=Object.fromEntries(items().map(i=>[i.id,i]))))[id]||null;
+  const item=id=>(index||(index=Object.fromEntries(items().map(i=>[i.id,i]))))[id]||window.TeamFashion?.item(id)||null;
   function defaults(collection) {
     const layout={};
     for(const a of items().filter(a=>a.collection===collection&&a.default))if(!layout[a.category])layout[a.category]=a.id;
@@ -23,7 +23,9 @@
   function owned(p,id){return !!item(id)&&state(p).owned.includes(id);}
   function layout(p){const s=state(p);return s.layouts[s.collection];}
   function current(p){const a=p?.flags?.kalos?.activities?.appearance;return a?.clothing||null;}
+  function shopName(city){return window.TeamFashion?.vendor(city)?.name||cities[city]||city;}
   function shopError(p,city) {
+    if(window.TeamFashion?.vendor(city))return TeamFashion.shopError(p,city);
     if(!cities[city])return 'Unknown boutique.';
     const map=city==='lumiose'?'KalosLumioseSouth':'Kalos'+cities[city]+'City';
     const error=Kalos.allowed(p,map);if(error)return error;
@@ -32,6 +34,7 @@
   }
   function availability(p,id,city) {
     const a=item(id);if(!a)return 'Unknown clothing.';
+    if(a.faction)return window.TeamFashion.availability(p,a,city);
     const error=shopError(p,city);if(error)return error;
     if(a.price==null)return a.default?'Included in your starting wardrobe.':'A gift from Kiloude’s artist.';
     const shop=a.shops.find(s=>s.city===city);if(!shop)return 'Sold at another boutique.';
@@ -39,7 +42,7 @@
     return null;
   }
   function stock(p,city,opts={}) {
-    return items().filter(a=>(!opts.collection||a.collection===opts.collection)&&(!opts.category||a.category===opts.category)&&a.shops.some(s=>s.city===city)&&(!opts.today||!availability(p,a.id,city)));
+    return allItems().filter(a=>(!opts.collection||a.collection===opts.collection)&&(!opts.category||a.category===opts.category)&&a.shops.some(s=>s.city===city)&&(!opts.today||!availability(p,a.id,city)));
   }
   function quote(p,ids,city,coupon=false) {
     if(!Array.isArray(ids)||!ids.length||new Set(ids).size!==ids.length)return {error:'Select different pieces for your basket.'};
@@ -51,7 +54,7 @@
   function buy(p,ids,city,coupon=false) {
     const q=quote(p,ids,city,coupon);if(q.error)return q;if(!q.affordable)return {error:'You don’t have enough money.'};
     p.money-=q.total;if(coupon)Player.removeItem(p,'discount-coupon',1);
-    state(p).owned.push(...ids);KalosActivities.style(p,2);
+    state(p).owned.push(...ids);if(!window.TeamFashion?.vendor(city))KalosActivities.style(p,2);
     return {...q,bought:ids.slice()};
   }
   function setPiece(base,a) {
@@ -126,5 +129,5 @@
     return apply(p,a.collection,a.layout);
   }
   if(!ITEMS['discount-coupon'])ITEMS['discount-coupon']={name:'discount-coupon',displayName:'Discount Coupon',category:'key-items',effect:'One clothing transaction at half price. Consumed when used.'};
-  window.KalosFashion={data,items,item,categories,cities,state,defaults,owned,collection,layout,current,shopError,availability,stock,quote,buy,preview,equip,remove,selectCollection,reset,theme,artist,saveOutfit,restoreOutfit};
+  window.KalosFashion={data,items,allItems,item,shopName,categories,cities,state,defaults,owned,collection,layout,current,shopError,availability,stock,quote,buy,preview,equip,remove,selectCollection,reset,theme,artist,saveOutfit,restoreOutfit};
 })();

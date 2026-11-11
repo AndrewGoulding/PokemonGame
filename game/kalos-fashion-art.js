@@ -16,6 +16,7 @@
     else if(/Damaged/.test(name)&&y%5===0&&x%3)c=shade(colors.White,.8);
     return c;
   }
+  const badges={R:['110','101','110','101','101'],A:['010','101','111','101','101'],M:['101','111','111','101','101'],G:['111','100','101','101','111'],P:['110','101','110','100','100'],F:['111','100','110','100','100'],C:['111','100','100','100','111'],S:['111','100','111','001','111']};
   function paint(pixels,width,height,clothing,kind='front',tone) {
     const F=window.KalosFashion;if(!clothing||!F)return pixels;
     const parts=Object.fromEntries(Object.entries(clothing).filter(([k])=>k!=='underDress').map(([k,id])=>[k,F.item(id)]));
@@ -67,6 +68,7 @@
           else{put(x,y,c);put(x-1,y,c);if(/Metal/.test(a.name)){put(x,y-1,c);put(x,y+1,c);put(x+1,y-1,c);}if(/Flower/.test(a.name)){put(x,y-1,c);put(x+1,y,c);put(x,y+1,c);put(x,y,colors.Yellow);}}
         }
       }
+      if(parts.hat?.faction==='magma'){const c=rgb(parts.hat),horn=top-1;put(cx-3*scale,horn,c);put(cx+3*scale,horn,c);}
       if(parts.shirt&&/Logo|King|Twin|Poké Ball/.test(parts.shirt.name)&&kind!=='back'){
         const y=bodyTop+Math.max(1,Math.floor((legTop-bodyTop)/2));put(cx,y,colors.White);put(cx+1,y,colors.Black);
       }
@@ -76,6 +78,11 @@
         for(let yy=0;yy<bh;yy++)for(let xx=0;xx<bw;xx++){const edge=xx===0||yy===0||xx===bw-1||yy===bh-1;put(x+xx,y+yy,edge?shade(rgb(a),.55):pattern(a,xx,yy,scale));}
         for(let yy=bodyTop;yy<y;yy++)put(x,yy,shade(rgb(a),.55));
         if(/Ribbon|Tassel/.test(a.name))put(x+bw/2,y+bh/2,colors.White);
+      }
+      const brand=kind==='back'&&parts.bag?.faction?parts.bag:parts.shirt;
+      if(brand?.faction&&badges[brand.symbol]){
+        const rows=badges[brand.symbol],available=Math.max(3,legTop-bodyTop-1),size=world?1:Math.max(1,Math.min(2,Math.floor(available/5))),height=Math.min(5*size,available),width=3*size,x0=Math.round(cx-width/2),y0=bodyTop+Math.max(0,Math.floor((legTop-bodyTop-height)/2));
+        for(let y=0;y<height;y++)for(let x=0;x<width;x++)if(rows[Math.min(4,Math.floor(y*5/height))][Math.floor(x/size)]==='1')put(x0+x,y0+y,brand.ink);
       }
     }
     return pixels;

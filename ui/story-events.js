@@ -5,6 +5,7 @@
 
   function create(env) {
     function visible(person, map) {
+      const team=window.TeamFashion?.visible(person,env.player);if(team!==undefined)return team;
       const xy=env.kalosStory?.visible(person);if(xy!==undefined)return xy;
       const bw=env.unovaStory?.visible(person);if(bw!==undefined)return bw;
       const platinum = env.sinnohStory.visible(person);
@@ -292,6 +293,7 @@
       const f = env.player.flags;
       // (Orre: an e-mail due as you come in, Colosseum's: special() below found it, game/orre-mail.js.)
       if (ev.trigger && /^(arrive|enter):/.test(script || "") && env.orreMailWaiting) { await env.orreMail(); return; }
+      if(window.TeamFashion?.byScript(script)){await env.teamClothing(script);return;}
       if (env.kalosStory && await env.kalosStory.run(script)) return;
       if (env.unovaStory && await env.unovaStory.run(script)) return;
       if (await env.sinnohStory.run(script)) return;
@@ -2104,6 +2106,7 @@
     // ---------- Exploring ----------
 
     function special(script) {
+      if(window.TeamFashion?.byScript(script))return true;
       if (env.deltaDue(script)) return true;   // (the Delta Episode's scenes as you come in)
       // (Orre: up the road from the Air Strip to the Outskirt Stand the first time, Folly and Trudly come out.)
       if ((script === "arrive:OutskirtStand" || script === "enter:OutskirtStand") && (!(env.player.flags.orre | 0) || ((env.player.flags.orreStory | 0) === 18 && !env.player.flags.orreStandFT))) return true;

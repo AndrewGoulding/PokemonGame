@@ -450,6 +450,7 @@
     get sinnohBerries() { return sinnohBerries; },
     get sinnohStory() { return sinnohStory; },
     get kalosStory() { return kalosStory; },
+    get teamClothing() { return teamClothing; },
     get unovaStory() { return unovaStory; },
     get sinnohFerry() { return sinnohFerry; },
     get sinnohSailor() { return sinnohSailor; },
@@ -4393,6 +4394,7 @@
 
   function extraPeople(map) {
     const out = megaStoneBalls(map).concat(OLD_GAME_BALLS.filter((b) => b.map === map), isHoenn(map) ? hoennDecor.overlay(map).people : [], map === PYRAMID_FLOOR ? pyramidPeople() : []);
+    if(window.TeamFashion&&TeamFashion.vendors.some(v=>v.map===map&&TeamFashion.unlocked(player,v.id))){const present=(WORLD_MAPS[map]?.people||[]).flatMap(a=>{const v=visible(a,map);return v?[v===true?a:{...a,...v}]:[];});out.push(...TeamFashion.people(map,player,out,present));}
     // The Tradeback Guy, upstairs in every Pokémon Center.
     if (/_PokemonCenter_2F$/.test(map)) {
       out.push(Object.assign({ id: 901, localId: "LOCALID_TRADEBACK_GUY", script: "Game_EventScript_TradebackGuy", x: 12, y: 5,
@@ -6036,6 +6038,16 @@
         if(spec.mix&&wins<spec.rounds&&await confirm('Exchange one temporary Pokémon\nwith the previous opponent?')){const own=await choosePartyFor('Choose a Pokémon to exchange');if(own){const labels=foe.team.map((m,i)=>({label:Party.displayName(m)+' Lv50',value:i})).concat([{label:'Cancel',value:null}]),slot=await ask('Choose the incoming Pokémon',labels);if(slot!=null){const at=player.party.indexOf(own),incoming=foe.team[slot],others=player.party.map((_,i)=>i).filter(i=>i!==at),candidate=player.party.slice();candidate[at]=incoming;const err=UnovaFacilities.entry(candidate,others,at);if(err)await say(err);else{player.party[at]=JSON.parse(JSON.stringify(incoming));Party.heal(player.party[at]);}}}}
       }return{outcome:'won',wins,turns};
     }finally{if(temporary||st.pwtBackup){player.party=original;delete st.pwtBackup;delete st.facilityPending;if(lastRecord){UnovaFacilities.state(player).lastRecord=lastRecord;lastRecord=null;}Save.write(player);}show('world');await Overworld.resume();}
+  }
+
+  async function teamClothing(script){
+    const vendor=TeamFashion.byScript(script);if(!vendor)return;
+    const error=TeamFashion.shopError(player,vendor.id);if(error){await say(error);return;}
+    await say(vendor.name+"\nThe old operation is finished.\nThese uniforms are just clothing now.");
+    const mode=await ask("What would you like to do?",[{label:"Browse uniforms",value:"shop"},{label:"Change clothes",value:"wardrobe"},{label:"Leave",value:null}]);
+    if(!mode)return;Screen.say("");show("scene");clearMenu();
+    try{await KalosFashionDevice.open(scene,player,mode==="shop"?vendor.shop:null);}
+    finally{tick();Save.write(player);show("world");await Overworld.resume();}
   }
 
   const kalosStory = KalosStory.create({fashion:async city=>{Screen.say("");show("scene");clearMenu();try{return await KalosFashionDevice.open(scene,player,city);}finally{tick();Save.write(player);show("world");await Overworld.resume();}},choosePokemon:choosePartyFor,chooseMaisonTeam:async(list,n,title)=>{Screen.say("");show("scene");clearMenu();try{return await SinnohFrontierDevice.select(scene,list,n,title);}finally{show("world");await Overworld.resume();}},silhouette:async(species,pages)=>{showPicture(species);const img=$("#world-pic img");img.style.filter="brightness(0)";img.alt="Pokémon silhouette";try{await say(pages);}finally{img.style.filter="";hidePicture();}},skiddoJump:dir=>Overworld.act([{who:"player",moves:["jump_2_"+dir]}]),walkAvatar:()=>Overworld.setAvatar("walk"),wildEncounter:async(record,opts={})=>{const result=await battle("wild",{...opts,foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();return result;},refreshPeople:()=>Overworld.refreshPeople(),fireworks:async()=>{Screen.say("");show("scene");clearMenu();try{await KalosFireworks.show(scene,player);}finally{show("world");await Overworld.resume();}},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});
