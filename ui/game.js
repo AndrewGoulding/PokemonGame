@@ -1947,6 +1947,12 @@
     if(unovaMap&&(Unova.owns(map)||Unova.peek(player).visited?.length)){
       if(Unova.owns(map))regions.unshift(unovaMap);else regions.push(unovaMap);
     }
+    // One unified Ultra Sun/Ultra Moon regional map, shared across both islands.
+    const alolaMap=window.TOWN_MAP.alola;
+    if(Alola.owns(map))Alola.visit(player,map);
+    if(alolaMap&&(Alola.owns(map)||Alola.peek(player).visited?.length)){
+      if(Alola.owns(map))regions.unshift(alolaMap);else regions.push(alolaMap);
+    }
     const sprite = (R, x, y) => "left:" + pct(R.x0 - 4 + 8 * x, 240) + ";top:" + pct(R.y0 - 4 + 8 * y, 160);
     const cellIn = (R, sec) => {
       if (!sec) return null;
@@ -1957,6 +1963,7 @@
     // (In Johto, the square you're on: HGSS's world matrix has a square every
     // 32 tiles of a map outdoors; inside, where the building or cave is.)
     const johtoAt = (name, x, y) => {
+      if(alolaMap?.at[name]&&regions.includes(alolaMap))return{region:regions.indexOf(alolaMap),cell:alolaMap.at[name].slice(0,2)};
       if(bwMap?.at[name]&&regions.includes(bwMap))return{region:regions.indexOf(bwMap),cell:bwMap.at[name].slice(0,2)};
       if(unovaMap?.at[name]&&regions.includes(unovaMap))return{region:regions.indexOf(unovaMap),cell:unovaMap.at[name].slice(0,2)};
       // (Hoenn's: the square of its section, or, for a cave with none, of the place it's by.)
@@ -1979,6 +1986,7 @@
     // Fly's places: visited, with somewhere to land.
     const flyTo = (sec) => {
       if(!flying||!sec)return null;
+      if(alolaMap&&sec in alolaMap.names){const spot=alolaMap.fly[sec];return spot&&Alola.peek(player).visited?.includes(spot.map)?spot:null;}
       if(kalosMap&&sec in kalosMap.names){const spot=kalosMap.fly[sec];return spot&&Kalos.peek(player).visited?.includes(spot.map)?spot:null;}
       if(bwMap&&sec in bwMap.names){const spot=bwMap.fly[sec];return spot&&UnovaBW.flySpots(player).some(a=>a.map===spot.map)?spot:null;}
       if(unovaMap&&sec in unovaMap.names){const spot=unovaMap.fly[sec];return spot&&Unova.flySpots(player).some(a=>a.map===spot.map)?spot:null;}

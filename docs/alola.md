@@ -80,3 +80,12 @@ remain unfinished. No Ultra Sun/Ultra Moon version selection is introduced.
 Akala regression tests: `node tests/alola-akala-test.js` and the native
 Playwright flow `node tests/browser/alola-akala.js` (requires Chromium and
 Playwright). The Playwright flow is not included in `npm test`.
+
+## Regional Town Map
+The Town Map now opens on **Alola** when the player is on Melemele or Akala,
+shows the correct current location (including indoor maps), and can switch
+between visited regions. A single shared map covers both Ultra versions, with
+an original schematic island illustration rather than a 3DS screenshot.
+Fly destinations at Iki Town, Hau’oli City, Heahea City, Paniola Town and
+Konikoni City unlock only after visiting those towns; return maps and story
+progress are unchanged. Regression: `node tests/alola-town-map-test.js`.
