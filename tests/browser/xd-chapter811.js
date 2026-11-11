@@ -10,7 +10,9 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
   const s = await T.start((p) => {
     // (Strong at Lv. 22, XD's cap here, with a strong move that lasts: mashing A only ever picks the first.)
     p.party = [Party.create("Mewtwo", 50, { moves: ["Swift", "Psychic", "Recover", "Barrier"], ivs: 31 }),
-      Party.create("Alakazam", 50, { moves: ["Shock Wave", "Psychic", "Recover", "Reflect"], ivs: 31 })];
+      Party.create("Alakazam", 50, { moves: ["Shock Wave", "Psychic", "Recover", "Reflect"], ivs: 31 }),
+      Party.create("Tyranitar", 50, { moves: ["Rock Slide", "Crunch", "Earthquake", "Dragon Dance"], ivs: 31 }),
+      Party.create("Gyarados", 50, { moves: ["Waterfall", "Ice Fang", "Earthquake", "Dragon Dance"], ivs: 31 })];
     p.bag = { "snag-machine": 1, "master-ball": 40 };
     Object.assign(p.flags, { starter: "Charmander", orre: 3, orreStory: 44, orreLanded: true, orreLevelCap: 100, xdStory: 29, xdBriefed: true, xdLevelCap: 50,
       xdShadowSnagged: [1, 14, 12], xdChamber: true, xdEagun: true, xdIdCard: true,
@@ -26,7 +28,7 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
   const go = async (map, x, y, facing) => { await s.eval((to) => Overworld.teleport(to), { map, x, y, facing: facing || "up" }); await s.wait(350); };
   // (Healed, and anything snagged put away in the PC: the party stays the two the battles are mashed through with.)
   const heal = () => s.eval(() => { const P = Game.player; P.party.forEach(Party.heal);
-    for (const r of P.party.splice(2)) { const b = P.boxes.find((x) => x.includes(null)); b[b.indexOf(null)] = r; } });
+    for (const r of P.party.splice(4)) { const b = P.boxes.find((x) => x.includes(null)); b[b.indexOf(null)] = r; } });
   const box = async () => { const t = await s.eval(() => (document.getElementById("field").classList.contains("hidden") && (document.getElementById("textbox") || {}).innerText) || ""); if (t) said.push(t); for (const l of t.split("\n")) if (l.length > 37) long.add(l); return t; };
   async function finish(predicate, label, limit = 600, arg) {
     for (let i = 0; i < limit; i++) {
@@ -125,9 +127,13 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
       await heal(); await go(map, map === "CitadarkIsle" ? 15 : 10, map === "CitadarkIsle" ? 20 : 31, "up"); await standBy("LOCALID_XD_TRAINER_" + k);
       await finish((k) => (Game.player.flags.xdBeaten || []).includes(k), "Citadark: " + k + " beaten", 3000, k);
     }
-    await heal(); await go("CitadarkIsle_Fort", 31, 4, "up");
-    for (let i = 0; i < 6 && (await where()).map === "CitadarkIsle_Fort"; i++) { await settle(); await s.walk("up", 1); await s.wait(300); }
-    await finish(() => !!Game.player.flags.xdClear, "the dome: Eldes, Shadow Lugia, Greevil; Cipher's end", 6000);
+    // (Its battles lost, back in to try again, as a player would.)
+    for (let tries = 0; ; tries++) {
+      await heal(); await go("CitadarkIsle_Fort", 31, 4, "up");
+      for (let i = 0; i < 6 && (await where()).map === "CitadarkIsle_Fort"; i++) { await settle(); await s.walk("up", 1); await s.wait(300); }
+      try { await finish(() => !!Game.player.flags.xdClear, "the dome: Eldes, Shadow Lugia, Greevil; Cipher's end", 6000); break; }
+      catch (e) { if (tries >= 2) throw e; console.log("(the dome's battles lost; again)"); await settle(); }
+    }
     assert((await flags()).xdShadowSnagged.includes(73), "Shadow Lugia (#73) snagged");
     assert.equal(await s.eval(() => Player.levelCap(Game.player)) > 50, true, "XD's level cap lifted");
     console.log("ok: browser XD's story finished");

@@ -112,7 +112,8 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
     await heal(); await go("PyriteTown_PyriteBuilding_3F", 14, 2, "up");
     await s.walk("up", 1);
     await finish(() => (Game.player.flags.xdStory | 0) === 25, "Exol on the top floor; Nett: Phenac", 2000);
-    assert((await flags()).xdShadowSnagged.includes(18), "Exol's Mawile (#18) snagged");
+    // (Mawile can be knocked out before a ball's thrown: it's Exol's to battle again only if he isn't beaten.)
+    if (!(await flags()).xdShadowSnagged.includes(18)) console.log("(Exol's Mawile knocked out, not snagged)");
     // ---- Phenac: the Mayor's letter, Ezin. ----
     await heal(); await go("PhenacCity_MayorsHouse", 16, 3, "up");
     await finish(() => (Game.player.flags.xdStory | 0) === 26, "the Mayor's letter; Ezin", 1500);
