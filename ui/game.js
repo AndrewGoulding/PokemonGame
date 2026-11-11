@@ -4452,6 +4452,8 @@
         if (lvl <= record.level && window.MOVES[move] && !known.has(move) && !out.includes(move)) out.push(move);
       }
     }
+    // (And any of XD's tutor moves it was taught and has since forgotten: record.tutored.)
+    for (const move of record.tutored || []) if (window.MOVES[move] && !known.has(move) && !out.includes(move)) out.push(move);
     return out;
   }
   async function moveRelearner() {
@@ -7804,18 +7806,25 @@
     const at = await multichoice("Which move? (" + cost.toLocaleString("en-US") + " Poké\nCoupons each)", 0, 0, M.concat(["Cancel"]));
     if (at < 0 || at >= M.length) return;
     const move = M[at];
-    if (Orre.XD.coupons(f) < cost) { await say(L.teacherShort); return; }
-    const notes = player.party.map((r) => (r.egg || !tutorCanLearn(r, move) ? "NOT ABLE" : Party.knowsMove(r, move) ? "LEARNED" : "ABLE"));
+    // (A move it was taught before and has forgotten, it relearns for nothing: record.tutored.)
+    const before = (r) => (r.tutored || []).includes(move);
+    if (Orre.XD.coupons(f) < cost && !player.party.some(before)) { await say(L.teacherShort); return; }
+    const notes = player.party.map((r) => (r.egg || !tutorCanLearn(r, move) ? "NOT ABLE" : Party.knowsMove(r, move) ? "LEARNED" : before(r) ? "RELEARN" : "ABLE"));
     const record = await choosePartyFor("Teach which {PKMN}?", null, notes);
     show("world");
     if (!record || record.egg) return;
     const name = Party.displayName(record);
     if (Party.knowsMove(record, move)) { await say(name + " already knows " + move + "."); return; }
     if (!tutorCanLearn(record, move)) { await say(name + " can't learn " + move + "."); return; }
+    const free = before(record);
+    if (!free && Orre.XD.coupons(f) < cost) { await say(L.teacherShort); return; }
     await learnMove(record, move);
     if (!Party.knowsMove(record, move)) return;
-    Orre.XD.addCoupons(f, -cost);
-    await say("{PLAYER} handed over " + cost.toLocaleString("en-US") + "\nPoké Coupons.");
+    if (!free) {
+      Orre.XD.addCoupons(f, -cost);
+      record.tutored = (record.tutored || []).concat([move]);
+      await say("{PLAYER} handed over " + cost.toLocaleString("en-US") + "\nPoké Coupons.");
+    } else await say(name + " remembered " + move + "!");
     await persist();
   }
   // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.
