@@ -96,3 +96,31 @@ Five disguised residents on Route 4, in Paniola Town, Royal Avenue, Route 8,
 and Konikoni City each reveal a Ditto battle. The five encounters can be
 completed in any order, retry after a loss and persist through save/reload.
 Reporting all five to the officer awards three Rare Candies once.
+
+## Ula’ula Island chapter (merged Ultra Sun / Ultra Moon)
+
+The campaign continues from Olivia’s completed Akala grand trial. The ferry
+attendant in Konikoni City sails to **Malie City**; the return ferry in Malie
+preserves the current Ula’ula map and separately tracks the island’s healing
+point. All existing Akala progress and other regional saves remain shared.
+
+**23 connected new maps (62 Alola maps total)** include Malie City, its
+Pokémon Center and garden, Routes 10–17, Mount Hokulani and its Observatory,
+Blush Mountain, Tapu Village and Center, the abandoned Thrifty Megamart,
+Aether House, Ula’ula Meadow, Po Town, Shady House, Haina Desert, and the
+Ruins of Abundance.
+
+Story progression: Hau in Malie City, Team Skull on Route 10, Sophocles’s
+three-switch Observatory trial and Totem Togedemaru (Electrium Z), Hapu on
+Route 12, Acerola’s three ghost photographs and Totem Mimikyu (Ghostium Z),
+Aether House defense, Plumeria, the Po Town gate, Guzma in Shady House,
+and Kahuna Nanu’s grand trial (Darkium Z). Save flags and battle rewards are
+retry-safe; level caps increase to 60/65/70 through the chapter.
+
+The Alola Town Map now depicts all three implemented islands schematically
+and supports Malie and Tapu Village as additional visited-only Fly spots.
+Temporary Kalos backgrounds are still used for overworld layouts. The
+Aether Foundation climax, Lusamine, Poni, Ultra Necrozma, League, and
+postgame remain future chapters; Tapu Bulu’s ruins are exploratory only.
+
+Regression: `node tests/alola-ulaula-test.js` (also included in `npm test`).
