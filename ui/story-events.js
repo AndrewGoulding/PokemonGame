@@ -6,6 +6,7 @@
   function create(env) {
     function visible(person, map) {
       const team=window.TeamFashion?.visible(person,env.player);if(team!==undefined)return team;
+      const ultra=env.alolaStory?.visible(person);if(ultra!==undefined)return ultra;
       const xy=env.kalosStory?.visible(person);if(xy!==undefined)return xy;
       const bw=env.unovaStory?.visible(person);if(bw!==undefined)return bw;
       const platinum = env.sinnohStory.visible(person);
@@ -294,6 +295,7 @@
       // (Orre: an e-mail due as you come in, Colosseum's: special() below found it, game/orre-mail.js.)
       if (ev.trigger && /^(arrive|enter):/.test(script || "") && env.orreMailWaiting) { await env.orreMail(); return; }
       if(window.TeamFashion?.byScript(script)){await env.teamClothing(script);return;}
+      if (env.alolaStory && await env.alolaStory.run(script)) return;
       if (env.kalosStory && await env.kalosStory.run(script)) return;
       if (env.unovaStory && await env.unovaStory.run(script)) return;
       if (await env.sinnohStory.run(script)) return;

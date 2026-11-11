@@ -493,6 +493,7 @@
   const ORRE_LEVEL_CAP = 26;
   const XD_LEVEL_CAP = 15;   // (XD's opening: Krane's Eevee is Lv. 10, Naps's Teddiursa Lv. 11)
   function levelCap(player, map) {
+    if(window.Alola?.owns(map||player.location?.map))return Alola.cap(player);
     if(window.UnovaBW?.owns(map||player.location?.map))return UnovaBW.cap(player);
     if (regionOf(map || (player.location && player.location.map)) === "orre") {
       // (Pokémon XD's campaign, from Oak's flight till it's over, has its own: player.flags.xdLevelCap.)
