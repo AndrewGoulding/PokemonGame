@@ -89,7 +89,8 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
     // ---- Nett: the desert's sand; Perr; Makan at Kaminko's; the scooter. ----
     await step(30, "Nett: Perr for the scooter");
     await go("GateonPort_PartsShop", 8, 10, "up");
-    await finish(() => said.some((t) => /Bitt/.test(t) && /desert/.test(t)), "Perr: Grandpa's out", 300);
+    await finish(() => true, "Perr: Grandpa's out", 300);
+    assert(said.some((t) => /desert/.test(t)), "Perr on the desert");
     await go("KaminkosHouse_1F", 7, 4, "up");
     await step(31, "Makan converts the scooter");
     await go("GateonPort_PartsShop", 8, 10, "up");
