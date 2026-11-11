@@ -3241,8 +3241,7 @@ prize money: from Mt. Battle's areas (200 an area, times the area), Pyrite's and
 600), the Orre Colosseum's sets (1,000; the ????? set 5,000), Battle Bingo (100 a line, 1,000 more for a whole card)
 and each Battle CD's first clear (200; 15,000 for all of them, as XD's clerk says); spent at Mt. Battle's Coupon
 Exchange (battle items, vitamins, PP Ups, Rare Candies, a few TMs) and on its Move Teacher (XD's tutor moves, 1,000
-each; each Pokémon remembers what it's been taught, `record.tutored`, and relearns a forgotten one from him for
-nothing, or from a Move Relearner). XD's own prices aren't in its extracted text, so these are this game's. A Trainer whose Shadow Pokémon isn't snagged
+each, the same move as often as you like; a forgotten one is also on a Move Relearner's list, `record.tutored`). XD's own prices aren't in its extracted text, so these are this game's. A Trainer whose Shadow Pokémon isn't snagged
 battles you again, as Colosseum's do. Orre's level cap in XD's story rises with it: 20 at Mt. Battle, 22 at the Cipher
 Lab, 24 at ONBS, 28 at Phenac, 30 at the S.S. Libra, 33 at the Snagem Hideout, 37 at the Key Lair, 50 on Citadark Isle. XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
