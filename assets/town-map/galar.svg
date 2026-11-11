@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160">
+<rect width="240" height="160" fill="#4b94a9"/>
+<path d="M78 145L63 136L64 123L75 117L71 102L83 91L82 80L95 71L91 61L101 49L97 35L112 25L126 21L145 34L142 49L157 59L146 72L151 89L135 99L119 103L106 114L99 132Z" fill="#c9bf89" stroke="#1d5662" stroke-width="3"/>
+<path d="M80 132L77 110L93 97L96 80L109 66L108 49L119 34L136 43L129 63L141 79L122 88L111 108L91 123Z" fill="#76a96c"/>
+<path d="M84 120L97 108L111 88L114 72L105 58L112 41M105 58L133 43M114 72L135 64" stroke="#f4edc4" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M99 35L113 22L127 23L137 35L128 43L111 43Z" fill="#e0e6dd" opacity=".92"/>
+<g fill="#e2e9e7" opacity=".35"><circle cx="28" cy="31" r="15"/><circle cx="208" cy="118" r="20"/></g>
+<text x="14" y="14" font-family="sans-serif" font-weight="bold" font-size="10" fill="#fff">GALAR</text>
+<text x="149" y="28" font-family="sans-serif" font-size="7" fill="#e5f7ff">SWORD + SHIELD</text>
+<g fill="#fff0a5" stroke="#285e60" stroke-width="1.1"><rect x="65" y="113" width="6" height="6" rx="1"/><rect x="57" y="113" width="6" height="6" rx="1"/><rect x="73" y="105" width="6" height="6" rx="1"/><rect x="81" y="97" width="6" height="6" rx="1"/><rect x="89" y="89" width="6" height="6" rx="1"/><rect x="105" y="81" width="6" height="6" rx="1"/><rect x="121" y="73" width="6" height="6" rx="1"/><rect x="113" y="65" width="6" height="6" rx="1"/><rect x="105" y="57" width="6" height="6" rx="1"/><rect x="97" y="49" width="6" height="6" rx="1"/><rect x="89" y="41" width="6" height="6" rx="1"/><rect x="113" y="49" width="6" height="6" rx="1"/><rect x="129" y="41" width="6" height="6" rx="1"/><rect x="129" y="57" width="6" height="6" rx="1"/><rect x="129" y="65" width="6" height="6" rx="1"/></g>
+<text x="9" y="151" font-family="sans-serif" font-size="7" fill="#fff">GYM CHALLENGE · OPENING</text>
+</svg>
