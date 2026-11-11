@@ -9,12 +9,12 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
 (async () => {
   const s = await T.start((p) => {
     // (Strong at Lv. 22, XD's cap here, with a strong move that lasts: mashing A only ever picks the first.)
-    p.party = [Party.create("Mewtwo", 50, { moves: ["Swift", "Psychic", "Recover", "Barrier"], ivs: 31 }),
-      Party.create("Alakazam", 50, { moves: ["Shock Wave", "Psychic", "Recover", "Reflect"], ivs: 31 }),
-      Party.create("Tyranitar", 50, { moves: ["Rock Slide", "Crunch", "Earthquake", "Dragon Dance"], ivs: 31 }),
-      Party.create("Gyarados", 50, { moves: ["Waterfall", "Ice Fang", "Earthquake", "Dragon Dance"], ivs: 31 })];
+    p.party = [Party.create("Mewtwo", 65, { moves: ["Swift", "Psychic", "Recover", "Barrier"], ivs: 31 }),
+      Party.create("Alakazam", 65, { moves: ["Shock Wave", "Psychic", "Recover", "Reflect"], ivs: 31 }),
+      Party.create("Tyranitar", 65, { moves: ["Rock Slide", "Crunch", "Earthquake", "Dragon Dance"], ivs: 31 }),
+      Party.create("Gyarados", 65, { moves: ["Waterfall", "Ice Fang", "Earthquake", "Dragon Dance"], ivs: 31 })];
     p.bag = { "snag-machine": 1, "master-ball": 40 };
-    Object.assign(p.flags, { starter: "Charmander", orre: 3, orreStory: 44, orreLanded: true, orreLevelCap: 100, xdStory: 29, xdBriefed: true, xdLevelCap: 50,
+    Object.assign(p.flags, { starter: "Charmander", orre: 3, orreStory: 44, orreLanded: true, orreLevelCap: 100, xdStory: 29, xdBriefed: true, xdLevelCap: 65,
       xdShadowSnagged: [1, 14, 12], xdChamber: true, xdEagun: true, xdIdCard: true,
       orreMap: ["PhenacCity", "PyriteTown", "AgateVillage", "PokemonHQLab", "GateonPort", "KaminkosHouse", "MtBattle", "CipherLab", "OutskirtStand", "SnagemHideout"] });
   }, { map: "PyriteTown_PyriteBuilding_4F", x: 13, y: 4, facing: "up" }, {
@@ -148,7 +148,7 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
       catch (e) { if (tries >= 2) throw e; console.log("(the dome's battles lost; again)"); await settle(); }
     }
     assert((await flags()).xdShadowSnagged.includes(73), "Shadow Lugia (#73) snagged");
-    assert.equal(await s.eval(() => Player.levelCap(Game.player)) > 50, true, "XD's level cap lifted");
+    assert(await s.eval(() => !!Game.player.flags.xdClear && Player.levelCap(Game.player) > 65), "XD's level cap lifted");
     console.log("ok: browser XD's story finished");
     assert.deepEqual(errors, []);
     assert.deepEqual([...missing], []);
