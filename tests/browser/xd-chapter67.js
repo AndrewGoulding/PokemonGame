@@ -62,9 +62,11 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
   }
   // (Out through a door below: stepping down till you're out.)
   async function walkOut(map) {
-    for (let i = 0; i < 6 && (await where()).map === map; i++) { await s.page.waitForFunction(() => Overworld.idle()); await s.walk("down", 1); await s.wait(300); }
+    for (let i = 0; i < 6 && (await where()).map === map; i++) { await settle(); await s.walk("down", 1); await s.wait(300); }
     assert.notEqual((await where()).map, map, "out of " + map);
   }
+  // (Anything open, the save reminder among them, answered with B till you're free to walk.)
+  async function settle() { for (let i = 0; i < 40 && !(await idle()); i++) await s.press("x", 120); }
   const story = () => s.eval(() => Game.player.flags.xdStory | 0);
   try {
     await s.page.reload(); await s.boot();

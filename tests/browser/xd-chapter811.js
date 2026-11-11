@@ -61,9 +61,11 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
   }
   // (Out through a door below: stepping down till you're out.)
   async function walkOut(map) {
-    for (let i = 0; i < 6 && (await where()).map === map; i++) { await s.page.waitForFunction(() => Overworld.idle()); await s.walk("down", 1); await s.wait(300); }
+    for (let i = 0; i < 6 && (await where()).map === map; i++) { await settle(); await s.walk("down", 1); await s.wait(300); }
     assert.notEqual((await where()).map, map, "out of " + map);
   }
+  // (Anything open, the save reminder among them, answered with B till you're free to walk.)
+  async function settle() { for (let i = 0; i < 40 && !(await idle()); i++) await s.press("x", 120); }
   const story = () => s.eval(() => Game.player.flags.xdStory | 0);
   try {
     await s.page.reload(); await s.boot();
@@ -99,7 +101,7 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
     await heal(); await walkIn("SSLibra", "SSLibra_Deck");
     await step(33, "the S.S. Libra's deck: Smarton beaten");
     await go("SSLibra_Deck", 15, 3, "up");
-    for (let i = 0; i < 6 && (await where()).map === "SSLibra_Deck"; i++) { await s.page.waitForFunction(() => Overworld.idle()); await s.walk("up", 1); await s.wait(300); }
+    for (let i = 0; i < 6 && (await where()).map === "SSLibra_Deck"; i++) { await settle(); await s.walk("up", 1); await s.wait(300); }
     await step(34, "Team Snagem's ambush: the Snag Machine taken");
     assert(await s.eval(() => !Game.player.bag["snag-machine"]), "the Snag Machine gone");
     // ---- Secc; Hordel; Gonzap. ----
@@ -123,7 +125,7 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
       await finish((k) => (Game.player.flags.xdBeaten || []).includes(k), "Citadark: " + k + " beaten", 3000, k);
     }
     await heal(); await go("CitadarkIsle_Fort", 31, 4, "up");
-    for (let i = 0; i < 6 && (await where()).map === "CitadarkIsle_Fort"; i++) { await s.page.waitForFunction(() => Overworld.idle()); await s.walk("up", 1); await s.wait(300); }
+    for (let i = 0; i < 6 && (await where()).map === "CitadarkIsle_Fort"; i++) { await settle(); await s.walk("up", 1); await s.wait(300); }
     await finish(() => !!Game.player.flags.xdClear, "the dome: Eldes, Shadow Lugia, Greevil; Cipher's end", 6000);
     assert((await flags()).xdShadowSnagged.includes(73), "Shadow Lugia (#73) snagged");
     assert.equal(await s.eval(() => Player.levelCap(Game.player)) > 50, true, "XD's level cap lifted");
