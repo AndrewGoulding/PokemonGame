@@ -33,6 +33,8 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
   async function finish(predicate, label, limit = 600, arg) {
     for (let i = 0; i < limit; i++) {
       const t = await box();
+      // (Choosing a Pokémon to send in, one already out or fainted: down the list to the next.)
+      if (/already in battle|no energy left/i.test(t)) { await s.press("down", 80); await s.press("z", 80); continue; }
       await s.press(/nickname/i.test(t) ? "x" : "z", 80);
       if (await s.eval(predicate, arg) && await idle()) { console.log("ok: browser XD " + label); return; }
     }
