@@ -52,19 +52,34 @@ const cs = Party.toBattleSet(mak);
 assert(!cs.reverse && cs.ownMoves === 0, "Colosseum's: Hyper Mode, its moves sealed");
 console.log("ok: Colosseum's Hyper Mode as it was");
 
-// The Exp. Share passing on what a Pokémon at the level cap can't take: not to a Shadow Pokémon (it doesn't level).
+// XD's Shadow Pokémon keep every Exp. Point they earn, from the moment they're snagged, for when they're purified:
+// their own share, and what the Exp. Share passes on from a Pokémon at the level cap. They don't level meanwhile.
+// (Colosseum's keep theirs only once under three bars of the heart gauge.)
 {
   const shadow = Orre.XD.shadowRecord(14);
   OrreHeart.snagged(shadow);
-  const lead = Party.create("Mewtwo", 22, { moves: ["Psychic"], ivs: 31 });
-  const b = new Battle({ seed: 3, trainer: true, expShare: true, exp: true, levelCap: 22,
-    p1: { name: "YOU", team: [Party.toBattleSet(lead), Party.toBattleSet(shadow)] },
-    p2: { name: "FOE", team: [{ species: "Snorlax", level: 30, moves: ["Splash"] }] } });
-  b.start();
-  for (let i = 0; i < 20 && !b.ended; i++) { b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 }); }
-  assert(b.ended, "won");
-  const s2 = b.sides.p1.pokemon[1];
-  assert.equal(s2.level, 17, "the Shadow Pokémon didn't level");
-  assert.equal(s2.exp, Party.toBattleSet(shadow).exp ?? s2.exp, "no Exp. Points passed on to it");
-  console.log("ok: no Exp. Points passed on to a Shadow Pokémon by the Exp. Share");
+  assert(OrreHeart.banks(shadow), "XD's: kept with its heart still shut");
+  const fight = (lead2) => {
+    const lead = Party.create("Mewtwo", 22, { moves: ["Psychic"], ivs: 31 });
+    const b = new Battle({ seed: 3, trainer: true, expShare: true, exp: true, levelCap: 22,
+      p1: { name: "YOU", team: [Party.toBattleSet(lead), Party.toBattleSet(lead2)] },
+      p2: { name: "FOE", team: [{ species: "Snorlax", level: 30, moves: ["Splash"] }] } });
+    b.start();
+    for (let i = 0; i < 20 && !b.ended; i++) { b.choose("p1", { type: "move", move: 0 }); b.choose("p2", { type: "move", move: 0 }); }
+    assert(b.ended, "won");
+    return b.sides.p1.pokemon[1];
+  };
+  const level = shadow.level, s2 = fight(shadow);
+  assert.equal(s2.level, level, "the Shadow Pokémon didn't level");
+  assert.equal(s2.exp, Party.toBattleSet(shadow).exp ?? s2.exp, "its own Exp. Points untouched");
+  // Its half from the Exp. Share, and the Mewtwo's whole share passed on (it's at the cap): more than the half alone.
+  const E = window.Experience, half = E.gain({ species: "Snorlax", level: 30, trainer: true, participants: 2, multiplier: 1 });
+  assert(s2.storedExp > half, "kept: its share and what was passed on (" + s2.storedExp + " > " + half + ")");
+  console.log("ok: an XD Shadow Pokémon keeps all its Exp. Points, passed-on ones too, and doesn't level");
+
+  const mak = Orre.shadowMon(Orre.shadowOf("Trudly")[0]);
+  OrreHeart.snagged(mak);
+  assert(!OrreHeart.banks(mak), "Colosseum's: not with its heart shut");
+  assert(!fight(mak).storedExp, "Colosseum's with its heart shut: none kept");
+  console.log("ok: Colosseum's Shadow Pokémon keep theirs only under three bars, as before");
 }

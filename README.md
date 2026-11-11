@@ -3772,6 +3772,9 @@ node tools/build-sinnoh.js <path to the Essentials project>
   (all of its share, or what's over the cap) goes, shared out evenly, to the
   party's Pokémon that can still gain Exp. Points ("The Exp. Share passed on the
   Exp. Points that couldn't be gained!"); with the Exp. Share off it's lost.
+  XD's Shadow Pokémon keep every Exp. Point they earn from the moment they're snagged,
+  passed-on ones included, and get them all when purified (Colosseum's keep theirs only
+  once under three bars of the heart gauge).
 - **Kanto's Trainers are stronger than FireRed's** (this game's own, `game/kanto-trainer-levels.js`): every Trainer
   from Brock on has their Pokémon's levels raised, by how far into the game they stand: +1 on Route 3, in Mt. Moon,
   on Route 4, in Cerulean and on Routes 24 and 25 (Misty); +2 on Routes 6, 9 and 11, in Vermilion and on the S.S.

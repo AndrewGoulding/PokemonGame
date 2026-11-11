@@ -86,7 +86,8 @@
   // third; under 3 its nature shows, and it starts to keep Exp. Points and friendship.)
   const moves = (r) => { const b = bars(r); return b < 1 ? 3 : b < 2 ? 2 : b < 4 ? 1 : 0; };
   const natureShown = (r) => !(r && r.shadow && r.heart != null) || bars(r) < 3;
-  const banks = (r) => bars(r) < 3;
+  // (Colosseum's: once under three bars. XD's: all of them, from the moment it's snagged.)
+  const banks = (r) => !!r.xdShadow || bars(r) < 3;
   // The Summary's words (Colosseum's pocket_menu #11225-#11231), by the bars left.
   function door(r) {
     const b = bars(r), h = r.heart | 0;

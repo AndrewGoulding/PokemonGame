@@ -2750,14 +2750,14 @@
       }
       // (The rest shared out: again while any is left and someone can still take some.)
       for (let pass = 0; pass < 6 && unused > 0; pass++) {
-        // (Not one of your Shadow Pokémon: they get no Exp. Points passed on.)
-        const able = this.sides.p1.pokemon.filter((m) => !m.fainted && m.owner === 0 && m.level < cap && !m.shadow);
+        // (A Shadow Pokémon that's keeping its Exp. Points keeps what's passed on to it, too; one that isn't gets none.)
+        const able = this.sides.p1.pokemon.filter((m) => !m.fainted && m.owner === 0 && (m.shadow ? m.bankExp : m.level < cap));
         if (!able.length) break;
         const each = Math.floor(unused / able.length);
         if (!each) break;
         unused -= each * able.length;
         if (!this.passedOn) { this.passedOn = true; this.add("-text", "p1", "The Exp. Share passed on the Exp. Points\nthat couldn't be gained!"); }
-        for (const mon of able) unused += each - this.gainExp(mon, each, true);
+        for (const mon of able) { if (mon.shadow) mon.storedExp = (mon.storedExp || 0) + each; else unused += each - this.gainExp(mon, each, true); }
       }
     }
 
