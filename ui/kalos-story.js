@@ -31,6 +31,6 @@
  case'boundary':await say('Route 14 continues toward Laverre.\nThis is the end of the current\nKalos segment. More is coming.');break;
  default:throw Error('Unknown Kalos scene '+script);
  }return true;}
- function step(){if(!R.owns(p().location.map))return null;R.apply(p());const hour=Player.gameTime(p()).hour;if(s().megaUpgraded&&s().stoneHour!==hour){s().stoneHour=hour;env.refreshPeople?.();}const error=R.allowed(p(),p().location.map);if(error)return{type:'trigger',map:p().location.map,trigger:{script:'xy:gate'}};if(p().location.map==='KalosRoute5'&&!s().korrinaMet)return{type:'trigger',map:p().location.map,trigger:{script:'xy:korrina-meeting'}};return null;}
- return{run,step,guide,birdSighting:post.birdSighting,visible:a=>post.visible(a)??finale.visible(a)??lumiose.visible(a)??cyllage.visible(a)};}window.KalosStory={create};
+ function step(){if(!R.owns(p().location.map))return null;R.apply(p());const error=R.allowed(p(),p().location.map);if(error)return{type:'trigger',map:p().location.map,trigger:{script:'xy:gate'}};if(p().location.map==='KalosRoute5'&&!s().korrinaMet)return{type:'trigger',map:p().location.map,trigger:{script:'xy:korrina-meeting'}};return null;}
+ return{run,step,guide,visible:a=>post.visible(a)??finale.visible(a)??lumiose.visible(a)??cyllage.visible(a)};}window.KalosStory={create};
 })();

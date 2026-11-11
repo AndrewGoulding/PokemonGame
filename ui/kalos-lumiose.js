@@ -13,7 +13,6 @@
  case'reflection-flash':await report(R.gift(p(),'tierno-flash',L.rewards.Flash));await say('Tierno: Flash helps in dark places\nand lowers a foe’s accuracy in battle.');break;
  case'mirror-hint':s().mirrorRead=true;await save();await say('The reflection reveals a break\nin the eastern wall. The rock face\nhides a narrow passage.');break;
  case'shadow-ball':await report(R.gift(p(),'reflection-shadow-ball',L.rewards['Shadow Ball']));break;
- case'alakazite-later':await say('A strange gleam is hidden here.\nReturn after the League, when the\nMega Ring’s search power is upgraded.');break;
  case'intriguing-stone':await report(R.gift(p(),'tierno-stone','kalos-intriguing-stone'));await say('Tierno: Maybe the guru can tell us\nwhat kind of stone this is!');break;
  case'guru':s().guruSeen=true;await save();await say(['Gurkinn: That Intriguing Stone is\nan ordinary rock, not a Mega Stone.','Mega Evolution calls for a Trainer’s\nMega Ring, a Pokémon’s Mega Stone\nand a strong bond between them.','Calem: We both want to learn!\nLet’s battle to decide who goes first.']);break;
  case'tower-rival':if(!s().guruSeen){await say('Speak to the Mega Evolution guru first.');break;}if(s().towerRival){await say('Calem: Defeat Korrina at the Gym\nto show that you are ready.');break;}if(!await env.confirm('Battle Calem for the Mega Ring lesson?'))break;if(await fight(L.rivals[s().starter].tower)==='won'){s().towerRival=true;await save();await say('Gurkinn: Now earn Korrina’s Gym Badge\nto prove you are ready for the lesson.');}break;
@@ -27,7 +26,6 @@
  case'ranch-shiny':case'ranch-dream':if(!s().skiddoRiding){await say('Ride Skiddo to reach the ranch’s\nledge-hidden treasures.');break;}await report(R.gift(p(),k,k==='ranch-shiny'?'shiny-stone':'whipped-dream'));break;
  case'attract':await report(R.gift(p(),'ranch-attract',L.rewards.Attract));break;
  case'ampharosite':await report(R.gift(p(),'bay-ampharosite','ampharosite'));break;
- case'birds-later':await say('The Sea Spirit’s Den is quiet.\nA wandering Pokémon may settle\nhere after your League journey.');break;
  case'good-rod':await report(R.gift(p(),'coumarine-fishing','fishing-rod'));await say('Try fishing in the sea!\nYour fishing skill opens better\nrod pools as it grows.');break;
  case'fly-gift':if(await report(R.gift(p(),'sycamore-fly',L.rewards.Fly))){s().flyReceived=true;await save();await say('Sycamore: Fly will help you travel.\nRamos’s Badge lets you use it here.\nDiantha: I hope we can battle someday!\nThe monorail departs from the north.');}break;
  case'metronome':await report(R.gift(p(),'station-metronome','metronome'));break;

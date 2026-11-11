@@ -1444,42 +1444,6 @@
     ]
   },
   "legends": {
-    "Articuno": {
-      "level": 70,
-      "moves": [
-        "Ice Beam",
-        "Reflect",
-        "Hail",
-        "Tailwind"
-      ]
-    },
-    "Zapdos": {
-      "level": 70,
-      "moves": [
-        "Agility",
-        "Discharge",
-        "Rain Dance",
-        "Light Screen"
-      ]
-    },
-    "Moltres": {
-      "level": 70,
-      "moves": [
-        "Safeguard",
-        "Air Slash",
-        "Sunny Day",
-        "Heat Wave"
-      ]
-    },
-    "Mewtwo": {
-      "level": 70,
-      "moves": [
-        "Recover",
-        "Psychic",
-        "Barrier",
-        "Aura Sphere"
-      ]
-    },
     "Zygarde": {
       "level": 70,
       "moves": [

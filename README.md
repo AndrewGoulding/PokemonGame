@@ -16,7 +16,7 @@ Area. See [Unova’s opening](docs/unova-opening.md) for content, rebuilding and
 [eight-family Join Avenue](docs/unova-avenue.md), and [N’s Pokémon, swarms, tutors, trades and Abyssal Ruins](docs/unova-services.md).
 
 Kalos’s X/Y campaign reaches Diantha and AZ’s ending, with Kiloude, the Looker
-case, legendary quests, Mega Stone hunts and normal Maison Singles after the League. Start with the Kalos
+case, Zygarde and all five Normal/Super Maison formats after the League. Start with the Kalos
 researcher in Fight Area; see [Kalos’s campaign](docs/kalos.md) for content and limits.
 
 ## Running it
