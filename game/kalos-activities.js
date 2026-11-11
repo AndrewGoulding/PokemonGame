@@ -20,7 +20,7 @@
  function recover(p){const s=state(p);if(s.meal?.phase==='battle')delete s.meal;}
  const outfits={original:{name:'Original outfit',cost:0},blue:{name:'Blue travel outfit',cost:18000,rgb:[70,120,214]},green:{name:'Green travel outfit',cost:18000,rgb:[58,151,89]},purple:{name:'Purple evening outfit',cost:35000,rgb:[151,82,188]},gold:{name:'Gold formal outfit',cost:100000,rgb:[211,168,54],style:50}},hair={original:{name:'Original',rgb:null},black:{name:'Black',rgb:[36,29,31]},brown:{name:'Brown',rgb:[111,69,40]},blond:{name:'Blond',rgb:[210,171,86]},orange:{name:'Orange',rgb:[190,100,38]},honey:{name:'Honey',rgb:[176,131,57]}},skin={original:{name:'Original'},fair:{name:'Fair',rgb:[255,210,174]},tan:{name:'Tan',rgb:[211,151,105]},deep:{name:'Deep',rgb:[131,81,60]}};
  function buyOutfit(p,key){const s=state(p),a=outfits[key];if(!a||s.style<(a.style||0))return{locked:true};if(s.closet.includes(key))return{owned:true};if(p.money<a.cost)return{poor:true};p.money-=a.cost;s.closet.push(key);style(p,2);return{bought:true};}
- function wear(p,key){const s=state(p);if(!s.closet.includes(key)||!outfits[key])return false;s.appearance.outfit=key;return true;}
+ function wear(p,key){const s=state(p);if(!s.closet.includes(key)||!outfits[key])return false;s.appearance.outfit=key;delete s.appearance.clothing;delete s.appearance.collection;return true;}
  function colorHair(p,key){if(!hair[key])return false;if(p.money<2000)return false;p.money-=2000;state(p).appearance.hair=key;style(p,1);return true;}
  function tone(p,key){if(!skin[key])return false;state(p).appearance.skin=key;return true;}
  function jobLevel(p){const n=state(p).jobs.perfect;return n>=30?4:n>=15?3:n>=5?2:1;}

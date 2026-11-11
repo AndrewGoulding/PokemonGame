@@ -1,0 +1,6504 @@
+{
+  "source": {
+    "url": "https://bulbapedia.bulbagarden.net/wiki/List_of_clothing_in_Pok%C3%A9mon_X_and_Y",
+    "sha256": "5f2363a4de390159c584fa3d73db007bf9c9fd7f833386390cf2202b26424584",
+    "counts": {
+      "male": 102,
+      "female": 205
+    },
+    "totalPrices": {
+      "male": 2227000,
+      "female": 4672500
+    },
+    "reportedIntroductoryTotals": {
+      "male": 2227000,
+      "female": 4676000
+    }
+  },
+  "items": [
+    {
+      "id": "xy-male-hat-logo-cap-black",
+      "collection": "male",
+      "category": "hat",
+      "name": "Logo Cap",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            3,
+            6
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-logo-cap-blue",
+      "collection": "male",
+      "category": "hat",
+      "name": "Logo Cap",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": 1800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-logo-cap-red",
+      "collection": "male",
+      "category": "hat",
+      "name": "Logo Cap",
+      "color": "Red",
+      "tag": "Colorful",
+      "price": 800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-logo-cap-green",
+      "collection": "male",
+      "category": "hat",
+      "name": "Logo Cap",
+      "color": "Green",
+      "tag": "Colorful",
+      "price": 1800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-fedora-red",
+      "collection": "male",
+      "category": "hat",
+      "name": "Fedora",
+      "color": "Red",
+      "tag": "Classic",
+      "price": 80000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-fedora-gray",
+      "collection": "male",
+      "category": "hat",
+      "name": "Fedora",
+      "color": "Gray",
+      "tag": "Classic",
+      "price": 80000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-fedora-black",
+      "collection": "male",
+      "category": "hat",
+      "name": "Fedora",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 80000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-checkered-fedora-black",
+      "collection": "male",
+      "category": "hat",
+      "name": "Checkered Fedora",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 7800,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-outdoors-cap-red",
+      "collection": "male",
+      "category": "hat",
+      "name": "Outdoors Cap",
+      "color": "Red",
+      "tag": "Basic",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-outdoors-cap-black",
+      "collection": "male",
+      "category": "hat",
+      "name": "Outdoors Cap",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 3100,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            1,
+            6
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-outdoors-cap-olive",
+      "collection": "male",
+      "category": "hat",
+      "name": "Outdoors Cap",
+      "color": "Olive",
+      "tag": "Basic",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-outdoors-cap-beige",
+      "collection": "male",
+      "category": "hat",
+      "name": "Outdoors Cap",
+      "color": "Beige",
+      "tag": "Basic",
+      "price": 3100,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            3,
+            4
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            2,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-knit-cap-white",
+      "collection": "male",
+      "category": "hat",
+      "name": "Knit Cap",
+      "color": "White",
+      "tag": "Basic",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            1,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-knit-cap-black",
+      "collection": "male",
+      "category": "hat",
+      "name": "Knit Cap",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 3100,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            2
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-knit-cap-orange",
+      "collection": "male",
+      "category": "hat",
+      "name": "Knit Cap",
+      "color": "Orange",
+      "tag": "Colorful",
+      "price": 800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            3
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-knit-cap-purple",
+      "collection": "male",
+      "category": "hat",
+      "name": "Knit Cap",
+      "color": "Purple",
+      "tag": "Colorful",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-camo-cap-olive",
+      "collection": "male",
+      "category": "hat",
+      "name": "Camo Cap",
+      "color": "Olive",
+      "tag": "Colorful",
+      "price": 800,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            1,
+            2,
+            5,
+            6
+          ]
+        },
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-camo-cap-aqua",
+      "collection": "male",
+      "category": "hat",
+      "name": "Camo Cap",
+      "color": "Aqua",
+      "tag": "Colorful",
+      "price": 800,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            3,
+            4
+          ]
+        },
+        {
+          "city": "snowbelle",
+          "days": [
+            3,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-hat-bamboo-sprig-hat-white",
+      "collection": "male",
+      "category": "hat",
+      "name": "Bamboo Sprig Hat",
+      "color": "White",
+      "tag": "Special",
+      "price": null,
+      "shops": [],
+      "default": false,
+      "gift": "Given in Kiloude City by Artist"
+    },
+    {
+      "id": "xy-male-shirt-zipped-jacket-blue",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Zipped Jacket",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-zipped-jacket-red",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Zipped Jacket",
+      "color": "Red",
+      "tag": "Basic",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-zipped-jacket-green",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Zipped Jacket",
+      "color": "Green",
+      "tag": "Basic",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-zipped-jacket-black",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Zipped Jacket",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 8800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-zipped-jacket-navy-blue",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Zipped Jacket",
+      "color": "Navy blue",
+      "tag": "Basic",
+      "price": 8800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-zipped-jacket-orange",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Zipped Jacket",
+      "color": "Orange",
+      "tag": "Basic",
+      "price": 8800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-down-jacket-black",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Down Jacket",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 120000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-down-jacket-red",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Down Jacket",
+      "color": "Red",
+      "tag": "Basic",
+      "price": 15000,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-down-jacket-aqua",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Down Jacket",
+      "color": "Aqua",
+      "tag": "Colorful",
+      "price": 15000,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-striped-shirt-combo-purple",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Striped Shirt Combo",
+      "color": "Purple",
+      "tag": "Basic",
+      "price": 6400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            1,
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-striped-shirt-combo-red",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Striped Shirt Combo",
+      "color": "Red",
+      "tag": "Colorful",
+      "price": 6400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            3,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-striped-shirt-combo-aqua",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Striped Shirt Combo",
+      "color": "Aqua",
+      "tag": "Colorful",
+      "price": 6400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-striped-shirt-combo-pale-pink",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Striped Shirt Combo",
+      "color": "Pale pink",
+      "tag": "Colorful",
+      "price": 6400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-plaid-shirt-combo-red",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Plaid Shirt Combo",
+      "color": "Red",
+      "tag": "Classic",
+      "price": 120000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-plaid-shirt-combo-gray",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Plaid Shirt Combo",
+      "color": "Gray",
+      "tag": "Classic",
+      "price": 120000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-zipped-shirt-combo-black",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Zipped Shirt Combo",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1,
+            2,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-zipped-shirt-combo-white",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Zipped Shirt Combo",
+      "color": "White",
+      "tag": "Basic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            3,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-hoodie-olive",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Hoodie",
+      "color": "Olive",
+      "tag": "Basic",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-hoodie-aqua",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Hoodie",
+      "color": "Aqua",
+      "tag": "Colorful",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-hoodie-yellow",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Hoodie",
+      "color": "Yellow",
+      "tag": "Colorful",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-v-neck-t-shirt-black",
+      "collection": "male",
+      "category": "shirt",
+      "name": "V-Neck T-Shirt",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 5800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-v-neck-t-shirt-white",
+      "collection": "male",
+      "category": "shirt",
+      "name": "V-Neck T-Shirt",
+      "color": "White",
+      "tag": "Basic",
+      "price": 5800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            2,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-v-neck-t-shirt-pink",
+      "collection": "male",
+      "category": "shirt",
+      "name": "V-Neck T-Shirt",
+      "color": "Pink",
+      "tag": "Colorful",
+      "price": 5800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-v-neck-t-shirt-aqua",
+      "collection": "male",
+      "category": "shirt",
+      "name": "V-Neck T-Shirt",
+      "color": "Aqua",
+      "tag": "Colorful",
+      "price": 5800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-logo-t-shirt-white",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Logo T-Shirt",
+      "color": "White",
+      "tag": "Colorful",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-logo-t-shirt-orange",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Logo T-Shirt",
+      "color": "Orange",
+      "tag": "Colorful",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-logo-t-shirt-green",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Logo T-Shirt",
+      "color": "Green",
+      "tag": "Colorful",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-logo-t-shirt-blue",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Logo T-Shirt",
+      "color": "Blue",
+      "tag": "Colorful",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-logo-t-shirt-yellow",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Logo T-Shirt",
+      "color": "Yellow",
+      "tag": "Colorful",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-splatter-paint-t-shirt-black",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Splatter Paint T-Shirt",
+      "color": "Black",
+      "tag": "Colorful",
+      "price": 4200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-splatter-paint-t-shirt-red",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Splatter Paint T-Shirt",
+      "color": "Red",
+      "tag": "Colorful",
+      "price": 4200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            3,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-splatter-paint-t-shirt-purple",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Splatter Paint T-Shirt",
+      "color": "Purple",
+      "tag": "Colorful",
+      "price": 4200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            2,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-king-t-shirt-red",
+      "collection": "male",
+      "category": "shirt",
+      "name": "King T-Shirt",
+      "color": "Red",
+      "tag": "Colorful",
+      "price": 12800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shirt-twin-t-shirt-black",
+      "collection": "male",
+      "category": "shirt",
+      "name": "Twin T-Shirt",
+      "color": "Black",
+      "tag": "Colorful",
+      "price": 12800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-chinos-black",
+      "collection": "male",
+      "category": "pants",
+      "name": "Chinos",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 8200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-chinos-beige",
+      "collection": "male",
+      "category": "pants",
+      "name": "Chinos",
+      "color": "Beige",
+      "tag": "Basic",
+      "price": 8200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-checked-pants-red",
+      "collection": "male",
+      "category": "pants",
+      "name": "Checked Pants",
+      "color": "Red",
+      "tag": "Classic",
+      "price": 180000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-checked-pants-gray",
+      "collection": "male",
+      "category": "pants",
+      "name": "Checked Pants",
+      "color": "Gray",
+      "tag": "Classic",
+      "price": 180000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1,
+            2,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-cuffed-jeans-blue",
+      "collection": "male",
+      "category": "pants",
+      "name": "Cuffed Jeans",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            1,
+            3,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-damaged-jeans-aqua",
+      "collection": "male",
+      "category": "pants",
+      "name": "Damaged Jeans",
+      "color": "Aqua",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-vinyl-pants-black",
+      "collection": "male",
+      "category": "pants",
+      "name": "Vinyl Pants",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 180000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-short-cargo-pants-black",
+      "collection": "male",
+      "category": "pants",
+      "name": "Short Cargo Pants",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-short-cargo-pants-olive",
+      "collection": "male",
+      "category": "pants",
+      "name": "Short Cargo Pants",
+      "color": "Olive",
+      "tag": "Basic",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-short-cargo-pants-purple",
+      "collection": "male",
+      "category": "pants",
+      "name": "Short Cargo Pants",
+      "color": "Purple",
+      "tag": "Colorful",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-skinny-jeans-blue",
+      "collection": "male",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-skinny-jeans-brown",
+      "collection": "male",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Brown",
+      "tag": "Basic",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-skinny-jeans-beige",
+      "collection": "male",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Beige",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-skinny-jeans-red",
+      "collection": "male",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Red",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-camo-pants-green",
+      "collection": "male",
+      "category": "pants",
+      "name": "Camo Pants",
+      "color": "Green",
+      "tag": "Colorful",
+      "price": 6800,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-pants-camo-pants-gray",
+      "collection": "male",
+      "category": "pants",
+      "name": "Camo Pants",
+      "color": "Gray",
+      "tag": "Colorful",
+      "price": 6800,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-socks-ankle-socks-black",
+      "collection": "male",
+      "category": "socks",
+      "name": "Ankle Socks",
+      "color": "Black",
+      "tag": null,
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-male-socks-ankle-socks-red",
+      "collection": "male",
+      "category": "socks",
+      "name": "Ankle Socks",
+      "color": "Red",
+      "tag": null,
+      "price": 900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-socks-ankle-socks-green",
+      "collection": "male",
+      "category": "socks",
+      "name": "Ankle Socks",
+      "color": "Green",
+      "tag": null,
+      "price": 900,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-socks-ankle-socks-purple",
+      "collection": "male",
+      "category": "socks",
+      "name": "Ankle Socks",
+      "color": "Purple",
+      "tag": null,
+      "price": 900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-short-boots-black",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Short Boots",
+      "color": "Black",
+      "tag": "Basic",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-short-boots-red",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Short Boots",
+      "color": "Red",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-short-boots-brown",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Short Boots",
+      "color": "Brown",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-loafers-brown",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Loafers",
+      "color": "Brown",
+      "tag": "Classic",
+      "price": 80000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-loafers-black",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Loafers",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 80000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-sneakers-black",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Sneakers",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-sneakers-white",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Sneakers",
+      "color": "White",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-sneakers-red",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Sneakers",
+      "color": "Red",
+      "tag": "Colorful",
+      "price": 3200,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-sneakers-blue",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Sneakers",
+      "color": "Blue",
+      "tag": "Colorful",
+      "price": 6400,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-shoes-sneakers-yellow",
+      "collection": "male",
+      "category": "shoes",
+      "name": "Sneakers",
+      "color": "Yellow",
+      "tag": "Colorful",
+      "price": 6400,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            1,
+            2,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-bag-two-tone-bag-black",
+      "collection": "male",
+      "category": "bag",
+      "name": "Two-Tone Bag",
+      "color": "Black",
+      "tag": "Basic",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-male-bag-two-tone-bag-red",
+      "collection": "male",
+      "category": "bag",
+      "name": "Two-Tone Bag",
+      "color": "Red",
+      "tag": "Basic",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-bag-two-tone-bag-olive",
+      "collection": "male",
+      "category": "bag",
+      "name": "Two-Tone Bag",
+      "color": "Olive",
+      "tag": "Basic",
+      "price": 9800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-bag-two-tone-bag-aqua",
+      "collection": "male",
+      "category": "bag",
+      "name": "Two-Tone Bag",
+      "color": "Aqua",
+      "tag": "Colorful",
+      "price": 9800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-bag-two-tone-bag-orange",
+      "collection": "male",
+      "category": "bag",
+      "name": "Two-Tone Bag",
+      "color": "Orange",
+      "tag": "Colorful",
+      "price": 9800,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-bag-vinyl-messenger-bag-black",
+      "collection": "male",
+      "category": "bag",
+      "name": "Vinyl Messenger Bag",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            2,
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-bag-vinyl-messenger-bag-brown",
+      "collection": "male",
+      "category": "bag",
+      "name": "Vinyl Messenger Bag",
+      "color": "Brown",
+      "tag": "Classic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-button-accessory-gray",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Gray",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            4,
+            5
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-button-accessory-pink",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Pink",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            2,
+            3,
+            6
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-button-accessory-purple",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Purple",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-button-accessory-yellow",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Yellow",
+      "tag": null,
+      "price": 2800,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-button-accessory-lime-green",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Lime green",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-wide-frame-sunglasses-black",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Wide-Frame Sunglasses",
+      "color": "Black",
+      "tag": null,
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-wide-frame-sunglasses-yellow",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Wide-Frame Sunglasses",
+      "color": "Yellow",
+      "tag": null,
+      "price": 40000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-wide-frame-sunglasses-red",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Wide-Frame Sunglasses",
+      "color": "Red",
+      "tag": null,
+      "price": 40000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-wide-frame-sunglasses-white",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Wide-Frame Sunglasses",
+      "color": "White",
+      "tag": null,
+      "price": 40000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-feather-accessory-black",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Feather Accessory",
+      "color": "Black",
+      "tag": null,
+      "price": 2800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-feather-accessory-red",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Feather Accessory",
+      "color": "Red",
+      "tag": null,
+      "price": 1400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            1,
+            6
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-male-accessory-feather-accessory-green",
+      "collection": "male",
+      "category": "accessory",
+      "name": "Feather Accessory",
+      "color": "Green",
+      "tag": null,
+      "price": 1400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            3,
+            4
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            2,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-felt-hat-black",
+      "collection": "female",
+      "category": "hat",
+      "name": "Felt Hat",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 40000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-felt-hat-white",
+      "collection": "female",
+      "category": "hat",
+      "name": "Felt Hat",
+      "color": "White",
+      "tag": "Basic",
+      "price": 40000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-felt-hat-gray",
+      "collection": "female",
+      "category": "hat",
+      "name": "Felt Hat",
+      "color": "Gray",
+      "tag": "Basic",
+      "price": 40000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-felt-hat-navy-blue",
+      "collection": "female",
+      "category": "hat",
+      "name": "Felt Hat",
+      "color": "Navy blue",
+      "tag": "Basic",
+      "price": 800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            1
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-felt-hat-brown",
+      "collection": "female",
+      "category": "hat",
+      "name": "Felt Hat",
+      "color": "Brown",
+      "tag": "Basic",
+      "price": 2400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            1
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-felt-hat-pink",
+      "collection": "female",
+      "category": "hat",
+      "name": "Felt Hat",
+      "color": "Pink",
+      "tag": "Feminine",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-felt-hat-pale-pink",
+      "collection": "female",
+      "category": "hat",
+      "name": "Felt Hat",
+      "color": "Pale pink",
+      "tag": "Feminine",
+      "price": 800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            2,
+            6
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-felt-hat-beige",
+      "collection": "female",
+      "category": "hat",
+      "name": "Felt Hat",
+      "color": "Beige",
+      "tag": "Feminine",
+      "price": 5200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-felt-hat-aqua",
+      "collection": "female",
+      "category": "hat",
+      "name": "Felt Hat",
+      "color": "Aqua",
+      "tag": "Feminine",
+      "price": 800,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            2,
+            6
+          ]
+        },
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-boater-red",
+      "collection": "female",
+      "category": "hat",
+      "name": "Boater",
+      "color": "Red",
+      "tag": "Sporty",
+      "price": 1600,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-boater-blue",
+      "collection": "female",
+      "category": "hat",
+      "name": "Boater",
+      "color": "Blue",
+      "tag": "Sporty",
+      "price": 1600,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-sports-cap-aqua",
+      "collection": "female",
+      "category": "hat",
+      "name": "Sports Cap",
+      "color": "Aqua",
+      "tag": "Sporty",
+      "price": 1700,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            1
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-sports-cap-yellow",
+      "collection": "female",
+      "category": "hat",
+      "name": "Sports Cap",
+      "color": "Yellow",
+      "tag": "Sporty",
+      "price": 1700,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-sports-cap-green",
+      "collection": "female",
+      "category": "hat",
+      "name": "Sports Cap",
+      "color": "Green",
+      "tag": "Sporty",
+      "price": 1700,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-logo-cap-pink",
+      "collection": "female",
+      "category": "hat",
+      "name": "Logo Cap",
+      "color": "Pink",
+      "tag": "Sporty",
+      "price": 1600,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            1,
+            4,
+            5
+          ]
+        },
+        {
+          "city": "cyllage",
+          "days": [
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-logo-cap-black",
+      "collection": "female",
+      "category": "hat",
+      "name": "Logo Cap",
+      "color": "Black",
+      "tag": "Sporty",
+      "price": 1600,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            5
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            2,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-cycling-cap-blue",
+      "collection": "female",
+      "category": "hat",
+      "name": "Cycling Cap",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-cycling-cap-white",
+      "collection": "female",
+      "category": "hat",
+      "name": "Cycling Cap",
+      "color": "White",
+      "tag": "Basic",
+      "price": 800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            4
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            3,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-cycling-cap-beige",
+      "collection": "female",
+      "category": "hat",
+      "name": "Cycling Cap",
+      "color": "Beige",
+      "tag": "Basic",
+      "price": 3100,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            1,
+            2,
+            5,
+            6
+          ]
+        },
+        {
+          "city": "anistar",
+          "days": [
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-exotic-cap-brown",
+      "collection": "female",
+      "category": "hat",
+      "name": "Exotic Cap",
+      "color": "Brown",
+      "tag": "Exotic",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-exotic-cap-purple",
+      "collection": "female",
+      "category": "hat",
+      "name": "Exotic Cap",
+      "color": "Purple",
+      "tag": "Exotic",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-fedora-white",
+      "collection": "female",
+      "category": "hat",
+      "name": "Fedora",
+      "color": "White",
+      "tag": "Classic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            2,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-fedora-brown",
+      "collection": "female",
+      "category": "hat",
+      "name": "Fedora",
+      "color": "Brown",
+      "tag": "Classic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-fedora-red",
+      "collection": "female",
+      "category": "hat",
+      "name": "Fedora",
+      "color": "Red",
+      "tag": "Classic",
+      "price": 800,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            3,
+            4
+          ]
+        },
+        {
+          "city": "snowbelle",
+          "days": [
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-fedora-yellow",
+      "collection": "female",
+      "category": "hat",
+      "name": "Fedora",
+      "color": "Yellow",
+      "tag": "Basic",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            1,
+            6
+          ]
+        },
+        {
+          "city": "cyllage",
+          "days": [
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-fedora-green",
+      "collection": "female",
+      "category": "hat",
+      "name": "Fedora",
+      "color": "Green",
+      "tag": "Basic",
+      "price": 2600,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            6
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-hat-fedora-purple",
+      "collection": "female",
+      "category": "hat",
+      "name": "Fedora",
+      "color": "Purple",
+      "tag": "Elegant",
+      "price": 6400,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-ruffled-camisole-pale-pink",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Ruffled Camisole",
+      "color": "Pale pink",
+      "tag": "Feminine",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-ruffled-camisole-aqua",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Ruffled Camisole",
+      "color": "Aqua",
+      "tag": "Feminine",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-ruffled-camisole-yellow",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Ruffled Camisole",
+      "color": "Yellow",
+      "tag": "Feminine",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-ruffled-tank-top-black",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Ruffled Tank Top",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 8200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            1,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-striped-tank-top-black",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Striped Tank Top",
+      "color": "Black",
+      "tag": "Sporty",
+      "price": 1800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-striped-tank-top-blue",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Striped Tank Top",
+      "color": "Blue",
+      "tag": "Sporty",
+      "price": 1800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-striped-tank-top-pink",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Striped Tank Top",
+      "color": "Pink",
+      "tag": "Sporty",
+      "price": 1800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-midriff-halter-top-aqua",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Midriff Halter Top",
+      "color": "Aqua",
+      "tag": "Sporty",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-midriff-halter-top-orange",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Midriff Halter Top",
+      "color": "Orange",
+      "tag": "Sporty",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-sleeveless-turtleneck-black",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Sleeveless Turtleneck",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 8900,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-sleeveless-turtleneck-white",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Sleeveless Turtleneck",
+      "color": "White",
+      "tag": "Basic",
+      "price": 8900,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            2,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-short-parka-red",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Short Parka",
+      "color": "Red",
+      "tag": "Sporty",
+      "price": 2400,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-short-parka-pink",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Short Parka",
+      "color": "Pink",
+      "tag": "Sporty",
+      "price": 2400,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-short-parka-lime-green",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Short Parka",
+      "color": "Lime green",
+      "tag": "Sporty",
+      "price": 2400,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-short-parka-blue",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Short Parka",
+      "color": "Blue",
+      "tag": "Sporty",
+      "price": 2400,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-tie-neck-blouse-red",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Tie-Neck Blouse",
+      "color": "Red",
+      "tag": "Classic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            2,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-tie-neck-blouse-gray",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Tie-Neck Blouse",
+      "color": "Gray",
+      "tag": "Classic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-ribbon-smock-top-brown",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Ribbon Smock Top",
+      "color": "Brown",
+      "tag": "Basic",
+      "price": 7800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-ribbon-smock-top-pale-pink",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Ribbon Smock Top",
+      "color": "Pale pink",
+      "tag": "Feminine",
+      "price": 5400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-ribbon-smock-top-yellow",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Ribbon Smock Top",
+      "color": "Yellow",
+      "tag": "Feminine",
+      "price": 5400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-ribbon-smock-top-purple",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Ribbon Smock Top",
+      "color": "Purple",
+      "tag": "Exotic",
+      "price": 5400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-exotic-top-lime-green",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Exotic Top",
+      "color": "Lime green",
+      "tag": "Exotic",
+      "price": 5200,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-exotic-top-orange",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Exotic Top",
+      "color": "Orange",
+      "tag": "Exotic",
+      "price": 5200,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-scarf-top-yellow",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Scarf Top",
+      "color": "Yellow",
+      "tag": "Elegant",
+      "price": 8400,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-scarf-top-pale-pink",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Scarf Top",
+      "color": "Pale pink",
+      "tag": "Elegant",
+      "price": 8400,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-scarf-top-purple",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Scarf Top",
+      "color": "Purple",
+      "tag": "Elegant",
+      "price": 8400,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-glitzy-scarf-top-pink",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Glitzy Scarf Top",
+      "color": "Pink",
+      "tag": "Feminine",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-shirt-and-tie-gray",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Shirt and Tie",
+      "color": "Gray",
+      "tag": "Classic",
+      "price": 120000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-shirt-and-tie-green",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Shirt and Tie",
+      "color": "Green",
+      "tag": "Classic",
+      "price": 120000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            2,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-shirt-and-tie-blue",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Shirt and Tie",
+      "color": "Blue",
+      "tag": "Classic",
+      "price": 120000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-poke-ball-baby-doll-tee-aqua",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Poké Ball Baby Doll Tee",
+      "color": "Aqua",
+      "tag": "Sporty",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-poke-ball-baby-doll-tee-purple",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Poké Ball Baby Doll Tee",
+      "color": "Purple",
+      "tag": "Sporty",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-poke-ball-baby-doll-tee-yellow",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Poké Ball Baby Doll Tee",
+      "color": "Yellow",
+      "tag": "Sporty",
+      "price": 2100,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shirt-poke-ball-baby-doll-tee-green",
+      "collection": "female",
+      "category": "shirt",
+      "name": "Poké Ball Baby Doll Tee",
+      "color": "Green",
+      "tag": "Sporty",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-denim-miniskirt-blue",
+      "collection": "female",
+      "category": "pants",
+      "name": "Denim Miniskirt",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-denim-miniskirt-olive",
+      "collection": "female",
+      "category": "pants",
+      "name": "Denim Miniskirt",
+      "color": "Olive",
+      "tag": "Basic",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-denim-miniskirt-black",
+      "collection": "female",
+      "category": "pants",
+      "name": "Denim Miniskirt",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-scalloped-skirt-orange",
+      "collection": "female",
+      "category": "pants",
+      "name": "Scalloped Skirt",
+      "color": "Orange",
+      "tag": "Feminine",
+      "price": 3000,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            1
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-scalloped-skirt-red",
+      "collection": "female",
+      "category": "pants",
+      "name": "Scalloped Skirt",
+      "color": "Red",
+      "tag": "Feminine",
+      "price": 3000,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-skinny-jeans-aqua",
+      "collection": "female",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Aqua",
+      "tag": "Basic",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-skinny-jeans-white",
+      "collection": "female",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "White",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-skinny-jeans-olive",
+      "collection": "female",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Olive",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-skinny-jeans-blue",
+      "collection": "female",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": 5800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            2,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-skinny-jeans-beige",
+      "collection": "female",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Beige",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-skinny-jeans-black",
+      "collection": "female",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-skinny-jeans-red",
+      "collection": "female",
+      "category": "pants",
+      "name": "Skinny Jeans",
+      "color": "Red",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-damaged-skinny-jeans-blue",
+      "collection": "female",
+      "category": "pants",
+      "name": "Damaged Skinny Jeans",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": 3000,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            2,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-accented-jeans-blue",
+      "collection": "female",
+      "category": "pants",
+      "name": "Accented Jeans",
+      "color": "Blue",
+      "tag": "Sporty",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-accented-jeans-yellow",
+      "collection": "female",
+      "category": "pants",
+      "name": "Accented Jeans",
+      "color": "Yellow",
+      "tag": "Sporty",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-accented-jeans-red",
+      "collection": "female",
+      "category": "pants",
+      "name": "Accented Jeans",
+      "color": "Red",
+      "tag": "Sporty",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-accented-jeans-lime-green",
+      "collection": "female",
+      "category": "pants",
+      "name": "Accented Jeans",
+      "color": "Lime green",
+      "tag": "Sporty",
+      "price": 2900,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-bold-striped-pants-gray",
+      "collection": "female",
+      "category": "pants",
+      "name": "Bold Striped Pants",
+      "color": "Gray",
+      "tag": "Classic",
+      "price": 180000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-bold-striped-pants-green",
+      "collection": "female",
+      "category": "pants",
+      "name": "Bold Striped Pants",
+      "color": "Green",
+      "tag": "Classic",
+      "price": 180000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            2,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-bold-striped-pants-blue",
+      "collection": "female",
+      "category": "pants",
+      "name": "Bold Striped Pants",
+      "color": "Blue",
+      "tag": "Classic",
+      "price": 180000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-pleated-skirt-black",
+      "collection": "female",
+      "category": "pants",
+      "name": "Pleated Skirt",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 80000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-pleated-skirt-white",
+      "collection": "female",
+      "category": "pants",
+      "name": "Pleated Skirt",
+      "color": "White",
+      "tag": "Basic",
+      "price": 80000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-pleated-skirt-red",
+      "collection": "female",
+      "category": "pants",
+      "name": "Pleated Skirt",
+      "color": "Red",
+      "tag": "Basic",
+      "price": 80000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-pleated-skirt-blue",
+      "collection": "female",
+      "category": "pants",
+      "name": "Pleated Skirt",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": 80000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-striped-pleated-skirt-pink",
+      "collection": "female",
+      "category": "pants",
+      "name": "Striped Pleated Skirt",
+      "color": "Pink",
+      "tag": "Feminine",
+      "price": 6600,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-striped-pleated-skirt-aqua",
+      "collection": "female",
+      "category": "pants",
+      "name": "Striped Pleated Skirt",
+      "color": "Aqua",
+      "tag": "Feminine",
+      "price": 6600,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-striped-pleated-skirt-yellow",
+      "collection": "female",
+      "category": "pants",
+      "name": "Striped Pleated Skirt",
+      "color": "Yellow",
+      "tag": "Feminine",
+      "price": 6600,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-pleated-kilt-skirt-gray",
+      "collection": "female",
+      "category": "pants",
+      "name": "Pleated Kilt Skirt",
+      "color": "Gray",
+      "tag": "Classic",
+      "price": 120000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-pleated-kilt-skirt-red",
+      "collection": "female",
+      "category": "pants",
+      "name": "Pleated Kilt Skirt",
+      "color": "Red",
+      "tag": "Classic",
+      "price": 120000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-scalloped-tiered-skirt-pink",
+      "collection": "female",
+      "category": "pants",
+      "name": "Scalloped Tiered Skirt",
+      "color": "Pink",
+      "tag": "Feminine",
+      "price": 3200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-scalloped-tiered-skirt-yellow",
+      "collection": "female",
+      "category": "pants",
+      "name": "Scalloped Tiered Skirt",
+      "color": "Yellow",
+      "tag": "Feminine",
+      "price": 3200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-scalloped-tiered-skirt-white",
+      "collection": "female",
+      "category": "pants",
+      "name": "Scalloped Tiered Skirt",
+      "color": "White",
+      "tag": "Feminine",
+      "price": 3200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-tiered-satin-skirt-purple",
+      "collection": "female",
+      "category": "pants",
+      "name": "Tiered Satin Skirt",
+      "color": "Purple",
+      "tag": "Elegant",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-tiered-satin-skirt-white",
+      "collection": "female",
+      "category": "pants",
+      "name": "Tiered Satin Skirt",
+      "color": "White",
+      "tag": "Elegant",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-jean-shorts-gray",
+      "collection": "female",
+      "category": "pants",
+      "name": "Jean Shorts",
+      "color": "Gray",
+      "tag": "Basic",
+      "price": 3200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-jean-shorts-aqua",
+      "collection": "female",
+      "category": "pants",
+      "name": "Jean Shorts",
+      "color": "Aqua",
+      "tag": "Basic",
+      "price": 3200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-jean-shorts-brown",
+      "collection": "female",
+      "category": "pants",
+      "name": "Jean Shorts",
+      "color": "Brown",
+      "tag": "Basic",
+      "price": 6400,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-jean-shorts-white",
+      "collection": "female",
+      "category": "pants",
+      "name": "Jean Shorts",
+      "color": "White",
+      "tag": "Basic",
+      "price": 3200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-jean-shorts-black",
+      "collection": "female",
+      "category": "pants",
+      "name": "Jean Shorts",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 6400,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-jean-shorts-pink",
+      "collection": "female",
+      "category": "pants",
+      "name": "Jean Shorts",
+      "color": "Pink",
+      "tag": "Sporty",
+      "price": 2400,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-jean-shorts-orange",
+      "collection": "female",
+      "category": "pants",
+      "name": "Jean Shorts",
+      "color": "Orange",
+      "tag": "Sporty",
+      "price": 2400,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-damaged-jean-shorts-blue",
+      "collection": "female",
+      "category": "pants",
+      "name": "Damaged Jean Shorts",
+      "color": "Blue",
+      "tag": "Basic",
+      "price": 2700,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-cross-laced-shorts-olive",
+      "collection": "female",
+      "category": "pants",
+      "name": "Cross-Laced Shorts",
+      "color": "Olive",
+      "tag": "Exotic",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-pants-cross-laced-shorts-brown",
+      "collection": "female",
+      "category": "pants",
+      "name": "Cross-Laced Shorts",
+      "color": "Brown",
+      "tag": "Exotic",
+      "price": 6200,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-dress-single-front-coat-dress-pink",
+      "collection": "female",
+      "category": "dress",
+      "name": "Single-Front Coat Dress",
+      "color": "Pink",
+      "tag": "Feminine",
+      "price": 8400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-dress-double-front-coat-dress-navy-blue",
+      "collection": "female",
+      "category": "dress",
+      "name": "Double-Front Coat Dress",
+      "color": "Navy blue",
+      "tag": "Classic",
+      "price": 24000,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-dress-trench-coat-dress-beige",
+      "collection": "female",
+      "category": "dress",
+      "name": "Trench Coat Dress",
+      "color": "Beige",
+      "tag": "Classic",
+      "price": 300000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-dress-trench-coat-dress-black",
+      "collection": "female",
+      "category": "dress",
+      "name": "Trench Coat Dress",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 300000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-dress-sundae-dress-pale-pink",
+      "collection": "female",
+      "category": "dress",
+      "name": "Sundae Dress",
+      "color": "Pale pink",
+      "tag": "Special",
+      "price": null,
+      "shops": [],
+      "default": false,
+      "gift": "Kiloude City"
+    },
+    {
+      "id": "xy-female-dress-frilly-dress-pale-pink",
+      "collection": "female",
+      "category": "dress",
+      "name": "Frilly Dress",
+      "color": "Pale pink",
+      "tag": "Feminine",
+      "price": 4200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-dress-sparkly-bolero-dress-pink",
+      "collection": "female",
+      "category": "dress",
+      "name": "Sparkly Bolero Dress",
+      "color": "Pink",
+      "tag": "Feminine",
+      "price": 4200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-dress-little-black-dress-black",
+      "collection": "female",
+      "category": "dress",
+      "name": "Little Black Dress",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 14000,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-dress-high-waisted-outfit-black",
+      "collection": "female",
+      "category": "dress",
+      "name": "High-Waisted Outfit",
+      "color": "Black",
+      "tag": "Classic",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-female-dress-high-waisted-outfit-white",
+      "collection": "female",
+      "category": "dress",
+      "name": "High-Waisted Outfit",
+      "color": "White",
+      "tag": "Classic",
+      "price": 10200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            3,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-knee-socks-black",
+      "collection": "female",
+      "category": "socks",
+      "name": "Knee Socks",
+      "color": "Black",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-knee-socks-white",
+      "collection": "female",
+      "category": "socks",
+      "name": "Knee Socks",
+      "color": "White",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            2,
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-knee-socks-red",
+      "collection": "female",
+      "category": "socks",
+      "name": "Knee Socks",
+      "color": "Red",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-knee-socks-blue",
+      "collection": "female",
+      "category": "socks",
+      "name": "Knee Socks",
+      "color": "Blue",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-knee-socks-green",
+      "collection": "female",
+      "category": "socks",
+      "name": "Knee Socks",
+      "color": "Green",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-knee-socks-pink",
+      "collection": "female",
+      "category": "socks",
+      "name": "Knee Socks",
+      "color": "Pink",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-knee-socks-yellow",
+      "collection": "female",
+      "category": "socks",
+      "name": "Knee Socks",
+      "color": "Yellow",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-otk-socks-black",
+      "collection": "female",
+      "category": "socks",
+      "name": "OTK Socks",
+      "color": "Black",
+      "tag": null,
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-otk-socks-white",
+      "collection": "female",
+      "category": "socks",
+      "name": "OTK Socks",
+      "color": "White",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-otk-socks-green",
+      "collection": "female",
+      "category": "socks",
+      "name": "OTK Socks",
+      "color": "Green",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            1
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-otk-socks-gray",
+      "collection": "female",
+      "category": "socks",
+      "name": "OTK Socks",
+      "color": "Gray",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-otk-socks-pink",
+      "collection": "female",
+      "category": "socks",
+      "name": "OTK Socks",
+      "color": "Pink",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-otk-socks-red",
+      "collection": "female",
+      "category": "socks",
+      "name": "OTK Socks",
+      "color": "Red",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-otk-socks-brown",
+      "collection": "female",
+      "category": "socks",
+      "name": "OTK Socks",
+      "color": "Brown",
+      "tag": null,
+      "price": 800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-single-stripe-otk-socks-white",
+      "collection": "female",
+      "category": "socks",
+      "name": "Single-Stripe OTK Socks",
+      "color": "White",
+      "tag": null,
+      "price": 2500,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-wide-stripe-otk-socks-black",
+      "collection": "female",
+      "category": "socks",
+      "name": "Wide-Stripe OTK Socks",
+      "color": "Black",
+      "tag": null,
+      "price": 1800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-wide-stripe-otk-socks-pale-pink",
+      "collection": "female",
+      "category": "socks",
+      "name": "Wide-Stripe OTK Socks",
+      "color": "Pale pink",
+      "tag": null,
+      "price": 1800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-punk-otk-socks-black",
+      "collection": "female",
+      "category": "socks",
+      "name": "Punk OTK Socks",
+      "color": "Black",
+      "tag": null,
+      "price": 1800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-camo-otk-socks-brown",
+      "collection": "female",
+      "category": "socks",
+      "name": "Camo OTK Socks",
+      "color": "Brown",
+      "tag": null,
+      "price": 1800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-leggings-black",
+      "collection": "female",
+      "category": "socks",
+      "name": "Leggings",
+      "color": "Black",
+      "tag": null,
+      "price": 1000,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-tights-black",
+      "collection": "female",
+      "category": "socks",
+      "name": "Tights",
+      "color": "Black",
+      "tag": null,
+      "price": 1900,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            3,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-tights-orange",
+      "collection": "female",
+      "category": "socks",
+      "name": "Tights",
+      "color": "Orange",
+      "tag": null,
+      "price": 1900,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-tights-pale-pink",
+      "collection": "female",
+      "category": "socks",
+      "name": "Tights",
+      "color": "Pale pink",
+      "tag": null,
+      "price": 1900,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-tights-navy-blue",
+      "collection": "female",
+      "category": "socks",
+      "name": "Tights",
+      "color": "Navy blue",
+      "tag": null,
+      "price": 1900,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            2,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-tights-pink",
+      "collection": "female",
+      "category": "socks",
+      "name": "Tights",
+      "color": "Pink",
+      "tag": null,
+      "price": 1900,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-socks-tights-purple",
+      "collection": "female",
+      "category": "socks",
+      "name": "Tights",
+      "color": "Purple",
+      "tag": null,
+      "price": 1900,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-riding-boots-pink",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Riding Boots",
+      "color": "Pink",
+      "tag": "Basic",
+      "price": 4200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-riding-boots-black",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Riding Boots",
+      "color": "Black",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            1,
+            2,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-riding-boots-white",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Riding Boots",
+      "color": "White",
+      "tag": "Basic",
+      "price": 4200,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-riding-boots-gray",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Riding Boots",
+      "color": "Gray",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            3,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-riding-boots-brown",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Riding Boots",
+      "color": "Brown",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            2,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-riding-boots-beige",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Riding Boots",
+      "color": "Beige",
+      "tag": "Basic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-laced-boots-brown",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Laced Boots",
+      "color": "Brown",
+      "tag": "Classic",
+      "price": 8200,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            2,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-laced-boots-black",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Laced Boots",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 8200,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            3,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-zipped-boots-black",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Zipped Boots",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 10500,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            3,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-high-tops-black",
+      "collection": "female",
+      "category": "shoes",
+      "name": "High Tops",
+      "color": "Black",
+      "tag": "Sporty",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-high-tops-pink",
+      "collection": "female",
+      "category": "shoes",
+      "name": "High Tops",
+      "color": "Pink",
+      "tag": "Sporty",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-high-tops-yellow",
+      "collection": "female",
+      "category": "shoes",
+      "name": "High Tops",
+      "color": "Yellow",
+      "tag": "Sporty",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-high-tops-purple",
+      "collection": "female",
+      "category": "shoes",
+      "name": "High Tops",
+      "color": "Purple",
+      "tag": "Sporty",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            1,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-bow-shoes-black",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Bow Shoes",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 85000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-bow-shoes-brown",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Bow Shoes",
+      "color": "Brown",
+      "tag": "Classic",
+      "price": 85000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            2,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-saddle-shoes-white",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Saddle Shoes",
+      "color": "White",
+      "tag": "Classic",
+      "price": 110000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-saddle-shoes-brown",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Saddle Shoes",
+      "color": "Brown",
+      "tag": "Classic",
+      "price": 110000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-saddle-shoes-navy-blue",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Saddle Shoes",
+      "color": "Navy blue",
+      "tag": "Classic",
+      "price": 110000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            2,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-mary-janes-black",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Mary Janes",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-mary-janes-red",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Mary Janes",
+      "color": "Red",
+      "tag": "Classic",
+      "price": 100000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-mary-janes-purple",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Mary Janes",
+      "color": "Purple",
+      "tag": "Elegant",
+      "price": 7400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-mary-janes-white",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Mary Janes",
+      "color": "White",
+      "tag": "Elegant",
+      "price": 7400,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            1,
+            3,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-mary-janes-pale-pink",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Mary Janes",
+      "color": "Pale pink",
+      "tag": "Feminine",
+      "price": 3900,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-shoes-mary-janes-aqua",
+      "collection": "female",
+      "category": "shoes",
+      "name": "Mary Janes",
+      "color": "Aqua",
+      "tag": "Feminine",
+      "price": 3900,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-tote-bag-pink",
+      "collection": "female",
+      "category": "bag",
+      "name": "Tote Bag",
+      "color": "Pink",
+      "tag": "Basic",
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-tote-bag-red",
+      "collection": "female",
+      "category": "bag",
+      "name": "Tote Bag",
+      "color": "Red",
+      "tag": "Basic",
+      "price": 8600,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-tote-bag-orange",
+      "collection": "female",
+      "category": "bag",
+      "name": "Tote Bag",
+      "color": "Orange",
+      "tag": "Basic",
+      "price": 8600,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-tote-bag-yellow",
+      "collection": "female",
+      "category": "bag",
+      "name": "Tote Bag",
+      "color": "Yellow",
+      "tag": "Basic",
+      "price": 8600,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-tote-bag-white",
+      "collection": "female",
+      "category": "bag",
+      "name": "Tote Bag",
+      "color": "White",
+      "tag": "Basic",
+      "price": 12000,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            1,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-enamel-striped-purse-red",
+      "collection": "female",
+      "category": "bag",
+      "name": "Enamel-Striped Purse",
+      "color": "Red",
+      "tag": "Sporty",
+      "price": 2800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            1,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-enamel-striped-purse-blue",
+      "collection": "female",
+      "category": "bag",
+      "name": "Enamel-Striped Purse",
+      "color": "Blue",
+      "tag": "Sporty",
+      "price": 2800,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-ribbon-purse-pale-pink",
+      "collection": "female",
+      "category": "bag",
+      "name": "Ribbon Purse",
+      "color": "Pale pink",
+      "tag": "Feminine",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            1,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-ribbon-purse-aqua",
+      "collection": "female",
+      "category": "bag",
+      "name": "Ribbon Purse",
+      "color": "Aqua",
+      "tag": "Feminine",
+      "price": 4800,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            2,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-strappy-purse-black",
+      "collection": "female",
+      "category": "bag",
+      "name": "Strappy Purse",
+      "color": "Black",
+      "tag": "Classic",
+      "price": 200000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            1
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-strappy-purse-brown",
+      "collection": "female",
+      "category": "bag",
+      "name": "Strappy Purse",
+      "color": "Brown",
+      "tag": "Classic",
+      "price": 200000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            2,
+            4,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-strappy-purse-beige",
+      "collection": "female",
+      "category": "bag",
+      "name": "Strappy Purse",
+      "color": "Beige",
+      "tag": "Classic",
+      "price": 200000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-strappy-purse-purple",
+      "collection": "female",
+      "category": "bag",
+      "name": "Strappy Purse",
+      "color": "Purple",
+      "tag": "Elegant",
+      "price": 12000,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            2,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-strappy-purse-white",
+      "collection": "female",
+      "category": "bag",
+      "name": "Strappy Purse",
+      "color": "White",
+      "tag": "Elegant",
+      "price": 12000,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-tassel-purse-purple",
+      "collection": "female",
+      "category": "bag",
+      "name": "Tassel Purse",
+      "color": "Purple",
+      "tag": "Exotic",
+      "price": 8600,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-bag-tassel-purse-green",
+      "collection": "female",
+      "category": "bag",
+      "name": "Tassel Purse",
+      "color": "Green",
+      "tag": "Exotic",
+      "price": 8600,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-button-accessory-gray",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Gray",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            1,
+            2,
+            4,
+            5,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-button-accessory-pink",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Pink",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            2,
+            3,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-button-accessory-purple",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Purple",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            3,
+            4,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-button-accessory-yellow",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Yellow",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-button-accessory-lime-green",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Button Accessory",
+      "color": "Lime green",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            3,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-artificial-flower-pin-pink",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Artificial Flower Pin",
+      "color": "Pink",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "city": "anistar",
+          "days": [
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-artificial-flower-pin-pale-pink",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Artificial Flower Pin",
+      "color": "Pale pink",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            0,
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-artificial-flower-pin-yellow",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Artificial Flower Pin",
+      "color": "Yellow",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            1
+          ]
+        },
+        {
+          "city": "santalune",
+          "days": [
+            0,
+            1,
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-artificial-flower-pin-aqua",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Artificial Flower Pin",
+      "color": "Aqua",
+      "tag": null,
+      "price": 500,
+      "shops": [
+        {
+          "city": "anistar",
+          "days": [
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-wide-frame-sunglasses-white",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Wide-Frame Sunglasses",
+      "color": "White",
+      "tag": null,
+      "price": null,
+      "shops": [],
+      "default": true,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-wide-frame-sunglasses-red",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Wide-Frame Sunglasses",
+      "color": "Red",
+      "tag": null,
+      "price": 1200,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            0,
+            1,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-wide-frame-sunglasses-blue",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Wide-Frame Sunglasses",
+      "color": "Blue",
+      "tag": null,
+      "price": 1200,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            2,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-wide-frame-sunglasses-yellow",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Wide-Frame Sunglasses",
+      "color": "Yellow",
+      "tag": null,
+      "price": 1200,
+      "shops": [
+        {
+          "city": "cyllage",
+          "days": [
+            3,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-metal-pin-gold",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Metal Pin",
+      "color": "Gold",
+      "tag": null,
+      "price": 4200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            1,
+            3,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-metal-pin-silver",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Metal Pin",
+      "color": "Silver",
+      "tag": null,
+      "price": 4200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            0,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-metal-pin-black",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Metal Pin",
+      "color": "Black",
+      "tag": null,
+      "price": 4200,
+      "shops": [
+        {
+          "city": "snowbelle",
+          "days": [
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-hat-ribbon-accessory-black",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Hat Ribbon Accessory",
+      "color": "Black",
+      "tag": null,
+      "price": 20000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            0,
+            2
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-hat-ribbon-accessory-red",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Hat Ribbon Accessory",
+      "color": "Red",
+      "tag": null,
+      "price": 20000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            3
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-hat-ribbon-accessory-white",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Hat Ribbon Accessory",
+      "color": "White",
+      "tag": null,
+      "price": 20000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            1,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-hat-ribbon-accessory-blue",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Hat Ribbon Accessory",
+      "color": "Blue",
+      "tag": null,
+      "price": 20000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-hat-ribbon-accessory-pale-pink",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Hat Ribbon Accessory",
+      "color": "Pale pink",
+      "tag": null,
+      "price": 20000,
+      "shops": [
+        {
+          "city": "lumiose",
+          "days": [
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-feather-accessory-black",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Feather Accessory",
+      "color": "Black",
+      "tag": null,
+      "price": 2800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            0,
+            3,
+            4
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-feather-accessory-red",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Feather Accessory",
+      "color": "Red",
+      "tag": null,
+      "price": 2800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            2,
+            5
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    },
+    {
+      "id": "xy-female-accessory-feather-accessory-green",
+      "collection": "female",
+      "category": "accessory",
+      "name": "Feather Accessory",
+      "color": "Green",
+      "tag": null,
+      "price": 2800,
+      "shops": [
+        {
+          "city": "laverre",
+          "days": [
+            1,
+            6
+          ]
+        }
+      ],
+      "default": false,
+      "gift": null
+    }
+  ]
+}
