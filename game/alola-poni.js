@@ -12,7 +12,7 @@ const gates={
  AlolaPoniMeadow:'necrozmaClear',AlolaResolutionCave:'necrozmaClear',
  AlolaVastPoniEntrance:'hapuClear',AlolaVastPoniCanyon:'hapuClear',
  AlolaDragonTrial:'canyonClear',AlolaAltarSunne:'dragonClear',
- AlolaUltraSpace:'altarOpened',AlolaPoniGauntlet:'minaClear'
+ AlolaUltraSpace:'altarOpened',AlolaPoniGauntlet:'minaInvited'
 };
 const hints={
  aetherGrunts:'Defeat Team Skull in Aether Paradise before entering the laboratory.',
@@ -24,7 +24,7 @@ const hints={
  canyonClear:'Battle through Vast Poni Canyon before challenging the Dragon Trial.',
  dragonClear:'Complete the Dragon Trial before reaching the altar.',
  altarOpened:'Speak with Lillie at the altar to open the Ultra Space passage.',
- minaClear:'Complete Mina’s trial to open Poni Gauntlet.'
+ minaInvited:'Speak to Mina after defeating Ultra Necrozma.'
 };
 function allowed(p,map){
  if(!owns(map))return null;
