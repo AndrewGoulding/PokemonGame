@@ -105,6 +105,8 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
     const step = async (n, label, limit = 1500) => { await finish(new Function("return (Game.player.flags.xdStory | 0) === " + n), label, limit); };
     // ---- Nett: the desert's sand; Perr; Makan at Kaminko's; the scooter. ----
     await step(30, "Nett: Perr for the scooter");
+    await go("PyriteTown_PyriteBuilding_4F", 3, 5, "up");
+    await finish(() => (Game.player.flags.xdBonsly | 0) === 1, "Bonsly's owners ask", 300);
     await go("GateonPort_PartsShop", 8, 10, "up");
     await finish(() => true, "Perr: Grandpa's out", 300);
     assert(said.some((t) => /desert/.test(t)), "Perr on the desert");
@@ -115,6 +117,10 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
     // ---- The S.S. Libra: the deck, Smarton; Team Snagem's ambush. ----
     await heal(); await walkIn("SSLibra", "SSLibra_Deck");
     await step(33, "the S.S. Libra's deck: Smarton beaten");
+    await standBy("LOCALID_XD_BONSLY");
+    await finish(() => (Game.player.flags.xdBonsly | 0) === 2, "Bonsly startled off", 200);
+    await standBy("LOCALID_XD_BONSLY");
+    await finish(() => (Game.player.flags.xdBonsly | 0) === 3, "Bonsly caught", 200);
     // (Its ladder out is an east arrow: off it to the right.)
     await go("SSLibra_Deck", 14, 2, "right");
     for (let i = 0; i < 6 && (await where()).map === "SSLibra_Deck"; i++) { await settle(); await s.walk("right", 1); await s.wait(300); }
@@ -123,14 +129,26 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
     // ---- Secc; Hordel; Gonzap. ----
     await go("PyriteTown_PyriteBuilding_2F", 12, 6, "up");
     await step(35, "Secc: Hordel at the Outskirt Stand");
+    await go("PyriteTown_PyriteBuilding_4F", 3, 5, "up");
+    await finish(() => (Game.player.flags.xdBonsly | 0) === 4, "Bonsly home", 300);
     await go("OutskirtStand", 20, 19, "up"); await standBy("LOCALID_XD_HORDEL");
     await step(36, "Hordel: his Shadow Togepi, and Team Snagem's hideout");
     assert((await flags()).xdShadowSnagged.includes(81), "Togepi (#81)");
-    await heal(); await go("SnagemHideout", 12, 10, "up"); await standBy("LOCALID_XD_GONZAP");
+    await walkIn("SnagemHideout", "SnagemHideout_1F");
+    assert.equal((await where()).map, "SnagemHideout_1F", "into Team Snagem's building");
+    await heal(); await go("SnagemHideout_2F", 16, 7, "up"); await standBy("LOCALID_XD_GONZAP");
     await step(37, "Gonzap: the Snag Machine back, the Key Lair");
     assert(await s.eval(() => !!Game.player.bag["snag-machine"]), "the Snag Machine back");
     // ---- The Key Lair: Gorigan, Greevil. ----
-    await heal(); await go("CipherKeyLair_1F", 18, 4, "up");
+    await go("CipherKeyLair_Top", 7, 5, "up"); await standBy("LOCALID_XD_RESEARCHER");
+    await finish(() => (Game.player.flags.xdLever | 0) === 1, "the researcher's System Lever", 300);
+    await go("CipherKeyLair_1F", 2, 3, "up");
+    await finish(() => (Game.player.flags.xdLever | 0) === 2, "the System Lever from his desk", 200);
+    await heal(); await go("CipherKeyLair_Top", 7, 5, "up"); await standBy("LOCALID_XD_RESEARCHER");
+    await finish(() => (Game.player.flags.xdLever | 0) === 3, "the researcher beaten", 1500);
+    await go("CipherKeyLair_Top", 9, 4, "up");
+    await finish(() => (Game.player.flags.xdLever | 0) === 4, "the Control Machine raised: the line stopped", 300);
+    await heal(); await go("CipherKeyLair_Top", 18, 4, "up");
     await step(38, "the Key Lair: Gorigan, and Greevil", 2500);
     // ---- The Robo Kyogre; Citadark Isle. ----
     await go("GateonPort_PartsShop", 8, 10, "up");

@@ -6364,6 +6364,11 @@
         return;
       case "XD_EventScript_Megg": await say(story >= 25 ? L.meggSafe : story === 21 ? L.meggWelcome.concat(L.meggNett) : L.meggNett); return;
       case "XD_EventScript_Secc":
+        if (story === 26) {
+          if (!f.xdNote) { for (const page of L.seccNote) await say(page); f.xdNote = true; await persist(); }
+          else await say(L.seccNoteLater);
+          return;
+        }
         if (story === 34) { for (const page of L.seccSnagem) await say(page); f.xdStory = 35; await persist(); return; }
         if (story === 35) { await say(L.seccHordel); return; }
         if (story === 21) {
@@ -6376,6 +6381,7 @@
         return;
       case "XD_EventScript_Bitt": await say(story >= 25 ? L.nettPhenac : L.bitt); return;
       case "XD_EventScript_Nett":
+        if (story === 26 && f.xdNote) { for (const page of L.nettNote) await say(page); return; }
         if (story === 29) { for (const page of L.nettDesert) await say(page); f.xdStory = 30; await persist(); return; }
         if (story === 30) { await say(L.nettPerr); return; }
         if (story >= 34 && story < 37) { for (const page of L.nettSnagem) await say(page); return; }
@@ -6414,6 +6420,27 @@
       case "XD_EventScript_Gorigan": await xdGorigan(); return;
       case "enter:CitadarkIsle_Dome": await xdDome(); return;
       case "XD_EventScript_Greevil": return;
+      // ---- The extras: Bonsly, the Key Lair's System Lever, Team Snagem's door, Duking and the Poké Spots. ----
+      case "XD_EventScript_BonslyOwners": await xdBonslyOwners(); return;
+      case "XD_EventScript_Bonsly": await xdBonsly(); return;
+      case "XD_EventScript_Researcher": await xdResearcher(); return;
+      case "XD_EventScript_Lever":
+        Player.addItem(player, "system-lever", 1);
+        f.xdLever = 2;
+        Overworld.refreshPeople();
+        await sayWithJingle("mus_obtain_key_item", "{PLAYER} found the System Lever!");   // (this game's own: XD's desk)
+        await persist();
+        return;
+      case "XD_EventScript_ControlMachine": await xdControlMachine(); return;
+      case "enter:SnagemHideout_1F":
+        await say(["It's locked."]);   // (XD's #43067)
+        player.location = { map: "SnagemHideout", x: 12, y: 6, facing: "down" };
+        await Overworld.teleport(player.location);
+        return;
+      case "XD_EventScript_Duking": await xdDuking(); return;
+      case "XD_EventScript_PokeSpot": await xdPokeSpot(); return;
+      case "enter:RockPokeSpot": case "arrive:RockPokeSpot": case "enter:OasisPokeSpot": case "arrive:OasisPokeSpot":
+      case "enter:CavePokeSpot": case "arrive:CavePokeSpot": await xdSpotVisitor(); return;
       case "PokemonHQLab_1F_EventScript_Jovi":
         await say(f.xdChamber ? ["Jovi: That Machine Part Jovi carried\nis on that big machine. They put it\non the middle part with the ring.", "Jovi: It went right in the middle. It\nmust be the most important part!"]
           : ["Jovi: Jovi can do it!"]);
@@ -7029,7 +7056,10 @@
     for (const page of L.nettWait) await say(page);
     await say(L.gavePda);
     await say(L.nettThanks);
-    await say(["Nett: Okay, {PLAYER}. Have a look\naround town while I work on it."]);   // (this game's own: XD's Poké Spot isn't here)
+    await say(L.nettSpot);
+    await say(L.nettSpotWhere);
+    Orre.unlock(f, "RockPokeSpot");
+    await say("The Rock Poké Spot was marked on\nthe Orre Map!");   // (this game's own, as Orre's other places are)
     f.xdStory = 23;
     delete f.xdOnbsOut;
     await persist();
@@ -7075,6 +7105,8 @@
     if (outcome !== "won") { Overworld.removeObject(E); await persist(); return; }
     await say(L.ezinAfter);
     Overworld.removeObject(E);
+    Player.addItem(player, "mayors-note", 1);
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} took the Mayor's letter.");   // (this game's own: XD's "MAYOR'S NOTE")
     f.xdStory = 26;
     Overworld.refreshPeople();
     await persist();
@@ -7083,9 +7115,10 @@
   // 26 -> 27), and he's off to the Stadium.
   async function xdFakeJusty() {
     const f = player.flags, L = Orre.XD.LINES, J = ORRE_XD("FOSTIN");
-    if ((f.xdStory | 0) === 25) { await say(L.fakeJustyBefore); return; }
+    if ((f.xdStory | 0) === 25 || ((f.xdStory | 0) === 26 && !f.xdNote)) { await say(L.fakeJustyBefore); return; }
     if ((f.xdStory | 0) !== 26) return;
     await say(L.fostinIntro);
+    Player.removeItem(player, "mayors-note", 1);
     const outcome = await xdFight(100, L.fostinDefeat);
     if (outcome !== "won") return;
     await say(L.fostinAfter);
@@ -7359,6 +7392,110 @@
     // (This game's own: XD's ending is told without words.)
     await say(["Prof. Krane: {PLAYER}! You're back!\nONBS has been reporting it all day.", "Prof. Krane: Cipher's finished, and\nGreevil's turned himself in. Orre is\nsafe again, thanks to you.",
       "Prof. Krane: There are still Shadow\nPokémon out there to save. Keep\nopening their hearts, {PLAYER}."]);
+    await persist();
+  }
+  // Bonsly's owners at ONBS: an old man and his granddaughter, its Bonsly lost with the S.S. Libra (XD's #37307-#37310);
+  // gone back for it (#37519); home (#37381-#37385).
+  async function xdBonslyOwners() {
+    const f = player.flags, L = Orre.XD.LINES, n = f.xdBonsly | 0;
+    if (n === 0) { for (const page of L.bonslyAsk) await say(page); f.xdBonsly = 1; Overworld.refreshPeople(); await persist(); return; }
+    if (n === 1) { await say(L.bonslyPhoto); await say(L.bonslyWait); return; }
+    if (n === 2) { await say(L.bonslyAgain); return; }
+    if (n === 3) {
+      for (const page of L.bonslyBack) await say(page);
+      f.xdBonsly = 4;
+      Overworld.refreshPeople();
+      await persist();
+    }
+  }
+  // Bonsly in the S.S. Libra's hold: the first time, startled off by your P★DA's mail (XD's #32019-#32020); then,
+  // crept up on without a sound, as the old man said, caught.
+  async function xdBonsly() {
+    const f = player.flags, L = Orre.XD.LINES, n = f.xdBonsly | 0;
+    if (n === 1) {
+      await say(L.bonslyCry);
+      await say(L.bonslyFled);
+      f.xdBonsly = 2;
+      await persist();
+      return;
+    }
+    if (n !== 2) return;
+    await say(L.bonslyCry);
+    // (This game's own: XD's is caught by sneaking up on it.)
+    await sayWithJingle("mus_obtain_key_item", "{PLAYER} crept up without a sound…\nand caught Bonsly!");
+    f.xdBonsly = 3;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // The Key Lair's researcher by the Control Machine, his System Lever left on his desk downstairs (XD's #34052-#34057):
+  // fetched, he sees who you are, and battles you.
+  async function xdResearcher() {
+    const f = player.flags, L = Orre.XD.LINES, n = f.xdLever | 0;
+    if ((f.xdStory | 0) !== 37) { await say(L.leverAfter); return; }
+    if (n === 0) { for (const page of L.leverAsk) await say(page); f.xdLever = 1; Overworld.refreshPeople(); await persist(); return; }
+    if (n === 1) { await say(L.leverAsk[L.leverAsk.length - 1]); return; }
+    if (n === 2) {
+      await say(f.xdLeverTried ? L.leverAgain : L.leverMine);
+      f.xdLeverTried = true;
+      const outcome = await xdFight(163, ["Researcher: I can't believe it!"]);   // (this game's own: his line on losing)
+      if (outcome !== "won") { await persist(); return; }
+      f.xdLever = 3;
+      await persist();
+      return;
+    }
+    await say(L.leverAfter);
+  }
+  // The Control Machine (XD's #34058-#34064): the System Lever; lowered, nothing; raised, the machine goes wild, and the
+  // production line's stopped: Gorigan comes out.
+  async function xdControlMachine() {
+    const f = player.flags, L = Orre.XD.LINES, n = f.xdLever | 0;
+    if (n < 3) { await say(L.machine[0]); return; }
+    if (n >= 4) { await say("The Control Machine has stopped."); return; }   // (this game's own)
+    await say(L.machine.slice(0, -1));
+    if (!(await confirm("Raise the voltage?"))) { await say(L.machineLower); return; }
+    for (const page of L.machineRaise) await say(page);
+    Player.removeItem(player, "system-lever", 1);
+    f.xdLever = 4;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Duking at the Rock Poké Spot: his Poké Snacks, how a Poké Spot works, and the other two (XD's #45014-#45026).
+  async function xdDuking() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if (f.xdDuking) { await say(L.dukingLater); return; }
+    await say(L.duking[0]);
+    Player.addItem(player, "poke-snack", 10);
+    await sayWithJingle("mus_obtain_item", L.duking[1]);
+    for (const page of L.duking.slice(2)) await say(page);
+    f.xdDuking = true;
+    for (const p of Orre.XD.SPOTS) Orre.unlock(f, p.map);
+    await say("The Oasis and Cave Poké Spots were\nmarked on the Orre Map!");   // (this game's own)
+    await persist();
+  }
+  // A Poké Spot's plate: Poké Snacks laid out (up to ten), for a wild Pokémon to come to while you're away.
+  async function xdPokeSpot() {
+    const f = player.flags, map = player.location.map, spots = (f.xdSpots = f.xdSpots || {});
+    if (spots[map]) { await say("Poké Snacks are laid out on the\nplate."); return; }   // (this game's own)
+    const have = Player.itemCount(player, "poke-snack");
+    if (!have) { await say("It's a plate for Poké Snacks."); return; }   // (this game's own)
+    if (!(await confirm("Place Poké Snacks on the plate?"))) return;
+    const n = Math.min(10, have);
+    Player.removeItem(player, "poke-snack", n);
+    spots[map] = { n, at: player.playTimeMs | 0 };
+    await say("{PLAYER} placed " + n + "\nPoké Snacks on the Poké Spot.");   // (XD's #45017)
+    await persist();
+  }
+  // Back at a Poké Spot after a while away (a minute or more of play): a wild Pokémon at the snacks, Munchlax now and
+  // then (likelier the more were laid out).
+  async function xdSpotVisitor() {
+    const f = player.flags, map = player.location.map, spot = f.xdSpots && f.xdSpots[map];
+    if (!spot || (player.playTimeMs | 0) - spot.at < 60000 || !canBattle()) return;
+    delete f.xdSpots[map];
+    const pool = Orre.XD.SPOT_WILD[map];
+    const species = Math.random() < (spot.n >= 10 ? 0.1 : 0.03) ? "Munchlax" : pool[Math.floor(Math.random() * pool.length)];
+    const level = 10 + Math.floor(Math.random() * 14);
+    await say("A wild " + species + " came to the\nPoké Snacks!");   // (this game's own)
+    await battle("wild", { foe: { name: "Wild", team: [wildMon(Party.create(species, level))] } });
     await persist();
   }
   // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.

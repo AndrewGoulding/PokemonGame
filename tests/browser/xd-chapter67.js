@@ -110,6 +110,12 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
     await go("PyriteTown_PyriteBuilding_4F", 13, 4, "up");
     await finish(() => (Game.player.flags.xdStory | 0) === 23, "Nett has the Data ROM");
     assert(await s.eval(() => !Game.player.bag["data-rom"]), "the Data ROM given");
+    // ---- The Rock Poké Spot: Duking, his Poké Snacks on the plate. ----
+    await go("RockPokeSpot", 8, 11, "up"); await standBy("LOCALID_XD_DUKING");
+    await finish(() => !!Game.player.flags.xdDuking, "Duking's Poké Snacks, the other Poké Spots", 400);
+    await go("RockPokeSpot", 8, 6, "up");
+    await finish(() => !!(Game.player.flags.xdSpots || {}).RockPokeSpot, "Poké Snacks on the plate", 200);
+    assert(await s.eval(() => Orre.openPlaces(Game.player.flags).some((p) => p.map === "CavePokeSpot")), "the Cave Poké Spot on Orre's map");
     // ---- Out, and back in: Cipher's raid. ----
     await go("PyriteTown_PyriteBuilding_1F", 5, 7, "down");
     await walkOut("PyriteTown_PyriteBuilding_1F");
@@ -130,6 +136,9 @@ const OUT = process.env.OUT || "/tmp/pk-xd67";
     // ---- Phenac: the Mayor's letter, Ezin. ----
     await heal(); await go("PhenacCity_MayorsHouse", 16, 3, "up");
     await finish(() => (Game.player.flags.xdStory | 0) === 26, "the Mayor's letter; Ezin", 1500);
+    // ---- Back to Secc with the Mayor's letter. ----
+    await go("PyriteTown_PyriteBuilding_2F", 12, 6, "up");
+    await finish(() => !!Game.player.flags.xdNote, "the Mayor's letter shown to Secc", 300);
     // ---- The fake Justy. ----
     await heal(); await go("PhenacCity_PreGym", 7, 5, "up");
     await finish(() => (Game.player.flags.xdStory | 0) === 27, "the fake Justy beaten", 1500);

@@ -5,7 +5,7 @@
 // the apartment's two floors (Littleroot's house). XD's story there is game/xd.js's and ui/game.js's.
 "use strict";
 
-module.exports = function ({ changed, room, drawings, block, A, emerald }) {
+module.exports = function ({ changed, room, drawings, block, A, emerald, maps, clone }) {
   const { canvas, texture, C, door, palm, text, water } = A;
   const OUT = "PokemonHQLab", LAB1 = "PokemonHQLab_1F", LAB2 = "PokemonHQLab_2F", APT1 = "PokemonHQLab_Apartment_1F", APT2 = "PokemonHQLab_Apartment_2F";
   const W = 28, H = 22;
@@ -220,8 +220,13 @@ module.exports = function ({ changed, room, drawings, block, A, emerald }) {
     for (const x of [8, 12, 19]) { oz.rect(x * 16, 0, 18, 4 * 16, C.metal[0]); oz.ellipse(x * 16 + 9, 6, 12, 5, C.metal[3]); }
     door(oc, 15 * 16 + 8, 12 * 16 - 1, 26, C.dark);
     o.warps.push({ x: 15, y: 11, map: KL + "_1F", warp: 0 });
-    changed[KL + "_1F"] = Object.assign(room("MauvilleCity_GameCorner", KL + "_1F", "Cipher Key Lair", "em_aqua_magma_hideout",
-      [{ x: 11, y: 10, map: KL, warp: 0 }, { x: 12, y: 10, map: KL, warp: 0 }]), { orrePlace: KL });
+    // (Its ground floor, the Weather Institute's, the System Lever on a desk; up its stairs the production floor, the
+    // Game Corner's machines: the Control Machine, and Gorigan.)
+    changed[KL + "_1F"] = Object.assign(room("Route119_WeatherInstitute_1F", KL + "_1F", "Cipher Key Lair", "em_aqua_magma_hideout",
+      [{ x: 9, y: 12, map: KL, warp: 0 }, { x: 10, y: 12, map: KL, warp: 0 }, { x: 17, y: 1, map: KL + "_Top", warp: 0 }]), { orrePlace: KL });
+    changed[KL + "_Top"] = Object.assign(room("MauvilleCity_GameCorner", KL + "_Top", "Cipher Key Lair", "em_aqua_magma_hideout",
+      [{ x: 11, y: 10, map: KL + "_1F", warp: 2 }, { x: 12, y: 10, map: KL + "_1F", warp: 2 }]), { orrePlace: KL });
+    changed[KL + "_Top"].signs = [{ x: 9, y: 3, script: "XD_EventScript_ControlMachine", text: null }];
   }
   // ---- Citadark Isle (XD's D6): Cipher's HQ on a volcanic island ringed by magma, reached on the Robo Kyogre; its fort
   // (Magma's hideout) and, through it, the dome (the Battle Dome's lobby) where Greevil waits. ----
@@ -247,6 +252,35 @@ module.exports = function ({ changed, room, drawings, block, A, emerald }) {
       [{ x: 10, y: 34, map: CI, warp: 0 }, { x: 25, y: 34, map: CI, warp: 0 }, { x: 31, y: 3, map: CI + "_Dome", warp: 0 }, { x: 20, y: 22, map: CI, warp: 0 }]), { orrePlace: CI });
     changed[CI + "_Dome"] = Object.assign(room("BattleFrontier_BattleDomeLobby", CI + "_Dome", "Citadark Isle", "em_aqua_magma_hideout",
       [{ x: 11, y: 16, map: CI + "_Fort", warp: 2 }, { x: 12, y: 16, map: CI + "_Fort", warp: 2 }]), { orrePlace: CI });
+  }
+  // ---- Team Snagem's hideout (XD's S2): the building behind Colosseum's hideout grounds, its gate a door now; three
+  // floors, far gone to rack and ruin (the Abandoned Ship's corridors and captain's office). ----
+  {
+    const SH = "SnagemHideout", out = changed[SH] || clone(maps[SH]);
+    const at = 5 * out.width + 12;
+    out.collision[at] = 0; out.behavior[at] = 0x69;
+    if (!out.warps.some((w) => w.map === SH + "_1F")) out.warps.push({ x: 12, y: 5, map: SH + "_1F", warp: 0 });
+    const door = out.warps.findIndex((w) => w.map === SH + "_1F");
+    changed[SH] = out;
+    changed[SH + "_1F"] = Object.assign(room("AbandonedShip_Corridors_B1F", SH + "_1F", "Snagem Hideout", "em_aqua_magma_hideout",
+      [{ x: 5, y: 7, map: SH, warp: door }, { x: 6, y: 4, map: SH + "_2F", warp: 0 }]), { orrePlace: SH });
+    changed[SH + "_2F"] = Object.assign(room("AbandonedShip_Corridors_1F", SH + "_2F", "Snagem Hideout", "em_aqua_magma_hideout",
+      [{ x: 11, y: 9, map: SH + "_1F", warp: 1 }, { x: 3, y: 9, map: SH + "_3F", warp: 0 }]), { orrePlace: SH });
+    changed[SH + "_3F"] = Object.assign(room("AbandonedShip_CaptainsOffice", SH + "_3F", "Snagem Hideout", "em_aqua_magma_hideout",
+      [{ x: 7, y: 6, map: SH + "_2F", warp: 1 }, { x: 8, y: 6, map: SH + "_2F", warp: 1 }]), { orrePlace: SH });
+  }
+  // ---- The Poké Spots (XD's esaba_A-C): Duking's finds, a plate on the ground where Poké Snacks bring wild Pokémon.
+  // The Rock Poké Spot east of Pyrite, the Oasis Poké Spot near Phenac, the Cave Poké Spot far north-east. ----
+  for (const [SP, title, kind] of [["RockPokeSpot", "Rock Poké Spot", "rock"], ["OasisPokeSpot", "Oasis Poké Spot", "oasis"], ["CavePokeSpot", "Cave Poké Spot", "cave"]]) {
+    const W2 = 18, H2 = 14;
+    const { o, oc, oz } = outdoors(SP, title, "em_route_111", W2, H2,
+      (x, y) => x === 0 || x === W2 - 1 || y === 0 || (y === H2 - 1 && (x < 7 || x > 10)) || (x === 8 && y === 5) || (x === 9 && y === 5), [7, 8, 9, 10].map((x) => [x, H2 - 1]));
+    if (kind === "rock") { for (const [x, y] of [[3, 3], [13, 2], [4, 9], [14, 9], [11, 3]]) { oz.ellipse(x * 16 + 8, y * 16 + 10, 16, 9, C.rock[1]); block(o, x, y, 1, 1); } }
+    if (kind === "oasis") { water(oc, 3 * 16, 2 * 16, 4 * 16, 3 * 16); block(o, 3, 2, 4, 3); for (const [x, y] of [[13, 3], [14, 9], [3, 9]]) { palm(oz, x * 16 + 8, y * 16 + 14); block(o, x, y, 1, 1); } }
+    if (kind === "cave") { texture(oc, [0, 0, oc.w, oc.h], C.rock, 5, 4); oc.rect(0, 0, oc.w, 3 * 16, C.dark); block(o, 1, 1, W2 - 2, 2); }
+    // The plate.
+    oc.ellipse(9 * 16, 5 * 16 + 8, 22, 9, C.metal[0]); oc.ellipse(9 * 16, 5 * 16 + 7, 18, 7, C.cream);
+    o.signs.push({ x: 8, y: 5, script: "XD_EventScript_PokeSpot", text: null }, { x: 9, y: 5, script: "XD_EventScript_PokeSpot", text: null });
   }
   // Phenac's Pre Gym's basement (XD's M1_gym_B1), where Cipher held the Mayor, Justy and the townspeople: Mossdeep's
   // Game Corner's basement, its stairs up to the Pre Gym's door (it's reached by the elevator, in XD's story).

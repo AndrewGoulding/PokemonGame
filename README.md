@@ -3214,8 +3214,15 @@ Hideout**, its members and Gonzap, who gives the Snag Machine back and points yo
 him off and leaving for Citadark Isle (38). Makan's **Robo Kyogre** (39) takes you to **Citadark Isle**: its sailors
 and Peons, Lovrina in its fort, Snattle, Gorigan and Ardos outside the dome (all four beaten before its elevator
 opens); in the dome, Eldes, then XD001, Shadow Lugia, then Greevil's own Shadow Pokémon, and his sons talking him into
-giving up (40: `xdClear`, XD's level cap lifted) (`tests/browser/xd-chapter811.js`). (Left out: the S.S. Libra's
-Bonsly, the Key Lair's System Lever, the Snagem hideout's floors and Poké Spots.) A Trainer whose Shadow Pokémon isn't snagged
+giving up (40: `xdClear`, XD's level cap lifted) (`tests/browser/xd-chapter811.js`). Also XD's own:
+the **Poké Spots** (Rock, east of Pyrite, from Nett's word; Oasis and Cave from Duking's), where Duking's Poké
+Snacks (Gateon Port's Mart sells them) laid out on the plate bring a wild Pokémon by the time you're back
+(Sandshrew, Gligar, Trapinch; Hoppip, Phanpy, Surskit; Zubat, Aron, Wooper; now and then Munchlax); the trip back to
+Secc with the Mayor's letter before the fake Justy will take it; **Bonsly**, lost with the S.S. Libra, its owners at
+ONBS, startled off in the ship's hold the first time, caught the second and taken home; Team Snagem's **three-floor
+building** behind its hideout's grounds (the Abandoned Ship's rooms), Gonzap on its second floor; and the Key Lair's
+**System Lever**, fetched from a researcher's desk on its ground floor, the researcher battled, the Control Machine on
+its production floor raised till it goes wild and Gorigan comes out. A Trainer whose Shadow Pokémon isn't snagged
 battles you again, as Colosseum's do. Orre's level cap in XD's story rises with it: 20 at Mt. Battle, 22 at the Cipher
 Lab, 24 at ONBS, 28 at Phenac, 30 at the S.S. Libra, 33 at the Snagem Hideout, 37 at the Key Lair, 50 on Citadark Isle. XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
