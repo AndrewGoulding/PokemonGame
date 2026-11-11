@@ -33,6 +33,21 @@ for(const [sec,spot]of Object.entries(R.fly)){
  assert(!m.warps.some(w=>w.x===spot.x&&w.y===spot.y));
  assert(!m.people.some(p=>p.x===spot.x&&p.y===spot.y));
 }
+for(const center of ['GalarHome','GalarMotostokeCenter','GalarTurffieldCenter','GalarHulburyCenter']){
+ const loc=Player.CENTERS[center],m=WORLD_MAPS[center];
+ assert(loc,'missing Galar respawn center '+center);
+ assert.equal(m.collision[loc.y*m.width+loc.x],0,'blocked center '+center);
+ assert(!m.warps.some(w=>w.x===loc.x&&w.y===loc.y),'center on warp '+center);
+}
+const traveler=WORLD_MAPS.FightArea.people.find(a=>a.script==='swsh:travel-galar');
+assert(traveler,'missing Galar researcher in Fight Area');
+const fightArea=WORLD_MAPS.FightArea;
+assert.equal(fightArea.collision[traveler.y*fightArea.width+traveler.x],0,'researcher on blocked tile');
+assert(!fightArea.warps.some(w=>w.x===traveler.x&&w.y===traveler.y),'researcher on warp');
+for(const [starter,weak] of [['Grookey','Sobble'],['Scorbunny','Grookey'],['Sobble','Scorbunny']]){
+ const trial=Player.create('Starter tester');trial.party=[];
+ assert(Galar.starter(trial,starter).mon);assert.equal(Galar.rivalSpecies(trial),weak);
+}
 assert.equal(R.mapSections.GalarHome,R.mapSections.GalarPostwick);
 assert.notEqual(R.mapSections.GalarRoute1,TOWN_MAP.mapSections.Route1);
 const p=Player.create('Galar Tester');p.party=[Party.create('Pikachu',12)];p.location={map:'FightArea',x:30,y:25,facing:'down'};
