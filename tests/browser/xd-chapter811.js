@@ -100,8 +100,9 @@ const OUT = process.env.OUT || "/tmp/pk-xd811";
     // ---- The S.S. Libra: the deck, Smarton; Team Snagem's ambush. ----
     await heal(); await walkIn("SSLibra", "SSLibra_Deck");
     await step(33, "the S.S. Libra's deck: Smarton beaten");
-    await go("SSLibra_Deck", 15, 3, "up");
-    for (let i = 0; i < 6 && (await where()).map === "SSLibra_Deck"; i++) { await settle(); await s.walk("up", 1); await s.wait(300); }
+    // (Its ladder out is an east arrow: off it to the right.)
+    await go("SSLibra_Deck", 14, 2, "right");
+    for (let i = 0; i < 6 && (await where()).map === "SSLibra_Deck"; i++) { await settle(); await s.walk("right", 1); await s.wait(300); }
     await step(34, "Team Snagem's ambush: the Snag Machine taken");
     assert(await s.eval(() => !Game.player.bag["snag-machine"]), "the Snag Machine gone");
     // ---- Secc; Hordel; Gonzap. ----
