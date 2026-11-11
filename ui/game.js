@@ -6340,7 +6340,7 @@
       case "enter:CipherLab_B1": await xdLovrina(); return;
       case "XD_EventScript_KraneLab": await say(L.kraneOut); return;
       case "XD_EventScript_KraneHome":
-        await say(story >= 29 ? L.kraneFree : story >= 25 ? L.kranePhenac : story >= 21 ? L.kraneOnbsAgain : L.kraneTough.slice(0, 3));
+        await say(story >= 40 ? L.lugiaPurified : story >= 38 ? L.kraneCitadark : story >= 34 ? L.kraneSnagem : story >= 33 ? L.kraneLibra : story >= 29 ? L.kraneFree : story >= 25 ? L.kranePhenac : story >= 21 ? L.kraneOnbsAgain : L.kraneTough.slice(0, 3));
         return;
       // ---- The Data ROM to ONBS in Pyrite (XD's chapter 6). ----
       case "XD_EventScript_Datan":
@@ -6349,6 +6349,8 @@
         return;
       case "XD_EventScript_Megg": await say(story >= 25 ? L.meggSafe : story === 21 ? L.meggWelcome.concat(L.meggNett) : L.meggNett); return;
       case "XD_EventScript_Secc":
+        if (story === 34) { for (const page of L.seccSnagem) await say(page); f.xdStory = 35; await persist(); return; }
+        if (story === 35) { await say(L.seccHordel); return; }
         if (story === 21) {
           await say(L.secc); await say(L.seccTold); await say(L.seccRom);
           f.xdStory = 22;
@@ -6359,6 +6361,9 @@
         return;
       case "XD_EventScript_Bitt": await say(story >= 25 ? L.nettPhenac : L.bitt); return;
       case "XD_EventScript_Nett":
+        if (story === 29) { for (const page of L.nettDesert) await say(page); f.xdStory = 30; await persist(); return; }
+        if (story === 30) { await say(L.nettPerr); return; }
+        if (story >= 34 && story < 37) { for (const page of L.nettSnagem) await say(page); return; }
         if (story === 22) { await xdNett(); return; }
         await say(story === 21 ? L.bitt : story >= 29 ? L.nettPhenacDone : story >= 25 ? L.nettPhenac : L.nettLater);
         return;
@@ -6382,6 +6387,18 @@
       case "XD_EventScript_TrestHome": await say(L.trestHome); return;
       case "XD_EventScript_Trest": case "XD_EventScript_Held": await say(L.trestThanks.slice(0, 1)); return;
       case "XD_EventScript_Snattle": return;
+      // ---- The S.S. Libra (XD's chapter 8). ----
+      case "enter:SSLibra_Deck": await xdLibraDeck(); return;
+      case "enter:SSLibra": case "arrive:SSLibra": await xdAmbush(); return;
+      case "XD_EventScript_Hermit": await say(L.hermit); return;
+      // ---- Hordel, Team Snagem (XD's chapter 9). ----
+      case "XD_EventScript_Hordel": await xdHordel(); return;
+      case "XD_EventScript_Gonzap": await xdGonzap(); return;
+      case "XD_EventScript_Wakin": await say(L.wakin); return;
+      // ---- The Key Lair (XD's chapter 10); Citadark Isle (XD's chapter 11). ----
+      case "XD_EventScript_Gorigan": await xdGorigan(); return;
+      case "enter:CitadarkIsle_Dome": await xdDome(); return;
+      case "XD_EventScript_Greevil": return;
       case "PokemonHQLab_1F_EventScript_Jovi":
         await say(f.xdChamber ? ["Jovi: That Machine Part Jovi carried\nis on that big machine. They put it\non the middle part with the ring.", "Jovi: It went right in the middle. It\nmust be the most important part!"]
           : ["Jovi: Jovi can do it!"]);
@@ -6412,6 +6429,7 @@
           "Rotating Bridges, so I'm supposed to\nmind the shop until then."]);
         return;
       case "GateonPort_PartsShop_EventScript_Perr":
+        if (story >= 29) { await xdPerr(); return; }
         if (story === 10) {
           await say(["Perr: Sorry we were out. A Machine\nPart, you said, right?"]);
           await say(["Perr: Here it is, here it is. This is\nit. Here you go!"]);
@@ -6440,6 +6458,13 @@
         await say(["Dr. Kaminko: I… I… I'm in the middle\nof highly important research. I'm\nquite busy. Now, if you'll excuse me,", "I ask that you refrain from\ndisturbing me."]);
         return;
       case "KaminkosHouse_1F_EventScript_Makan":
+        if (story === 30) {
+          await say(L.makanScooter);
+          f.xdStory = 31;
+          Overworld.refreshPeople();
+          await persist();
+          return;
+        }
         if (story === 9) {
           await say(["Jovi: Wrong! Today, we are going to\nGateon Port on a very important job.\n{PLAYER} is Jovi's assistant!"]);
           await say("{PLAYER} explained what had been\nhappening to Makan.");   // (#44134)
@@ -6842,7 +6867,7 @@
     }
     const d = Orre.XD.trainer(t.index, f.xdShadowSnagged, t.defeat);
     const opts = { foe: { name: d.name, team: d.team, pic: d.pic }, double: d.team.length > 1, prizeClass: "Team Rocket", noBlackout: true,
-      snag: d.team.filter((r) => r.shadow).map((r) => r.species), defeatText: d.defeat };
+      snag: Player.itemCount(player, "snag-machine") ? d.team.filter((r) => r.shadow).map((r) => r.species) : [], defeatText: d.defeat };
     const outcome = await storyBattle(opts);
     const snagged = opts.snagged || [];
     const got = d.shadows.filter((id) => snagged.includes(window.XD_DECKS.shadow[id].species));
@@ -6958,7 +6983,7 @@
   async function xdFight(index, defeat, { pic, prize = "Team Rocket" } = {}) {
     const f = player.flags, t = Orre.XD.trainer(index, f.xdShadowSnagged, defeat);
     const opts = { foe: { name: t.name, team: t.team, pic: pic || t.pic }, double: t.team.length > 1, prizeClass: prize, noBlackout: true,
-      snag: t.team.filter((r) => r.shadow).map((r) => r.species), defeatText: t.defeat };
+      snag: Player.itemCount(player, "snag-machine") ? t.team.filter((r) => r.shadow).map((r) => r.species) : [], defeatText: t.defeat };
     const outcome = await storyBattle(opts);
     const got = t.shadows.filter((id) => (opts.snagged || []).includes(window.XD_DECKS.shadow[id].species));
     if (got.length) (f.xdShadowSnagged = f.xdShadowSnagged || []).push(...got);
@@ -7122,6 +7147,203 @@
     player.location = { map: "PhenacCity_PreGym", x: 7, y: 9, facing: "up" };
     await Overworld.teleport(player.location);
     await Overworld.fadeFromBlack();
+    await persist();
+  }
+  // The Parts Shop after Phenac: Perr sends you to Makan at Kaminko's for your scooter (29, 30); it's converted (31 ->
+  // 32: the S.S. Libra on Orre's map); the Robo Kyogre ready for Citadark Isle (38 -> 39) (XD's #41214-#41287).
+  async function xdPerr() {
+    const f = player.flags, L = Orre.XD.LINES, story = f.xdStory | 0;
+    if (story === 29 || story === 30) { await say(L.perrScooter); return; }
+    if (story === 31) {
+      await say(L.perrDone);
+      xdCap(30);
+      Orre.unlock(f, Orre.XD.SS_LIBRA.map);
+      f.xdStory = 32;
+      await say("The S.S. Libra was marked on the\nOrre Map!");   // (this game's own, as Orre's other places are)
+      await persist();
+      return;
+    }
+    if (story === 38) {
+      for (const page of L.kyogre) await say(page);
+      await say(L.kyogreReady);
+      xdCap(50);
+      Orre.unlock(f, Orre.XD.CITADARK.map);
+      f.xdStory = 39;
+      await say("Citadark Isle was marked on the\nOrre Map!");   // (this game's own)
+      await persist();
+      return;
+    }
+    await say(story >= 39 ? L.perrCitadark : L.perrLater);
+  }
+  // The S.S. Libra's deck: Gorigan, Snidle and their Peon Smarton, who's left to deal with you (XD's #32002-#32017;
+  // 32 -> 33).
+  async function xdLibraDeck() {
+    const f = player.flags, L = Orre.XD.LINES, G = ORRE_XD("GORIGAN_SS"), N = ORRE_XD("SNIDLE_SS"), M = ORRE_XD("SMARTON_SS");
+    if ((f.xdStory | 0) !== 32) return;
+    Overworld.addObject(M, { x: 10, y: 5, facing: "down" });
+    if (!f.xdLibraScene) {
+      Overworld.addObject(G, { x: 8, y: 4, facing: "down" });
+      Overworld.addObject(N, { x: 9, y: 4, facing: "down" });
+      for (const page of L.libraDeck) await say(page);
+      Screen.say("");
+      await Overworld.act([{ who: G, moves: ["walk_fast_left", "walk_fast_left", "set_invisible"] }, { who: N, moves: ["walk_fast_left", "walk_fast_left", "walk_fast_left", "set_invisible"] }]);
+      Overworld.removeObject(G); Overworld.removeObject(N);
+      f.xdLibraScene = true;
+    }
+    for (const page of L.libraSmarton) await say(page);
+    const outcome = await xdFight(128, L.smartonDefeat);
+    Overworld.removeObject(M);
+    if (outcome !== "won") { await persist(); return; }
+    f.xdStory = 33;
+    await persist();
+  }
+  // Off the ship: Team Snagem's Wakin and Biden, Gloom's Sleep Powder, and the Snag Machine gone; you wake on the deck,
+  // the hermit who lives there looking after you (XD's #32021-#32036; 33 -> 34).
+  async function xdAmbush() {
+    const f = player.flags, L = Orre.XD.LINES, W2 = ORRE_XD("WAKIN_SS"), B = ORRE_XD("BIDEN_SS");
+    if ((f.xdStory | 0) !== 33) return;
+    Overworld.addObject(W2, { x: player.location.x - 1, y: player.location.y + 2, facing: "up" });
+    Overworld.addObject(B, { x: player.location.x + 1, y: player.location.y + 2, facing: "up" });
+    for (const page of L.ambush) await say(page);
+    Player.removeItem(player, "snag-machine", Player.itemCount(player, "snag-machine"));
+    f.xdNoSnag = true;
+    await Overworld.fadeToBlack();
+    Overworld.removeObject(W2); Overworld.removeObject(B);
+    f.xdStory = 34;
+    player.location = { map: "SSLibra_Deck", x: 5, y: 9, facing: "left" };
+    await Overworld.teleport(player.location);
+    await Overworld.fadeFromBlack();
+    for (const page of L.wake) await say(page);
+    await persist();
+  }
+  // Hordel at the Outskirt Stand: the Key Lair he fled, his Shadow Togepi for you to purify, and where Team Snagem's
+  // hideout is (XD's #42029-#42057; 35 -> 36).
+  async function xdHordel() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if ((f.xdStory | 0) < 35) return;
+    if ((f.xdStory | 0) === 35) for (const page of L.hordel) await say(page);
+    if (!f.xdTogepi) {
+      if (L.hordelAsk.length > 1) await say(L.hordelAsk.slice(0, -1));
+      if (!(await confirm(L.hordelAsk[L.hordelAsk.length - 1]))) await say(L.hordelNo);
+      else if (player.party.length >= Player.PARTY_SIZE) await say(L.hordelFull);
+      else {
+        await say(L.hordelYes);
+        const r = Orre.XD.shadowRecord(81);
+        OrreHeart.snagged(r);
+        player.party.push(r);
+        (f.xdShadowSnagged = f.xdShadowSnagged || []).push(81);
+        f.xdTogepi = true;
+        await sayWithJingle("mus_obtain_key_item", L.hordelGot);
+        await say(L.hordelThen);
+      }
+    }
+    if ((f.xdStory | 0) === 35) {
+      for (const page of L.hordelSnagem) await say(page);
+      xdCap(33);
+      Orre.unlock(f, "SnagemHideout");
+      f.xdStory = 36;
+      Overworld.refreshPeople();
+      await persist();
+      return;
+    }
+    if (f.xdTogepi) await say(L.hordelLater);
+    await persist();
+  }
+  // Team Snagem's hideout: Gonzap with your Snag Machine, his offer, his battle; he gives it back, and tells you where
+  // Cipher's factory is (XD's #43021-#43040; 36 -> 37: the Key Lair on Orre's map).
+  async function xdGonzap() {
+    const f = player.flags, L = Orre.XD.LINES;
+    if ((f.xdStory | 0) !== 36) { await say(L.gonzapLater); return; }
+    if (!f.xdGonzapScene) {
+      for (const page of L.gonzap) await say(page);
+      await say(L.gonzapAsk.slice(0, -1));
+      await say(await confirm(L.gonzapAsk[L.gonzapAsk.length - 1]) ? L.gonzapYes : L.gonzapNo);
+      f.xdGonzapScene = true;
+    } else await say(L.gonzapAgain);
+    const outcome = await xdFight(145, L.gonzapDefeat, { prize: "Leader" });
+    if (outcome !== "won") { await persist(); return; }
+    for (const page of L.gonzapAfter) await say(page);
+    Player.addItem(player, "snag-machine", 1);
+    delete f.xdNoSnag;
+    await sayWithJingle("mus_obtain_key_item", L.gotMachine);
+    for (const page of L.gonzapLair) await say(page);
+    xdCap(37);
+    Orre.unlock(f, Orre.XD.KEY_LAIR.map);
+    f.xdStory = 37;
+    await say("The Cipher Key Lair was marked on\nthe Orre Map!");   // (this game's own)
+    await persist();
+  }
+  // The Key Lair's floor: Gorigan, his battle; Greevil, once Mr. Verich, comes to call him off, and sets out for
+  // Citadark Isle (XD's #34066-#34074; 37 -> 38).
+  async function xdGorigan() {
+    const f = player.flags, L = Orre.XD.LINES, G = ORRE_XD("GORIGAN"), V = ORRE_XD("GREEVIL_KL");
+    if ((f.xdStory | 0) !== 37) return;
+    await say(f.xdGoriganTried ? L.goriganAgain : L.gorigan);
+    f.xdGoriganTried = true;
+    const outcome = await xdFight(165, L.goriganDefeat, { prize: "Leader" });
+    if (outcome !== "won") { await persist(); return; }
+    Overworld.addObject(V, { x: 20, y: 4, facing: "left" });
+    for (const page of L.greevil) await say(page);
+    Screen.say("");
+    await Overworld.act([{ who: V, moves: ["walk_fast_right", "set_invisible"] }, { who: G, moves: ["walk_fast_right", "walk_fast_right", "set_invisible"] }]);
+    Overworld.removeObject(V);
+    f.xdStory = 38;
+    Overworld.refreshPeople();
+    await persist();
+  }
+  // Citadark's dome, once its admins are beaten (else its elevator won't open): Greevil and Eldes, Eldes's battle;
+  // XD001, Shadow Lugia; then Greevil himself and his Shadow Pokémon; his sons Ardos and Eldes, and the end of Cipher
+  // (XD's #35053-#35103; 39 -> 40: xdClear, XD's level cap lifted).
+  async function xdDome() {
+    const f = player.flags, L = Orre.XD.LINES, V = ORRE_XD("GREEVIL"), E = ORRE_XD("ELDES"), A = ORRE_XD("ARDOS_DOME");
+    if ((f.xdStory | 0) !== 39) return;
+    const beaten = f.xdBeaten || [];
+    if (!["LOVRINA2", "SNATTLE2", "GORIGAN2", "ARDOS"].every((k) => beaten.includes(k))) {
+      await say(L.sealed);
+      player.location = { map: "CitadarkIsle_Fort", x: 31, y: 4, facing: "down" };
+      await Overworld.teleport(player.location);
+      return;
+    }
+    Overworld.addObject(V, { x: 11, y: 6, facing: "down" });
+    const gone = () => { for (const k of [V, E, A]) Overworld.removeObject(k); };
+    if (!f.xdEldes) {
+      Overworld.addObject(E, { x: 11, y: 12, facing: "down" });
+      if (f.xdDomeScene) await say(L.eldesAgain);
+      else { for (const page of L.dome) await say(page); f.xdDomeScene = true; }
+      const outcome = await xdFight(196, L.eldesDefeat, { pic: "cooltrainer_m", prize: "Leader" });
+      if (outcome !== "won") { gone(); await persist(); return; }
+      await say(L.eldesAfter);
+      f.xdEldes = true;
+      Overworld.removeObject(E);
+      await persist();
+    }
+    if (!f.xdLugia) {
+      if (f.xdLugiaTried) await say(L.lugiaAgain);
+      else { for (const page of L.xd001) await say(page); f.xdLugiaTried = true; }
+      const before = (f.xdShadowSnagged || []).includes(73);
+      const outcome = await xdFight(199, L.lugiaDefeat, { pic: "gentleman", prize: "Champion" });
+      const snagged = !before && (f.xdShadowSnagged || []).includes(73);
+      if (outcome !== "won" && !snagged) { gone(); await persist(); return; }
+      await say(snagged ? L.lugiaSnagged : L.lugiaBeaten);
+      f.xdLugia = true;
+      await persist();
+    }
+    await say(L.greevilLast);
+    const outcome = await xdFight(200, L.greevilDefeat, { pic: "gentleman", prize: "Champion" });
+    if (outcome !== "won") { gone(); await persist(); return; }
+    Overworld.addObject(E, { x: 13, y: 7, facing: "left" });
+    Overworld.addObject(A, { x: 9, y: 6, facing: "right" });
+    for (const page of L.ending) await say(page);
+    await Overworld.fadeToBlack();
+    gone();
+    f.xdStory = 40;
+    f.xdClear = true;
+    player.location = { map: "PokemonHQLab_2F", x: 4, y: 5, facing: "up" };
+    await Overworld.teleport(player.location);
+    await Overworld.fadeFromBlack();
+    // (This game's own: XD's ending is told without words.)
+    await say(["Prof. Krane: {PLAYER}! You're back!\nONBS has been reporting it all day.", "Prof. Krane: Cipher's finished, and\nGreevil's turned himself in. Orre is\nsafe again, thanks to you.",
+      "Prof. Krane: There are still Shadow\nPokémon out there to save. Keep\nopening their hearts, {PLAYER}."]);
     await persist();
   }
   // Supertrainer Aferd, out on the plaza (XD's #40060-#40063, his line on losing #23101): a battle when you like.

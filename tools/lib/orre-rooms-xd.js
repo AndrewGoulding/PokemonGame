@@ -185,6 +185,69 @@ module.exports = function ({ changed, room, drawings, block, A, emerald }) {
       [{ x: 17, y: 1, map: CL + "_B1", warp: 1 }]);
     for (const n of ["_1F", "_B1", "_B2"]) changed[CL + n].orrePlace = CL;
   }
+  // ---- The S.S. Libra (XD's D3): the missing cargo ship, beached in the northern desert; its deck inside (the S.S.
+  // Tidal's lower deck). ----
+  {
+    const SS = "SSLibra", W2 = 30, H2 = 24;
+    const { o, oc, oz } = outdoors(SS, "S.S. Libra", "em_aqua_magma_hideout", W2, H2,
+      (x, y) => x === 0 || x === W2 - 1 || y === 0 || (y === H2 - 1 && (x < 12 || x > 17)), [12, 13, 14, 15, 16, 17].map((x) => [x, H2 - 1]));
+    // Dunes, and the ship's hull lying in them, listing, its white upperworks and funnel above.
+    for (let i = 0; i < 14; i++) oc.ellipse(((i * 97) % (W2 * 16)), 16 * 16 + ((i * 41) % (7 * 16)), 30, 6, C.sand[2]);
+    block(o, 4, 3, 22, 10);
+    oc.poly([[4 * 16, 6 * 16], [26 * 16, 5 * 16], [24 * 16, 13 * 16], [6 * 16, 13 * 16]], [46, 70, 120]);
+    oc.rect(5 * 16, 12 * 16, 20 * 16, 6, [150, 40, 30]);
+    oc.box(9 * 16, 3 * 16, 12 * 16, 3 * 16, C.cream, C.metal[1]);
+    for (let i = 0; i < 6; i++) oc.box(9 * 16 + 8 + i * 30, 3 * 16 + 14, 14, 10, C.blue[2], C.metal[1]);
+    oz.rect(21 * 16, 1 * 16, 24, 3 * 16, [150, 40, 30]); oz.rect(21 * 16, 1 * 16, 24, 8, C.dark);
+    text(oc, "S.S. LIBRA", 11 * 16, 9 * 16, C.cream);
+    door(oc, 15 * 16 + 8, 13 * 16 - 1, 18, C.dark);
+    o.warps.push({ x: 15, y: 12, map: SS + "_Deck", warp: 0 });
+    changed[SS + "_Deck"] = Object.assign(room("SSTidalLowerDeck", SS + "_Deck", "S.S. Libra", "em_aqua_magma_hideout",
+      [{ x: 15, y: 2, map: SS, warp: 0 }]), { orrePlace: SS });
+  }
+  // ---- Cipher's Key Lair (XD's D5): its Shadow Pokémon factory in the far north; inside, its production floor (Mauville's
+  // Game Corner, its machines), Gorigan at the back. ----
+  {
+    const KL = "CipherKeyLair", W2 = 30, H2 = 24;
+    const { o, oc, oz } = outdoors(KL, "Cipher Key Lair", "em_aqua_magma_hideout", W2, H2,
+      (x, y) => x === 0 || x === W2 - 1 || y === 0 || (y === H2 - 1 && (x < 12 || x > 17)), [12, 13, 14, 15, 16, 17].map((x) => [x, H2 - 1]));
+    oc.rect(6 * 16, 12 * 16, 18 * 16, 5 * 16, C.metal[2]);
+    block(o, 6, 3, 18, 9);
+    oc.rect(6 * 16 + 4, 3 * 16 + 4, 18 * 16, 9 * 16, [0, 0, 0, 60]);
+    oc.box(6 * 16, 3 * 16, 18 * 16, 9 * 16, C.metal[1], C.metal[0]);
+    for (let i = 0; i < 9; i++) oc.rect(6 * 16 + 4 + i * 32, 3 * 16 + 2, 28, 10, C.metal[2]);
+    text(oc, "FACTORY", 7 * 16, 5 * 16, C.cream);
+    for (const x of [8, 12, 19]) { oz.rect(x * 16, 0, 18, 4 * 16, C.metal[0]); oz.ellipse(x * 16 + 9, 6, 12, 5, C.metal[3]); }
+    door(oc, 15 * 16 + 8, 12 * 16 - 1, 26, C.dark);
+    o.warps.push({ x: 15, y: 11, map: KL + "_1F", warp: 0 });
+    changed[KL + "_1F"] = Object.assign(room("MauvilleCity_GameCorner", KL + "_1F", "Cipher Key Lair", "em_aqua_magma_hideout",
+      [{ x: 11, y: 10, map: KL, warp: 0 }, { x: 12, y: 10, map: KL, warp: 0 }]), { orrePlace: KL });
+  }
+  // ---- Citadark Isle (XD's D6): Cipher's HQ on a volcanic island ringed by magma, reached on the Robo Kyogre; its fort
+  // (Magma's hideout) and, through it, the dome (the Battle Dome's lobby) where Greevil waits. ----
+  {
+    const CI = "CitadarkIsle", W2 = 32, H2 = 28;
+    const magma = (x, y) => (x < 3 || x > W2 - 4) && y > 12;
+    const { o, oc, oz } = outdoors(CI, "Citadark Isle", "em_aqua_magma_hideout", W2, H2,
+      (x, y) => x === 0 || x === W2 - 1 || y === 0 || magma(x, y) || (y === H2 - 1 && (x < 14 || x > 17)), [14, 15, 16, 17].map((x) => [x, H2 - 1]));
+    texture(oc, [0, 0, oc.w, oc.h], C.rock, 7, 4);
+    oc.rect(0, 13 * 16, 3 * 16, oc.h, [200, 60, 20]); oc.rect(oc.w - 3 * 16, 13 * 16, 3 * 16, oc.h, [200, 60, 20]);
+    water(oc, 13 * 16, 26 * 16, 6 * 16, 2 * 16);
+    // The fort, west; the dome, east, its doors shut from outside.
+    block(o, 3, 3, 11, 8);
+    oc.box(3 * 16, 3 * 16, 11 * 16, 8 * 16, C.dark, C.metal[0]);
+    for (let i = 0; i < 5; i++) oc.rect(3 * 16 + 6 + i * 34, 3 * 16 + 4, 20, 8, [150, 40, 30]);
+    text(oc, "CIPHER", 5 * 16, 6 * 16, C.cream);
+    door(oc, 8 * 16 + 8, 11 * 16 - 1, 20, [150, 40, 30]);
+    o.warps.push({ x: 8, y: 10, map: CI + "_Fort", warp: 0 });
+    block(o, 18, 3, 11, 8);
+    oc.ellipse(23 * 16 + 8, 7 * 16, 88, 64, C.metal[1]); oc.ellipse(23 * 16 + 8, 6 * 16, 70, 46, C.metal[2]);
+    oc.rect(18 * 16, 9 * 16, 11 * 16, 2 * 16, C.dark);
+    changed[CI + "_Fort"] = Object.assign(room("MagmaHideout_1F", CI + "_Fort", "Citadark Isle", "em_aqua_magma_hideout",
+      [{ x: 10, y: 34, map: CI, warp: 0 }, { x: 25, y: 34, map: CI, warp: 0 }, { x: 31, y: 3, map: CI + "_Dome", warp: 0 }, { x: 20, y: 22, map: CI, warp: 0 }]), { orrePlace: CI });
+    changed[CI + "_Dome"] = Object.assign(room("BattleFrontier_BattleDomeLobby", CI + "_Dome", "Citadark Isle", "em_aqua_magma_hideout",
+      [{ x: 11, y: 16, map: CI + "_Fort", warp: 2 }, { x: 12, y: 16, map: CI + "_Fort", warp: 2 }]), { orrePlace: CI });
+  }
   // Phenac's Pre Gym's basement (XD's M1_gym_B1), where Cipher held the Mayor, Justy and the townspeople: Mossdeep's
   // Game Corner's basement, its stairs up to the Pre Gym's door (it's reached by the elevator, in XD's story).
   changed.PhenacCity_PreGym_B1 = Object.assign(room("MossdeepCity_GameCorner_B1F", "PhenacCity_PreGym_B1", "Phenac City · Pre Gym", "mus_gym",

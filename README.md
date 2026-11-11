@@ -3203,9 +3203,20 @@ seventh, **Phenac City**: Cipher's Peons in its citizens' places; the Mayor's le
 Justy in the Pre Gym (27); out front, the "Justy Gang", the Hexagon Brothers in Justy's clothes, counting off; in the
 Stadium, Snattle and Egrog holding ONBS's Marcia and Cameran, and the Elevator Key Snattle drops (28); the Pre Gym's
 basement, where the Mayor, Justy and the townspeople were held (29) (`tests/browser/xd-chapter67.js`). (XD's side trip
-back to Secc with the Mayor's note, and its Poké Spots, are left out.) A Trainer whose Shadow Pokémon isn't snagged
+back to Secc with the Mayor's note, and its Poké Spots, are left out.) Then the **northern desert**: Nett sends you to Perr, Makan
+converts your scooter at Kaminko's (32); the **S.S. Libra**, beached in the sand: Gorigan and Snidle leave their Peon
+Smarton to deal with you (33); off the ship, Team Snagem's Wakin and Biden put you to sleep and take the Snag Machine
+(34), and you wake on its deck with the hermit who lives there. Secc sends you to **Hordel** at the Outskirt Stand
+(35), who gives you his Shadow Togepi to purify and tells you where Team Snagem's hideout is (36); at the **Snagem
+Hideout**, its members and Gonzap, who gives the Snag Machine back and points you to Cipher's factory (37). The
+**Cipher Key Lair**: Zook outside, its Peons on the production floor, Gorigan, and Greevil, once Mr. Verich, calling
+him off and leaving for Citadark Isle (38). Makan's **Robo Kyogre** (39) takes you to **Citadark Isle**: its sailors
+and Peons, Lovrina in its fort, Snattle, Gorigan and Ardos outside the dome (all four beaten before its elevator
+opens); in the dome, Eldes, then XD001, Shadow Lugia, then Greevil's own Shadow Pokémon, and his sons talking him into
+giving up (40: `xdClear`, XD's level cap lifted) (`tests/browser/xd-chapter811.js`). (Left out: the S.S. Libra's
+Bonsly, the Key Lair's System Lever, the Snagem hideout's floors and Poké Spots.) A Trainer whose Shadow Pokémon isn't snagged
 battles you again, as Colosseum's do. Orre's level cap in XD's story rises with it: 20 at Mt. Battle, 22 at the Cipher
-Lab, 24 at ONBS, 28 at Phenac. XD's text: `assets/text/xd.json`, XD's
+Lab, 24 at ONBS, 28 at Phenac, 30 at the S.S. Libra, 33 at the Snagem Hideout, 37 at the Key Lair, 50 on Citadark Isle. XD's text: `assets/text/xd.json`, XD's
 English message tables (19,323 strings), extracted from your own copy of the disc by
 `node tools/build-colosseum-text.js --out xd.json <the disc's files folder>` (as Colosseum's are, into
 `assets/text/colosseum.json`; a European disc's other-language archives are left out). Its Trainers and Shadow
