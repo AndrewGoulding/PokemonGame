@@ -33,7 +33,12 @@ const LANDMARKS={
  GalarTurffield:'hill',GalarHulbury:'harbor',GalarHammerlocke:'castle',
  GalarBallonlea:'mushroom',GalarSpikemuth:'neon',GalarWyndon:'tower',
  GalarSlumberingWeald:'ancient-tree',GalarFreezington:'cottage',
- GalarCrownShrine:'shrine',GalarFieldsOfHonor:'dojo'
+ GalarCrownShrine:'shrine',GalarFieldsOfHonor:'dojo',
+ GalarStowOnSide:'mural',GalarCirchester:'bath',GalarMasterDojo:'dojo',
+ GalarHoneycalmIsland:'honeycomb',GalarOldCemetery:'headstone',
+ GalarEternatusChamber:'energy',GalarMaxLair:'crystals',
+ GalarTowerWaters:'water-tower',GalarTowerDarkness:'shadow-tower',
+ GalarRoseTower:'tower',GalarBallimereLake:'lake',GalarWealdShrine:'shrine'
 };
 function landmark(g,m,name,p){
  const type=LANDMARKS[name];if(!type)return;
@@ -65,6 +70,25 @@ function landmark(g,m,name,p){
  }else if(type==='shrine'||type==='dojo'){
   fill('#6b6c73',2,8,12,7);fill('#c7a18a',3,4,10,5);
   fill('#e5d2a4',7,9,3,6);fill('#f4ecd6',6,2,4,3);
+ }else if(type==='mural'){
+  fill('#896b64',2,3,12,12);fill('#c4aa80',4,4,8,10);
+  fill('#8e668c',6,6,4,6);fill('#e6d4aa',7,7,2,3);
+ }else if(type==='bath'||type==='lake'){
+  fill('#617f94',1,8,14,7);fill('#a0cbd1',3,9,10,3);
+  fill('#f2e7dc',3,5,10,2);fill('#c8e0db',5,10,5,1);
+ }else if(type==='honeycomb'){
+  fill('#668f58',2,8,12,7);fill('#e2be5a',4,4,8,9);
+  for(const px of [5,9])for(const py of [5,9])fill('#b88d3d',px,py,2,2);
+ }else if(type==='headstone'){
+  fill('#6b7980',4,6,8,9);fill('#c6c3bd',5,4,6,9);
+  fill('#78928b',7,6,2,5);
+ }else if(type==='energy'||type==='crystals'){
+  fill('#4d536a',2,9,12,6);
+  fill(type==='energy'?'#df8ec7':'#9cc8e6',6,2,4,12);
+  fill('#dce5eb',7,5,2,7);fill('#8f86b1',4,8,8,2);
+ }else if(type==='water-tower'||type==='shadow-tower'){
+  fill(type==='water-tower'?'#599bb0':'#564f7c',3,7,10,8);
+  fill('#d6d5bf',5,3,6,6);fill('#f3e8d2',7,1,2,8);
  }
 }
 function make(name){
