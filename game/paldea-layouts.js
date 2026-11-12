@@ -69,7 +69,7 @@ const hash=(x,y,seed)=>{
 function layout(name){
  const m=D.maps[name],plan=PLANS[name];if(!m||!plan)return false;
  const [kind,accent]=plan,w=m.width,h=m.height,n=w*h;
- const collision=Array(n).fill(0),behavior=Array(n).fill(0);
+ const collision=Array(n).fill(0),behavior=Array(n).fill(0),elevation=Array(n).fill(0);
  const seeds=[...name].reduce((a,c)=>(Math.imul(a,31)+c.charCodeAt(0))>>>0,47);
  const indoor=/^(center|home|academy|arena|hall|lab|garage|club|dome|shrine)$/.test(kind);
  const entrance=kind==='arena'||kind==='hall'?3:2;
@@ -127,7 +127,10 @@ function layout(name){
   const i=a.y*w+a.x;
   if(i>=0&&i<n){collision[i]=0;behavior[i]=m.behavior[i]||0;}
  }
- m.collision=collision;m.behavior=behavior;
+ // The replaced Kalos terrain had unrelated elevation levels. Reset height
+ // on these original 2D plans or World.step may reject an otherwise clear
+ // corridor, making visible routes and nearby NPCs unexpectedly unreachable.
+ m.collision=collision;m.behavior=behavior;m.elevation=elevation;
  m.paldeaLayout={style:kind,accent,seed:seeds,anchors:anchors.length,
   interior:indoor,independent:true};
  return true;
