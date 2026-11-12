@@ -36,8 +36,8 @@ const specs=[
  ['DragonLake','Route2','False Dragon · Titan Nest','DragonTrail:1'],
  ['AreaZeroGate','Route3','Area Zero Gate','Academy:2 AreaZeroUpper:0'],
  ['AreaZeroUpper','Route3','Area Zero · Upper Crater','AreaZeroGate:1 ResearchOne:0'],
- ['ResearchOne','AquacordeShop','Area Zero · Research Station One','AreaZeroUpper:1 ResearchTwo:0'],
- ['ResearchTwo','AquacordeShop','Area Zero · Research Station Two','ResearchOne:1 AreaZeroDepths:0'],
+ ['ResearchOne','CamphrierTown','Area Zero · Research Station One','AreaZeroUpper:1 ResearchTwo:0'],
+ ['ResearchTwo','CamphrierTown','Area Zero · Research Station Two','ResearchOne:1 AreaZeroDepths:0'],
  ['AreaZeroDepths','GlitteringCave','Area Zero · Crater Depths','ResearchTwo:1 ZeroLab:0'],
  ['ZeroLab','GymGallery','Area Zero · Zero Lab','AreaZeroDepths:1']
 ];
