@@ -1538,7 +1538,8 @@
     while (events[i] && events[i][0] === "-magnitude") i++;
     const next = events[i];
     if (!next) return true;
-    if (next[0] === "-miss" || next[0] === "-fail" || next[0] === "-immune") return false;
+    // (A double battle's move with no one left to hit: "But there was no target…", and no animation.)
+    if (next[0] === "-miss" || next[0] === "-fail" || next[0] === "-immune" || next[0] === "-notarget") return false;
     if (next[0] === "-activate" && /Protect|Quick Guard/.test(String(next[2]))) return false;
     return true;
   }

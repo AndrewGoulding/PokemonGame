@@ -56,6 +56,8 @@
     "fire-stone": 2100, "water-stone": 2100, "thunder-stone": 2100, "leaf-stone": 2100,
     "moon-stone": 2100, "sun-stone": 2100, "shiny-stone": 2100, "dusk-stone": 2100,
     "dawn-stone": 2100, "ice-stone": 2100, "everstone": 3000, "lucky-egg": 10000,
+    // (Trade-evolution items no Mart stocks; priced so a Mart buys them, for ₽1,000 each: this game's own.)
+    "kings-rock": 2000, "metal-coat": 2000,
     "pp-up": 9800, "pp-max": 29400,
     // (FireRed's: without a price an item can't be bought, so a Mart that
     // stocks it leaves it out.)

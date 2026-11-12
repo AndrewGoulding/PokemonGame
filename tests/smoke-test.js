@@ -4191,6 +4191,20 @@ const armored = (species, moves, level) => ({ species, level: level || 50, abili
   assert.strictEqual(b.getRequest("p1").phase, "move");
 }
 
+// Both foes down before a move: "But there was no target…" right after it, and the battle screen plays no
+// animation for it (ui/battle-screen.js's moveLands).
+{
+  const b = doubles({ team: [{ species: "Kyogre", level: 100, moves: ["Rock Slide"] }, { species: "Snorlax", level: 100, moves: ["Tackle"] }] },
+    { team: [armored("Caterpie", ["Splash"], 2), armored("Weedle", ["Splash"], 2), armored("Pidgey", ["Splash"], 2)] });
+  const evs = play(b, { p1: [mv(0), mv(0, 1)], p2: [mv(0), mv(0)] });
+  const i = evs.findIndex((e) => e[0] === "-notarget");
+  assert(i > 0 && evs[i - 1][0] === "move" && evs[i - 1][1] === "p1b: Snorlax", "no target, right after the move");
+  assert(/next\[0\] === "-immune" \|\| next\[0\] === "-notarget"\) return false;/.test(fs.readFileSync(path.join(root, "ui/battle-screen.js"), "utf8")), "no animation for it");
+}
+// King's Rock and Metal Coat sell to a Mart (₽1,000 each).
+assert.strictEqual(Bag.sellPrice("kings-rock"), 1000);
+assert.strictEqual(Bag.sellPrice("metal-coat"), 1000);
+
 // Aimed at an ally that fainted earlier in the turn, a move goes to the foe
 // opposite the user instead (FireRed's HandleAction_UseMove).
 {
