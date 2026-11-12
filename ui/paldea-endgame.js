@@ -54,7 +54,15 @@ function create(env,{fight}){
   if(!s().treasureHunt){await say('Begin the Treasure Hunt at the academy before facing Titans.');return;}
   if(!finish){
    if(s()[t.first]){await say('The '+t.name+' has retreated into its den. Follow it with Arven!');return;}
-   await fight(t.first,'TITAN_'+id.toUpperCase()+'_1',t.name,[[t.sp,t.levels[0]]],
+   // Scarlet/Violet's Quaking Earth Titan depends on the chosen edition.
+   // Make this choice once here so both Titan rounds match the later Zero Lab.
+   if(id==='quaking'&&!s().version){
+    const edition=await env.choose('Which Paldea legend will you follow?',['Scarlet','Violet']);
+    if(!['Scarlet','Violet'].includes(edition))return;
+    s().version=edition;await save();
+   }
+   const foe=id==='quaking'&&s().version==='Violet'?'Iron Treads':t.sp;
+   await fight(t.first,'TITAN_'+id.toUpperCase()+'_1',t.name,[[foe,t.levels[0]]],
     t.name+' retreated! Follow its trail with Arven.');
    return;
   }
@@ -103,7 +111,7 @@ function create(env,{fight}){
   if(key==='zero-gateway'){
    if(!PaldeaEndgame.threePathsClear(p())){await say('Finish Victory Road, Path of Legends and Starfall Street before exploring Area Zero.');return;}
    if(!s().zeroStarted){
-    const version=await env.choose('Which expedition should lead your combined Paldea story?',['Scarlet','Violet']);
+    const version=s().version||await env.choose('Which expedition should lead your combined Paldea story?',['Scarlet','Violet']);
     if(!['Scarlet','Violet'].includes(version))return;
     s().version=version;s().zeroStarted=true;await save();
    }
