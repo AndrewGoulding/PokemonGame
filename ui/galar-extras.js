@@ -51,6 +51,29 @@ function create(env,{battle}){
    }else await say(species+' escaped and can be challenged again.');
    return true;
   }
+  // A simple Sword/Shield curry camp: consume one Berry, restore the party,
+  // and record the recipe. Restrict cooking to once per in-game day.
+  if(/^camp-(south|north|armor|crown)$/.test(key)){
+   if(!p().party.length){await say('Bring a Pokemon to enjoy camp.');return true;}
+   const today=window.GalarWild?.day(p())??Math.floor((p().clockSteps||1000)/2400);
+   const camp=s().camp||(s().camp={meals:0,recipes:[],lastDay:null});
+   if(camp.lastDay===today){await say('Your Pokemon already enjoyed curry today. Come back on another day!');return true;}
+   const options=[['oran-berry','Oran Berry Curry'],['pecha-berry','Pecha Berry Curry'],['sitrus-berry','Sitrus Berry Curry']]
+    .filter(([item])=>Player.itemCount(p(),item)>0);
+   if(!options.length){await say('Pokemon Camp: bring an Oran, Pecha or Sitrus Berry to cook curry.');return true;}
+   const labels=options.map(x=>x[1]);
+   const choice=await env.choose('Which curry will you cook?',labels);
+   const selected=options.find(x=>x[1]===choice);
+   if(!selected)return true;
+   if(Player.itemCount(p(),selected[0])<1)return true;
+   Player.removeItem(p(),selected[0],1);
+   p().party.forEach(mon=>Party.heal(mon));
+   camp.lastDay=today;camp.meals++;
+   if(!camp.recipes.includes(selected[1]))camp.recipes.push(selected[1]);
+   await save();
+   await say('You cooked '+selected[1]+'! Your party is fully rested. Curry Dex: '+camp.recipes.length+'/3. Meals: '+camp.meals+'.');
+   return true;
+  }
   switch(key){
    case'dojo-sparring':{
     if(!s().armorClear){await say('Complete Mustard’s training before sparring.');return true;}
