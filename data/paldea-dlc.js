@@ -69,6 +69,7 @@ for(const [id,key,sprite] of [
  ['CommunityCenter','teal-heal','bw2_147'],
  ['AppleHills','teal-kieran','bw2_youngster'],
  ['MossuiTown','teal-festival','bw2_105'],
+ ['MossuiTown','teal-epilogue','bw2_105'],
  ['LoyaltyPlaza','teal-loyal-0','bw2_105'],
  ['OniMountain','teal-loyal-1','bw2_105'],
  ['CrystalPool','teal-loyal-2','bw2_105'],
