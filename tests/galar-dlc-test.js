@@ -7,7 +7,7 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const[,file]of html.matchAll(/<script src="([^"]+)"><\/script>/g)){
  if(!file.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 }
-for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/galar-story.js'])
+for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/galar-features.js','ui/galar-extras.js','ui/galar-story.js'])
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 (async()=>{
  const D=Galar.data(),X=GalarDlc,T=TOWN_MAP.galar;
@@ -28,6 +28,7 @@ for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/
  let yes=true,win=true,choice=0,said=[],battles=[],saves=0;
  const env={player:()=>p,say:async msg=>said.push(msg),confirm:async()=>yes,canBattle:()=>true,
  choose:async(_,list)=>list[choice],battle:async(_,o)=>{battles.push(o.trainerId);return win?'won':'lost';},
+ wildEncounter:async mon=>{if(!win)return 'won';Player.receive(p,mon);return 'caught';},
  showWorld(){},resume:async()=>{},saveCheckpoint:async()=>{saves++;},teleport:async loc=>{p.location={...loc};Galar.visit(p,loc.map);}};
  const story=GalarStory.create(env),go=key=>story.run('swsh:'+key);
  await go('armor-ferry');assert.equal(p.location.map,'GalarWedgehurst');
@@ -45,6 +46,7 @@ for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/
  await go('dojo-final');assert(s.mustardTrial);
  await go('mushroom-0');await go('mushroom-1');await go('max-honey');
  await go('max-soup');assert(s.maxSoupReady);
+ assert(s.maxSoupServed&&p.party.some(mon=>mon.gmax),'Max Soup must grant a G-Max Factor');
  await go('dojo-final');assert(s.armorClear);
  p.location={map:'GalarTowerWaters',x:10,y:12,facing:'down'};
  await go('armor-return');assert.equal(p.location.map,'GalarWedgehurst');
@@ -78,7 +80,7 @@ for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/
  alt.location={map:'GalarMasterDojo',x:11,y:11,facing:'down'};
  Object.assign(a,{started:true,starter:'Grookey',championClear:true,armorArrival:true,mustardIntro:true,kubfuGift:true,kubfuBond:true,
   crownArrival:true,peonyMet:true,calyrexMet:true});
- const envAlt={...env,player:()=>alt,teleport:async loc=>{alt.location={...loc};Galar.visit(alt,loc.map);}};
+ const envAlt={...env,player:()=>alt,wildEncounter:async mon=>{Player.receive(alt,mon);return 'caught';},teleport:async loc=>{alt.location={...loc};Galar.visit(alt,loc.map);}};
  const altStory=GalarStory.create(envAlt);
  await altStory.run('swsh:urshifu-dark');
  assert.equal(a.urshifuStyle,'Darkness');
