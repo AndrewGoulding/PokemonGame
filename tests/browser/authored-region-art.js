@@ -12,7 +12,7 @@ const candidates=[
  ["kalos",["KalosShalourCity","KalosGeosengeTown","KalosLumioseSouth"]],
  ["galar",["GalarBallonlea","GalarWyndonCity","GalarPostwick"]],
  ["alola",["AlolaMalieCity","AlolaSeafolkVillage","AlolaIkiTown"]],
- ["paldea",["PaldeaCascarrafa","PaldeaAreaZero","PaldeaMossuiTown"]]
+ ["paldea",["PaldeaCascarrafa","PaldeaZeroLab","PaldeaMossuiTown"]]
 ];
 function safe(name,plan){
  const m=WORLD_MAPS[name],anchors=[...(m.people||[]),...(m.warps||[])];
