@@ -9,6 +9,7 @@ for(const[,file]of html.matchAll(/<script src="([^"]+)"><\/script>/g))
 for(const file of ['ui/paldea-mid.js','ui/paldea-legends.js','ui/paldea-starfall.js',
  'ui/paldea-endgame.js','ui/paldea-dlc.js','ui/paldea-story.js'])
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
+vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-art.js'),'utf8'),{filename:'ui/paldea-art.js'});
 const D=Paldea.data(),R=TOWN_MAP.paldea;
 assert.equal(D.mapNames.length,98,'76 mainland + 22 DLC areas');
 assert.equal(D.dlc.mapNames.length,22);
@@ -34,20 +35,52 @@ for(const name of ['PaldeaMossuiTown','PaldeaTerariumHub']){
  assert(landing&&landing.map===name,'missing DLC Fly point '+name);
  assert(!D.maps[name].collision[landing.y*D.maps[name].width+landing.x]);
 }
+// Pixel scenery: each biome gets a distinct deterministic drawing palette.
+ assert.equal(PaldeaArt.style('PaldeaMossuiTown'),'village');
+ assert.equal(PaldeaArt.style('PaldeaLoyaltyPlaza'),'festival');
+ assert.equal(PaldeaArt.style('PaldeaSavannaBiome'),'savanna');
+ assert.equal(PaldeaArt.style('PaldeaCoastalBiome'),'tropical');
+ assert.equal(PaldeaArt.style('PaldeaCanyonBiome'),'canyon');
+ assert.equal(PaldeaArt.style('PaldeaPolarBiome'),'polar');
+ assert.equal(PaldeaArt.style('PaldeaTerariumHub'),'blueberry');
+ assert.equal(PaldeaArt.style('PaldeaUnderdepths'),'crystal');
+ assert.equal(PaldeaArt.style('PaldeaTerapagosChamber'),'chamber');
+ assert.equal(PaldeaArt.style('GalarPostwick'),null);
+ let canvasCreates=0,tileRects=0,imageDraws=0,activeCanvas=null;
+ const priorDocument=global.document;
+ global.document={createElement(tag){
+  assert.equal(tag,'canvas');canvasCreates++;
+  return{width:0,height:0,getContext:()=>({fillStyle:'',fillRect(){tileRects++;}})};
+ }};
+ const scene={drawImage(cv){imageDraws++;activeCanvas=cv;}};
+ PaldeaArt.draw(scene,'PaldeaMossuiTown',10,20);
+ assert(activeCanvas&&activeCanvas.width===D.maps.PaldeaMossuiTown.width*16);
+ assert(tileRects>100,'Procedural scenery should draw actual pixel tiles');
+ PaldeaArt.draw(scene,'PaldeaMossuiTown',15,25);
+ assert.equal(canvasCreates,1,'Revisiting a map reuses cached pixel scenery');
+ PaldeaArt.draw(scene,'PaldeaPolarBiome',10,20);
+ assert.equal(canvasCreates,2,'Different biomes have distinct art');
+ PaldeaArt.draw(scene,'GalarPostwick',0,0);
+ assert.equal(imageDraws,3,'Paldea art must never override other regions');
+ PaldeaArt.clear();
+ PaldeaArt.draw(scene,'PaldeaMossuiTown',10,20);
+ assert.equal(canvasCreates,3,'Cache clear rebuilds maps');
+ global.document=priorDocument;
 assert(Player.CENTERS.PaldeaCommunityCenter,'Kitakami needs a real healing center');
 assert(Player.CENTERS.PaldeaTerariumHub,'Blueberry needs a real healing center');
 assert(D.maps.PaldeaTerariumHub.people.some(n=>n.script==='sv:heal'),'Blueberry nurse missing');
 const p=Player.create('Paldea DLC Tester'),s=Paldea.state(p);
 p.party=[Party.create('Skeledirge',85),Party.create('Tinkaton',85)];
 p.location={map:'PaldeaAcademy',x:10,y:13,facing:'down'};
-let won=true,wildOutcome='caught',saves=0,battles=[],wilds=[],speech=[];
+let won=true,wildOutcome='caught',saves=0,battles=[],wilds=[],speech=[],portraits=[],arenas=[];
 const env={
  player:()=>p,say:async t=>speech.push(t),confirm:async()=>true,
+ showPicture:species=>portraits.push('show:'+species),hidePicture:()=>portraits.push('hide'),
  choose:async(_,choices)=>choices[0],canBattle:()=>true,
  showWorld(){},resume:async()=>{},
  saveCheckpoint:async()=>{saves++;},
- battle:async(_kind,opts)=>{battles.push({id:opts.trainerId,double:!!opts.double});return won?'won':'lost';},
- wildEncounter:async mon=>{wilds.push(mon.species);if(wildOutcome==='caught')Player.receive(p,mon);return wildOutcome;},
+ battle:async(_kind,opts)=>{battles.push({id:opts.trainerId,double:!!opts.double,terrain:opts.terrain});return won?'won':'lost';},
+ wildEncounter:async (mon,opts)=>{wilds.push(mon.species);arenas.push(opts.terrain);if(wildOutcome==='caught')Player.receive(p,mon);return wildOutcome;},
  teleport:async to=>{p.location={...to};Paldea.visit(p,to.map);}
 };
 const story=PaldeaStory.create(env),go=x=>story.run('sv:'+x);
@@ -118,6 +151,15 @@ const story=PaldeaStory.create(env),go=x=>story.run('sv:'+x);
  wildOutcome='caught';await go('teal-epilogue');
  assert(s.mochiMayhemClear&&Player.hasCaught(p,'Pecharunt'));
  assert(story.goal().includes('both DLC stories'));
+ assert(battles.some(b=>b.id==='SV_INDIGO_ELITE_CRISPIN'&&b.terrain==='sand'),'Crispin arena');
+ assert(battles.some(b=>b.id==='SV_INDIGO_ELITE_LACEY'&&b.terrain==='grass'),'Lacey arena');
+ assert(battles.some(b=>b.id==='SV_INDIGO_ELITE_AMARYS'&&b.terrain==='mountain'),'Amarys arena');
+ assert(battles.some(b=>b.id==='SV_INDIGO_ELITE_DRAYTON'&&b.terrain==='cave'),'Drayton arena');
+ assert(battles.some(b=>b.id==='SV_INDIGO_KIERAN'&&b.terrain==='champion'),'Kieran arena');
+ assert(arenas.includes('mountain')&&arenas.includes('cave')&&arenas.includes('longgrass'),'Legendary environment backgrounds');
+ for(const species of ['Ogerpon','Terapagos','Pecharunt'])
+  assert(portraits.includes('show:'+species),species+' Pokédex portrait was not shown');
+ assert(portraits.filter(v=>v==='hide').length>=3,'Legendary portraits must be dismissed');
  const loaded=Player.load(JSON.parse(Player.serialize(p))).player;
  assert(Paldea.peek(loaded).tealClear&&Paldea.peek(loaded).indigoClear);
  assert(Paldea.peek(loaded).mochiMayhemClear);
