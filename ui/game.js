@@ -452,6 +452,7 @@
     get kalosStory() { return kalosStory; },
     get alolaStory() { return alolaStory; },
     get galarStory() { return galarStory; },
+    get paldeaStory() { return paldeaStory; },
     get teamClothing() { return teamClothing; },
     get unovaStory() { return unovaStory; },
     get sinnohFerry() { return sinnohFerry; },
@@ -832,7 +833,7 @@
   // Pokémon's Compound Eyes helps). (Not the legendaries waiting on the map.)
   // (Your lead Pokémon: Compound Eyes for what it holds, Synchronize for its nature, Cute Charm for its gender.)
   const leadMon = () => player.party.find((r) => !r.egg && r.hp > 0);
-  const wildMon = (record) => {if(window.UnovaFunfest)UnovaFunfest.shiny(player,record);return Galar.sourceWild(player,Alola.sourceWild(player,Kalos.sourceWild(player,Unova.sourceWild(player,Encounters.leadRecord(Encounters.withHeldItem(window.UnovaPost?UnovaPost.charmWild(player,record):record, leadMon()), leadMon())))));};
+  const wildMon = (record) => {if(window.UnovaFunfest)UnovaFunfest.shiny(player,record);return Paldea.sourceWild(player,Galar.sourceWild(player,Alola.sourceWild(player,Kalos.sourceWild(player,Unova.sourceWild(player,Encounters.leadRecord(Encounters.withHeldItem(window.UnovaPost?UnovaPost.charmWild(player,record):record, leadMon()), leadMon()))))));};
   let continued = false;   // (just continued a saved game: the area's name shows)
   const sfx = (name) => { if (window.GameAudio && window.GameAudio.se) window.GameAudio.se(name); };
 
@@ -1440,7 +1441,7 @@
     // (In Sinnoh: its last Pokémon Center, or Sandgem Town's.)
     const sinnoh = (map) => (window.WORLD_MAPS[map] || {}).region === "sinnoh", inSinnohNow = sinnoh(player.location.map);
     const inBWNow=window.UnovaBW?.owns(player.location.map),inUnovaNow=Unova.owns(player.location.map);
-    const center = Galar.owns(player.location.map)?centerOf(Galar.owns(player.flags.lastCenter)?player.flags.lastCenter:Galar.peek(player).lastCenter||"GalarHome"):Alola.owns(player.location.map)?centerOf(Alola.owns(player.flags.lastCenter)?player.flags.lastCenter:Alola.peek(player).lastCenter||"AlolaHome"):Kalos.owns(player.location.map)?centerOf(Kalos.owns(player.flags.lastCenter)?player.flags.lastCenter:Kalos.peek(player).lastCenter||"KalosHome"):inBWNow?centerOf(UnovaBW.owns(player.flags.lastCenter)?player.flags.lastCenter:"BW1Home"):inUnovaNow ? centerOf(Unova.owns(player.flags.lastCenter)?player.flags.lastCenter:"UnovaAspertiaCity_PokemonCenter_1F") : inSinnohNow ? centerOf(sinnoh(player.flags.lastCenter) ? player.flags.lastCenter : "SandgemTown_PokemonCenter_1F")
+    const center = Paldea.owns(player.location.map)?centerOf(Paldea.owns(player.flags.lastCenter)?player.flags.lastCenter:Paldea.peek(player).lastCenter||"PaldeaHome"):Galar.owns(player.location.map)?centerOf(Galar.owns(player.flags.lastCenter)?player.flags.lastCenter:Galar.peek(player).lastCenter||"GalarHome"):Alola.owns(player.location.map)?centerOf(Alola.owns(player.flags.lastCenter)?player.flags.lastCenter:Alola.peek(player).lastCenter||"AlolaHome"):Kalos.owns(player.location.map)?centerOf(Kalos.owns(player.flags.lastCenter)?player.flags.lastCenter:Kalos.peek(player).lastCenter||"KalosHome"):inBWNow?centerOf(UnovaBW.owns(player.flags.lastCenter)?player.flags.lastCenter:"BW1Home"):inUnovaNow ? centerOf(Unova.owns(player.flags.lastCenter)?player.flags.lastCenter:"UnovaAspertiaCity_PokemonCenter_1F") : inSinnohNow ? centerOf(sinnoh(player.flags.lastCenter) ? player.flags.lastCenter : "SandgemTown_PokemonCenter_1F")
       : player.flags.lastCenter && (!inHoennNow || isHoenn(player.flags.lastCenter)) && centerOf(player.flags.lastCenter);
     const hoennHome = inHoennNow && !center ? (player.flags.hoennRespawn || hoennBedroom()) : null;
     const to = Object.assign({}, center || hoennHome || Player.HOME);
@@ -1962,6 +1963,11 @@
     if(alolaMap&&(Alola.owns(map)||Alola.peek(player).visited?.length)){
       if(Alola.owns(map))regions.unshift(alolaMap);else regions.push(alolaMap);
     }
+    const paldeaMap=window.TOWN_MAP.paldea;
+    if(Paldea.owns(map))Paldea.visit(player,map);
+    if(paldeaMap&&(Paldea.owns(map)||Paldea.peek(player).visited?.length)){
+      if(Paldea.owns(map))regions.unshift(paldeaMap);else regions.push(paldeaMap);
+    }
     const galarMap=window.TOWN_MAP.galar;
     if(Galar.owns(map))Galar.visit(player,map);
     if(galarMap&&(Galar.owns(map)||Galar.peek(player).visited?.length)){
@@ -1977,6 +1983,7 @@
     // (In Johto, the square you're on: HGSS's world matrix has a square every
     // 32 tiles of a map outdoors; inside, where the building or cave is.)
     const johtoAt = (name, x, y) => {
+      if(paldeaMap?.at[name]&&regions.includes(paldeaMap))return{region:regions.indexOf(paldeaMap),cell:paldeaMap.at[name].slice(0,2)};
       if(galarMap?.at[name]&&regions.includes(galarMap))return{region:regions.indexOf(galarMap),cell:galarMap.at[name].slice(0,2)};
       if(alolaMap?.at[name]&&regions.includes(alolaMap))return{region:regions.indexOf(alolaMap),cell:alolaMap.at[name].slice(0,2)};
       if(bwMap?.at[name]&&regions.includes(bwMap))return{region:regions.indexOf(bwMap),cell:bwMap.at[name].slice(0,2)};
@@ -2001,6 +2008,7 @@
     // Fly's places: visited, with somewhere to land.
     const flyTo = (sec) => {
       if(!flying||!sec)return null;
+      if(paldeaMap&&sec in paldeaMap.names){const spot=paldeaMap.fly[sec];return spot&&Paldea.peek(player).visited?.includes(spot.map)?spot:null;}
       if(galarMap&&sec in galarMap.names){const spot=galarMap.fly[sec];return spot&&Galar.peek(player).visited?.includes(spot.map)?spot:null;}
       if(alolaMap&&sec in alolaMap.names){const spot=alolaMap.fly[sec];return spot&&Alola.peek(player).visited?.includes(spot.map)?spot:null;}
       if(kalosMap&&sec in kalosMap.names){const spot=kalosMap.fly[sec];return spot&&Kalos.peek(player).visited?.includes(spot.map)?spot:null;}
@@ -3162,6 +3170,7 @@
   }
   async function trainerCard() {
     tick();
+    if(Paldea.owns(player.location.map)){await paldeaStory.guide();return null;}
     if(Galar.owns(player.location.map)){await galarStory.guide();return null;}
     if(Alola.owns(player.location.map)){await alolaStory.guide();return null;}
     if(Kalos.owns(player.location.map)){await kalosStory.guide();return null;}
@@ -6079,6 +6088,7 @@
 
   const kalosStory = KalosStory.create({fashion:async city=>{Screen.say("");show("scene");clearMenu();try{return await KalosFashionDevice.open(scene,player,city);}finally{tick();Save.write(player);show("world");await Overworld.resume();}},choosePokemon:choosePartyFor,chooseMaisonTeam:async(list,n,title)=>{Screen.say("");show("scene");clearMenu();try{return await SinnohFrontierDevice.select(scene,list,n,title);}finally{show("world");await Overworld.resume();}},silhouette:async(species,pages)=>{showPicture(species);const img=$("#world-pic img");img.style.filter="brightness(0)";img.alt="Pokémon silhouette";try{await say(pages);}finally{img.style.filter="";hidePicture();}},skiddoJump:dir=>Overworld.act([{who:"player",moves:["jump_2_"+dir]}]),walkAvatar:()=>Overworld.setAvatar("walk"),wildEncounter:async(record,opts={})=>{const result=await battle("wild",{...opts,foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();return result;},refreshPeople:()=>Overworld.refreshPeople(),fireworks:async()=>{Screen.say("");show("scene");clearMenu();try{await KalosFireworks.show(scene,player);}finally{show("world");await Overworld.resume();}},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});
   const alolaStory = AlolaStory.create({wildEncounter:async(mon,opts={})=>{const result=await battle('wild',{...opts,foe:{name:'Wild',team:[wildMon(mon)]}});show('world');await Overworld.resume();return result;},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});
+  const paldeaStory = PaldeaStory.create({wildEncounter:async(mon,opts={})=>{const result=await battle("wild",{...opts,foe:{name:"Wild",team:[wildMon(mon)]}});show("world");await Overworld.resume();return result;},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});
   const galarStory = GalarStory.create({galarDoubleBattle:async(id,name,team)=>{const result=await battle('trainer',{foe:{name,team:team.map(([species,level])=>Party.create(species,level))},trainerId:'SWSH_'+id,double:true,noBlackout:true});show('world');await Overworld.resume();return result;},galarRaid:async(mon,opts={})=>{const result=await battle('wild',{...opts,foe:{name:'Wild',team:[wildMon(mon)]}});show('world');await Overworld.resume();return result;},wildEncounter:async(mon,opts={})=>{const result=await battle('wild',{...opts,foe:{name:'Wild',team:[wildMon(mon)]}});show('world');await Overworld.resume();return result;},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});
   const unovaStory = UnovaStory.create({frigatePreview:async(species,pages)=>{showPicture(species);await say(pages);hidePicture();},frigatePassword:()=>enterText("Plasma Frigate password?","",10),nameAvenue:value=>enterText("Avenue name?",value,20),memoryDevice:async()=>{Screen.say("");clearMenu();show("scene");try{return await UnovaMemoryDevice.open(scene,player,async()=>{tick();Save.write(player);});}finally{tick();Save.write(player);show("world");await Overworld.resume();}},musical:async(mode,a,b)=>{Screen.say("");clearMenu();show("scene");try{return await (mode==='dress'?UnovaMusicalDevice.dress(scene,player,a,b):mode==='photo'?UnovaMusicalDevice.photo(scene,player,a):UnovaMusicalDevice.perform(scene,player));}finally{tick();Save.write(player);show("world");await Overworld.resume();}},moveReminder:moveRelearner,moveDeleter,teachMove:async(mon,move)=>{if(Party.knowsMove(mon,move))return false;await learnMove(mon,move);return Party.knowsMove(mon,move);},hatchEgg:eggHatches,trainLevels:async(mon,count)=>{for(let i=0;i<count&&mon.level<Player.levelCap(player);i++){const moves=Bag.levelUp(mon,{here:player.location.map});await say(Party.displayName(mon)+' grew to Lv. '+mon.level+'!');for(const move of moves)await learnMove(mon,move);const evo=Evolution.find(mon,{trigger:'level',party:player.party,map:player.location.map});if(evo)await evolve(mon,evo,true);}},facility:unovaFacility,chooseParty:choosePartyFor,daycareLady:()=>fourIslandDayCareLady("unova"),daycareMan:()=>fourIslandDayCareMan("unova"),tournament:unovaTournament,recorded:()=>lastRecord,dashing:()=>Overworld.lastStepRunning(),player:()=>player,say,confirm,battle,mart,replay:async rec=>{await playRecord(rec);music(WORLD_MAPS[player.location.map].music);},movie:async(id=0,opts={})=>{Screen.say("");clearMenu();show("field");music("mus_vs_trainer");try{return await UnovaMovie.shoot(player,id,{...opts,say,choose:(q,labels)=>ask(q,labels.map(label=>({label,value:label})))});}finally{music(WORLD_MAPS[player.location.map].music);}},canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),refreshPeople:()=>Overworld.refreshPeople(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:async loc=>{await Overworld.teleport({...loc});},choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}])),wildEncounter:async(record,opts={})=>{const outcome=await battle("wild",{...opts,foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();return outcome;}});
   const sinnohStory = SinnohStory.create({
@@ -13466,6 +13476,8 @@
     Alola.visit(player,player.location.map);
     Galar.recover(player);
     Galar.visit(player,player.location.map);
+    Paldea.recover(player);
+    Paldea.visit(player,player.location.map);
     Unova.recover(player);
     Unova.visit(player,player.location.map);
     SinnohDaily.correctLocation(player);
@@ -13519,7 +13531,7 @@
           johtoSafari.tick();   // (the Safari Zone's days, Baoba's calls)
           hoennWeatherStep(); hoennAshStep(); berryFarm.step(); hoennBerries.step(); sinnohBerries.step();     // (the berry trees growing: Celadon's Berry Farm's, Hoenn's)
           SinnohLegends.syncForms(player);
-          return galarStory.step() || alolaStory.step() || kalosStory.step() || unovaStory.step() || sinnohStory.step() || orreCallStep() || xdCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
+          return paldeaStory.step() || galarStory.step() || alolaStory.step() || kalosStory.step() || unovaStory.step() || sinnohStory.step() || orreCallStep() || xdCallStep() || heartStep() || viridianStopStep() || hoennRegiceStep() || hoennCrackedStep() || hoennCruiseStep() || icefallStep() || redForestStep() || leafVermilionStep() || jessieJamesStep() || laterJessieJamesStep() || safariStep() || bugContest.step() || cinnabarBillStep() || eggStep() || repelStep() || gear.step() || saveReminderStep();
         }, encounterScale: () => gear.encounterRate() * Encounters.leadRateScale(leadMon()) * SinnohCompletion.rate(player)*UnovaFunfest.scale(player,"ENCOUNTER"),
         adjustWild: (mon, table) => { SinnohDaily.apply(player); const m = roamerWild(Encounters.leadWild(mon, leadMon(), table), table); return !m ? m : player.location.map === "BattleFrontier_BattlePikeRoomWildMons" ? hoennFrontier.pikeWild(m) : player.location.map === PYRAMID_FLOOR ? hoennFrontier.pyramidWild(m) : m; }, allowWild: (mon) => !SinnohPark.suppresses(player) && !SinnohRadar.suppresses(player) && !Sevii.tanobyLocked(player.flags, player.location.map) &&
           !JohtoAlph.locked(player.location.map, alphSolved()) && repelAllows(mon),
@@ -13527,6 +13539,7 @@
           Kalos.visit(player,m);
           Alola.visit(player,m);
           Galar.visit(player,m);
+          Paldea.visit(player,m);
           Unova.visit(player,m);
           SinnohRoamers.onMap(player,m); SinnohRadar.onMap(player,m);
           if (m !== tempFlagsMap && m === "VermilionCity_Gym") hideVermilionSwitches();
