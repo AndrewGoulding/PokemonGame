@@ -68,6 +68,28 @@ quiz, the Castelia sunglasses search and the Aspertia gate type check. The Nacre
 Harlequin Hunt are already native (`bw:lenora-fossil`, `bw:harlequin-hunt`), so
 those source people are not duplicated.
 
+## TVs, trash cans and vending machines
+
+These are not script events in the source but tile classes of each room's map model
+(`res/field/maps/models/<model>/terrain_*.csv`, found through the zone's matrix): TV
+0xd8, trash cans 0xdd/0xde and vending machines 0xe2, which `src/ov036/fieldmap_event.c`
+sends to `global_10530`, `global_2500` and `global_10400`. Each connected run of one
+class is one fixture, projected into the room like the people. The Driftveil–PWT gate's
+two machines are background events calling `global_10400` and are placed the same way.
+The pass adds 43 TVs, 94 trash cans and 9 vending machines to 99 rooms (`interiors.houses.fixtures`).
+
+- TV: pick CELEBRITY, BATTLE or VARIETY, watch one programme picked as
+  `Scrcmd_PokeDisp_TVGenProgramMsgID` does (Interview Unova, with the player's half of
+  the idol chats; Moves for Living; the horoscope), then maybe a commercial (20%, then
+  10% for the rest of the viewing), then “Keep watching?”. Lines that need a met
+  Join Avenue idol take the source's not-met branch. Each programme adds record 23.
+- Trash can: “The trash can is empty.” and record 43.
+- Vending machine: Fresh Water ₽200, Soda Pop ₽300, Lemonade ₽350 until you cancel or
+  run out of money; a full stack of that drink stops the sale. Each drink adds record 125;
+  one in 32 drops a bonus drink while there is room, for the Lucky Drink Medal.
+
+The counters begin with the Medal Box, like Unova's other action records.
+
 ## Not imported
 
 `interiors.houses.skipped` records each reached bank that stays out, with its

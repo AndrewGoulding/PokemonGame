@@ -38,5 +38,15 @@
  function houseKey(p,g){return g.daily?g.key+':'+Player.gameTime(p).day:g.key;}
  function houseGift(p,key){const g=H.npcs[key]?.gift;if(!g)return{invalid:true};const k=houseKey(p,g),id=g.versions?g.versions[F.peek(p).version||'black2']:g.item;if(F.peek(p).gifts?.[k])return{done:true,item:id};if(g.badge!=null&&!p.badges.includes(F.badges[g.badge]))return{blocked:true,badge:F.badges[g.badge]};return F.gift(p,k,id,g.quantity);}
  function houseHeal(p,key){if(!H.npcs[key]?.heal)return false;p.party.forEach(Party.heal);return true;}
- window.UnovaInteriors={data:()=>D,houseGift,houseHeal,pepState,pepBirthday,pepPlan,pepAnswer,schoolStage,schoolAdvice,schoolWon,schoolQuiz,giftMon,anville,anvilleTrain,anvilleWeekend,anvilleTrade,anvilleSubway,anvilleLost,anvillePansage,anvilleHeard,draw,village,villageHoney,villageSecret,villageFishing,villageFish,state,peek,freak,freakWon,crew,crewWon,buy,rotom,tmProgress,tmReward,diplomas};
+ // House fixtures (tools/lib/unova-houses.js): a TV programme per viewing (global_10530, record 23), an empty trash can
+ // (global_2500, record 43), and the vending machine's drinks (global_10400, record 125, with its 1-in-32 bonus drink
+ // and the Lucky Drink Medal when the Bag has room for it).
+ const fixture=key=>H.npcs[key]?.fixture||null,pick=(rng,n)=>Math.min(n-1,Math.max(0,Math.floor(rng()*n)));
+ function tvProgram(p,channel,rng=Math.random){if(![0,1,2].includes(channel))return{invalid:true};let id;if(channel===0){const r=pick(rng,36);if(r<22)id=r;else{let v=r-22;if(v===11)v=10;if(v===13)v=12;id=(Player.LOOKS[p.look]?.girl?22:36)+v;}}else id=channel===1?50+pick(rng,50):100+pick(rng,80);
+  const lead=p.party.find(m=>!m.egg),text=H.tv.messages[id].replaceAll('{LEAD}',lead?Party.speciesName(lead.species):'Cinccino');window.UnovaRecords?.record(p,'tv');return{id,text};}
+ function tvCommercial(rare,rng=Math.random){return rng()*100<(rare?10:20)?H.tv.messages[180+pick(rng,8)]:null;}
+ function trash(p){window.UnovaRecords?.record(p,'trash');return H.trash;}
+ function vend(p,index,rng=Math.random){const d=H.vending?.drinks[index];if(!d)return{invalid:true};const space=n=>Player.itemCount(p,d.item)+n<=999;if(!space(1))return{full:true,item:d.item};if(p.money<d.price)return{poor:true};p.money-=d.price;Player.addItem(p,d.item,1);window.UnovaRecords?.record(p,'vending');
+  let bonus=false;if(space(1)&&pick(rng,32)===0){Player.addItem(p,d.item,1);window.UnovaRecords?.record(p,'luckyDrink');bonus=true;}return{item:d.item,price:d.price,bonus};}
+ window.UnovaInteriors={data:()=>D,houseGift,houseHeal,fixture,tvProgram,tvCommercial,trash,vend,pepState,pepBirthday,pepPlan,pepAnswer,schoolStage,schoolAdvice,schoolWon,schoolQuiz,giftMon,anville,anvilleTrain,anvilleWeekend,anvilleTrade,anvilleSubway,anvilleLost,anvillePansage,anvilleHeard,draw,village,villageHoney,villageSecret,villageFishing,villageFish,state,peek,freak,freakWon,crew,crewWon,buy,rotom,tmProgress,tmReward,diplomas};
 })();

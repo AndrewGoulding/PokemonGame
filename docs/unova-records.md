@@ -99,10 +99,16 @@ event flags are.
 - Scored 1,000: a cleared Funfest mission total of 1,000 points, alongside
   the existing 100-point Medal.
 
+- Television Kid, Trash Master, Vending Virtuoso and Lucky Drink: the TVs,
+  trash cans and vending machines of the source houses and gatehouses
+  (records 23, 43 and 125; see `docs/unova-houses.md`). A TV counts each
+  programme watched, a trash can each look inside, a vending machine each drink
+  bought, and Lucky Drink is the 1-in-32 bonus drink, given only while the Bag
+  has room for it, as in `global_10400`.
+
 Not awarded, because this game has no such feature: Trainer Tips signs and the
-Route 2 graffiti (16–18; the imported maps have no Trainer Tips signs),
-vending machines (51, 52), Strength boulders on B2W2 maps (58), trash cans
-(59), televisions (65), Pokérus (94), the Marine Tube Wailord (97), the
+Route 2 graffiti (16–18; the imported outdoor maps have no source signs),
+Strength boulders on B2W2 maps (58), Pokérus (94), the Marine Tube Wailord (97), the
 Humilau face board (98), Twist Mountain’s construction-truck quiz (99),
 diamond dust (101), Unity Tower for Around Unova (103), Pokémon Mail (166)
 and the four seasonal Ferris-wheel trainers with the special riders
