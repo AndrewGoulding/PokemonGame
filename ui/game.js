@@ -3738,9 +3738,10 @@
   for (const m of Object.values(window.WORLD_MAPS)) if (m.region === "sinnoh") for (const p of m.people) if (p.ferry || /_EventScript_FossilScientist$/.test(p.script || "")) SPECIAL.add(p.script);
   SPECIAL.add("SlateportCity_Harbor_EventScript_Sailor"); SPECIAL.add("Route117_PokemonDayCare_EventScript_DaycareWoman");
   SPECIAL.add("LilycoveCity_MoveDeletersHouse_EventScript_MoveDeleter"); SPECIAL.add("FallarborTown_MoveRelearnersHouse_EventScript_MoveRelearner");
-  // (And Ultra Alola's people, ui/alola-story.js: the ferries between the islands, the trials, the kahunas.)
+  // (And Ultra Alola's people, ui/alola-story.js: the ferries between the islands, the trials, the kahunas; and
+  // Galar's, ui/galar-story.js. Paldea's sv: scripts are taken in ui/story-events.js's special().)
   for (const m of Object.values(window.WORLD_MAPS)) {
-    for (const p of [...m.people, ...(m.signs || [])]) if (/^(?:pt|usum):/.test(p.script || "")) SPECIAL.add(p.script);
+    for (const p of [...m.people, ...(m.signs || [])]) if (/^(?:pt|usum|swsh):/.test(p.script || "")) SPECIAL.add(p.script);
   }
   const TRAINER_SCRIPTS = new Set();
   for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) if (p.trainer && p.trainer.id) TRAINER_SCRIPTS.add(p.script);
