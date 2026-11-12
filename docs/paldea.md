@@ -156,8 +156,10 @@ battle, all five Herba Mystica and Arven's final battle, and the Team Star
 Cassiopeia finale. Speak with the party at the crater gate to choose the
 Scarlet or Violet variant. Traverse the upper crater, reactivate two Research
 Stations, reach the depths and confront AI Professor Sada or Turo in Zero Lab.
-Both variants share the same map, but encounters and the final battle team
-follow the selected variant. Defeating the AI Professor records the main-story
+Both variants share the same map. The Quaking Earth Titan and scripted Area Zero
+battles follow the selected Scarlet/Violet variant; ordinary random encounters
+still use shared encounter tables. The edition is selected when facing Quaking
+Earth (or at the crater gate if it has not yet been selected). Defeating the AI Professor records the main-story
 completion and removes the regional level cap.
 
 This is a **playable 2D story adaptation**, not a complete recreation of the
