@@ -77,6 +77,7 @@ function allowed(p,map){
  if(map==='GalarHopHouse'&&!s.hopMet)return'Meet Hop in Postwick first.';
  if(window.GalarMid?.owns(map))return window.GalarMid.allowed(p,map);
  if(window.GalarFinale?.owns(map))return window.GalarFinale.allowed(p,map);
+ if(window.GalarDlc?.owns(map))return window.GalarDlc.allowed(p,map);
  const flag=open[map];return flag&&!s[flag]?hints[flag]:null;
 }
 function cap(p){const s=peek(p);return s.raihanClear&&window.GalarFinale?window.GalarFinale.cap(p):s.kabuClear&&window.GalarMid?window.GalarMid.cap(p):s.kabuClear?45:s.nessaClear?35:s.miloClear?30:s.ceremony?25:s.endorsement?20:s.wealdClear?15:s.starter?12:7;}
