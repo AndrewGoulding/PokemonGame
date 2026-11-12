@@ -3513,6 +3513,8 @@
     }
     if (boss) {
       for (let i = 0; i < config.raid; i++) drawStar(g, P.x + P.w - 10 - 9 * i, P.y + 3);
+      // (Its kind caught before: the healthbox's Poké Ball, left of the stars, as a wild Pokémon's box shows it.)
+      if (d.caught && hbBar.complete) hbTile(g, hbBar, 70, P.x + P.w - 10 - 9 * config.raid - 10, P.y + 3);
       raidBar(g, P.x + 6, P.y + 17, P.w - 12, Math.max(0, b.hp / (b.maxhp || 1)));
     }
     (raidAllies || []).forEach((m, i) => {
