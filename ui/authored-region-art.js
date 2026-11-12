@@ -182,8 +182,24 @@
     }
     return sprites.get(asset);
   }
+  function footprintIntact(m,p) {
+    if(!m||!p)return false;
+    for(let yy=p.y;yy<p.y+p.h;yy++)
+      for(let xx=p.x;xx<p.x+p.w;xx++)
+        if(!m.collision[yy*m.width+xx] || m.behavior?.[yy*m.width+xx]===0x10)
+          return false;
+    return true;
+  }
   function draw(g,name,x,y) {
-    const p=plan(name);if(!p)return;
+    let p=plan(name);if(!p)return;
+    const m=window.WORLD_MAPS?.[name];
+    // Story scripts sometimes open a previously-solid door. Never leave
+    // scenery floating over a now-walkable entrance after that change.
+    if(!footprintIntact(m,p)) {
+      placements.delete(name);
+      p=plan(name);
+      if(!p)return;
+    }
     const img=getSprite(p.asset);
     if(!img.complete || !img.naturalWidth)return;
     g.drawImage(img,x+p.x*T,y+p.y*T,p.w*T,p.h*T);
@@ -195,6 +211,6 @@
     return {asset:p.asset, x:p.x, y:p.y, w:p.w, h:p.h,
       requested:!!img, ready:!!(img?.complete && img.naturalWidth)};
   }
-  window.AuthoredRegionArt={draw,plan,choice,chooseFootprint,imageStatus,CHOICES,
+  window.AuthoredRegionArt={draw,plan,choice,chooseFootprint,footprintIntact,imageStatus,CHOICES,
     clear:()=>placements.clear()};
 })();
