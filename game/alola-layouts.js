@@ -64,6 +64,7 @@ function build(name) {
   open(cx, cy, 2);
   const anchors = [
     ...(m.warps || []), ...(m.people || []),
+    ...(m.signs || []), ...(m.triggers || []), ...(m.hidden || []),
     ...Object.values(window.Player?.CENTERS || {}).filter(a => a.map === name),
     ...Object.values(window.TOWN_MAP?.alola?.fly || {}).filter(a => a.map === name),
     ...(D.start?.map === name ? [D.start] : [])
