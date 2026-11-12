@@ -13,6 +13,11 @@ function place(id,key,x=17,y=13){
 const diglett=['FieldsOfHonor','SoothingWetlands','ChallengeBeach','ForestFocus','TrainingLowlands','BrawlersCave','WorkoutSea','HoneycalmIsland','ArmorStation','MasterDojo'];
 diglett.forEach((m,i)=>place(m,'diglett-'+i,24,17));
 place('MasterDojo','dojo-sparring',27,11);
+// Optional Pokemon Camp locations in the mainland Wild Area and the expansions.
+for(const [name,key] of [
+ ['WildAreaSouth','south'],['WildAreaNorth','north'],
+ ['FieldsOfHonor','armor'],['FrostpointField','crown']
+])place(name,'camp-'+key,22,15);
 place('CrownStation','footprint-0');
 place('FrostpointField','footprint-1');
 place('GiantBed','footprint-2');
