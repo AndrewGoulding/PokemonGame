@@ -3,6 +3,9 @@
 'use strict';
 const D=window.PALDEA_DATA;if(!D)return;
 Object.assign(WORLD_MAPS,D.maps);
+// PaldeaArt provides its own complete tile layer; the source Kalos roof/top
+// sheet would otherwise be drawn over the unrelated Paldea scenery.
+for (const m of Object.values(D.maps)) m.top = false;
 const owns=map=>WORLD_MAPS[map]?.paldeaCampaign==='scarlet-violet';
 const peek=p=>p.flags.paldea||{};
 function state(p){
