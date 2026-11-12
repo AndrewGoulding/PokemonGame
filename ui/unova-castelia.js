@@ -40,7 +40,7 @@
    if(/^hunt-[0-2]$/.test(key)){await hunt(+key.slice(5));return true;}
    switch(key){
     case'studio-locked':await say('Challenge Roxie before joining\nthe studio’s next film shoot.');await env.teleport({map:'UnovaVirbankCity',x:28,y:10,facing:'down'});break;
-    case'gym-burgh-locked':await say('Burgh is looking for Team Plasma\nin the sewers. Meet Hugh there first.');await env.teleport({map:'UnovaCasteliaCity',x:9,y:12,facing:'down'});break;
+    case'gym-burgh-locked':await say('Burgh is looking for Team Plasma\nin the sewers. Meet Hugh there first.');await env.teleport({map:'UnovaCasteliaCity',x:17,y:25,facing:'down'});break;
     case'studios':await env.teleport({...d().studios});await checkpoint();break;
     case'studio-guide':await say('The theater is to the west.\nThe soundstage is northeast.\nMake a film, then release it here.');break;
     case'film':await film();break;

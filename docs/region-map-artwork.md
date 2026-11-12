@@ -22,14 +22,17 @@ scripts, links or images. At runtime the browser scales it to the safe tile
 footprint (usually 2–6 tiles wide and 2–4 tiles high). Art is loaded lazily,
 cached and drawn below the player/NPC sprites.
 
+Castelia City and Lumiose City have since been given full street plans
+instead of landmark sprites; see [city-layouts.md](city-layouts.md).
+
 ## Main art families
 
 | Region | Authored scenery |
 |---|---|
 | Orre | Phenac fountain terraces; Pyrite windmill |
 | Sinnoh | Snowy shrine; flower-garden cottage |
-| Unova | Nimbasa Ferris wheel; urban skyline |
-| Kalos | Lumiose café; vine-covered garden architecture |
+| Unova | Nimbasa Ferris wheel |
+| Kalos | Vine-covered garden architecture |
 | Alola | Thatched village, palms, ruins, Aether facility, volcanic rock, League, hotel |
 | Galar | Cottage, railway station, industrial skyline, stadium, mushroom wood, castle, dojo, shrine |
 | Paldea | Adobe town, academy, arena, Levincia lighting, windmill, Kitakami roofs, crystalline terrain |

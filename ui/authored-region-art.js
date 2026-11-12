@@ -21,10 +21,8 @@
     CanalaveCity:"sinnoh-canalave-bridge",
     EternaForest:"sinnoh-eterna-forest",
     UnovaNimbasaCity:"unova-ferris",
-    UnovaCasteliaCity:"unova-skyline",
     UnovaDriftveilCity:"unova-driftveil-crane",
     UnovaOpelucidCity:"unova-opelucid-towers",
-    KalosLumioseSouth:"kalos-cafe",
     KalosLaverreCity:"kalos-garden",
     KalosShalourCity:"kalos-shalour-tower",
     KalosGeosengeTown:"kalos-geosenge-stones",
@@ -110,7 +108,8 @@
   };
   const WORLD = window.WORLD_MAPS;
   function choice(m) {
-    if (!m || !REGIONS.has(m.region)) return null;
+    // Cities with a full street plan (data/city-layouts.js) carry their own landmarks.
+    if (!m || !REGIONS.has(m.region) || m.cityLayout) return null;
     if (CHOICES[m.name]) return CHOICES[m.name];
     // Support new map chapters without borrowing an unrelated region's art.
     // Never put an outdoor building facade inside an interior room.

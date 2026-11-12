@@ -79,7 +79,7 @@ function make(m){
 }
 function draw(g,name,x,y){
  const m=window.WORLD_MAPS?.[name];
- if(!regionOf(m)||!m?.collision||!m?.behavior)return;
+ if(!regionOf(m)||m.cityLayout||!m?.collision||!m?.behavior)return;
  let item=cache.get(name);
  if(!item){item=make(m);cache.set(name,item);}
  g.drawImage(item.canvas,x,y);

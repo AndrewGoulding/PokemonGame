@@ -8,7 +8,7 @@
   function theme(m) {
     const name = m.name || "";
     const region = m.region || (/^(Platinum|Sinnoh)/.test(name) ? "sinnoh" : "");
-    if (!regions.has(region)) return null;
+    if (!regions.has(region) || m.cityLayout) return null;
     if (region === "orre") {
       if (/Phenac|Agate|RelicForest/.test(name)) return "spring";
       if (/Pyrite|Under|Realgam|Outskirt/.test(name)) return "embers";

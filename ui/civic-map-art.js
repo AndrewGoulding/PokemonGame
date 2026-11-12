@@ -13,7 +13,7 @@
     laverre: { stone:"#acb99c", seam:"#778d79", accent:"#c3a0bd", light:"#f2dfb7" }
   };
   function style(m) {
-    if (!m || m.type === "indoor") return null;
+    if (!m || m.type === "indoor" || m.cityLayout) return null;
     const n = m.name || "";
     if (m.region === "unova") {
       if (/NimbasaCity/.test(n)) return "nimbasa";
