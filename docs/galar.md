@@ -112,3 +112,55 @@ The Zacian/Zamazenta events are one-time battles, not guaranteed captures.
 The Isle of Armor and Crown Tundra expansion campaigns remain unimplemented.
 
 Regression: `node tests/galar-finale-test.js` (also in `npm test`).
+
+## Isle of Armor and Crown Tundra expansion pass
+
+The merged Sword/Shield Galar campaign continues with **28 connected
+expansion maps** — fourteen for the Isle of Armor and fourteen for Crown
+Tundra — bringing the region total to **90 locations**. Expansion access
+is available after becoming Galar Champion; the Wedgehurst train attendant
+travels to the Isle of Armor, and the Wyndon attendant to Crown Tundra.
+Both trips have independent, saved resume coordinates and Pokémon Center
+locations. They do not reset the mainland campaign or other regions.
+
+**Isle of Armor:** Arrive at Armor Station, explore Fields of Honor,
+Master Dojo, Soothing Wetlands, Challenge Beach, Forest of Focus,
+Brawlers' Cave, Training Lowlands, the Tower of Waters and Tower of Darkness,
+Workout Sea and Honeycalm Island. Defeat Dojo rivals, receive Kubfu,
+complete three training fights, and choose **one** Urshifu style.
+Defeat Mustard, gather Max Mushrooms and Max Honey, prepare Max Soup,
+and return to the Dojo to complete the chapter. A second tower choice
+cannot overwrite an already chosen Urshifu style. Training, gift and
+challenge milestones persist through saves. This version uses a party
+evolution adaptation rather than original 3D tower cinematics or full
+Gigantamax mechanics.
+
+**Crown Tundra:** From Crown Station reach Freezington, Frostpoint Field,
+Max Lair, Giant's Bed, Old Cemetery, Snowslide Slope, Tunnel to the Top,
+Giant's Foot, Three-Point Pass, Crown Shrine, Calyrex Arena and Ballimere
+Lake. Meet Peony and Calyrex, choose Glastrier or Spectrier, prepare
+the Reins of Unity, defeat Calyrex's corresponding rider form and report
+to Peony. Optional battles cover Regirock, Regice and Registeel, followed
+by a choice of Regieleki or Regidrago; all three Galarian legendary
+birds also have one-time encounters.
+
+**Dynamax Adventures:** The Max Lair offers repeatable three-encounter
+runs followed by a rotating legendary boss. Encounter stage, completed
+legendary records and winning runs are tracked in the regional save.
+Losing resets the active run's stage, not the completed expedition record.
+This is a native sequential battle adaptation, not the original
+cooperative rental-team Dynamax system.
+
+**Town Map:** All 90 Galar maps now have unique source sections,
+coordinates and a shared Sword/Shield regional map. Armor Station
+and Freezington provide visited-only Fly locations.
+
+**Important limits:** The maps are derived from existing 2D placeholder
+layouts. Urshifu evolution changes the party Pokémon and does not
+reproduce every original battle stat, move-learning or animation detail.
+The Pokémon in the Regi, Calyrex, legendary-bird and Max Lair battles
+are not guaranteed captures. Max Soup is represented by a story flag,
+not a complete Gigantamax eligibility/cooking simulator. The expansions
+are authored adaptations, not verbatim DLC quests or a full open world.
+
+Regression: `node tests/galar-dlc-test.js`, included in `npm test`.
