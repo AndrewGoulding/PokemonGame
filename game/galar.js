@@ -75,9 +75,10 @@ function allowed(p,map){
  const s=peek(p);
  if(map==='GalarSlumberingWeald'&&!s.hopFirst)return'Battle Hop at his house before entering Slumbering Weald.';
  if(map==='GalarHopHouse'&&!s.hopMet)return'Meet Hop in Postwick first.';
+ if(window.GalarMid?.owns(map))return window.GalarMid.allowed(p,map);
  const flag=open[map];return flag&&!s[flag]?hints[flag]:null;
 }
-function cap(p){const s=peek(p);return s.kabuClear?45:s.nessaClear?35:s.miloClear?30:s.ceremony?25:s.endorsement?20:s.wealdClear?15:s.starter?12:7;}
+function cap(p){const s=peek(p);return s.kabuClear&&window.GalarMid?window.GalarMid.cap(p):s.kabuClear?45:s.nessaClear?35:s.miloClear?30:s.ceremony?25:s.endorsement?20:s.wealdClear?15:s.starter?12:7;}
 function visit(p,map){if(!owns(map))return;const s=state(p);if(!s.visited.includes(map))s.visited.push(map);s.resume={...p.location};}
 function recover(p){if(!owns(p.location?.map))return false;const m=WORLD_MAPS[p.location.map],a=p.location;if(a.x>=0&&a.y>=0&&a.x<m.width&&a.y<m.height&&!m.collision[a.y*m.width+a.x])return false;Object.assign(a,D.start);return true;}
 function sourceWild(p,mon){if(!owns(p.location?.map))return mon;mon.met={...mon.met,map:p.location.map,level:mon.level,game:'galar-sword-shield'};return mon;}
