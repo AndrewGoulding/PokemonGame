@@ -216,6 +216,8 @@ visual treatments, while Area Zero and the Terapagos chamber use glowing
 crystal-like pixel motifs. The styling also covers mainland Paldea so it no
 longer looks identical to its borrowed Kalos map images.
 
+The Kitakami festival now includes a repeatable mask identification choice. Each Blueberry Elite Four member also has a short, saved, interactive trial before their battle; incorrect answers can be retried, and winning a trial means it does not have to be repeated after a battle loss. These are lightweight text-choice adaptations, not replacements for the original DLC minigames.
+
 The BB League now uses different **existing battle backdrops** for Crispin,
 Lacey, Amarys, Drayton and Kieran. Ogerpon, Terapagos and Pecharunt show their
 existing Pokémon sprite portraits before their catchable encounters, and
