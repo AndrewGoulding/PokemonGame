@@ -6,6 +6,14 @@ const LOYAL=[['Okidogi',70],['Munkidori',70],['Fezandipiti',70]];
 // The battle engine already provides these built-in painted 2D arenas.
 const BB_ARENAS={INDIGO_ELITE_CRISPIN:'sand',INDIGO_ELITE_LACEY:'grass',INDIGO_ELITE_AMARYS:'mountain',INDIGO_ELITE_DRAYTON:'cave',INDIGO_KIERAN:'champion'};
 const LEGEND_ARENAS={Ogerpon:'mountain',Terapagos:'cave',Pecharunt:'longgrass'};
+// Adapted interactable trial challenges, not the original 3D DLC minigames.
+// Answers remain saved so battles can be retried without redoing a passed task.
+const TRIALS={
+ crispin:{prompt:'Crispin’s spicy cooking trial: which ingredient gives the sandwich heat?',answers:['Chili Sauce','Whipped Cream','Ice']},
+ lacey:{prompt:'Lacey’s Fairy quiz: which type resists Dragon attacks entirely?',answers:['Fairy','Fire','Water']},
+ amarys:{prompt:'Amarys’s flight course: which way do you steer toward the final checkpoint?',answers:['Glide left','Land immediately','Turn back']},
+ drayton:{prompt:'Drayton’s Dragon challenge: which type is super effective against Dragon?',answers:['Ice','Fire','Normal']}
+};
 const ELITE={
  'indigo-crispin':{key:'crispin',name:'Crispin',team:[['Talonflame',75],['Rotom-Heat',75],['Magmortar',76],['Blaziken',77]]},
  'indigo-lacey':{key:'lacey',name:'Lacey',team:[['Whimsicott',75],['Alcremie',75],['Granbull',76],['Primarina',77]]},
@@ -59,7 +67,12 @@ function create(env,{fight}){
      [['Yanma',61],['Dipplin',62]],'Kieran: See you at the Festival of Masks!');return true;
    case'teal-festival':
     if(!s().tealCarmineClear||!s().tealKieranFirst){await say('Meet Carmine and battle Kieran before the festival.');return true;}
-    if(!s().tealFestival){s().tealFestival=true;await save();}
+    if(!s().tealFestival){
+     const answer=await env.choose('Festival of Masks: which mask belongs to Kitakami’s misunderstood ogre?',
+      ['Teal Mask','Wellspring Mask','Hearthflame Mask']);
+     if(answer!=='Teal Mask'){await say('The festival guide suggests looking for the ogre’s teal mask. Try again!');return true;}
+     s().tealFestival=true;await save();
+    }
     await say('Festival of Masks! The legend of Ogerpon and the Loyal Three comes to life. Seek the three Pokémon across Kitakami.');return true;
    case'teal-kieran-final':
     if(!s().tealLoyalThree){await say('Return after finding Okidogi, Munkidori and Fezandipiti.');return true;}
@@ -131,6 +144,15 @@ function create(env,{fight}){
   const elite=ELITE[key];
   if(elite){
    if(!s().indigoEnrollment){await say('Register at the Blueberry League Club first.');return true;}
+   const trialKey='indigoTrial'+elite.key;
+   if(!s()[trialKey]){
+    const trial=TRIALS[elite.key],answer=await env.choose(trial.prompt,trial.answers);
+    if(answer!==trial.answers[0]){
+     await say(elite.name+': The trial is not finished yet. You can try again.');
+     return true;
+    }
+    s()[trialKey]=true;await save();await say(elite.name+': You passed my challenge. Now battle me!');
+   }
    if(await doubleFight('indigoElite'+elite.key, 'INDIGO_ELITE_'+elite.key.toUpperCase(),
     'BB Elite Four '+elite.name,elite.team,
     elite.name+': Congratulations on winning the BB League Elite Four match!')){
