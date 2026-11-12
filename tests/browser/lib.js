@@ -9,7 +9,14 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 const http = require("http");
-const { chromium } = require(process.env.PLAYWRIGHT_PATH || "/opt/node22/lib/node_modules/playwright");
+// Prefer locally installed Playwright for CI and portable development; retain the legacy
+// system path for machines that already use a global browser test installation.
+let playwrightPath = process.env.PLAYWRIGHT_PATH;
+if (!playwrightPath) {
+  try { playwrightPath = require.resolve("playwright"); }
+  catch (_) { playwrightPath = "/opt/node22/lib/node_modules/playwright"; }
+}
+const { chromium } = require(playwrightPath);
 
 const root = path.join(__dirname, "../..");
 let loaded = false;
