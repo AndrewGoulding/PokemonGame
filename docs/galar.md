@@ -77,3 +77,38 @@ Armor and Crown Tundra are planned subsequent chapters, not part of this
 release.
 
 Regression: `node tests/galar-mid-test.js`, included in `npm test`.
+
+## Wyndon, the Champion Cup and the Darkest Day
+
+After earning Raihan's Dragon Badge, travel north from Hammerlocke Stadium
+through Galar Route 10 to Wyndon. The final chapter adds **13 connected
+maps**, bringing the unified Sword/Shield campaign to **62 Galar maps**:
+Route 10, Wyndon Approach, Wyndon Hotel, Wyndon City, Pokémon Center and
+Stadium, Rose Tower and its summit, the Energy Plant, Eternatus Chamber,
+Battle Tower, Slumbering Weald Depths and the Ancient Hero Shrine.
+
+Register for the Champion Cup and battle Marnie, then Hop. Investigate Rose
+Tower, defeat Macro Cosmos security and Oleana, then enter a combined-finals
+bracket against Bede, Nessa, **both Bea and Allister**, and Raihan. The
+Sword- and Shield-exclusive opponents remain available in the same save.
+After the finalists, confront Chairman Rose at the Energy Plant, defeat
+Eternatus, and face Champion Leon in Wyndon Stadium. Becoming Champion
+persists the Galar title and increases the Galar level cap to **100**.
+
+The postgame opens Slumbering Weald Depths, Hop's rematch, Sordward and
+Shielbert, and separate one-time encounters with both Zacian and Zamazenta.
+The Wyndon Battle Tower offers repeatable trainer battles, a current streak
+and a best-streak record. Champion Cup title-defense rematches keep the
+original Championship record and increment the number of Galar titles.
+The Galar Town Map now includes every one of the 62 areas and a
+visited-only Wyndon Fly destination. Route 10, Wyndon, and the postgame
+are appropriately gated behind story milestones.
+
+**Adaptation limits:** Stadiums, Rose Tower and the Energy Plant reuse
+existing 2D layouts. Cup finals are sequential native trainer battles;
+the original Sword/Shield cutscenes, Dynamax raids, real-time 3D weather,
+cinematic Eternamax sequence and full catching mechanics are not reproduced.
+The Zacian/Zamazenta events are one-time battles, not guaranteed captures.
+The Isle of Armor and Crown Tundra expansion campaigns remain unimplemented.
+
+Regression: `node tests/galar-finale-test.js` (also in `npm test`).
