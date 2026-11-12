@@ -32,7 +32,10 @@ function accessible(m){
 (async()=>{
  const D=Galar.data(),W=GalarWild,F=GalarFeaturesStory,X=GalarExtrasStory;
  assert.equal(D.mapNames.length,90);assert.equal(Object.keys(TOWN_MAP.galar.at).length,90);
- assert.equal(W.dens.length,6);
+ assert.equal(W.dens.length,8);
+ assert(W.dens.some(d=>d.map==='GalarChallengeBeach'));
+ assert(W.dens.some(d=>d.map==='GalarBallimereLake'));
+ assert(W.dens.every(d=>D.maps[d.map]));
  for(const name of D.mapNames){
   const m=D.maps[name];
   assert(m.galarCustomLayout,name+' did not receive custom geometry');
@@ -114,6 +117,16 @@ function accessible(m){
  await go('camp-north');assert.equal(Player.itemCount(p,'oran-berry'),berryCount-1,'same-day camp cannot duplicate cooking');
  p.clockSteps+=2400;await go('camp-north');
  assert.equal(s.camp.meals,initialMeals+2);
+ // Watt Rally wins credit regional currency once per day, while the trader
+ // spends currency only when the Bag accepts the item.
+ const rallyBattles=trainer;
+ await go('watt-rally-south');assert.equal(s.wattRally.watts,200);
+ await go('watt-rally-south');assert.equal(s.wattRally.watts,200);
+ assert.equal(trainer,rallyBattles+1);
+ await go('watt-exchange');assert.equal(s.wattRally.watts,0);
+ p.clockSteps+=2400;await go('watt-rally-south');
+ assert.equal(s.wattRally.watts,200);
+ await go('watt-rally-north');assert.equal(s.wattRally.watts,400);
  const m=D.maps['GalarWedgehurst'],blocked=m.collision.findIndex((v,i)=>v&&i%m.width>1&&i%m.width<m.width-2&&i/m.width>1);
  assert(blocked>0,'need a blocked tile for same-map save recovery');
  p.location={map:'GalarWedgehurst',x:blocked%m.width,y:Math.floor(blocked/m.width),facing:'down'};
@@ -121,6 +134,7 @@ function accessible(m){
  assert.equal(m.collision[p.location.y*m.width+p.location.x],0);
  const loaded=Player.load(JSON.parse(Player.serialize(p))).player;
  assert.equal(Galar.peek(loaded).camp.meals,initialMeals+2);
+ assert.equal(Galar.peek(loaded).wattRally.watts,400);
  assert(Galar.peek(loaded).swordsUnlocked);assert.equal(Galar.peek(loaded).diglettFound.length,10);
  assert.equal(Galar.peek(loaded).starTournament.titles,1);
  assert(saves>20&&speech.length>20);
