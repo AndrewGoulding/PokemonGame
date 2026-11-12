@@ -164,3 +164,21 @@ not a complete Gigantamax eligibility/cooking simulator. The expansions
 are authored adaptations, not verbatim DLC quests or a full open world.
 
 Regression: `node tests/galar-dlc-test.js`, included in `npm test`.
+
+## Wild Area and DLC activity update
+
+Two additional Max Raid dens are available at **Challenge Beach** (Isle of Armor)
+and **Ballimere Lake** (Crown Tundra), bringing the Galar total to eight.
+They use the established badge-scaled raid and once-per-in-game-day cooldown
+system. The six existing daily roaming encounters remain unchanged.
+
+Four optional **Watt Rally** checkpoints now appear in the southern and northern
+Wild Area, Fields of Honor, and Frostpoint Field. Each route challenges a
+trainer once per in-game day and awards 200 Watts upon victory. Watts persist
+in the regional save and can be traded at the southern Wild Area **Watt
+Exchange** for Exp. Candy M (200 Watts) or Rare Candy (600 Watts). Failed
+battles grant nothing; a cancelled exchange spends nothing. This is a 2D
+battle-based adaptation rather than a timed bicycle race. Pokémon Camp curry
+cooking remains available in the same four zones.
+
+Regression coverage: `node tests/galar-completion-test.js`.
