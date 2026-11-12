@@ -1,4 +1,5 @@
-// Authored team-inspired uniforms, sold only after each campaign's own team plot ends.
+// Authored team-inspired uniforms, sold only after each campaign's own team plot ends, and the regional boutiques
+// (open from the start) that sell each region's own authored line through the same wardrobe.
 (function () {
   'use strict';
   const factions={
@@ -24,9 +25,43 @@
     {id:'cipher-orre',faction:'cipher',map:'RealgamTower_1F',sprite:'orre_peon_m',width:16,frames:9,gate:'cipher',unlock:'Defeat Evice at Realgam Tower.'},
     {id:'snagem-orre',faction:'snagem',map:'SnagemHideout',sprite:'orre_snagem_m',width:16,frames:9,gate:'snagem',unlock:'Defeat Gonzap at Realgam Tower.'}
   ].map(a=>({...a,shop:'team-'+a.id,name:factions[a.faction].name+' Outfitters',script:'team-fashion:'+a.id}));
+  // Regional boutiques: one per region outside Kalos (whose six boutiques sell the X/Y catalogue), each with its own
+  // authored line. Pieces are [collection (m, f or both), category, name, color, price]; names pick the art's
+  // existing patterns (Plaid, Knit, Boots, Skirt and so on), so they draw like the X/Y pieces.
+  const boutiques={
+    kanto:{name:'Celadon Boutique',map:'CeladonCity_DepartmentStore_2F',sprite:'clerk',width:16,frames:9,greeting:'Classic Kanto looks, picked by\nCeladon’s own designers.',pieces:[
+      ['b','hat','Pallet Logo Cap','Red',2500],['f','hat','Celadon Flower Boater','White',3800],['b','shirt','Indigo Zipped Jacket','Navy blue',5800],['m','shirt','Vermilion Striped Tee','White',3200],['f','shirt','Cerulean Striped Top','Aqua',3200],
+      ['m','pants','Pewter Cargo Pants','Gray',3800],['f','pants','Celadon Plaid Skirt','Green',4200],['b','shoes','Saffron High Tops','Yellow',4600],['f','socks','Cinnabar Knee Socks','Red',1200],['b','bag','Kanto Explorer Backpack','Red',3500],['m','hat','Viridian Outdoors Cap','Green',2400],['m','shoes','Lavender Laced Boots','Purple',5000]]},
+    johto:{name:'Goldenrod Boutique',map:'GoldenrodCity_DepartmentStore_2F',sprite:'clerk',width:16,frames:9,greeting:'Johto tradition meets Goldenrod\nstyle. Take your time!',pieces:[
+      ['b','hat','Ecruteak Knit Cap','Brown',2400],['m','hat','Goldenrod Feather Fedora','Gold',4200],['b','shirt','Azalea Check Shirt','Green',3600],['m','shirt','Mahogany Down Jacket','Brown',6400],['f','dress','Ecruteak Check Dress','Red',8200],
+      ['m','pants','Cherrygrove Shorts','Beige',3000],['f','pants','Violet Pleated Skirt','Purple',4000],['b','shoes','Blackthorn Boots','Black',5200],['f','socks','Olivine Knee Socks','Navy blue',1200],['b','bag','Goldenrod Ribbon Tote','Pink',3200],['m','shoes','Ecruteak Laced Boots','Brown',5000],['f','hat','Violet Flower Boater','Purple',3600]]},
+    hoenn:{name:'Lilycove Boutique',map:'LilycoveCity_DepartmentStore_2F',sprite:'em_woman_3',width:16,frames:9,greeting:'Sun, sea and style. Everything\nhere is made for Hoenn weather.',pieces:[
+      ['b','hat','Lilycove Sun Boater','White',3000],['b','hat','Slateport Sunglasses','Black',2800],['m','shirt','Fortree Camo Jacket','Olive',5600],['b','shirt','Mauville Logo Tee','Yellow',3200],['f','shirt','Dewford Striped Top','Aqua',3200],
+      ['m','pants','Pacifidlog Board Shorts','Blue',3000],['f','pants','Lavaridge Wrap Skirt','Orange',4200],['b','pants','Rustboro Cuffed Jeans','Navy blue',4400],['b','shoes','Slateport Deck Shoes','White',3600],['b','bag','Lilycove Tassel Bag','Aqua',3400]]},
+    sinnoh:{name:'Veilstone Boutique',map:'VeilstoneCity_Mart',sprite:'bw2_lass',width:32,frames:9,greeting:'Layers for Sinnoh’s cold\nmornings. Have a look!',pieces:[
+      ['b','hat','Snowpoint Knit Beanie','White',2600],['f','hat','Hearthome Ribbon Beret','Pink',3400],['b','shirt','Jubilife Down Jacket','Navy blue',6800],['m','shirt','Eterna Check Shirt','Green',3600],['f','shirt','Sunyshore Striped Top','Yellow',3200],
+      ['m','pants','Veilstone Cuffed Jeans','Blue',4400],['f','pants','Hearthome Plaid Skirt','Pink',4200],['b','shoes','Snowpoint Boots','White',5400],['f','socks','Snowpoint Tights','Black',1400],['b','bag','Canalave Tassel Satchel','Brown',3600],['m','hat','Veilstone Sports Cap','Gray',2400],['m','shirt','Pastoria Camo Jacket','Olive',5600]]},
+    unova:{name:'Mall Nine Boutique',map:'UnovaShoppingMallNine',sprite:'bw2_lass',width:32,frames:9,greeting:'Castelia cuts, Nimbasa sparkle.\nUnova’s latest is all here.',pieces:[
+      ['m','hat','Castelia Fedora','Black',4400],['f','hat','Nimbasa Sparkly Cap','Pink',3200],['m','shirt','Castelia Tie Shirt','White',4800],['b','shirt','Opelucid Two-Tone Jacket','Gray',6200],['f','shirt','Nimbasa Glitzy Top','Pink',4200],
+      ['b','pants','Driftveil Damaged Jeans','Blue',4600],['f','pants','Undella Shorts','Aqua',3200],['b','shoes','Castelia Laced Boots','Black',5800],['f','socks','Icirrus Tights','Navy blue',1400],['b','bag','Join Avenue Ribbon Bag','Red',3400],['m','shoes','Nimbasa High Tops','Red',4600],['m','pants','Castelia Cuffed Slacks','Black',4800]]},
+    orre:{name:'Gateon Outfitters',map:'GateonPort_Mart',sprite:'bw2_lass',width:32,frames:9,greeting:'Dust-proof, sun-proof and\nmade to last out in Orre.',pieces:[
+      ['b','hat','Orre Outdoors Cap','Beige',2400],['b','hat','Phenac Sunglasses','Black',2800],['b','shirt','Pyrite Splatter Jacket','Orange',5400],['b','shirt','Agate Check Shirt','Brown',3600],['m','pants','Outskirt Cargo Shorts','Beige',3000],
+      ['b','pants','Pyrite Damaged Jeans','Black',4400],['f','pants','Gateon Wrap Skirt','Olive',3800],['b','shoes','Mt. Battle Boots','Brown',5200],['b','bag','Orre Courier Bag','Olive',3200]]},
+    alola:{name:'Hau’oli Apparel',map:'AlolaHauoliCity',sprite:'bw2_lass',width:32,frames:9,greeting:'Alola! Island wear for every\nday of your trial.',pieces:[
+      ['m','hat','Melemele Bamboo Hat','Beige',2600],['f','hat','Akala Flower Boater','Pink',3400],['b','shirt','Alolan Exotic Shirt','Orange',3800],['f','shirt','Konikoni Sundae Top','Pink',3400],['f','dress','Malie Flower Sundress','Yellow',7600],
+      ['m','pants','Melemele Board Shorts','Aqua',3000],['f','pants','Ula’ula Wrap Skirt','Red',3800],['b','shoes','Poni Beach Sandals','Brown',2800],['b','bag','Hau’oli Beach Tote','Yellow',3000],['m','shirt','Melemele Striped Tank','Aqua',3000],['m','hat','Konikoni Sunglasses','Black',2800],['f','socks','Akala Ankle Socks','White',900],['m','pants','Poni Cargo Shorts','Olive',3000]]},
+    galar:{name:'Motostoke Boutique',map:'GalarMotostoke',sprite:'bw2_lass',width:32,frames:9,greeting:'Galar tailoring, from Wyndon\ncoats to Spikemuth tees.',pieces:[
+      ['m','hat','Wyndon Felt Hat','Gray',4600],['b','hat','Circhester Knit Beanie','Red',2600],['b','shirt','Hammerlocke Plaid Shirt','Red',3800],['b','shirt','Galar Logo Jersey','White',4200],['m','shirt','Spikemuth Damaged Tee','Black',3200],
+      ['m','pants','Hulbury Cuffed Chinos','Beige',4000],['b','pants','Galar Tartan Kilt','Green',4800],['b','shoes','Turffield Boots','Brown',5400],['f','socks','Ballonlea Tights','Purple',1400],['f','dress','Wyndon Check Dress','Navy blue',8400],['b','bag','Wyndon Tassel Satchel','Navy blue',3800]]}
+  };
+  for(const [region,b]of Object.entries(boutiques)){const faction='boutique-'+region;factions[faction]={name:b.name,boutique:true};
+    vendors.push({id:faction,faction,map:b.map,sprite:b.sprite,width:b.width,frames:b.frames,gate:'open',unlock:'',shop:'team-'+faction,name:b.name,script:'team-fashion:'+faction,boutique:true,greeting:b.greeting});}
   const byId=Object.fromEntries(vendors.map(v=>[v.id,v])),byShop=Object.fromEntries(vendors.map(v=>[v.shop,v]));
   const categories=['hat','shirt','pants','shoes','bag'],prices=[2500,5000,3500,2500,2000],items=[];
-  for(const [faction,f]of Object.entries(factions))for(const collection of ['male','female']){
+  const slug=t=>t.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  for(const [region,b]of Object.entries(boutiques))for(const [who,category,name,color,price]of b.pieces)for(const collection of who==='b'?['male','female']:[who==='m'?'male':'female']){
+    const faction='boutique-'+region;items.push({id:faction+'-'+collection+'-'+slug(name),collection,category,name,color,tag:null,price,shops:[{city:'team-'+faction,days:[0,1,2,3,4,5,6]}],default:false,gift:null,faction});}
+  for(const [faction,f]of Object.entries(factions))if(!f.boutique)for(const collection of ['male','female']){
     const names=[f.hat,f.top,collection==='female'&&f.femaleBottom||f.bottom,f.name+' Boots',f.name+' Satchel'];
     categories.forEach((category,i)=>items.push({id:'team-'+faction+'-'+collection+'-'+category,collection,category,name:names[i],color:f.colors[i],tag:'Special',price:prices[i],shops:vendors.filter(v=>v.faction===faction).map(v=>({city:v.shop,days:[0,1,2,3,4,5,6]})),default:false,gift:null,faction,symbol:f.symbol,ink:f.ink}));
   }
@@ -42,6 +77,7 @@
     case'flare':return !!f.kalos?.flareStopped;
     case'cipher':return (f.orreStory|0)>=44;
     case'snagem':return (f.orreStory|0)>=42;
+    case'open':return true;
     default:return false;
   }}
   function shopError(p,key){const v=vendor(key);if(!v)return 'Unknown team outfitter.';return unlocked(p,key)?null:v.unlock;}
@@ -70,5 +106,5 @@
   const positions=new Map();
   function person(v,others=[],present){let at=positions.get(v.id);if(!at||[...others,...(present||[])].some(a=>a.x===at.x&&a.y===at.y)){at=placement(v,others,present);if(!at)return null;positions.set(v.id,at);}return {id:'team-fashion-'+v.id,localId:'TEAM_FASHION_'+v.id.toUpperCase().replaceAll('-','_'),script:v.script,teamFashionVendor:v.id,...at,sprite:v.sprite,width:v.width,height:32,frames:v.frames,movement:'face_down',rangeX:0,rangeY:0};}
   function people(map,p,others=[],present){return vendors.filter(v=>v.map===map&&unlocked(p,v.id)).map(v=>person(v,others,present)).filter(Boolean);}
-  window.TeamFashion={factions,vendors,items,item:id=>itemIndex[id]||null,vendor,byScript,unlocked,shopError,availability,visible,placement,person,people};
+  window.TeamFashion={factions,boutiques,vendors,items,item:id=>itemIndex[id]||null,vendor,byScript,unlocked,shopError,availability,visible,placement,person,people};
 })();

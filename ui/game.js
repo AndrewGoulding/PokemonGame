@@ -6068,8 +6068,8 @@
   async function teamClothing(script){
     const vendor=TeamFashion.byScript(script);if(!vendor)return;
     const error=TeamFashion.shopError(player,vendor.id);if(error){await say(error);return;}
-    await say(vendor.name+"\nThe old operation is finished.\nThese uniforms are just clothing now.");
-    const mode=await ask("What would you like to do?",[{label:"Browse uniforms",value:"shop"},{label:"Change clothes",value:"wardrobe"},{label:"Leave",value:null}]);
+    await say(vendor.boutique?"Welcome to "+vendor.name+"!\n"+vendor.greeting:vendor.name+"\nThe old operation is finished.\nThese uniforms are just clothing now.");
+    const mode=await ask("What would you like to do?",[{label:vendor.boutique?"Browse clothes":"Browse uniforms",value:"shop"},{label:"Change clothes",value:"wardrobe"},{label:"Leave",value:null}]);
     if(!mode)return;Screen.say("");show("scene");clearMenu();
     try{await KalosFashionDevice.open(scene,player,mode==="shop"?vendor.shop:null);}
     finally{tick();Save.write(player);show("world");await Overworld.resume();}

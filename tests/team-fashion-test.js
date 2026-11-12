@@ -2,11 +2,13 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto');
 global.window=global;global.localStorage={getItem:()=>null,setItem(){},removeItem(){}};
 for(const[,f]of fs.readFileSync('index.html','utf8').matchAll(/<script src="([^"]+)"><\/script>/g))if(!f.startsWith('ui/')||f==='ui/story-events.js')vm.runInThisContext(fs.readFileSync(f,'utf8'),{filename:f});
-const T=TeamFashion,F=KalosFashion;
+const T0=TeamFashion,F=KalosFashion;
+// (Only the team outfitters; the regional boutiques have their own test, tests/region-boutiques-test.js.)
+const team=a=>!String(a.faction).startsWith('boutique-'),T={...T0,vendors:T0.vendors.filter(team),items:T0.items.filter(team),factions:Object.fromEntries(Object.entries(T0.factions).filter(([k])=>team({faction:k})))};
 function fixture(){const p=Player.create('UNIFORMS');p.money=100000;p.party=[Party.create('Pikachu',50)];return p;}
 function unlock(p,gate){switch(gate){case'silph':p.flags.TRAINER_BOSS_GIOVANNI_2=true;break;case'weather':p.flags.hoenn={f:{FLAG_SOOTOPOLIS_ARCHIE_MAXIE_LEAVE:true},v:{}};break;case'distortion':p.flags.sinnoh={giratinaResolved:true};break;case'bw':p.flags.unovaBW={clear:true};break;case'bw2':p.flags.unova={ghetsis:true};break;case'flare':p.flags.kalos={flareStopped:true};break;case'cipher':p.flags.orreStory=44;break;case'snagem':p.flags.orreStory=42;break;}}
 (async()=>{
-assert.equal(T.vendors.length,9);assert.equal(T.items.length,90);assert.equal(F.items().length,307);assert.equal(F.allItems().length,397);assert(!T.vendors.some(v=>WORLD_MAPS[v.map].region==='johto'));assert.equal(new Set(T.items.map(a=>a.id)).size,90);
+assert.equal(T.vendors.length,9);assert.equal(T.items.length,90);assert.equal(F.items().length,307);assert.equal(F.allItems().length,307+T0.items.length);assert(!T.vendors.some(v=>WORLD_MAPS[v.map].region==='johto'));assert.equal(new Set(T.items.map(a=>a.id)).size,90);
 for(const v of T.vendors){
  const p=fixture(),shop=v.shop;assert(WORLD_MAPS[v.map],v.map);assert.equal(T.byScript(v.script),v);assert.equal(T.vendor(shop),v);assert.equal(T.unlocked(p,shop),false);assert.deepEqual(T.people(v.map,p),[]);assert(T.shopError(p,shop));
  const stock=F.stock(p,shop);assert.equal(stock.length,10);assert.equal(F.stock(p,shop,{today:true}).length,0);

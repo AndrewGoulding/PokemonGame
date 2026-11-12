@@ -20,4 +20,6 @@ The 90 authored uniform pieces supplement the canonical 307-piece X/Y catalogue.
 
 Choose **Browse uniforms** to preview, buy and wear pieces, or **Change clothes** to open the shared wardrobe. Ownership, equipment and named outfits use the existing save format and work without starting Kalos. Vendors occupy free floor space away from entrances, signs and triggers, without blocking a corridor.
 
+The same module also runs the [regional boutiques](region-boutiques.md).
+
 Implementation: `game/team-fashion.js`, the shared fashion model/device, and story-event dispatch. Run `npm test` for story gates, placement, purchases, collection rendering and persistence. `tests/browser/team-fashion.js` exercises the Rocket vendor through native interaction and save reload.
