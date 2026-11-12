@@ -10,7 +10,7 @@ const gates={
  GalarRoute7:'opalClear',GalarRoute8:'hopRoute7',
  GalarCirchester:'hopRoute7',GalarCirchesterCenter:'hopRoute7',GalarCirchesterStadium:'hopRoute7',
  GalarRoute9:'circhesterClear',GalarSpikemuth:'yellRoute9',GalarSpikemuthCenter:'yellRoute9',GalarSpikemuthGym:'marnieSpikemuth',
- GalarRoute9Tunnel:'piersClear',GalarHammerlockeGate:'piersClear',GalarHammerlockeCenter:'kabuClear',
+ GalarRoute9Tunnel:'piersClear',GalarHammerlockeGate:'kabuClear',GalarHammerlockeCenter:'kabuClear',
  GalarHammerlockeStadium:'piersClear'
 };
 const hints={
