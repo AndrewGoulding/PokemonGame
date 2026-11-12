@@ -23,6 +23,8 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
       - run: npm test
+      - name: Audit regional map assets and traversal
+        run: node tools/map-quality-audit.js
 
   paldea-browser:
     runs-on: ubuntu-latest
