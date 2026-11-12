@@ -81,8 +81,8 @@ const OUT = process.env.OUT || "/tmp/pk-xd";
     // Out the front: Naps. (A Master Ball from the Bag at his Shadow Teddiursa.)
     await s.eval(() => {
       const G = window.GbaMenus, act = G.battleAction, bagOpen = window.BagScreen.open;
-      let thrown = -1, ball = false;
-      G.battleAction = (c, o) => { const b = BattleScreen._test.battle; if (b && o.name && b.snag && thrown !== b.turn && [].concat(b.sides.p2.actives || b.sides.p2.active).some((m) => m && b.snaggable(m))) { thrown = b.turn; ball = true; return Promise.resolve({ action: "bag", cursor: 1 }); } return act(c, o); };
+      let thrown = -1, thrownIn = null, ball = false;   // (the turn a ball was last thrown, and in which battle: a new battle starts its turns over)
+      G.battleAction = (c, o) => { const b = BattleScreen._test.battle; if (b && o.name && b.snag && !(thrownIn === b && thrown === b.turn) && [].concat(b.sides.p2.actives || b.sides.p2.active).some((m) => m && b.snaggable(m))) { thrown = b.turn; thrownIn = b; ball = true; return Promise.resolve({ action: "bag", cursor: 1 }); } return act(c, o); };
       window.BagScreen.open = (o) => (ball ? (ball = false, Promise.resolve({ pocket: "Poké Balls", id: "master-ball" })) : bagOpen(o));
     });
     await go("PokemonHQLab_1F", 7, 8, "down");
