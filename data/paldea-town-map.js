@@ -12,14 +12,18 @@ const groups=[
  ['LosPlatos',11,9,['LosPlatos','LosPlatosCenter']],
  ['SouthProvince',12,8,['SouthProvince']],
  ['Mesagoza',13,6,['Mesagoza','Academy','MesagozaCenter']],
- ['Cortondo',10,6,['Cortondo','CortondoGym']]
+ ['Cortondo',10,6,['Cortondo','CortondoGym']],
+ ['EastProvince',15,8,['EastProvince']],
+ ['Artazon',17,7,['Artazon','ArtazonCenter','ArtazonGym']],
+ ['WestProvince',8,7,['WestProvince']],
+ ['Cascarrafa',6,6,['Cascarrafa','CascarrafaCenter','CascarrafaGym']]
 ];
 for(const [id,x,y,aliases] of groups){
  const sec='PALDEA_'+id.replace(/([a-z])([A-Z])/g,'$1_$2').toUpperCase();
  const name='Paldea'+id,m=D.maps[name];if(!m)throw Error('Paldea map missing '+name);
  map[y][x]=sec;names[sec]=m.title;
  for(const alias of aliases){const key='Paldea'+alias;if(!D.maps[key])throw Error('Paldea map missing '+key);at[key]=[x,y];mapSections[key]=sec;}
- if(['CaboPoco','LosPlatos','Mesagoza','Cortondo'].includes(id))towns.push(sec);
+ if(['CaboPoco','LosPlatos','Mesagoza','Cortondo','Artazon','Cascarrafa'].includes(id))towns.push(sec);
 }
 for(const name of D.mapNames)if(!at[name])throw Error('Paldea Town Map missing '+name);
 function landing(name){
@@ -31,7 +35,7 @@ function landing(name){
  choices.sort((a,b)=>a.d-b.d);if(!choices.length)throw Error('No Paldea Fly tile '+name);
  return{map:name,x:choices[0].x,y:choices[0].y};
 }
-for(const id of ['CaboPoco','LosPlatos','Mesagoza','Cortondo'])fly[mapSections['Paldea'+id]]=landing('Paldea'+id);
+for(const id of ['CaboPoco','LosPlatos','Mesagoza','Cortondo','Artazon','Cascarrafa'])fly[mapSections['Paldea'+id]]=landing('Paldea'+id);
 const R={id:'PALDEA',label:'Paldea',image:'assets/town-map/paldea.svg',x0:32,y0:16,
  width,height,map,dungeon,at,mapSections,names,towns,fly};
 T.paldea=R;Object.assign(T.mapSections,mapSections);Object.assign(T.names,names);Object.assign(T.fly,fly);
