@@ -176,6 +176,13 @@
     if(!img.complete || !img.naturalWidth)return;
     g.drawImage(img,x+p.x*T,y+p.y*T,p.w*T,p.h*T);
   }
-  window.AuthoredRegionArt={draw,plan,choice,chooseFootprint,CHOICES,
+  function imageStatus(name) {
+    const p=plan(name);
+    if (!p) return null;
+    const img=sprites.get(p.asset);
+    return {asset:p.asset, x:p.x, y:p.y, w:p.w, h:p.h,
+      requested:!!img, ready:!!(img?.complete && img.naturalWidth)};
+  }
+  window.AuthoredRegionArt={draw,plan,choice,chooseFootprint,imageStatus,CHOICES,
     clear:()=>placements.clear()};
 })();
