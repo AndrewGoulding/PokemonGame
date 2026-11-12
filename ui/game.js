@@ -11688,6 +11688,11 @@
   }
   // Sets a map's collision and behaviours for the patches on now (the rest as built).
   const baseCollision = {}, baseBehavior = {};
+  // The maps joined to this one's edges get their patches too: a way opened at a neighbour's edge (Celadon's gap in
+  // the trees down to its Berry Farm) is open from this side as well, since a step over the edge checks its tiles.
+  function applyNeighbourPatches(map) {
+    for (const c of ((window.WORLD_MAPS[map] || {}).connections || [])) if (c.map !== map) applyPatches(c.map);
+  }
   function applyPatches(map) {
     const m = window.WORLD_MAPS[map];
     if(m&&map===SinnohUnderground.data().base){const base=baseCollision[map]||(baseCollision[map]=m.collision.slice());m.collision=base.slice();for(const[x,y]of SinnohUnderground.overlay(player,map).solid)m.collision[y*m.width+x]=1;}
@@ -13573,7 +13578,7 @@
           if (m !== tempFlagsMap && m === GOLDENROD_SWITCHES) goldenrodSwitchesEnter();
           if (m !== tempFlagsMap) { hoennCameFrom = hoennLastType; magnetTrain.enter(m); johto.transition(m); gymmicks.enter(m); johtoSafari.arrive(m); if (isHoenn(m)) { restoreMetatiles(m); hoennWeatherEnter(m); hoennDecorApply(m); hoennSpotOpen(m); hoennEntering = m; hoenn.transition(m).then(() => { if (hoennEntering === m) hoennEntering = null; }); } hoennLastType = (window.WORLD_MAPS[m] || {}).type; }
           if (m === "SSAqua_1F") ssAquaExit();
-          forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); visitSection(m);
+          forgetTrainerSpots(m); clearTempFlags(m); applyPatches(m); applyNeighbourPatches(m); visitSection(m);
           if (Sinnoh.cyclingRequired({ ...Overworld.position(), map: m }) && Sinnoh.cyclingAllowed(player)) Overworld.setAvatar("bike");
           if (!gear.radioOn(m)) music(avatarMusic(Overworld.avatar()) || (window.WORLD_MAPS[m] || {}).music); }   // (the Pokégear's radio plays on)
       });
