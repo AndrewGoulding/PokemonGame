@@ -28,8 +28,10 @@
   // Regional boutiques: one per region outside Kalos (whose six boutiques sell the X/Y catalogue), each with its own
   // authored line. Pieces are [collection (m, f or both), category, name, color, price]; names pick the art's
   // existing patterns (Plaid, Knit, Boots, Skirt and so on), so they draw like the X/Y pieces.
+  // Celadon's has a building of its own (data/celadon-boutique.js): its clerk stands at `at`, behind its counter, and
+  // sells from FireRed's Mart screen (`mart`: ui/boutique-mart.js, ui/game.js's teamClothing).
   const boutiques={
-    kanto:{name:'Celadon Boutique',map:'CeladonCity_DepartmentStore_2F',sprite:'clerk',width:16,frames:9,greeting:'Classic Kanto looks, picked by\nCeladon’s own designers.',pieces:[
+    kanto:{name:'Celadon Boutique',map:'CeladonCity_Boutique',at:{x:2,y:3},movement:'face_right',mart:true,sprite:'woman_2',width:16,frames:10,greeting:'Classic Kanto looks, picked by\nCeladon’s own designers.',pieces:[
       ['b','hat','Pallet Logo Cap','Red',2500],['f','hat','Celadon Flower Boater','White',3800],['b','shirt','Indigo Zipped Jacket','Navy blue',5800],['m','shirt','Vermilion Striped Tee','White',3200],['f','shirt','Cerulean Striped Top','Aqua',3200],
       ['m','pants','Pewter Cargo Pants','Gray',3800],['f','pants','Celadon Plaid Skirt','Green',4200],['b','shoes','Saffron High Tops','Yellow',4600],['f','socks','Cinnabar Knee Socks','Red',1200],['b','bag','Kanto Explorer Backpack','Red',3500],['m','hat','Viridian Outdoors Cap','Green',2400],['m','shoes','Lavender Laced Boots','Purple',5000]]},
     johto:{name:'Goldenrod Boutique',map:'GoldenrodCity_DepartmentStore_2F',sprite:'clerk',width:16,frames:9,greeting:'Johto tradition meets Goldenrod\nstyle. Take your time!',pieces:[
@@ -55,7 +57,7 @@
       ['m','pants','Hulbury Cuffed Chinos','Beige',4000],['b','pants','Galar Tartan Kilt','Green',4800],['b','shoes','Turffield Boots','Brown',5400],['f','socks','Ballonlea Tights','Purple',1400],['f','dress','Wyndon Check Dress','Navy blue',8400],['b','bag','Wyndon Tassel Satchel','Navy blue',3800]]}
   };
   for(const [region,b]of Object.entries(boutiques)){const faction='boutique-'+region;factions[faction]={name:b.name,boutique:true};
-    vendors.push({id:faction,faction,map:b.map,sprite:b.sprite,width:b.width,frames:b.frames,gate:'open',unlock:'',shop:'team-'+faction,name:b.name,script:'team-fashion:'+faction,boutique:true,greeting:b.greeting});}
+    vendors.push({id:faction,faction,map:b.map,sprite:b.sprite,width:b.width,frames:b.frames,gate:'open',unlock:'',shop:'team-'+faction,name:b.name,script:'team-fashion:'+faction,boutique:true,greeting:b.greeting,at:b.at,movement:b.movement,mart:!!b.mart});}
   const byId=Object.fromEntries(vendors.map(v=>[v.id,v])),byShop=Object.fromEntries(vendors.map(v=>[v.shop,v]));
   const categories=['hat','shirt','pants','shoes','bag'],prices=[2500,5000,3500,2500,2000],items=[];
   const slug=t=>t.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -104,7 +106,7 @@
     return null;
   }
   const positions=new Map();
-  function person(v,others=[],present){let at=positions.get(v.id);if(!at||[...others,...(present||[])].some(a=>a.x===at.x&&a.y===at.y)){at=placement(v,others,present);if(!at)return null;positions.set(v.id,at);}return {id:'team-fashion-'+v.id,localId:'TEAM_FASHION_'+v.id.toUpperCase().replaceAll('-','_'),script:v.script,teamFashionVendor:v.id,...at,sprite:v.sprite,width:v.width,height:32,frames:v.frames,movement:'face_down',rangeX:0,rangeY:0};}
+  function person(v,others=[],present){let at=v.at||positions.get(v.id);if(!v.at&&(!at||[...others,...(present||[])].some(a=>a.x===at.x&&a.y===at.y))){at=placement(v,others,present);if(!at)return null;positions.set(v.id,at);}return {id:'team-fashion-'+v.id,localId:'TEAM_FASHION_'+v.id.toUpperCase().replaceAll('-','_'),script:v.script,teamFashionVendor:v.id,...at,sprite:v.sprite,width:v.width,height:32,frames:v.frames,movement:v.movement||'face_down',rangeX:0,rangeY:0};}
   function people(map,p,others=[],present){return vendors.filter(v=>v.map===map&&unlocked(p,v.id)).map(v=>person(v,others,present)).filter(Boolean);}
   window.TeamFashion={factions,boutiques,vendors,items,item:id=>itemIndex[id]||null,vendor,byScript,unlocked,shopError,availability,visible,placement,person,people};
 })();

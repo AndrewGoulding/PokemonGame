@@ -94,6 +94,8 @@ const js = "// The Magnet Train (tools/build-magnet-train.js): Saffron City's do
   "  // (The door: solid, as FireRed's are, walked up into.)\n" +
   "  saffron.warps.push({ x: " + DOOR.x + ", y: " + DOOR.y + ", map: station.name, warp: 0 });\n" +
   "  saffron.patches = Object.assign({}, saffron.patches, { magnettrain: { x: " + AT.x + ", y: " + AT.y + ", w: " + AT.w + ", h: " + AT.h + ", top: true, collision: " + JSON.stringify(SOLID) + " } });\n" +
+  "  // (Its tiles so in the map's own data too, the patch always on: the door's a door wherever the map's read, coming back out of it too.)\n" +
+  "  for (const [x, y, c, b] of saffron.patches.magnettrain.collision) { saffron.collision[y * saffron.width + x] = c; if (b != null) saffron.behavior[y * saffron.width + x] = b; }\n" +
   "  for (const w of station.warps) if (w.mapConst === \"MAP_SAFFRON\") { w.map = \"SaffronCity\"; w.warp = saffron.warps.length - 1; delete w.mapConst; }\n" +
   "  // (On Kanto's Town Map, in Saffron City: data/town-map.js, loaded after this, has only FireRed's maps; ui/magnet-train.js adds these.)\n" +
   "  for (const m of [station.name, \"SaffronCity_MagnetTrainStation_2F\", \"SaffronCity_MagnetTrainStation_2F_Empty\"]) if (W[m]) W[m].townMapSection = \"SAFFRON_CITY\";\n" +

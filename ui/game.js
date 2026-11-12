@@ -6087,9 +6087,37 @@
     }finally{if(temporary||st.pwtBackup){player.party=original;delete st.pwtBackup;delete st.facilityPending;if(lastRecord){UnovaFacilities.state(player).lastRecord=lastRecord;lastRecord=null;}Save.write(player);}show('world');await Overworld.resume();}
   }
 
+  // A boutique with a shop of its own, the Celadon Boutique: served as a Poké Mart is (mart, above), "Buy" FireRed's
+  // buy screen with its clothes on it (ui/boutique-mart.js: one of each, you in the piece the cursor's on), and
+  // "Wardrobe" the shared wardrobe; what you've bought, put on as you leave the screen, if you like.
+  async function boutiqueMart(vendor){
+    let text="Welcome to "+vendor.name+"!\n"+vendor.greeting;
+    for(;;){
+      Screen.say(fill(text));await Screen.printed();clearMenu();
+      const {index}=await pcMenu(["Buy","Wardrobe","See ya!"],{left:2,top:1,width:12});
+      if(index===0){
+        Screen.say("");await BoutiqueMart.ready();
+        const at=Overworld.position(),[dx,dy]=({up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]})[at.facing]||[0,-1];
+        const offers=BoutiqueMart.offers(player,vendor);
+        await ShopScreen.open(Object.assign(offers,{frame:GameOptions.get().frame,map:{canvas:$("#world"),x:112+16*dx,y:96+16*dy}}));
+        if(offers.bought.length){
+          offers.bought.forEach(()=>UnovaRecords.record(player,"purchases"));
+          if(await confirm(offers.bought.length>1?"Would you like to wear your\nnew clothes now?":"Would you like to wear it now?")){offers.bought.forEach(id=>KalosFashion.equip(player,id));await say("It suits you!");}
+        }
+      }else if(index===1){
+        Screen.say("");show("scene");clearMenu();
+        try{await KalosFashionDevice.open(scene,player,null);}
+        finally{show("world");await Overworld.resume();}
+      }else{await say("Please come again!");return;}
+      tick();Save.write(player);
+      text="Is there anything else I can do?";
+    }
+  }
+
   async function teamClothing(script){
     const vendor=TeamFashion.byScript(script);if(!vendor)return;
     const error=TeamFashion.shopError(player,vendor.id);if(error){await say(error);return;}
+    if(vendor.mart)return boutiqueMart(vendor);
     await say(vendor.boutique?"Welcome to "+vendor.name+"!\n"+vendor.greeting:vendor.name+"\nThe old operation is finished.\nThese uniforms are just clothing now.");
     const mode=await ask("What would you like to do?",[{label:vendor.boutique?"Browse clothes":"Browse uniforms",value:"shop"},{label:"Change clothes",value:"wardrobe"},{label:"Leave",value:null}]);
     if(!mode)return;Screen.say("");show("scene");clearMenu();
@@ -11630,7 +11658,7 @@
     if (map === "SaffronCity_Dojo") return f.TRAINER_BLACK_BELT_KOICHI && f.dojoDenDoor ? ["denroom"] : [];
     // (Mr. Psychic's back room, once he's given you his TM; the way to Celadon's Berry Farm, always: the same file.)
     if (map === "SaffronCity_MrPsychicsHouse") return f.gotTM29 ? ["denroom"] : [];
-    if (map === "CeladonCity") return ["farmpath"];
+    if (map === "CeladonCity") return ["farmpath", "boutique"];   // (and the Celadon Boutique's building: tools/build-celadon-boutique.js)
     // (Route 40's Battle Tower: no stairs.)
     if (map === "BattleTower_Lobby") return ["nostairs"];
     // (The League gate's ways west and east, to Johto's Routes 26 and 28: data/johto-maps.js.)

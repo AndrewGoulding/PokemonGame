@@ -958,7 +958,7 @@ for (const share of [false, true]) {
     const city = WORLD_MAPS.CeladonCity, farm = WORLD_MAPS.CeladonCity_BerryFarm, gd = RaidDens.DENS.find((d) => d.type === "Grass");
     assert(farm && city.connections.some((c) => c.map === farm.name && c.direction === "down") && farm.connections.some((c) => c.map === "CeladonCity" && c.direction === "up"));
     assert(city.patches.farmpath && city.patches.farmpath.collision.every(([, , c]) => c === 0) && !city.patches.berryfarm && !city.signs.some((sg) => /BerryFarm/.test(sg.script)));
-    assert(/CeladonCity"\) return \["farmpath"\]/.test(readGameSource()));
+    assert(/CeladonCity"\) return \["farmpath", "boutique"\]/.test(readGameSource()));
     // (The way through: open from Celadon's lawn down into the farm.)
     assert([10, 11].every((x) => !farm.collision[x] && !farm.collision[farm.width + x]));
     assert(gd.map === farm.name && !farm.collision[gd.y * farm.width + gd.x]);

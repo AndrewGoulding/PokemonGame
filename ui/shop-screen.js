@@ -12,6 +12,8 @@
 //     buy,      // (id, n) => error message or null (it's bought), then maybe a second message
 //     frame,    // the Option screen's FRAME (0-9)
 //     map       // the overworld canvas and where the tile you face is on it: { canvas, x, y }
+//     preview   // (id) => a picture, 64 x 64, of what the cursor's on (a boutique's clothes, on you:
+//               // ui/boutique-mart.js), shown in a window of its own below your money, or null
 //     currency  // (or what it's paid in instead of money: { label, unit(n), short }, as the
 //               // Pokéathlon's Athlete Points: the box's name, a price, "not enough")
 //   })
@@ -75,12 +77,21 @@
     s.text(st.opts.currency ? st.opts.currency.label : "Money", 8, 8, DARK, LIGHT);
     const m = yen(st.opts.money());
     s.text(m, 72 - s.textWidth(m, "small"), 20, DARK, LIGHT, "small");
+    // (A boutique's fitting window, below it: 1, 5, 8 x 8. The picture's drawn over it: compose.)
+    if (st.opts.preview) {
+      s.frame("std", G.palettes.std3, 1, 5, 8, 8);
+      s.fill(8, 40, 64, 64, [232, 236, 232]);
+    }
     // The list (window 4 at 88, 8): names at 97, prices right-aligned to 221.
     for (let r = 0; r < shown; r++) {
       const it = items[st.top + r], y = 10 + 16 * r;
       const p = it && (st.opts.soldOut && st.opts.soldOut(it.id) ? "-----" : yen(it.price)), room = it ? 222 - s.textWidth(p, "small") - 4 - 97 : Infinity, name = it ? it.name : "Cancel";
       // (A name too long for its row before the price, "TM99 Secret Power": in the small font.)
-      s.text(name, 97, y, DARK, LIGHT, (it && st.opts.smallNames) || s.textWidth(name) > room ? "small" : undefined);
+      const small = (it && st.opts.smallNames) || s.textWidth(name) > room ? "small" : undefined;
+      // (Too long even so, a boutique's "Kanto Explorer Backpack": cut short, its whole name in its description.)
+      let shownName = name;
+      while (small && shownName.length > 4 && s.textWidth(shownName, "small") > room) shownName = shownName.slice(0, -2).trimEnd() + "…";
+      s.text(shownName, 97, y, DARK, LIGHT, small);
       if (it) s.text(p, 222 - s.textWidth(p, "small"), y, DARK, LIGHT, "small");
       if (st.top + r === st.cursor) s.text("▶", 89, y, busy ? LIGHT : DARK, busy ? DARK : LIGHT);
     }
@@ -139,6 +150,10 @@
       if (st.qty && st.qty.max > 1) { up(152, 72); down(152, 104); }
     }
     if (st.layer) g.drawImage(st.layer, 0, 0);
+    if (st.opts.preview) {
+      const pic = cur ? st.opts.preview(cur.id) : null;
+      if (pic && (pic.naturalWidth || pic.width)) g.drawImage(pic, 8, 40, 64, 64);
+    }
     // The message box (window 2), the text typed out.
     if (st.message) {
       if (ready(image("assets/text/message-box.png"))) g.drawImage(image("assets/text/message-box.png"), 0, 112);
@@ -266,5 +281,6 @@
     canvas.classList.add("hidden");
   }
 
-  window.ShopScreen = { open, close };
+  // (showing, state: for tests/browser, what's on the screen now.)
+  window.ShopScreen = { open, close, get showing() { return !!st; }, get state() { return st && { cursor: st.cursor, item: (entries()[st.cursor] || {}).id || null, message: st.message ? st.message.text : null }; } };
 })();
