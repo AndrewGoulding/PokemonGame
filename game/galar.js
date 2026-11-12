@@ -85,7 +85,20 @@ function allowed(p,map){
 function cap(p){const s=peek(p);return s.raihanClear&&window.GalarFinale?window.GalarFinale.cap(p):s.kabuClear&&window.GalarMid?window.GalarMid.cap(p):s.kabuClear?45:s.nessaClear?35:s.miloClear?30:s.ceremony?25:s.endorsement?20:s.wealdClear?15:s.starter?12:7;}
 function visit(p,map){if(!owns(map))return;const s=state(p);
  if(s.ceremony&&!Player.itemCount(p,'dynamax-band'))Player.addItem(p,'dynamax-band',1);if(!s.visited.includes(map))s.visited.push(map);s.resume={...p.location};}
-function recover(p){if(!owns(p.location?.map))return false;const m=WORLD_MAPS[p.location.map],a=p.location;if(a.x>=0&&a.y>=0&&a.x<m.width&&a.y<m.height&&!m.collision[a.y*m.width+a.x])return false;Object.assign(a,D.start);return true;}
+function recover(p){
+ if(!owns(p.location?.map))return false;
+ const m=WORLD_MAPS[p.location.map],a=p.location;
+ const safe=(x,y)=>x>=0&&y>=0&&x<m.width&&y<m.height&&!m.collision[y*m.width+x]&&
+ !m.warps.some(v=>v.x===x&&v.y===y)&&!m.people.some(v=>v.x===x&&v.y===y);
+ if(safe(a.x,a.y))return false;
+ const cx=Number.isInteger(a.x)?a.x:Math.floor(m.width/2),cy=Number.isInteger(a.y)?a.y:Math.floor(m.height/2);
+ const spots=[];for(let y=1;y<m.height-1;y++)for(let x=1;x<m.width-1;x++)
+  if(safe(x,y))spots.push({x,y,d:Math.abs(x-cx)+Math.abs(y-cy)});
+ spots.sort((l,r)=>l.d-r.d);
+ if(spots.length){a.x=spots[0].x;a.y=spots[0].y;}
+ else Object.assign(a,D.start);
+ return true;
+}
 function sourceWild(p,mon){if(!owns(p.location?.map))return mon;mon.met={...mon.met,map:p.location.map,level:mon.level,game:'galar-sword-shield'};return mon;}
 window.Galar={data:()=>D,owns,peek,state,starter,rivalSpecies,gift,allowed,cap,visit,recover,sourceWild};
 })();
