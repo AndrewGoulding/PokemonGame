@@ -4323,7 +4323,6 @@
     { map: "SSAnne_1F_Room2", x: 5, y: 6, item: "tm119" },   // (Body Slam)
     { map: "SafariZone_East", x: 30, y: 18, item: "tm137" },   // (Egg Bomb)
     { map: "SafariZone_North", x: 27, y: 9, item: "tm139" },   // (Skull Bash)
-    { map: "SilphCo_10F", x: 2, y: 13, item: "tm26" },   // (Earthquake)
     { map: "SilphCo_5F", x: 0, y: 18, item: "tm120" },   // (Take Down)
     { map: "SilphCo_7F", x: 30, y: 10, item: "tm74" },   // (Swords Dance)
     { map: "VictoryRoad_1F", x: 17, y: 1, item: "tm141" },   // (Sky Attack)

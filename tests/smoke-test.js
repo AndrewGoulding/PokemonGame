@@ -838,7 +838,8 @@ for (const share of [false, true]) {
     assert.deepStrictEqual(Mining.TREASURES.find((t) => t[0] === "metal-coat"), ["metal-coat", 3, ["xx", "xx", "xx"], 25]);
     const oldBalls = gJs0.slice(gJs0.indexOf("const OLD_GAME_BALLS = ["), gJs0.indexOf("].map((b, i) => Object.assign({ id: 1100"));
     const ob = [...oldBalls.matchAll(/\{ map: "(\w+)", x: (\d+), y: (\d+), item: "([\w-]+)" \}/g)].map((m) => ({ map: m[1], x: +m[2], y: +m[3], item: m[4] }));
-    assert.strictEqual(ob.length, 33, "32 TMs and a Metal Coat");
+    assert.strictEqual(ob.length, 32, "31 TMs and a Metal Coat");
+    assert(!ob.some((b) => b.map.startsWith("SilphCo") && b.item === "tm26"), "no Earthquake in Silph Co.");
     assert(ob.some((b) => b.map === "RockTunnel_B1F" && b.item === "metal-coat") && ob.some((b) => b.map === "MtMoon_1F" && Bag.machineMove(b.item) === "Water Gun"));
     // (Johto's at HGSS's tiles, on its maps as they are now, Heart & Soul's: ui/johto-coords.js, as ui/game.js places them.)
     if (!window.JohtoCoords) vm.runInThisContext(fs.readFileSync(path.join(root, "ui/johto-coords.js"), "utf8"));
