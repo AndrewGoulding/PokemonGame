@@ -283,6 +283,7 @@
       this.ability = set.ability && window.ABILITIES[set.ability] ? set.ability : (dex.abilities && dex.abilities[0]) || "";
       this.baseAbility = this.ability;
       this.item = normItem(set.item);
+      this.pokerus = !!set.pokerus;
       this.lastItem = "";
       this.boosts = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, accuracy: 0, evasion: 0 };
       this.status = "";
@@ -2728,6 +2729,7 @@
       // each gets the full amount and the rest of the party half.
       const give = (mon, divisor, share) => {
         E.addEvs(mon.evs, foe.baseSpecies);
+        if (mon.pokerus) E.addEvs(mon.evs, foe.baseSpecies);   // (Pokérus doubles EV gains.)
         const amount = E.gain({ species: foe.baseSpecies, level: foe.level, trainer: !this.wild,
           participants: divisor, multiplier: this.expMultiplier, luckyEgg: mon.item === "lucky-egg" });
         if (mon.level >= E.MAX_LEVEL) { unused += amount; return; }

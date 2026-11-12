@@ -6,8 +6,8 @@ module has bound its event banks, then follows the source warps
 (`res/field/events/<bank>.json`) outward from the mapped banks until nothing new is
 reached. A bank becomes a room only when a source warp leads to it from a mapped
 area, so legacy, cutscene-only and wireless zones are never guessed into the map.
-The pass adds 130 rooms: 103 houses (including upstairs floors), 20 gatehouses and
-7 outdoor side streets (Castelia’s streets and Rumination Field).
+The pass adds 133 rooms: 105 houses (including upstairs floors), 20 gatehouses and
+8 outdoor side streets (Castelia’s streets, its Unity Tower pier and Rumination Field).
 
 | Area | Rooms |
 | --- | --- |
@@ -50,7 +50,7 @@ trainer passes; no house bank has a field item.
 
 One-time gifts come from the source give-item calls (`global_2800` with its flag
 and before/after/done messages, and `global_2805`/`2806` followed by their own
-`FlagSet`). 24 gifts are imported. Each is keyed by its source flag, so the two
+`FlagSet`). 25 gifts are imported (the Unity Tower pier adds a Destiny Knot). Each is keyed by its source flag, so the two
 Route 4 Sitrus Berry houses (shared flag 386) pay once. Rewards go through the
 native capacity-safe gift path: a full Bag leaves the gift unclaimed. The Route 13
 Mail Pokémon gives the Power Lens in White 2 and the Power Band in Black 2, the
@@ -67,6 +67,14 @@ weekday café drinks, party-count checks, random gallery/feather gifts, the TM m
 quiz, the Castelia sunglasses search and the Aspertia gate type check. The Nacrene fossil choice and Castelia
 Harlequin Hunt are already native (`bw:lenora-fossil`, `bw:harlequin-hunt`), so
 those source people are not duplicated.
+
+## Unity Tower
+
+The source reaches Unity Tower only by the Castelia pier's ferry with the wireless Unity Pass. The pier
+(`castelia_city_9`) is now a side street off Castelia, and its boat is a door to the tower's lobby
+(`unity_tower_2`) with the top floor (`unity_tower_3`) upstairs, so the tower counts for Around Unova. The tower's
+island (`unity_tower`) is an overworld chunk and is skipped. The top floor's visitors from other regions
+(`OBJ_CODE_WORK_*`) have no sprites and are not shown.
 
 ## TVs, trash cans and vending machines
 
@@ -100,7 +108,7 @@ League chamber signs, ferries, and banks no source warp reaches from a mapped ar
 (cutscene rooms, Unity Tower, Battle Subway cars, the Entralink copies and others).
 Pokémon Centers and Gyms keep their native rooms.
 
-Validation: `tests/unova-interiors-test.js` checks the 130 rooms, two-way warps
+Validation: `tests/unova-interiors-test.js` checks the 133 rooms, two-way warps
 for every door and gate, gate placement on the Nimbasa–Route 5 road, one actor per
 imported person/sign, relocated trades, gift items/flags, Bag-full retry, shared
 flags, badge and version gates, custom items, the native scene, healing, signs and

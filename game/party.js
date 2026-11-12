@@ -198,6 +198,8 @@
       // (Gen 8 evolutions' running totals: Basculin's recoil, Hisuian
       // Qwilfish's Barb Barrages.)
       recoil: record.recoil || 0,
+      // (Pokérus, infected or cured: its EV gains are doubled.)
+      pokerus: !!(record.pokerus && record.pokerus.strain),
       moveUses: Object.assign({}, record.moveUses),
       koSpecies: Object.assign({}, record.koSpecies),
       // (Dynamax: its level, raised by Dynamax Candy, and the G-Max Factor.)

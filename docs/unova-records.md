@@ -110,8 +110,18 @@ event flags are.
   Face Board Memorial, Heavy Machinery Pro, Diamond Dust and Ferris Wheel Fan:
   the outdoor landmarks in `docs/unova-landmarks.md`.
 
-Not awarded, because this game has no such feature: Pokérus (94), Unity Tower
-for Around Unova (103) and Pokémon Mail (166).
+- Pokérus Discoverer: Pokérus now exists. After each Unova battle there is a
+  3-in-65,536 chance that one party Pokémon catches a strain (1–15). It lasts
+  (strain % 4) + 1 days while in the party, then stays cured, and spreads to a
+  party neighbour one time in three while active. Infected or cured, it doubles
+  EV gains in any battle. Any Pokémon with it, in the party, boxes or Day-Care,
+  earns the medal.
+- Around Unova: the 24 places of `PokemonCenter_HasVisitedAllTowns`, counted
+  from visited maps. Unity Tower, which the source reaches by Castelia's pier
+  ferry with the wireless Unity Pass, is now a lobby and top floor through the
+  pier (`docs/unova-houses.md`).
+- Pen Pal (record 29): giving any Mail to a Pokémon asks for a message; each
+  written Mail counts.
 Link- or online-only, with no genuine offline stand-in: wireless passersby
 (73–76), Link Battles (109–112; NPC partner and facility battles are not
 link battles), trading with the other version (165), Pal Pad Friend Codes

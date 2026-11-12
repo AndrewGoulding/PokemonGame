@@ -4,7 +4,7 @@
 const R=UnovaInteriors,H=R.data().houses,M=WORLD_MAPS,ids=p=>Unova.medals(p).map(m=>m.id),seq=(...a)=>()=>a.length?a.shift():0;
 (async()=>{
  // Every fixture is one tile in its room, blocked, and drawn from the source map's tile classes.
- assert.equal(H.fixtures.length,43+94+9);assert.deepEqual(H.fixturesSkipped,[]);
+ assert.equal(H.fixtures.length,43+95+9);assert.deepEqual(H.fixturesSkipped,[]);
  for(const f of H.fixtures){const m=M[f.map],a=m.signs.filter(s=>s.script==='bw:interior-house-'+f.key);assert.equal(a.length,1,f.key);assert.equal(m.collision[a[0].y*m.width+a[0].x],1,f.key);assert.equal(R.fixture(f.key),f.kind);}
  const kinds=bank=>H.fixtures.filter(f=>f.bank===bank).map(f=>f.kind).sort();
  assert.deepEqual(kinds('aspertia_city_4'),['tv']);assert.deepEqual(kinds('bridge_gate_gate_6'),['trash','vending']);assert.deepEqual(kinds('driftveil_city_8'),['trash','vending','vending']);
@@ -35,5 +35,5 @@ const R=UnovaInteriors,H=R.data().houses,M=WORLD_MAPS,ids=p=>Unova.medals(p).map
  const tv=s.records.tv;picks=[0,2];yes=[true,false];await story.run('bw:interior-house-'+key('tv'));assert.equal(s.records.tv,tv+2);
  said.length=0;p.money=1000;const water=Player.itemCount(p,'fresh-water');picks=[0,0];await story.run('bw:interior-house-'+key('vending'));assert.equal(Player.itemCount(p,'fresh-water')>=water+2,true);assert.equal(p.money,600);assert(said.some(t=>/Fresh Water dropped down/.test(t)));assert.equal(said.at(-1),H.vending.text.DecidedNotBuyDrink);
  const saved=Player.load(JSON.parse(Player.serialize(p))).player;assert.deepEqual(Unova.peek(saved).records,s.records);
- console.log('ok: 43 TVs, 94 trash cans and 9 vending machines from source tile classes, TV programme/commercial rolls, drink prices/Bag room/money/bonus, Television Kid, Trash Master, Vending Virtuoso and Lucky Drink records, scenes and saves');
+ console.log('ok: 43 TVs, 95 trash cans and 9 vending machines from source tile classes, TV programme/commercial rolls, drink prices/Bag room/money/bonus, Television Kid, Trash Master, Vending Virtuoso and Lucky Drink records, scenes and saves');
 })().catch(e=>{console.error(e);process.exitCode=1;});

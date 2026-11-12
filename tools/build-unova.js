@@ -60,7 +60,7 @@ const dungeons=require('./lib/unova-dungeons')({json,read,M,bankMaps,west,east,p
 const versioned=require('./lib/unova-versioned')({root,source,json,M,bankMaps,west,east,paint,link});
 const ruins=require('./lib/unova-ruins')({M,bankMaps,services});
 const frigateImport=require('./lib/unova-frigate')({root,source,json,read,clean,M,bankMaps,west,east,paint,link,actor,trainer,trainers}),frigate=frigateImport.data;
-interiors.landmarks=require('./lib/unova-landmarks')({source,M,bankMaps,json,read,clean,actor,trainer});interiors.houses=require('./lib/unova-houses')({source,room:interiors.room,area:west.helpers.area,house,actor,M,bankMaps,json,read,clean,convert:interiors.sourceItem});
+interiors.houses=require('./lib/unova-houses')({source,room:interiors.room,area:west.helpers.area,house,actor,M,bankMaps,json,read,clean,convert:interiors.sourceItem});interiors.landmarks=require('./lib/unova-landmarks')({source,M,bankMaps,json,read,clean,actor,trainer});
 const audio=require('./lib/unova-audio')({json,M,bankMaps});
 const modes=require('./lib/unova-modes')({source,json,read,trainer,bankMaps,M,actor});
 for(const[bank,m]of Object.entries(bankMaps)){const e=json('res/field/events/'+bank+'.json');provenance[bank]={events:'res/field/events/'+bank+'.json',scripts:'res/field/scripts/'+bank+'.s',text:'res/text/script/'+bank+'.txt'};for(const line of read('res/text/script/'+bank+'.txt').split(/\r?\n/)){const match=line.match(/^(\w+)\s*=\s*(.*)$/);if(match)texts[match[1]]=pages(match[2]);}

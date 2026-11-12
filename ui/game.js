@@ -1734,6 +1734,15 @@
     } else {
       await message(Party.displayName(record) + " is now holding the " + Bag.name(item) + ".");
     }
+    // (Mail: write a message for it to carry. Unova's Medal Rally counts each one, record 29.)
+    if (window.ITEMS[item] && window.ITEMS[item].category === "mail") {
+      const text = await enterText("Write your Mail", (record.mail && record.mail.text) || "", 24);
+      if (text && text.trim()) {
+        record.mail = { item, text: text.trim(), from: player.name };
+        if (window.UnovaRecords) UnovaRecords.record(player, "mail");
+        await message(Party.displayName(record) + " is holding your Mail.");
+      }
+    }
   }
 
   // ---------- FireRed's party screen (ui/party-menu.js) ----------
