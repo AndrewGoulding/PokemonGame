@@ -81,6 +81,62 @@ function decoration(g,kind,x,y,r,p){
   if(k<3){rect(g,'#7b8f8a',x+3,y+2,3,3);rect(g,'#f4e6be',x+9,y+9,4,2);}
  }
 }
+// Unique, location-specific landmarks supplement the biome palettes.
+// Landmarks are painted only on solid (impassable) map cells so they cannot
+// hide an interactable NPC or warp on the overworld.
+const LANDMARKS={
+ PaldeaCaboPoco:'home',PaldeaAcademy:'academy',PaldeaMesagoza:'fountain',
+ PaldeaMossuiTown:'lantern',PaldeaAppleHills:'orchard',
+ PaldeaLoyaltyPlaza:'masks',PaldeaOniMountain:'summit',
+ PaldeaTerariumHub:'dome',PaldeaSavannaBiome:'savanna',
+ PaldeaCoastalBiome:'coast',PaldeaCanyonBiome:'cliff',PaldeaPolarBiome:'snow',
+ PaldeaUnderdepths:'crystal',PaldeaTerapagosChamber:'terapagos',
+ PaldeaZeroLab:'machine'
+};
+function landmark(g,map,name,p){
+ const kind=LANDMARKS[name];if(!kind)return;
+ const spots=[];
+ const cx=Math.floor(map.width/2),cy=Math.floor(map.height/2);
+ for(let y=2;y<map.height-2;y++)for(let x=2;x<map.width-2;x++){
+  if(!map.collision[y*map.width+x]||map.warps.some(w=>w.x===x&&w.y===y))continue;
+  spots.push({x,y,d:Math.abs(cx-x)+Math.abs(cy-y)});
+ }
+ spots.sort((a,b)=>a.d-b.d);if(!spots.length)return;
+ const {x:tx,y:ty}=spots[0],x=tx*SIZE,y=ty*SIZE;
+ const light=kind==='snow'?'#f8fbec':kind==='terapagos'?'#e2ebf3':'#f2e2b6';
+ if(kind==='home'||kind==='academy'){
+  rect(g,p[3],x+2,y+5,12,9);rect(g,p[4],x+4,y+2,8,4);
+  rect(g,light,x+7,y+8,3,5);
+ }else if(kind==='fountain'){
+  rect(g,'#527f9c',x+2,y+9,12,4);rect(g,'#bae4d9',x+7,y+3,2,8);
+ }else if(kind==='lantern'||kind==='masks'){
+  rect(g,'#773f63',x+7,y+2,2,12);
+  rect(g,kind==='lantern'?'#ecc673':'#c95465',x+4,y+5,8,5);
+  rect(g,light,x+6,y+6,3,2);
+ }else if(kind==='orchard'||kind==='savanna'||kind==='coast'){
+  rect(g,'#6b6a45',x+7,y+8,3,7);
+  rect(g,p[1],x+2,y+2,12,8);
+  rect(g,kind==='orchard'?'#cb5e4c':light,x+5,y+6,3,3);
+ }else if(kind==='summit'||kind==='cliff'){
+  rect(g,p[3],x+2,y+8,12,7);
+  rect(g,light,x+6,y+4,4,7);
+ }else if(kind==='dome'){
+  rect(g,'#466585',x+2,y+9,12,5);
+  rect(g,'#b9e3df',x+4,y+4,9,7);
+  rect(g,'#ecdbac',x+8,y+7,2,4);
+ }else if(kind==='snow'){
+  rect(g,'#f8fafa',x+3,y+4,10,8);
+  rect(g,'#8fbbd6',x+6,y+9,5,5);
+ }else if(kind==='crystal'||kind==='terapagos'){
+  rect(g,'#554983',x+4,y+11,8,4);
+  rect(g,kind==='terapagos'?'#e7daec':'#b9e6e0',x+6,y+3,4,10);
+  rect(g,'#7ccbd9',x+8,y+5,2,4);
+ }else if(kind==='machine'){
+  rect(g,'#545b73',x+3,y+4,11,11);
+  rect(g,'#a4e4dc',x+5,y+6,7,5);
+  rect(g,'#d8c8ef',x+8,y+7,3,2);
+ }
+}
 function make(name){
  const map=window.WORLD_MAPS[name];
  const canvas=document.createElement('canvas');
@@ -124,6 +180,7 @@ function make(name){
    else if(r%3===0)rect(g,p[4],px+4,py+8,5,2);
   }
  }
+ landmark(g,map,name,p);
  // Highlight reciprocal exits so players can still find the real warp tile
  // underneath the replacement scenery.
  for(const warp of map.warps||[]){
@@ -140,5 +197,5 @@ function draw(g,name,x,y){
  if(!cv){cv=make(name);cache.set(name,cv);}
  g.drawImage(cv,x,y);
 }
-window.PaldeaArt={draw,style,PALETTES,clear:()=>cache.clear()};
+window.PaldeaArt={draw,style,PALETTES,LANDMARKS,clear:()=>cache.clear()};
 })();
