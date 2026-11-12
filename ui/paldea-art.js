@@ -142,17 +142,19 @@ function make(name){
  const canvas=document.createElement('canvas');
  canvas.width=map.width*SIZE;canvas.height=map.height*SIZE;
  const g=canvas.getContext('2d',{alpha:false});
- const kind=style(name),p=PALETTES[kind];
+ const kind=style(name),p=PALETTES[kind],layout=map.paldeaLayout;
+ const themed=layout?.accent||p[4];
  const seed=[...name].reduce((n,c)=>n+c.charCodeAt(0),0);
  for(let y=0;y<map.height;y++)for(let x=0;x<map.width;x++){
   const i=y*map.width+x,r=hash(x,y,seed),px=x*SIZE,py=y*SIZE;
   const wall=!!map.collision[i],water=map.behavior[i]===0x10;
-  const floor=(kind==='city'||kind==='blueberry'||kind==='chamber'||kind==='festival');
+  const floor=layout?.interior||(kind==='city'||kind==='blueberry'||kind==='chamber'||kind==='festival');
+  const blockedAccent=layout?.interior?(layout.style==='arena'?'#d4cfb8':layout.style==='garage'?'#7a8591':themed):p[2];
   if(water){
    rect(g,kind==='polar'?'#78aec4':'#3f9eac',px,py,SIZE,SIZE);
    rect(g,'#bde9dd',px+(r%9),py+3+(r%8),5,1);
   }else if(wall){
-   rect(g,p[2],px,py,SIZE,SIZE);
+   rect(g,blockedAccent,px,py,SIZE,SIZE);
    if(floor){
     rect(g,p[3],px+1,py+1,14,3);
     rect(g,p[1],px+4,py+5,8,5);
@@ -172,7 +174,27 @@ function make(name){
    }
   }else{
    rect(g,r%7===0?p[1]:p[0],px,py,SIZE,SIZE);
-   if(floor){
+   if(layout?.interior){
+    // Designed room floors: central carpet/arena ring, permanent counters and
+    // accent stripes. Player-visible geometry matches the walkable collision.
+    const tx=layout.style==='arena'?'#d4cda7':layout.style==='lab'?'#8cb6bc':
+     layout.style==='center'?'#ead7c1':layout.style==='club'?'#abc9d0':themed;
+    rect(g,tx,px+1,py+1,14,14);
+    rect(g,p[3],px,py+12,16,1);
+    if(layout.style==='arena'&&(Math.abs(x-map.width/2)<5&&Math.abs(y-map.height/2)<5))
+     rect(g,'#f3e4bf',px+5,py+5,6,6);
+    if(layout.style==='lab'&&r%5===0)rect(g,'#d7faf0',px+3,py+3,5,3);
+   }else if(layout&&!layout.interior){
+    // Town-specific avenues and courtyards: road paving follows the custom
+    // grid rather than the unrelated Kalos map's artwork.
+    const street=Math.abs(x-Math.floor(map.width/2))<=1||
+     Math.abs(y-Math.floor(map.height/2))<=1||x%8===0||y%8===0;
+    if(street){
+     rect(g,themed,px,py,16,16);
+     rect(g,p[1],px+2,py+2,12,12);
+     if(x%5===0)rect(g,p[4],px+7,py+6,2,3);
+    }else if(r%3===0)rect(g,themed,px+3,py+10,8,2);
+   }else if(floor){
     rect(g,p[1],px+2,py+2,12,12);
     rect(g,p[4],px,py+8,16,2);
     if(r%5===0)decoration(g,kind,px,py,r,p);
