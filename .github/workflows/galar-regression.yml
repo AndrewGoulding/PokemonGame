@@ -62,6 +62,16 @@ jobs:
           path: tests/browser/out/regional-terrain/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Playtest hand-authored multi-tile map sprites in Chromium
+        run: node tests/browser/authored-region-art.js
+      - name: Upload hand-authored map screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authored-region-map-screenshots
+          path: tests/browser/out/authored-region-art/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload Paldea playtest screenshots
         if: always()
         uses: actions/upload-artifact@v4
