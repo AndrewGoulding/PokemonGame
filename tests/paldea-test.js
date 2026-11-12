@@ -7,10 +7,12 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const [,file] of html.matchAll(/<script src="([^"]+)"><\/script>/g))
  if(!file.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-mid.js'),'utf8'),{filename:'ui/paldea-mid.js'});
+vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-legends.js'),'utf8'),{filename:'ui/paldea-legends.js'});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-story.js'),'utf8'),{filename:'ui/paldea-story.js'});
 assert(Paldea&&PaldeaStory&&TOWN_MAP.paldea);
 const D=Paldea.data(),T=TOWN_MAP.paldea;
-assert.equal(D.mapNames.length,21);
+assert.equal(D.mapNames.length,25);
+assert.equal(D.legends.mapNames.length,4);
 assert.equal(D.midgame.mapNames.length,8);
 assert.deepEqual(D.starters,['Sprigatito','Fuecoco','Quaxly']);
 for(const name of D.mapNames){
@@ -94,8 +96,43 @@ const story=PaldeaStory.create(env),go=x=>story.run('sv:'+x),s=Paldea.state(p);
  yes=true;await go('return');assert.equal(p.location.map,'FightArea');
  await go('travel');assert.equal(p.location.map,held.map);
  assert(saves>=10&&battles.includes('SV_GYM_KATY'));
- assert(story.goal().includes('Three Paldea Gym badges'));
+ assert(story.goal().includes('Stony Cliff'));
  assert(battles.includes('SV_GYM_BRASSIUS')&&battles.includes('SV_GYM_KOFU'));
+ // Titans progress independently from Gym badges after the Treasure Hunt,
+ // and losing either stage must never award Herba Mystica.
+ const titanTester=Player.create('Titan Story Test'),ts=Paldea.state(titanTester);
+ titanTester.party=[Party.create('Pikachu',35)];
+ Object.assign(ts,{starter:'Fuecoco',treasureHunt:true});
+ const titanBattles=[],titanEnv={
+  player:()=>titanTester,say:async()=>{},confirm:async()=>true,choose:async(_,o)=>o[0],
+  canBattle:()=>true,showWorld(){},resume:async()=>{},
+  saveCheckpoint:async()=>{},teleport:async()=>{},
+  battle:async(_,opts)=>{titanBattles.push(opts.trainerId);return won?'won':'lost';}
+ };
+ const titanStory=PaldeaStory.create(titanEnv),titanGo=k=>titanStory.run('sv:'+k);
+ assert.equal(Paldea.allowed(titanTester,'PaldeaStonyCliff'),null);
+ assert(Paldea.allowed(titanTester,'PaldeaStonyCave'));
+ assert(Paldea.allowed(titanTester,'PaldeaOpenSkySummit'));
+ won=false;await titanGo('klawf-titan');assert(!ts.klawfFirst);
+ won=true;await titanGo('klawf-titan');assert(ts.klawfFirst);
+ won=false;await titanGo('klawf-herba');assert(!ts.herbaKlawf&&!ts.klawfClear);
+ won=true;await titanGo('klawf-herba');
+ assert(ts.klawfClear&&ts.herbaKlawf&&ts.rideDash);
+ const earlier=titanBattles.length;await titanGo('klawf-herba');
+ assert.equal(titanBattles.length,earlier,'Klawf cannot be farmed');
+ assert.equal(Paldea.allowed(titanTester,'PaldeaOpenSkySummit'),null);
+ won=false;await titanGo('bombirdier-titan');assert(!ts.bombirdierFirst);
+ won=true;await titanGo('bombirdier-titan');assert(ts.bombirdierFirst);
+ won=false;await titanGo('bombirdier-titan');assert(!ts.herbaBombirdier);
+ won=true;await titanGo('bombirdier-titan');
+ assert(ts.bombirdierClear&&ts.herbaBombirdier&&ts.rideSwim);
+ const finished=titanBattles.length;await titanGo('bombirdier-titan');
+ assert.equal(titanBattles.length,finished,'Bombirdier cannot be farmed');
+ assert.equal(Player.levelCap(titanTester),23,'Titan story does not require Gym wins');
+ const reloaded=Player.load(JSON.parse(Player.serialize(titanTester))).player;
+ assert(Paldea.peek(reloaded).herbaKlawf&&Paldea.peek(reloaded).herbaBombirdier);
+ assert(Paldea.peek(reloaded).rideDash&&Paldea.peek(reloaded).rideSwim);
+ assert(titanBattles.includes('SV_TITAN_KLAWF_1')&&titanBattles.includes('SV_TITAN_BOMBIRDIER_2'));
  for(const name of D.midgame.mapNames)assert(D.maps[name]&&T.at[name],name+' midgame missing');
- console.log('Paldea: 21 linked maps, Nemona, Katy, Brassius, Kofu, travel and saved badges');
+ console.log('Paldea: 25 maps, 3 Gyms, Klawf and Bombirdier Titans, story rewards and saves');
 })().catch(e=>{console.error(e);process.exitCode=1;});
