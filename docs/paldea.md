@@ -69,3 +69,28 @@ and the cave/nest are built on the game's existing 2D layouts.
 
 The Paldea regression now checks both Titans, retry behavior, repeated
 interactions, saved story flags, and map connectivity.
+
+## Starfall Street — Segin and Schedar squads
+
+Six additional 2D maps bring the region to **31 connected locations**. From
+South Province, travel to the Segin Squad road, base and garage; from East
+Province, reach Schedar Squad's road, base and garage. Entry to both roads
+requires the Academy Treasure Hunt, independent of Gym Badges and Titan
+progress. Each garage requires completing its crew's base challenge.
+
+**Segin (Dark):** Meet Cassiopeia, defeat the gatekeeper and three saved
+trainer waves, then challenge Giacomo and his Starmobile. **Schedar (Fire):**
+Defeat the corresponding base challenge, then battle Mela and her Starmobile.
+Wave wins persist through saves, so defeat never erases earlier victories.
+Boss battles have separate stage flags. Crew victories are recorded only once
+under `player.flags.paldea.starfallCrews`, and revisiting a boss does not
+repeat battles or duplicate progress. The two bases can be cleared in either
+order after the Treasure Hunt.
+
+This is a 2D sequential-battle adaptation of Scarlet/Violet's Star Barrage:
+there is no timed auto-battle minigame or special Starmobile battle engine in
+this chapter. Existing Pokémon battle mechanics are used instead. Team Star's
+remaining three bases and the Clive/Cassiopeia finale remain later chapters.
+
+The Paldea regression validates the map graph, both base gates, retryability,
+boss completion, independence from Gym/Titan progress, and save persistence.
