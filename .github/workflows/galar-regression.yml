@@ -42,6 +42,16 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Playtest Paldea with real Chromium
         run: node tests/browser/paldea-exploration.js
+      - name: Photograph Orre, Sinnoh, Unova and Kalos maps
+        run: node tests/browser/source-region-art.js
+      - name: Upload source-region map screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-region-map-screenshots
+          path: tests/browser/out/source-regions/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload Paldea playtest screenshots
         if: always()
         uses: actions/upload-artifact@v4
