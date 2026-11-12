@@ -6,13 +6,13 @@ T.loadHeadless();
 vm.runInThisContext(fs.readFileSync(path.join(root,"ui/authored-region-art.js"),"utf8"),
   {filename:"ui/authored-region-art.js"});
 const candidates=[
- ["orre",["PhenacCity","PyriteTown"]],
- ["sinnoh",["SnowpointCity","FloaromaTown"]],
- ["unova",["UnovaNimbasaCity","UnovaCasteliaCity"]],
- ["kalos",["KalosLumioseSouth","KalosLaverreCity"]],
- ["galar",["GalarPostwick","GalarHammerlocke","GalarMotostoke","GalarBallonlea"]],
- ["alola",["AlolaIkiTown","AlolaHeaheaCity","AlolaPaniolaTown","AlolaSeafolkVillage"]],
- ["paldea",["PaldeaMesagoza","PaldeaLevincia","PaldeaCaboPoco","PaldeaMossuiTown"]]
+ ["orre",["AgateVillage","RealgamTower_Exterior","PhenacCity"]],
+ ["sinnoh",["SpearPillar","CanalaveCity","FloaromaTown"]],
+ ["unova",["UnovaDriftveilCity","UnovaOpelucidCity","UnovaNimbasaCity"]],
+ ["kalos",["KalosShalourCity","KalosGeosengeTown","KalosLumioseSouth"]],
+ ["galar",["GalarBallonlea","GalarWyndonCity","GalarPostwick"]],
+ ["alola",["AlolaMalieCity","AlolaSeafolkVillage","AlolaIkiTown"]],
+ ["paldea",["PaldeaCascarrafa","PaldeaZeroLab","PaldeaMossuiTown"]]
 ];
 function safe(name,plan){
  const m=WORLD_MAPS[name],anchors=[...(m.people||[]),...(m.warps||[])];

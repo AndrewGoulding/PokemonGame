@@ -8,6 +8,18 @@ on:
   workflow_dispatch:
 
 jobs:
+  authored-map-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate all authored map artwork placements
+        run: |
+          node tests/authored-region-art-test.js
+          node tests/region-interior-tiles-test.js
   node-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 25
