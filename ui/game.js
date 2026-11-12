@@ -13505,7 +13505,7 @@
         // (HGSS's: the Pokémon walking behind you, and Johto's Headbutt trees.)
         follower: (map) => follower.look(map), headbuttTree: (map, x, y) => johtoField.headbuttTree(map, x, y),
         diveHere: (avatar) => diveHere(avatar),
-        canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn,
+        canSurf: () => !!FieldMoves.user(player, "Surf"), strength: () => strengthOn, boulderPushed: (map, def) => window.UnovaRecords?.boulder(player, map, def.localId || def.id),
         // (Johto's Gyms: Ecruteak's darkness, Violet's lift.)
         iceBlockStopped: def => { if (Sinnoh.snowballStopped(player, def, Overworld.personPosition(def.localId))) { applyPatches(player.location.map); Overworld.removePerson(def); } },
         darkness: (map) => Sinnoh.darkness(map) || (map === PYRAMID_FLOOR ? hoennFrontier.pyramidDark() : gymmicks.darkness(map)), drawMap: (g, map, x, y) => { gymmicks.drawMap(g, map, x, y); johtoSafari.drawMap(g, map, x, y); SinnohRadar.draw(g,map,x,y,player); Unova.draw(g,map,x,y,player); },

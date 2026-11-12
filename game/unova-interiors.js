@@ -48,5 +48,18 @@
  function trash(p){window.UnovaRecords?.record(p,'trash');return H.trash;}
  function vend(p,index,rng=Math.random){const d=H.vending?.drinks[index];if(!d)return{invalid:true};const space=n=>Player.itemCount(p,d.item)+n<=999;if(!space(1))return{full:true,item:d.item};if(p.money<d.price)return{poor:true};p.money-=d.price;Player.addItem(p,d.item,1);window.UnovaRecords?.record(p,'vending');
   let bonus=false;if(space(1)&&pick(rng,32)===0){Player.addItem(p,d.item,1);window.UnovaRecords?.record(p,'luckyDrink');bonus=true;}return{item:d.item,price:d.price,bonus};}
- window.UnovaInteriors={data:()=>D,houseGift,houseHeal,fixture,tvProgram,tvCommercial,trash,vend,pepState,pepBirthday,pepPlan,pepAnswer,schoolStage,schoolAdvice,schoolWon,schoolQuiz,giftMon,anville,anvilleTrain,anvilleWeekend,anvilleTrade,anvilleSubway,anvilleLost,anvillePansage,anvilleHeard,draw,village,villageHoney,villageSecret,villageFishing,villageFish,state,peek,freak,freakWon,crew,crewWon,buy,rotom,tmProgress,tmReward,diplomas};
+ // Outdoor landmarks (tools/lib/unova-landmarks.js). Like the source's event flags these are kept from any time;
+ // the Medal Rally awards them once the Medal Box is held.
+ const L=D.landmarks||{tips:{}},marks=p=>state(p).landmarks||(state(p).landmarks={tips:[],seasons:[]}),seenMarks=p=>peek(p).landmarks||{};
+ function tip(p,key){const a=L.tips[key];if(!a)return null;const v=marks(p);if(!v.tips.includes(a.flag))v.tips.push(a.flag);return a.text;}
+ // (Route 2: PlayerGetDir is down, so the player is reading the board from behind.)
+ function graffiti(p,facing){if(facing!=='down')return{text:L.graffiti.text};marks(p).graffiti=true;return{text:L.graffiti.back,graffiti:true};}
+ function faceBoard(p,rng=Math.random){const v=marks(p),day=Player.gameTime(p).day;if(!UnovaPost.unlocked(p)||v.faceBoardDay===day)return{plain:true};v.faceBoardDay=day;v.faceBoard=true;return{line:L.faceBoard.lines[pick(rng,4)]};}
+ function truckQuiz(p){const v=seenMarks(p),day=Player.gameTime(p).day;return{stage:v.truckStage||0,met:!!v.truckMet,done:(v.truckStage||0)>=5,today:v.truckDay===day};}
+ function truckMeet(p){marks(p).truckMet=true;}
+ function truckAnswer(p,choice){const v=marks(p),a=truckQuiz(p);if(a.done||a.today)return{closed:true};if(!Number.isInteger(choice)||choice<0||choice>3)return{invalid:true};v.truckDay=Player.gameTime(p).day;if(choice!==L.truckQuiz.answers[a.stage])return{wrong:true};v.truckStage=a.stage+1;return{right:true,stage:v.truckStage,done:v.truckStage>=5};}
+ // The season's Ferris wheel rider after the League: sSeasonTrainers[season × 2 + sex].
+ function ferrisRider(p){if(!UnovaPost.unlocked(p))return null;const season=F.season(p),i=['spring','summer','autumn','winter'].indexOf(season);return{season,id:L.ferris.trainers[i*2+(Player.LOOKS[p.look]?.girl?1:0)],ridden:(seenMarks(p).seasons||[]).includes(season)};}
+ function ferrisRide(p){const a=ferrisRider(p);if(!a||!p.flags[a.id])return false;const v=marks(p);if(!v.seasons.includes(a.season))v.seasons.push(a.season);return true;}
+ window.UnovaInteriors={data:()=>D,houseGift,houseHeal,tip,graffiti,faceBoard,truckQuiz,truckMeet,truckAnswer,ferrisRider,ferrisRide,fixture,tvProgram,tvCommercial,trash,vend,pepState,pepBirthday,pepPlan,pepAnswer,schoolStage,schoolAdvice,schoolWon,schoolQuiz,giftMon,anville,anvilleTrain,anvilleWeekend,anvilleTrade,anvilleSubway,anvilleLost,anvillePansage,anvilleHeard,draw,village,villageHoney,villageSecret,villageFishing,villageFish,state,peek,freak,freakWon,crew,crewWon,buy,rotom,tmProgress,tmReward,diplomas};
 })();

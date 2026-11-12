@@ -37,7 +37,7 @@
     case'court-practice':await daily(d().sports[1],'court');break;
     case'sun-stone':await report(F.gift(p(),'nimbasa-sun','sun-stone'));break;
     case'soothe-bell':await report(F.gift(p(),'nimbasa-bell','soothe-bell'));break;
-    case'ferris-wheel':if(await daily(d().wheel[s().nimbasaPartner==='Nate'?1:0],'wheel')){s().wheelRides=(s().wheelRides||0)+1;await say('You ride above Nimbasa’s lights.\nThe stadium and avenue stretch\nout beyond the amusement park.');await checkpoint();}break;
+    case'ferris-wheel':{const I=UnovaInteriors,rider=I.ferrisRider(p());if(rider&&!rider.ridden){const t=F.data().trainers[rider.id];if(await env.confirm(t.name+' is waiting for a Ferris wheel partner.\nBattle, then ride together?')){if(p().flags[rider.id]||await fight(rider.id)==='won'){p().flags[rider.id]=true;I.ferrisRide(p());await checkpoint();await say(['You ride with '+t.name+'.','The '+rider.season+' view of Nimbasa\nspreads out below.']);}break;}}if(await daily(d().wheel[s().nimbasaPartner==='Nate'?1:0],'wheel')){s().wheelRides=(s().wheelRides||0)+1;await say('You ride above Nimbasa’s lights.\nThe stadium and avenue stretch\nout beyond the amusement park.');await checkpoint();}break;}
     case'nimbasa-guide':await say('Visit the old roller-coaster Gym\nin the amusement park, then challenge\nElesa at the new runway Gym.\nSports practice is north of town.');break;
     case'next-driftveil':await say('Driftveil City lies beyond Route 5.\nThe western road is being prepared.');break;
     case'coaster-trainer':if(!p().flags[d().coaster])await fight(d().coaster);else await say('Try the upper track switch!');break;

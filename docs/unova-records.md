@@ -106,13 +106,12 @@ event flags are.
   bought, and Lucky Drink is the 1-in-32 bonus drink, given only while the Bag
   has room for it, as in `global_10400`.
 
-Not awarded, because this game has no such feature: Trainer Tips signs and the
-Route 2 graffiti (16–18; the imported outdoor maps have no source signs),
-Strength boulders on B2W2 maps (58), Pokérus (94), the Marine Tube Wailord (97), the
-Humilau face board (98), Twist Mountain’s construction-truck quiz (99),
-diamond dust (101), Unity Tower for Around Unova (103), Pokémon Mail (166)
-and the four seasonal Ferris-wheel trainers with the special riders
-(181; the park’s daily Rolan/Colette ride is a different adaptation).
+- Signboard Starter/Savvy, Graffiti Gazer, Hustle Muscle, Wailord Watcher,
+  Face Board Memorial, Heavy Machinery Pro, Diamond Dust and Ferris Wheel Fan:
+  the outdoor landmarks in `docs/unova-landmarks.md`.
+
+Not awarded, because this game has no such feature: Pokérus (94), Unity Tower
+for Around Unova (103) and Pokémon Mail (166).
 Link- or online-only, with no genuine offline stand-in: wireless passersby
 (73–76), Link Battles (109–112; NPC partner and facility battles are not
 link battles), trading with the other version (165), Pal Pad Friend Codes

@@ -31,6 +31,7 @@
 //        hiddenItem(hidden) -> bool (not found yet), canRun() -> bool,
 //        onWarp(from, to) when you go through a door, cave or stairs,
 //        canSurf() -> bool, strength() -> bool (boulders can be pushed),
+//        boulderPushed(map, def) (a boulder was pushed: the Medal Rally counts Unova's),
 //        boulderFell(def) (pushed into a hole), boulderSwitch(map, x, y) (pushed onto a floor switch;
 //        may return an event to finish with, once you're standing still), weather(map) (overrides the map's),
 //        onAvatar(mode) when you get on or off the Bicycle or the water,
@@ -550,6 +551,7 @@
     b.move = { tx: r.x, ty: r.y, t: 0, speed: WALK_SPEED };
     b.facing = dir;
     if (window.GameAudio) window.GameAudio.se("se_m_strength");
+    if (ctx.boulderPushed) ctx.boulderPushed(me.map, b.def);
     return true;
   }
 
