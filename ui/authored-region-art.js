@@ -5,8 +5,19 @@
 (function () {
   "use strict";
   const T = 16, sprites = new Map(), placements = new Map();
-  const REGIONS = new Set(["galar", "alola", "paldea"]);
+  const REGIONS = new Set(["orre", "sinnoh", "unova", "kalos", "galar", "alola", "paldea"]);
   const CHOICES = {
+    // The original 2D regions keep their existing map pictures. These authored
+    // additions are limited to named landmark footprints, never a blanket
+    // replacement of the imported Kanto/Johto/Hoenn-quality tile art.
+    PhenacCity:"orre-fountain",
+    PyriteTown:"orre-windmill",
+    SnowpointCity:"sinnoh-shrine",
+    FloaromaTown:"sinnoh-flower-house",
+    UnovaNimbasaCity:"unova-ferris",
+    UnovaCasteliaCity:"unova-skyline",
+    KalosLumioseSouth:"kalos-cafe",
+    KalosLaverreCity:"kalos-garden",
     // Galar: timber cottages, railway towns, brick industry, northern castles,
     // stadiums, the Isle of Armor and the Crown Tundra.
     GalarPostwick:"galar-cottage",
@@ -108,6 +119,7 @@
       if (/Ruins|Altar/.test(name)) return "alola-totem";
       return null;
     }
+    if (m.region !== "paldea") return null;
     if (/Town|Village|City/.test(name)) return "paldea-adobe";
     if (/AreaZero|Crater|Underdepths/.test(name)) return "paldea-crystal";
     return null;
