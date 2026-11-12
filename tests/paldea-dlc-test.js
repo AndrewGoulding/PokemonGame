@@ -35,6 +35,8 @@ for(const name of ['PaldeaMossuiTown','PaldeaTerariumHub']){
  assert(!D.maps[name].collision[landing.y*D.maps[name].width+landing.x]);
 }
 assert(Player.CENTERS.PaldeaCommunityCenter,'Kitakami needs a real healing center');
+assert(Player.CENTERS.PaldeaTerariumHub,'Blueberry needs a real healing center');
+assert(D.maps.PaldeaTerariumHub.people.some(n=>n.script==='sv:heal'),'Blueberry nurse missing');
 const p=Player.create('Paldea DLC Tester'),s=Paldea.state(p);
 p.party=[Party.create('Skeledirge',85),Party.create('Tinkaton',85)];
 p.location={map:'PaldeaAcademy',x:10,y:13,facing:'down'};
