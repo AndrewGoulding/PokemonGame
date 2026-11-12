@@ -2112,6 +2112,10 @@
     // ---------- Exploring ----------
 
     function special(script) {
+      // Every Paldea story NPC uses sv: scripts. Without registering this
+      // prefix here, the overworld's interaction layer treats the character as
+      // non-scripted and never dispatches the dialogue, Gym or DLC scenes.
+      if (typeof script === "string" && script.startsWith("sv:")) return true;
       if(window.TeamFashion?.byScript(script))return true;
       if (env.deltaDue(script)) return true;   // (the Delta Episode's scenes as you come in)
       // (Orre: up the road from the Air Strip to the Outskirt Stand the first time, Folly and Trudly come out.)
