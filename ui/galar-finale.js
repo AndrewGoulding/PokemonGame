@@ -16,7 +16,7 @@ function create(env,{battle}){
  }
  const matches={
  'cup-marnie':['cupMarnieWon',null,'CUP_MARNIE','Marnie',[['Liepard',47],['Toxicroak',47],['Morpeko',48],['Grimmsnarl',49]]],
- 'cup-hop':['cupHopWon','cupMarnieWon','CUP_HOP','Hop',[['Dubwool',48],['Corviknight',48],['Pincurchin',47],[R.rivalSpecies(p()),50]]],
+ 'cup-hop':['cupHopWon','cupMarnieWon','CUP_HOP','Hop',[['Dubwool',48],['Corviknight',48],['Pincurchin',47],['RIVAL',50]]],
  'cup-bede':['cupBedeWon','oleanaWon','CUP_BEDE','Bede',[['Mawile',50],['Gardevoir',51],['Rapidash-Galar',51],['Hatterene',52]]],
  'cup-nessa':['cupNessaWon','cupBedeWon','CUP_NESSA','Nessa',[['Golisopod',51],['Pelipper',51],['Barraskewda',52],['Drednaw',53]]],
  'cup-bea':['cupBeaWon','cupNessaWon','CUP_BEA','Bea',[['Hawlucha',52],['Grapploct',52],['Falinks',53],['Machamp',54]]],
@@ -55,7 +55,8 @@ function create(env,{battle}){
  }
  async function run(key){
   if(matches[key]){
-   const [flag,required,id,name,team]=matches[key];
+   // (Hop's starter is looked up when the battle starts: at create time no save is loaded yet.)
+   const [flag,required,id,name,cast]=matches[key],team=cast.map(([species,level])=>[species==='RIVAL'?R.rivalSpecies(p()):species,level]);
    if(!s().cupRegistered){await say('Register for the Champion Cup first.');return true;}
    if(required&&!s()[required]){await say('You must win the previous story match first.');return true;}
    if(await fight(flag,id,name,team,'Champion Cup victory against '+name+'!')){
