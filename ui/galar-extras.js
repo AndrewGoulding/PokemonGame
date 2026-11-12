@@ -51,6 +51,44 @@ function create(env,{battle}){
    }else await say(species+' escaped and can be challenged again.');
    return true;
   }
+  // Daily Watt Rally, a native 2D adaptation of Galar's Rotom Rally.
+  // Each route may be completed once per in-game day; Watts are regional,
+  // save-backed currency and can be exchanged for useful items.
+  if(/^watt-rally-(south|north|armor|crown)$/.test(key)){
+   const area=key.slice('watt-rally-'.length);
+   const today=window.GalarWild?.day(p())??Math.floor((p().clockSteps||1000)/2400);
+   const rally=s().wattRally||(s().wattRally={day:null,completed:[],watts:0,runs:0});
+   if(rally.day!==today){rally.day=today;rally.completed=[];}
+   if(rally.completed.includes(area)){
+    await say('This Watt Rally route is already complete today. Watts: '+rally.watts+'.');return true;
+   }
+   if(!env.canBattle()){await say('Bring a healthy Pokémon to tackle the Watt Rally.');return true;}
+   if(!await env.confirm('Run the '+area+' Watt Rally route for 200 Watts?'))return true;
+   const teams={
+    south:[['Boltund',30]],north:[['Corviknight',48]],
+    armor:[['Scyther',57]],crown:[['Froslass',72]]
+   };
+   if(await battle('WATT_RALLY_'+area.toUpperCase(),'Watt Rally Trainer',teams[area])!=='won'){
+    await say('The Watt Rally was interrupted. You can try again.');return true;
+   }
+   rally.completed.push(area);rally.watts+=200;rally.runs++;
+   await save();await say('Watt Rally completed! Earned 200 Watts. Balance: '+rally.watts+'.');return true;
+  }
+  if(key==='watt-exchange'){
+   const rally=s().wattRally||(s().wattRally={day:null,completed:[],watts:0,runs:0});
+   const goods=[['exp-candy-m',200,'Exp. Candy M'],['rare-candy',600,'Rare Candy']];
+   const options=goods.filter(([item,cost])=>rally.watts>=cost);
+   if(!options.length){await say('Watt Exchange: earn at least 200 Watts in a Rally first.');return true;}
+   const labels=options.map(([item,cost,label])=>label+' — '+cost+' Watts');
+   const choice=await env.choose('Spend Watts on a reward?',labels);
+   const index=labels.indexOf(choice);if(index<0)return true;
+   const [item,cost,label]=options[index];
+   const before=Player.itemCount(p(),item);Player.addItem(p(),item,1);
+   if(Player.itemCount(p(),item)!==before+1){
+    await say('There is no room for '+label+' in your Bag.');return true;
+   }
+   rally.watts-=cost;await save();await say('Exchanged '+cost+' Watts for '+label+'. Remaining: '+rally.watts+'.');return true;
+  }
   // A simple Sword/Shield curry camp: consume one Berry, restore the party,
   // and record the recipe. Restrict cooking to once per in-game day.
   if(/^camp-(south|north|armor|crown)$/.test(key)){
