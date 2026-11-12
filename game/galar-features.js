@@ -19,7 +19,9 @@ const DEN_POOLS=[
  ['GalarFieldsOfHonor',['Venusaur','Blastoise','Urshifu']],
  ['GalarSoothingWetlands',['Vespiquen','Amoonguss','Slowbro-Galar']],
  ['GalarFrostpointField',['Frosmoth','Lapras','Abomasnow']],
- ['GalarGiantBed',['Copperajah','Metagross','Tyrantrum']]
+ ['GalarGiantBed',['Copperajah','Metagross','Tyrantrum']],
+ ['GalarChallengeBeach',['Kingler','Gyarados','Drednaw']],
+ ['GalarBallimereLake',['Dragonite','Milotic','Lapras']]
 ];
 const hash=map=>[...map].reduce((n,ch)=>((n*31+ch.charCodeAt(0))>>>0),7);
 const day=p=>Math.floor((p.clockSteps||1000)/2400);
@@ -53,7 +55,7 @@ const dens=[];
 DEN_POOLS.forEach(([map,species],i)=>{
  const key='galar-den-'+i;dens.push({id:i,map,species,script:'swsh:'+key});
  place(map,key,19,18,'bw2_105');
- place(map,'galar-roamer-'+i,26,18,'bw2_youngster');
+ if(i<AREAS.length)place(map,'galar-roamer-'+i,26,18,'bw2_youngster');
 });
 function raid(p,i){
  const den=dens[i];if(!den)return null;
