@@ -60,10 +60,13 @@ for(const name of names){
 for(const region of regions){
  assert(counts[region]>= (["galar","alola","paldea"].includes(region)?10:2),
   region+" authored source coverage");
- if(["galar","alola","paldea"].includes(region))
-  assert(placed[region]>=1,region+" has no placeable multi-tile sprites");
+ assert.equal(placed[region],counts[region],
+  region+" has a landmark planned but not safely placeable");
 }
 const before=surface.calls;
 R.draw(surface,"PalletTown",0,0);
 assert.equal(surface.calls,before,"Kanto must remain unchanged");
-console.log("Hand-authored regional map sprites: "+JSON.stringify({counts,placed,spriteAssets:names.length}));
+console.log("Hand-authored regional map sprites: "+JSON.stringify({
+ counts,placed,namedLocations:names.length,
+ uniqueSpriteAssets:new Set(Object.values(R.CHOICES)).size
+}));
