@@ -6101,7 +6101,7 @@
         Screen.say("");await BoutiqueMart.ready();
         const at=Overworld.position(),[dx,dy]=({up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]})[at.facing]||[0,-1];
         const offers=BoutiqueMart.offers(player,shop,{coupon});
-        if(!offers.items.length){await say("Nothing's in for your collection\ntoday. Please come again!");}
+        if(!offers.items.length){await say("We've nothing for your collection.\nPlease come again!");}
         else{
           await ShopScreen.open(Object.assign(offers,{frame:GameOptions.get().frame,map:{canvas:$("#world"),x:112+16*dx,y:96+16*dy}}));
           if(offers.bought.length){

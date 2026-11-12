@@ -38,7 +38,7 @@
     const error=shopError(p,city);if(error)return error;
     if(a.price==null)return a.default?'Included in your starting wardrobe.':'A gift from Kiloude’s artist.';
     const shop=a.shops.find(s=>s.city===city);if(!shop)return 'Sold at another boutique.';
-    if(!shop.days.includes(Player.gameTime(p).weekday))return 'Not in stock today.';
+    // (X and Y stock a boutique by the weekday (shop.days, kept as the source has them); here, all of it every day.)
     return null;
   }
   function stock(p,city,opts={}) {

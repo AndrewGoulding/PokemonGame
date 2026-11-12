@@ -51,7 +51,7 @@
   }
 
   // `shop`: a team outfitter's or regional boutique's vendor (game/team-fashion.js), or its shop's key; or one of
-  // Kalos's boutiques' cities (game/kalos-fashion.js), which sell what they have in today.
+  // Kalos's boutiques' cities (game/kalos-fashion.js), which sell all they stock, every day.
   const keyOf = (shop) => (typeof shop === "string" ? shop : shop.shop);
   function stock(p, shop) {
     const F = window.KalosFashion, line = F.collection(p), key = keyOf(shop), vendor = window.TeamFashion && window.TeamFashion.vendor(key);
