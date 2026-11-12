@@ -3,6 +3,9 @@
 (function(){
 'use strict';
 const LOYAL=[['Okidogi',70],['Munkidori',70],['Fezandipiti',70]];
+// The battle engine already provides these built-in painted 2D arenas.
+const BB_ARENAS={INDIGO_ELITE_CRISPIN:'sand',INDIGO_ELITE_LACEY:'grass',INDIGO_ELITE_AMARYS:'mountain',INDIGO_ELITE_DRAYTON:'cave',INDIGO_KIERAN:'champion'};
+const LEGEND_ARENAS={Ogerpon:'mountain',Terapagos:'cave',Pecharunt:'longgrass'};
 const ELITE={
  'indigo-crispin':{key:'crispin',name:'Crispin',team:[['Talonflame',75],['Rotom-Heat',75],['Magmortar',76],['Blaziken',77]]},
  'indigo-lacey':{key:'lacey',name:'Lacey',team:[['Whimsicott',75],['Alcremie',75],['Granbull',76],['Primarina',77]]},
@@ -16,7 +19,7 @@ function create(env,{fight}){
   if(!env.canBattle()){await say('Bring healthy Pokémon before battling.');return false;}
   const result=await env.battle('trainer',{
    foe:{name,team:team.map(([species,level])=>Party.create(species,level))},
-   trainerId:'SV_'+id,double:true,noBlackout:true
+   trainerId:'SV_'+id,double:true,noBlackout:true,terrain:BB_ARENAS[id]||'gym'
   });
   env.showWorld();await env.resume();
   if(result!=='won'){await say('You can retry this Blueberry League battle.');return false;}
@@ -26,8 +29,15 @@ function create(env,{fight}){
   if(s()[flag]){await say(species+' has already joined your collection.');return;}
   if(!env.canBattle()){await say('Bring a healthy Pokémon to challenge '+species+'.');return;}
   if(!env.wildEncounter){await say('Wild capture is unavailable right now.');return;}
+  // Show the actual Pokémon's Pokédex sprite before the battle without
+  // requiring any new character art or delaying the existing capture system.
+  if(env.showPicture){
+   env.showPicture(species);
+   try{await say('A mysterious '+species+' appeared!');}
+   finally{if(env.hidePicture)env.hidePicture();}
+  }
   const outcome=await env.wildEncounter(Party.create(species,level),{
-   music:'mus_vs_legend',noBlackout:true,noGimmicks:true
+   music:'mus_vs_legend',noBlackout:true,noGimmicks:true,terrain:LEGEND_ARENAS[species]||'grass'
   });
   if(outcome!=='caught'){await say(species+' can be challenged again until it is caught.');return;}
   s()[flag]=true;await save();await say(description);
