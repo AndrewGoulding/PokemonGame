@@ -135,11 +135,19 @@ function create(env,{battle}){
     if(!s().mustardTrial){await say('Mustard will explain the Max Honey request after training.');break;}
     if(!s().maxHoney){if(!await fight('VESPIQUEN_HONEY','Vespiquen',[['Vespiquen',66]]))break;s().maxHoney=true;await save();}
     await say('You collected Max Honey from Honeycalm Island.');break;
-   case'max-soup':
+   case'max-soup':{
     if(!s().mustardTrial){await say('Finish the Master Dojo trial before preparing Max Soup.');break;}
     if((s().maxMushrooms||[]).length<2||!s().maxHoney){await say('Gather two mushroom patches and Max Honey first.');break;}
     if(!s().maxSoupReady){s().maxSoupReady=true;await save();}
-    await say('Max Soup is ready! Bring the news to Mustard to complete the chapter.');break;
+    if(s().maxSoupServed){await say('Max Soup has already been served. Return to Mustard to complete the Dojo challenge.');break;}
+    const eligible=p().party.map((mon,i)=>({mon,i})).filter(({mon})=>window.DEX[mon.species+'-Gmax']&&!mon.gmax);
+    if(!eligible.length){await say('The soup is ready! Bring a Pokémon capable of Gigantamaxing to receive the G-Max Factor.');break;}
+    const names=eligible.map(({mon,i})=>(i+1)+'. '+mon.species);
+    const chosen=await env.choose('Serve Max Soup to which Pokémon?',names);
+    const index=names.indexOf(chosen);if(index<0)break;
+    eligible[index].mon.gmax=true;s().maxSoupServed=true;await save();
+    await say(eligible[index].mon.species+' received the G-Max Factor from Max Soup! Return to Mustard.');break;
+   }
    case'peony':
     if(!s().crownArrival){await say('Welcome to Freezington!');break;}
     if(!s().peonyMet){if(!await fight('PEONY_FIRST','Peony',[['Copperajah',70],['Aggron',69]]))break;s().peonyMet=true;await save();}
