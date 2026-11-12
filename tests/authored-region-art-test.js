@@ -85,6 +85,8 @@ const SECOND_PASS={
 };
 for (const [name, asset] of Object.entries(SECOND_PASS)) {
  assert.equal(R.CHOICES[name],asset,name+" missing its original sprite selection");
+ assert(WORLD_MAPS[name],name+" is not a registered overworld map");
+ assert(R.plan(name),name+" has no safe solid footprint for the authored sprite");
  const file=path.join(root,"assets/region-art",asset+".svg");
  assert(fs.existsSync(file),name+" sprite was not committed");
  const xml=fs.readFileSync(file,"utf8");
