@@ -1940,19 +1940,45 @@
           await message(fill("{who} terastallized into the " + b + " type!", a));
         };
       }
-      // Dynamax (Sword and Shield): the picture grows, red-lit, for three turns.
+      // pokeemerald-expansion: gBattleAnimGeneral_DynamaxGrowth
+      // (B_ANIM_DYNAMAX_GROWTH in its general animation table).
+      // Use the imported GBA animation script/tiles/palette/sound renderer
+      // rather than substituting a generic Mega Evolution effect.
       case "-dynamax": {
         const verb = b === "Gmax" ? "Gigantamaxed" : b === "Eternamax" ? "Eternamaxed" : "Dynamaxed";
         return async () => {
+          const sprite = el.sides[pos].sprite;
           await message(fill("{who} " + verb + "!", a));
-          el.sides[pos].sprite.classList.add("dynamax");
+          // The script handles the expansion's growth visuals while the
+          // CSS class maintains the enlarged, red-lit battle sprite afterward.
+          const played = await tableAnim("general", "DYNAMAX_GROWTH", pos);
+          if (played === false && sceneOn()) {
+            // Old exports can omit this general script: retain readable
+            // growth motion without breaking the battle in that case.
+            await sprite.animate([
+              { transform: "scale(1)", filter: "brightness(1)" },
+              { transform: "scale(1.18)", filter: "brightness(1.5) sepia(1) saturate(5) hue-rotate(310deg)" },
+              { transform: "scale(1)", filter: "brightness(1)" }
+            ], { duration: 500, easing: "ease-out" }).finished;
+          }
+          sprite.classList.add("dynamax");
         };
       }
       case "-dynamaxhp": setHp(a, b); return null;
       case "-dynamaxend":
-        el.sides[pos].sprite.classList.remove("dynamax");
-        setHp(a, b);
-        return fill("{who} returned to its normal size!", a);
+        return async () => {
+          const sprite = el.sides[pos].sprite;
+          if (sceneOn() && sprite.classList.contains("dynamax")) {
+            await sprite.animate([
+              { transform: "scale(1)", opacity: 1 },
+              { transform: "scale(0.86)", opacity: 0.75 },
+              { transform: "scale(1)", opacity: 1 }
+            ], { duration: 300, easing: "ease-in-out" }).finished;
+          }
+          sprite.classList.remove("dynamax");
+          setHp(a, b);
+          await message(fill("{who} returned to its normal size!", a));
+        };
       // Z-Moves (Sun and Moon).
       case "-zpower": return fill("{who} surrounded itself with its Z-Power!", a);
       case "-zbroken": return fill("{who} couldn't fully protect itself and got hurt!", a);
