@@ -26,3 +26,23 @@ There is a dedicated regional Town Map with visited-only Fly spots at Cabo Poco,
 The main remaining expansion work is the rest of Victory Road and its Gyms, Path of Legends and Titan Pokémon, Team Star and Starfall Street, Area Zero and The Way Home, followed by The Teal Mask and The Indigo Disk DLC. Those are **not** included in this opening update.
 
 Regression: `node tests/paldea-test.js` (also included in `npm test`).
+
+## Victory Road continuation: Artazon and Cascarrafa
+
+The second chapter adds **8 maps**, bringing Paldea to **21 locations**. From
+South Province, follow East Province (Area One) to Artazon, its Pokémon Center,
+and Brassius's Grass Gym. From Cortondo, reach West Province (Area One) and
+Cascarrafa, its Pokémon Center, and Kofu's Water Gym. The academy's Treasure
+Hunt unlocks the eastern branch; Katy's Badge unlocks the western route, and
+Brassius's victory unlocks Cascarrafa. These level gates are specific to this
+2D adaptation, not Scarlet/Violet's original open-world restrictions.
+
+Both Gyms have separately saved trainer challenges and Leader victories, with
+losses retryable without erasing completed trainers. Brassius awards the Grass
+Badge, and Kofu the Water Badge; Paldea's level cap reaches **45** after Kofu.
+The Town Map adds Artazon and Cascarrafa Fly locations, and their Pokémon
+Centers become safe healing and respawn points. East/West Province encounters
+and optional trainer challenges are included. All progress shares the existing
+Paldea save flags and works alongside the earlier Cabo Poco–Cortondo story.
+
+Regression: `node tests/paldea-test.js`, run via `npm test`.
