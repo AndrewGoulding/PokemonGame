@@ -182,3 +182,18 @@ battle-based adaptation rather than a timed bicycle race. Pokémon Camp curry
 cooking remains available in the same four zones.
 
 Regression coverage: `node tests/galar-completion-test.js`.
+
+## Dynamax and Gigantamax battle-menu integration
+
+In Galar, when the player has a Dynamax Band and the Pokémon is eligible,
+the battle move menu prioritizes **Dynamax** over Mega Evolution, Ultra Burst
+and Z-Moves. Activating it uses the existing Gen 8 battle-engine transformation:
+three turns, Dynamax Level-based HP scaling, Max Move / Max Guard selection,
+G-Max forms and moves for Pokémon with the G-Max Factor, then automatic return
+to normal. Once-per-battle and restricted Pokémon rules remain enforced by the
+engine. Battles configured with `noGimmicks` do not enable the Galar shortcut.
+The interface change does not change the move-menu preference in other regions.
+
+The Galar completion regression checks that the battle context reaches the
+menu and the Galar-specific preference is present. End-to-end browser behavior
+is verified by the repository's automated test workflow.
