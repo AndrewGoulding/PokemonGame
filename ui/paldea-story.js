@@ -14,6 +14,7 @@ function create(env){
  const mid=PaldeaMidStory.create(env,{fight});
  const legends=PaldeaLegendsStory.create(env,{fight});
  const starfall=PaldeaStarfallStory.create(env,{fight});
+ const endgame=PaldeaEndgameStory.create(env,{fight});
  function goal(){
   const a=s();
   return !a.starter?'Choose a starter in Cabo Poco.':
@@ -35,7 +36,18 @@ function create(env){
    !a.caphClear?'Challenge Eri at the Caph Squad base.':
    !a.cliveClear?'Meet Clive in the academy courtyard.':
    !a.cassiopeiaClear?'Face Cassiopeia at the academy courtyard.':
-   'Starfall Street is complete! Continue Victory Road and Path of Legends in Paldea.';
+   !a.ionoClear?'Face Iono in Levincia.':
+   !a.larryClear?'Face Larry in Medali.':
+   !a.rymeClear?'Face Ryme in Montenevera.':
+   !a.tulipClear?'Face Tulip in Alfornada.':
+   !a.grushaClear?'Face Grusha on Glaseado Mountain.':
+   !a.nemonaChampionClear?'Finish the Pokémon League and battle Nemona.':
+   !a.herbaOrthworm?'Seek the Lurking Steel Titan.':
+   !a.herbaQuaking?'Seek the Quaking Earth Titan.':
+   !a.herbaFalseDragon?'Seek the False Dragon Titan.':
+   !a.arvenClear?'Challenge Arven at the academy.':
+   !a.theWayHomeClear?'Descend into Area Zero and complete The Way Home.':
+   'All three Paldea main stories and The Way Home are complete!';
  }
  async function run(script){
   if(!script?.startsWith('sv:'))return false;
@@ -43,6 +55,7 @@ function create(env){
   if(await mid.run(key))return true;
   if(await legends.run(key))return true;
   if(await starfall.run(key))return true;
+  if(await endgame.run(key))return true;
   switch(key){
    case'travel':
     if(!await env.confirm('Travel to Paldea? Scarlet and Violet share one adventure.'))break;
