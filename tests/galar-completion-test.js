@@ -104,12 +104,23 @@ function accessible(m){
  assert.equal(s.dojoSparring.wins,3);
  for(let i=0;i<3;i++)await go('galar-star-tournament');
  assert.equal(s.starTournament.titles,1);assert.equal(doubles,3);
+ // Camp consumes a berry, restores the party and survives serialization.
+ assert.equal(D.maps.GalarWildAreaSouth.people.filter(n=>n.script==='swsh:camp-south').length,1);
+ Player.addItem(p,'oran-berry',2);const berryCount=Player.itemCount(p,'oran-berry');
+ const initialMeals=(s.camp?.meals||0);
+ await go('camp-south');
+ assert.equal(Player.itemCount(p,'oran-berry'),berryCount-1);
+ assert.equal(s.camp.meals,initialMeals+1);
+ await go('camp-north');assert.equal(Player.itemCount(p,'oran-berry'),berryCount-1,'same-day camp cannot duplicate cooking');
+ p.clockSteps+=2400;await go('camp-north');
+ assert.equal(s.camp.meals,initialMeals+2);
  const m=D.maps['GalarWedgehurst'],blocked=m.collision.findIndex((v,i)=>v&&i%m.width>1&&i%m.width<m.width-2&&i/m.width>1);
  assert(blocked>0,'need a blocked tile for same-map save recovery');
  p.location={map:'GalarWedgehurst',x:blocked%m.width,y:Math.floor(blocked/m.width),facing:'down'};
  assert(Galar.recover(p));assert.equal(p.location.map,originalMap);
  assert.equal(m.collision[p.location.y*m.width+p.location.x],0);
  const loaded=Player.load(JSON.parse(Player.serialize(p))).player;
+ assert.equal(Galar.peek(loaded).camp.meals,initialMeals+2);
  assert(Galar.peek(loaded).swordsUnlocked);assert.equal(Galar.peek(loaded).diglettFound.length,10);
  assert.equal(Galar.peek(loaded).starTournament.titles,1);
  assert(saves>20&&speech.length>20);
