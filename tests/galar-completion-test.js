@@ -54,12 +54,27 @@ function accessible(m){
  const battleAnimSource=fs.readFileSync(path.join(root,'ui/battle-anim.js'),'utf8');
  assert(battleAnimSource.includes('hasAnim: (kind, id) => animIdOf(kind, id) != null'),
   'Expansion general animation table must be available to the Galar renderer');
+ // Every G-Max form must have a distinct real sprite in both orientations.
+ const gmaxForms=Object.keys(DEX).filter(name=>/-Gmax$/.test(name));
+ assert(gmaxForms.length>=32,'Galar Gigantamax formes missing from Pokédex');
+ for(const species of gmaxForms){
+  const id=DEX[species].id;
+  for(const dir of ['', 'back/']){
+   const file=path.join(root,'assets/sprites/pokemon',dir,id+'.png');
+   assert(fs.existsSync(file),species+' missing '+dir+'G-Max battle sprite');
+   assert(fs.statSync(file).size>100,species+' G-Max image must contain art');
+  }
+ }
  const battleScreenSource=fs.readFileSync(path.join(root,'ui/battle-screen.js'),'utf8');
  const gameSource=fs.readFileSync(path.join(root,'ui/game.js'),'utf8');
  assert(battleScreenSource.includes('config.galarDynamax && canMax ? "dynamax"'),
   'Galar should prioritize the Dynamax move toggle');
  assert(battleScreenSource.includes('tableAnim("general", "DYNAMAX_GROWTH", pos)'),
   'Dynamax must use pokeemerald-expansion growth animation');
+ assert(battleScreenSource.includes('sprite.classList.toggle("gigantamax", /-Gmax$/.test(b))'),
+  'G-Max detailschange must activate the separate visual form');
+ assert(battleScreenSource.includes('window.Screen.spriteUrl(species, "", side === "p1", !!v.shiny)'),
+  'G-Max sprites must be preloaded at the correct battle perspective');
  assert(battleScreenSource.includes('case "-dynamaxend":'),
   'Dynamax must restore its normal appearance');
  assert(gameSource.includes('galarDynamax: !opts.noGimmicks && Galar.owns(player.location.map)'),
