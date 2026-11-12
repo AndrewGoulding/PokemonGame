@@ -9123,7 +9123,7 @@
         const e = foes[k];
         await say([e.leader ? "Area " + area + "'s Area Leader steps up:\n" + e.name + "!" : "Battle " + ((area - 1) * 10 + k + 1) + ": " + e.name + "!"]);
         Screen.say("");
-        const outcome = await storyBattle({ foe: { name: e.name, team: e.xd ? e.team : teamOf(e.team), pic: e.pic }, double: e.xd ? e.team.length > 1 : undefined, prizeClass: e.leader ? "Leader" : e.cls, noBlackout: true,
+        const outcome = await storyBattle({ foe: { name: e.name, team: e.xd ? e.team : teamOf(e.team), pic: e.pic }, double: e.xd ? e.team.length > 1 : true, prizeClass: e.leader ? "Leader" : e.cls, noBlackout: true,
           defeatText: [e.leader ? "You've earned the next area. Go on!" : pickOne(["Whoa! You're strong!", "Hmph. Good luck up there.", "My training wasn't enough…"])] });
         if (outcome !== "won") {
           heal();

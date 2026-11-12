@@ -90,11 +90,11 @@ const strong = () => [
       const battle = () => window.BattleScreen._test.battle;
       const foes = (b) => [].concat(b.sides.p2.actives || b.sides.p2.active).filter((m) => m && !m.fainted);
       const shadowOut = (b) => b && b.snag && foes(b).some((m) => b.snaggable(m));
-      window.__snag = { thrown: -1, balls: 0 };
+      window.__snag = { thrown: -1, thrownIn: null, balls: 0 };   // (the turn a ball was last thrown, and in which battle: a new battle starts its turns over)
       G.battleAction = (c, o) => {
         const b = battle();
         if (!b || o.prompt || !o.name) return act(c, o);
-        if (shadowOut(b) && window.__snag.thrown !== b.turn) { window.__snag.thrown = b.turn; window.__snag.ball = true; return Promise.resolve({ action: "bag", cursor: 1 }); }
+        if (shadowOut(b) && !(window.__snag.thrownIn === b && window.__snag.thrown === b.turn)) { window.__snag.thrown = b.turn; window.__snag.thrownIn = b; window.__snag.ball = true; return Promise.resolve({ action: "bag", cursor: 1 }); }
         return Promise.resolve({ action: "fight", cursor: 0 });
       };
       window.BagScreen.open = (o) => {

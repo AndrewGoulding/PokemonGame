@@ -45,6 +45,12 @@ const T = require("./lib");
   // (Between scenes, as if back from a Pokémon Center: the party healed, PP and all.)
   async function go(map, x, y, facing) { await s.eval((to) => { Game.player.party.forEach(Party.heal); return Overworld.teleport(to); }, { map, x, y, facing: facing || "up" }); await s.wait(350); }
   const at = async () => (await s.player()).location;
+  // Through a door (or down a hole) onto `map`. (A test this long sees the game's every-5-minutes save prompt, and
+  // when it comes as you step it stops the walk: answer it, and walk on.)
+  async function through(dir, steps, map) {
+    for (let i = 0; i < 3 && (await at()).map !== map; i++) { if (i) await settle(); await s.walk(dir, steps); }
+    assert.equal((await at()).map, map);
+  }
   // Orre's map: from wherever you are, to the place called `name` (arrows toward it, then A).
   async function orreMap(name) {
     await s.page.waitForSelector(".orre-map .tm-name b", { timeout: 8000 });
@@ -101,8 +107,7 @@ const T = require("./lib");
 
     // Duking's house: Duking, then Silva storms in and out; the gear's stolen (orreGear 1).
     await go("PyriteTown", 6, 7, "up");
-    await s.walk("up", 1);
-    assert.equal((await at()).map, "PyriteTown_DukingsHouse");
+    await through("up", 1, "PyriteTown_DukingsHouse");
     await settle();
     await go("PyriteTown_DukingsHouse", 7, 4, "up");
     await finish(() => Game.player.flags.orreGear === 1, "Duking's house and Silva");
@@ -112,8 +117,7 @@ const T = require("./lib");
     await go("PyriteTown", 13, 11, "left");
     await expectSay(/trouble/, "the windmill's man");
     await go("PyriteTown", 8, 11, "up");
-    await s.walk("up", 1);
-    assert.equal((await at()).map, "PyriteTown_Windmill");
+    await through("up", 1, "PyriteTown_Windmill");
     await finish(() => !!Game.player.flags.orreWindmill, "the Chief's plea");
     await s.shot("windmill");
     // The junk gears in town.
@@ -150,8 +154,7 @@ const T = require("./lib");
     // The Colosseum: its story challenge, four of Colosseum's own Trainers, TM06; Nore leads you in (24), you beat him
     // and Duking and Marcia come in (25).
     await go("PyriteTown", 17, 9, "up");
-    await s.walk("up", 1);
-    assert.equal((await at()).map, "PyriteTown_Colosseum");
+    await through("up", 1, "PyriteTown_Colosseum");
     await settle();
     await go("PyriteTown_Colosseum", 6, 6, "up");
     await finish(() => Game.player.flags.orreStory === 25, "the Colosseum's challenge and Nore", 1500);
@@ -162,19 +165,16 @@ const T = require("./lib");
 
     // The building's floors: a Trainer on 2F, up the stairs to 3F and 4F; the top floor's scene (26).
     await go("PyriteTown_PyriteBuilding_1F", 14, 2, "up");
-    await s.walk("up", 1);
-    assert.equal((await at()).map, "PyriteTown_PyriteBuilding_2F");
+    await through("up", 1, "PyriteTown_PyriteBuilding_2F");
     await settle();
     await go("PyriteTown_PyriteBuilding_2F", 6, 5, "left");
     await finish(() => (Game.player.flags.orreColo || {}).PyriteTown_PyriteBuilding_2F_EventScript_Colo_GEATS === 0, "Bandana Guy Geats on 2F");
     await go("PyriteTown_PyriteBuilding_2F", 2, 2, "up");
-    await s.walk("up", 1);
-    assert.equal((await at()).map, "PyriteTown_PyriteBuilding_3F");
+    await through("up", 1, "PyriteTown_PyriteBuilding_3F");
     await settle();
     await s.shot("building-3f");
     await go("PyriteTown_PyriteBuilding_3F", 14, 2, "up");
-    await s.walk("up", 1);
-    assert.equal((await at()).map, "PyriteTown_PyriteBuilding_4F");
+    await through("up", 1, "PyriteTown_PyriteBuilding_4F");
     await finish(() => Game.player.flags.orreStory === 26, "the top floor: Reath, Ferma and Miror B.", 1000);
     await s.shot("top-floor-after");
 
@@ -189,8 +189,7 @@ const T = require("./lib");
     await finish(() => (Game.player.flags.orreColo || {}).PyriteCave_EventScript_Colo_SIMES === 0, "St. Performer Simes in the cave");
     // (Its way in: the cave's fallen-in north end, walked down into from the north.)
     await go("PyriteCave", 26, 3, "down");
-    await s.walk("down", 2);
-    assert.equal((await at()).map, "PyriteCave_MirorBHideout");
+    await through("down", 2, "PyriteCave_MirorBHideout");
     await finish(() => Game.player.flags.orreStory === 27, "Miror B.'s hideout", 1000);
     await s.shot("hideout-after");
 
@@ -203,8 +202,7 @@ const T = require("./lib");
     assert((await flags()).orreMap.includes("AgateVillage"), "Agate on Orre's map");
     // Fateen's chamber.
     await go("PyriteTown", 6, 17, "up");
-    await s.walk("up", 1);
-    assert.equal((await at()).map, "PyriteTown_FortuneHouse");
+    await through("up", 1, "PyriteTown_FortuneHouse");
     await settle();
     // (Sherles's e-mail, due from 27, arrives with this first door after Fateen's scene.)
     assert((((await flags()).orreMail || {}).got || []).includes("MIROR_PEON_NABBED"), "Sherles's e-mail came");

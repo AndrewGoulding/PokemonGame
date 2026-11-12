@@ -462,7 +462,9 @@
 
       if (Orre.FILLERS[script]) { await env.orreTrainer(script); return; }
       if (Orre.SHADOW_TRAINERS[script]) { await env.shadowTrainer(script); return; }
-      if (Orre.XD && Orre.XD.SCRIPTS.includes(script)) { await env.xdScene(script, ev); return; }
+      // (A room's or map's scene as you come in that both stories have, Phenac's and Pyrite's, goes to XD's only when
+      // XD's is the one due: Colosseum's own otherwise.)
+      if (Orre.XD && Orre.XD.SCRIPTS.includes(script) && (!/^(?:enter|arrive):/.test(script) || Orre.XD.sceneDue(script, f))) { await env.xdScene(script, ev); return; }
       if (Orre.PYRITE_SCRIPTS.includes(script)) { await env.pyriteExtra(script, ev); return; }
       if (Orre.COLO_TRAINERS[script]) { await env.coloTrainer(script); return; }
       if (script === OrreDayCare.SCRIPT) { await env.dayCareLady(); return; }
