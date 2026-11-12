@@ -29,7 +29,9 @@ to put on what you bought. **Wardrobe** opens the shared wardrobe; **See ya!** l
 The Celadon Boutique has a building of its own: the awning-fronted shop on Celadon's main street, in the row of
 houses between the Celadon Mansion and the Pokémon Center (its shop window reads as its sign), its clerk behind
 the counter. The other boutiques' clerks take a free spot that keeps every entrance connected, like the team
-outfitters (who keep the wardrobe's own shop screen).
+outfitters, who sell from the same screen. So do Kalos's six boutiques, with what each has in that day for the
+collection you're wearing; a Discount Coupon, handed over as you start to buy, halves everything bought that visit,
+and a visit earns its style points once.
 
 Pieces are fitted to the character as drawn (`game/kalos-fashion-art.js`): a hat is the character's own cap in
 the hat's colours and trim, a bag their backpack, a top what's worn from collar to belt, and a skirt spans the

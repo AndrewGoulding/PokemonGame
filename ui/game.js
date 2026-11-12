@@ -6087,22 +6087,27 @@
     }finally{if(temporary||st.pwtBackup){player.party=original;delete st.pwtBackup;delete st.facilityPending;if(lastRecord){UnovaFacilities.state(player).lastRecord=lastRecord;lastRecord=null;}Save.write(player);}show('world');await Overworld.resume();}
   }
 
-  // A regional boutique (the Celadon Boutique in its own shop, the others' clerks where they stand): served as a Poké Mart is (mart, above), "Buy" FireRed's
-  // buy screen with its clothes on it (ui/boutique-mart.js: one of each, you in the piece the cursor's on), and
-  // "Wardrobe" the shared wardrobe; what you've bought, put on as you leave the screen, if you like.
-  async function boutiqueMart(vendor){
-    let text="Welcome to "+vendor.name+"!\n"+vendor.greeting;
+  // A clothes shop: a regional boutique (the Celadon Boutique in its own shop, the others' clerks where they stand), a
+  // team outfitter, or one of Kalos's boutiques. Served as a Poké Mart is (mart, above): "Buy" FireRed's buy screen
+  // with its clothes on it (ui/boutique-mart.js: one of each, you in the piece the cursor's on), "Wardrobe" the
+  // shared wardrobe; what you've bought, put on as you leave the screen, if you like. A Discount Coupon (Kalos's):
+  // handed over as you start to buy, everything that visit at half price.
+  async function fashionMart(shop,text){
     for(;;){
       Screen.say(fill(text));await Screen.printed();clearMenu();
       const {index}=await pcMenu(["Buy","Wardrobe","See ya!"],{left:2,top:1,width:12});
       if(index===0){
+        const coupon=!TeamFashion.vendor(shop)&&Player.itemCount(player,"discount-coupon")>0&&await confirm("Use your Discount Coupon?\nAll you buy now is half price.");
         Screen.say("");await BoutiqueMart.ready();
         const at=Overworld.position(),[dx,dy]=({up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]})[at.facing]||[0,-1];
-        const offers=BoutiqueMart.offers(player,vendor);
-        await ShopScreen.open(Object.assign(offers,{frame:GameOptions.get().frame,map:{canvas:$("#world"),x:112+16*dx,y:96+16*dy}}));
-        if(offers.bought.length){
-          offers.bought.forEach(()=>UnovaRecords.record(player,"purchases"));
-          if(await confirm(offers.bought.length>1?"Would you like to wear your\nnew clothes now?":"Would you like to wear it now?")){offers.bought.forEach(id=>KalosFashion.equip(player,id));await say("It suits you!");}
+        const offers=BoutiqueMart.offers(player,shop,{coupon});
+        if(!offers.items.length){await say("Nothing's in for your collection\ntoday. Please come again!");}
+        else{
+          await ShopScreen.open(Object.assign(offers,{frame:GameOptions.get().frame,map:{canvas:$("#world"),x:112+16*dx,y:96+16*dy}}));
+          if(offers.bought.length){
+            offers.bought.forEach(()=>UnovaRecords.record(player,"purchases"));
+            if(await confirm(offers.bought.length>1?"Would you like to wear your\nnew clothes now?":"Would you like to wear it now?")){offers.bought.forEach(id=>KalosFashion.equip(player,id));await say("It suits you!");}
+          }
         }
       }else if(index===1){
         Screen.say("");show("scene");clearMenu();
@@ -6117,15 +6122,13 @@
   async function teamClothing(script){
     const vendor=TeamFashion.byScript(script);if(!vendor)return;
     const error=TeamFashion.shopError(player,vendor.id);if(error){await say(error);return;}
-    if(vendor.mart)return boutiqueMart(vendor);
-    await say(vendor.boutique?"Welcome to "+vendor.name+"!\n"+vendor.greeting:vendor.name+"\nThe old operation is finished.\nThese uniforms are just clothing now.");
-    const mode=await ask("What would you like to do?",[{label:vendor.boutique?"Browse clothes":"Browse uniforms",value:"shop"},{label:"Change clothes",value:"wardrobe"},{label:"Leave",value:null}]);
-    if(!mode)return;Screen.say("");show("scene");clearMenu();
-    try{await KalosFashionDevice.open(scene,player,mode==="shop"?vendor.shop:null);}
-    finally{tick();Save.write(player);show("world");await Overworld.resume();}
+    if(vendor.boutique)return fashionMart(vendor.shop,"Welcome to "+vendor.name+"!\n"+vendor.greeting);
+    await say(vendor.name+"\nThe old operation is finished.");
+    return fashionMart(vendor.shop,"These uniforms are just clothing\nnow. Care to see them?");
   }
 
-  const kalosStory = KalosStory.create({fashion:async city=>{Screen.say("");show("scene");clearMenu();try{return await KalosFashionDevice.open(scene,player,city);}finally{tick();Save.write(player);show("world");await Overworld.resume();}},choosePokemon:choosePartyFor,chooseMaisonTeam:async(list,n,title)=>{Screen.say("");show("scene");clearMenu();try{return await SinnohFrontierDevice.select(scene,list,n,title);}finally{show("world");await Overworld.resume();}},silhouette:async(species,pages)=>{showPicture(species);const img=$("#world-pic img");img.style.filter="brightness(0)";img.alt="Pokémon silhouette";try{await say(pages);}finally{img.style.filter="";hidePicture();}},skiddoJump:dir=>Overworld.act([{who:"player",moves:["jump_2_"+dir]}]),walkAvatar:()=>Overworld.setAvatar("walk"),wildEncounter:async(record,opts={})=>{const result=await battle("wild",{...opts,foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();return result;},refreshPeople:()=>Overworld.refreshPeople(),fireworks:async()=>{Screen.say("");show("scene");clearMenu();try{await KalosFireworks.show(scene,player);}finally{show("world");await Overworld.resume();}},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});
+  // (Kalos's boutiques, a city's: the Mart screen too; no city, the wardrobe at home.)
+  const kalosStory = KalosStory.create({fashion:async city=>{if(city!=null)return fashionMart(city,"Welcome to "+(city==="lumiose"?"Boutique Couture":"the "+KalosFashion.shopName(city)+" boutique")+"!\nPlease, look around.");Screen.say("");show("scene");clearMenu();try{return await KalosFashionDevice.open(scene,player,city);}finally{tick();Save.write(player);show("world");await Overworld.resume();}},choosePokemon:choosePartyFor,chooseMaisonTeam:async(list,n,title)=>{Screen.say("");show("scene");clearMenu();try{return await SinnohFrontierDevice.select(scene,list,n,title);}finally{show("world");await Overworld.resume();}},silhouette:async(species,pages)=>{showPicture(species);const img=$("#world-pic img");img.style.filter="brightness(0)";img.alt="Pokémon silhouette";try{await say(pages);}finally{img.style.filter="";hidePicture();}},skiddoJump:dir=>Overworld.act([{who:"player",moves:["jump_2_"+dir]}]),walkAvatar:()=>Overworld.setAvatar("walk"),wildEncounter:async(record,opts={})=>{const result=await battle("wild",{...opts,foe:{name:"Wild",team:[wildMon(record)]}});show("world");await Overworld.resume();return result;},refreshPeople:()=>Overworld.refreshPeople(),fireworks:async()=>{Screen.say("");show("scene");clearMenu();try{await KalosFireworks.show(scene,player);}finally{show("world");await Overworld.resume();}},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});
   const alolaStory = AlolaStory.create({wildEncounter:async(mon,opts={})=>{const result=await battle('wild',{...opts,foe:{name:'Wild',team:[wildMon(mon)]}});show('world');await Overworld.resume();return result;},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});
   const paldeaStory = PaldeaStory.create({showPicture,hidePicture,wildEncounter:async(mon,opts={})=>{const result=await battle("wild",{...opts,foe:{name:"Wild",team:[wildMon(mon)]}});show("world");await Overworld.resume();return result;},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});
   const galarStory = GalarStory.create({galarDoubleBattle:async(id,name,team)=>{const result=await battle('trainer',{foe:{name,team:team.map(([species,level])=>Party.create(species,level))},trainerId:'SWSH_'+id,double:true,noBlackout:true});show('world');await Overworld.resume();return result;},galarRaid:async(mon,opts={})=>{const result=await battle('wild',{...opts,foe:{name:'Wild',team:[wildMon(mon)]}});show('world');await Overworld.resume();return result;},wildEncounter:async(mon,opts={})=>{const result=await battle('wild',{...opts,foe:{name:'Wild',team:[wildMon(mon)]}});show('world');await Overworld.resume();return result;},player:()=>player,say,confirm,battle,mart,canBattle,showWorld:()=>show("world"),resume:()=>Overworld.resume(),saveCheckpoint:async()=>{tick();Save.write(player);},teleport:loc=>Overworld.teleport({...loc}),choose:(prompt,options)=>ask(prompt,options.map(label=>({label,value:label})).concat([{label:"Cancel",value:null}]))});

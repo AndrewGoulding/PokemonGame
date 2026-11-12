@@ -1,9 +1,9 @@
-// A boutique's stock for FireRed's Poké Mart buy screen (ui/shop-screen.js), as every regional
-// boutique sells it (game/team-fashion.js's `mart`): the pieces of the collection you're
+// A clothes shop's stock for FireRed's Poké Mart buy screen (ui/shop-screen.js), as every regional
+// boutique and team outfitter (game/team-fashion.js) and Kalos's boutiques (game/kalos-fashion.js) sell it: the pieces of the collection you're
 // wearing, one of each (one you own shows "-----", as a TM does), an icon for each in its
 // own colour, and you in it, in the screen's fitting window, before you buy.
 //
-//   BoutiqueMart.offers(player, vendor)   // -> ShopScreen's options: items, inBag, soldOut, limit, buy, preview
+//   BoutiqueMart.offers(player, shop, { coupon })   // (shop: a vendor, or a Kalos boutique's city) -> ShopScreen's options: items, inBag, soldOut, limit, buy, preview
 //                                         //    (and .bought: the ids bought, as they're bought)
 //   BoutiqueMart.ready()                  // (a promise: the picture previews are drawn on, loaded)
 (function () {
@@ -50,14 +50,24 @@
     return window.CharacterStyle.render(picture, Object.assign({}, p, { flags: Object.assign({}, p.flags, { kalos: Object.assign({}, p.flags.kalos, { activities: Object.assign({}, A, { appearance: look }) }) }) }));
   }
 
-  function stock(p, vendor) {
-    const F = window.KalosFashion, line = F.collection(p);
-    return window.TeamFashion.items.filter((a) => a.faction === vendor.faction && a.collection === line);
+  // `shop`: a team outfitter's or regional boutique's vendor (game/team-fashion.js), or its shop's key; or one of
+  // Kalos's boutiques' cities (game/kalos-fashion.js), which sell what they have in today.
+  const keyOf = (shop) => (typeof shop === "string" ? shop : shop.shop);
+  function stock(p, shop) {
+    const F = window.KalosFashion, line = F.collection(p), key = keyOf(shop), vendor = window.TeamFashion && window.TeamFashion.vendor(key);
+    return vendor ? window.TeamFashion.items.filter((a) => a.faction === vendor.faction && a.collection === line)
+      : F.stock(p, key, { today: true, collection: line });
   }
-  function offers(p, vendor) {
-    const F = window.KalosFashion, line = F.collection(p), bought = [];
-    const items = stock(p, vendor).map((a) => ({ id: a.id, name: a.name, price: a.price, icon: typeof document === "undefined" ? null : icon(a),
-      desc: a.name + ".\n" + (WORDS[a.category] || "A piece") + " in " + a.color.toLowerCase() + ", cut for the " + (line === "female" ? "Serena" : "Calem") + " collection." }));
+  // opts.coupon: a Discount Coupon handed over (Kalos's): everything bought this visit at half price, the coupon
+  // gone with the first piece.
+  function offers(p, shop, opts) {
+    const F = window.KalosFashion, line = F.collection(p), key = keyOf(shop), bought = [];
+    let coupon = opts && opts.coupon ? true : false;
+    // (A piece sold in several colours, Kalos's "Logo Cap": its colour in its name.)
+    const list = stock(p, shop), named = (a) => (list.filter((b) => b.name === a.name).length > 1 ? a.color + " " + a.name : a.name);
+    const items = list.map((a) => ({ id: a.id, name: named(a), get price() { return coupon ? Math.floor(a.price / 2) : a.price; },
+      icon: typeof document === "undefined" ? null : icon(a),
+      desc: named(a) + ".\n" + (WORDS[a.category] || "A piece") + " in " + a.color.toLowerCase() + ", cut for the " + (line === "female" ? "Serena" : "Calem") + " collection." }));
     return {
       items, bought, smallNames: true,
       money: () => p.money,
@@ -65,9 +75,10 @@
       soldOut: (id) => F.owned(p, id),
       limit: (id) => (F.owned(p, id) ? { max: 0, why: "You already own that.\nIt's in your wardrobe." } : { max: 1 }),
       buy: (id) => {
-        const r = F.buy(p, [id], vendor.shop);
+        const r = F.buy(p, [id], key, coupon, bought.length > 0);
         if (r.error) return { error: r.error };
         bought.push(id);
+        if (coupon === true) coupon = "used";
         return null;
       },
       preview: (id) => preview(p, id)

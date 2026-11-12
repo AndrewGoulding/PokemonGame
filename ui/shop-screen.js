@@ -282,5 +282,5 @@
   }
 
   // (showing, state: for tests/browser, what's on the screen now.)
-  window.ShopScreen = { open, close, get showing() { return !!st; }, get state() { return st && { cursor: st.cursor, item: (entries()[st.cursor] || {}).id || null, message: st.message ? st.message.text : null }; } };
+  window.ShopScreen = { open, close, get showing() { return !!st; }, get state() { return st && { cursor: st.cursor, item: (entries()[st.cursor] || {}).id || null, message: st.message ? st.message.text : null, printed: !st.message || st.message.shown >= st.message.text.length }; } };
 })();

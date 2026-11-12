@@ -100,4 +100,46 @@ async function start(edit, location, opts) {
   return s;
 }
 
-module.exports = { start, makeSave, loadHeadless };
+// A clothes shop served on FireRed's Mart screen (ui/game.js's fashionMart, ui/boutique-mart.js), driven with keys:
+//   const M = T.mart(s);  await M.open({ coupon }); await M.buy(id); await M.leave(true /* wear */); await M.bye();
+function mart(s) {
+  const wait = (fn, arg) => s.page.waitForFunction(fn, arg, { timeout: 20000 });
+  const M = {
+    // (Buy / Wardrobe / See ya!, up.)
+    async menu() { await wait(() => !!GbaMenus.showing && !ShopScreen.showing); await s.wait(500); },
+    // Buy. coupon: true or false to answer "Use your Discount Coupon?" (asked only with one in the Bag).
+    async open(opts) {
+      await M.menu(); await s.press("z");
+      if (opts && opts.coupon !== undefined) { await wait(() => document.body.innerText.includes("Discount Coupon?")); await s.wait(700); await s.press(opts.coupon ? "z" : "x"); }
+      await wait(() => ShopScreen.showing && !ShopScreen.state.message); await s.wait(600);
+    },
+    async to(id) {
+      for (let i = 0; i < 120 && (await s.eval(() => ShopScreen.state.item)) !== id; i++) await s.press("ArrowDown");
+      if ((await s.eval(() => ShopScreen.state.item)) !== id) throw new Error("Not on the Mart screen: " + id);
+      await s.wait(200);
+    },
+    async buy(id) {
+      await M.to(id); await s.press("z");
+      await wait(() => /Okay\?$/.test(ShopScreen.state.message || "") && ShopScreen.state.printed); await s.wait(500); await s.press("z");
+      await wait(() => /^Here you are!/.test(ShopScreen.state.message || "") && ShopScreen.state.printed); await s.wait(500); await s.press("z");
+      await wait(() => !ShopScreen.state.message);
+    },
+    // Off the screen. wear: true or false to answer "Would you like to wear ...?" (asked only having bought).
+    async leave(wear) {
+      await s.press("x"); await wait(() => !ShopScreen.showing);
+      if (wear !== undefined) {
+        await wait(() => /Would you like to wear/.test(document.body.innerText)); await s.wait(700); await s.press(wear ? "z" : "x");
+        if (wear) { await wait(() => document.body.innerText.includes("It suits you!")); await s.wait(700); await s.press("z"); }
+      }
+      await M.menu();
+    },
+    async bye() {
+      await M.menu(); await s.press("ArrowDown"); await s.press("ArrowDown"); await s.press("z");
+      await wait(() => document.body.innerText.includes("Please come again")); await s.wait(700); await s.press("z");
+      await wait(() => Overworld.idle());
+    }
+  };
+  return M;
+}
+
+module.exports = { start, makeSave, loadHeadless, mart };

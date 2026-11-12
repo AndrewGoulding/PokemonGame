@@ -47,14 +47,16 @@
   function quote(p,ids,city,coupon=false) {
     if(!Array.isArray(ids)||!ids.length||new Set(ids).size!==ids.length)return {error:'Select different pieces for your basket.'};
     for(const id of ids){const error=availability(p,id,city);if(error)return {error};if(owned(p,id))return {error:'You already own '+item(id).name+'.'};}
-    if(coupon&&!Player.itemCount(p,'discount-coupon'))return {error:'You do not have a Discount Coupon.'};
+    // (coupon 'used': a coupon already handed over this visit, a Mart screen's later pieces at its half price.)
+    if(coupon&&coupon!=='used'&&!Player.itemCount(p,'discount-coupon'))return {error:'You do not have a Discount Coupon.'};
     const subtotal=ids.reduce((n,id)=>n+item(id).price,0),total=coupon?Math.floor(subtotal/2):subtotal;
     return {subtotal,total,coupon,affordable:p.money>=total};
   }
-  function buy(p,ids,city,coupon=false) {
+  // (again: a later piece of the same visit, bought one at a time on the Mart screen: one visit's style points.)
+  function buy(p,ids,city,coupon=false,again=false) {
     const q=quote(p,ids,city,coupon);if(q.error)return q;if(!q.affordable)return {error:'You don’t have enough money.'};
-    p.money-=q.total;if(coupon)Player.removeItem(p,'discount-coupon',1);
-    state(p).owned.push(...ids);if(!window.TeamFashion?.vendor(city))KalosActivities.style(p,2);
+    p.money-=q.total;if(coupon&&coupon!=='used')Player.removeItem(p,'discount-coupon',1);
+    state(p).owned.push(...ids);if(!again&&!window.TeamFashion?.vendor(city))KalosActivities.style(p,2);
     return {...q,bought:ids.slice()};
   }
   function setPiece(base,a) {

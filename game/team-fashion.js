@@ -24,11 +24,11 @@
     {id:'flare-kalos',faction:'flare',map:'KalosLysandreLabs',sprite:'bw2_gentleman',width:32,frames:9,gate:'flare',unlock:'Stop Lysandre and leave the destroyed headquarters.'},
     {id:'cipher-orre',faction:'cipher',map:'RealgamTower_1F',sprite:'orre_peon_m',width:16,frames:9,gate:'cipher',unlock:'Defeat Evice at Realgam Tower.'},
     {id:'snagem-orre',faction:'snagem',map:'SnagemHideout',sprite:'orre_snagem_m',width:16,frames:9,gate:'snagem',unlock:'Defeat Gonzap at Realgam Tower.'}
-  ].map(a=>({...a,shop:'team-'+a.id,name:factions[a.faction].name+' Outfitters',script:'team-fashion:'+a.id}));
+  ].map(a=>({...a,shop:'team-'+a.id,name:factions[a.faction].name+' Outfitters',script:'team-fashion:'+a.id,mart:true}));
   // Regional boutiques: one per region outside Kalos (whose six boutiques sell the X/Y catalogue), each with its own
   // authored line. Pieces are [collection (m, f or both), category, name, color, price]; names pick the art's
   // existing patterns (Plaid, Knit, Boots, Skirt and so on), so they draw like the X/Y pieces.
-  // Every boutique sells from FireRed's Mart screen (`mart`: ui/boutique-mart.js, ui/game.js's teamClothing). Celadon's
+  // Every boutique and outfitter sells from FireRed's Mart screen (`mart`: ui/boutique-mart.js, ui/game.js's teamClothing). Celadon's
   // has a building of its own (data/celadon-boutique.js): its clerk stands at `at`, behind its counter.
   const boutiques={
     kanto:{name:'Celadon Boutique',map:'CeladonCity_Boutique',at:{x:2,y:3},movement:'face_right',sprite:'woman_2',width:16,frames:10,greeting:'Classic Kanto looks, picked by\nCeladon’s own designers.',pieces:[

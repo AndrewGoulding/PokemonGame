@@ -29,7 +29,7 @@ for(const v of shops){
 // The Celadon Boutique: a building and room of its own, its door there and back, its clerk fixed behind the counter
 // (reached across it), and its stock as FireRed's Mart screen takes it: one collection's line, one of each.
 {const city=WORLD_MAPS.CeladonCity,room=WORLD_MAPS.CeladonCity_Boutique,v=T.vendor('boutique-kanto'),p=fixture(),pt=city.patches.boutique;
- assert.equal(v.map,room.name);assert(shops.every(w=>w.mart)&&T.vendors.filter(w=>!w.boutique).every(w=>!w.mart));assert(!T.people('CeladonCity_DepartmentStore_2F',p).length);
+ assert.equal(v.map,room.name);assert(T.vendors.every(w=>w.mart));assert(!T.people('CeladonCity_DepartmentStore_2F',p).length);
  const door=city.warps.find(w=>w.map===room.name),at=(m,x,y)=>y*m.width+x;assert(door&&pt.top&&city.collision[at(city,door.x,door.y)]===1&&city.behavior[at(city,door.x,door.y)]===0x69&&!city.collision[at(city,door.x,door.y+1)]);
  assert(room.warps.every(w=>w.map==='CeladonCity'&&city.warps[w.warp]===door));assert(room.warps[door.warp]);
  assert(city.signs.some(s=>/Celadon Boutique/.test(s.text[0])&&s.y===door.y&&Math.abs(s.x-door.x)===1));
