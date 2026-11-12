@@ -37,6 +37,58 @@ function hash(x, y, seed) {
   n = Math.imul(n ^ (n >>> 13), 1274126177) >>> 0;
   return (n ^ (n >>> 16)) >>> 0;
 }
+// Place an unmistakable focal detail on one blocked tile per landmark map.
+// This is decoration only: event locations, doors, and traversable routes
+// remain completely unchanged.
+const LANDMARKS={
+  AlolaIkiTown:"festival",AlolaHauoliCity:"harbor",AlolaMalieCity:"garden",
+  AlolaPaniolaTown:"ranch",AlolaPoTown:"skull",AlolaSeafolkVillage:"boat",
+  AlolaAetherLobby:"aether",AlolaLushJungle:"canopy",
+  AlolaRuinsOfLife:"tapu",AlolaLanakilaSummit:"snowcap",
+  AlolaLeagueLobby:"league",AlolaHainaDesert:"dunes"
+};
+function landmark(g,m,name,p){
+ const kind=LANDMARKS[name];if(!kind)return;
+ const cx=Math.floor(m.width/2),cy=Math.floor(m.height/2),spots=[];
+ for(let y=2;y<m.height-2;y++)for(let x=2;x<m.width-2;x++){
+  if(!m.collision[y*m.width+x] || (m.warps||[]).some(a=>a.x===x&&a.y===y) ||
+    (m.people||[]).some(a=>a.x===x&&a.y===y) ||
+    (m.signs||[]).some(a=>a.x===x&&a.y===y))continue;
+  spots.push({x,y,d:Math.abs(x-cx)+Math.abs(y-cy)});
+ }
+ spots.sort((a,b)=>a.d-b.d);
+ if(!spots.length)return;
+ const x=spots[0].x*T,y=spots[0].y*T;
+ const rect=(color,xx,yy,w,h)=>{g.fillStyle=color;g.fillRect(x+xx,y+yy,w,h);};
+ if(kind==="festival"){
+  rect("#8c4b64",7,4,2,11);rect("#ecd08e",4,5,8,5);
+  rect("#d95b69",6,7,4,3);rect("#f7e2b1",6,1,4,4);
+ }else if(kind==="harbor"||kind==="boat"){
+  rect("#4c8f9b",1,11,14,4);rect("#d9bd87",3,8,11,4);
+  rect("#fff0cd",7,2,2,8);rect("#f0e6c8",9,3,5,6);
+ }else if(kind==="garden"||kind==="canopy"){
+  rect("#43654e",7,8,3,7);rect("#69a477",2,3,12,9);
+  rect("#d8d8a1",4,5,3,3);rect("#bd96bd",10,6,3,3);
+ }else if(kind==="ranch"){
+  rect("#a47153",2,7,12,8);rect("#dfb97d",1,4,14,5);
+  rect("#f2dfb1",4,10,3,3);rect("#665948",11,9,2,6);
+ }else if(kind==="skull"){
+  rect("#574957",2,5,12,10);rect("#cd8097",4,3,8,5);
+  rect("#f5eee0",5,8,3,3);rect("#f5eee0",10,8,2,3);
+ }else if(kind==="aether"||kind==="league"){
+  rect("#5e7a90",2,7,12,8);rect("#e0e4d4",4,3,8,6);
+  rect(kind==="aether"?"#78cfba":"#dfbc77",7,5,2,7);
+ }else if(kind==="tapu"){
+  rect("#6b7570",3,7,10,8);rect("#ddccab",5,3,6,5);
+  rect("#8bbaa2",7,5,2,7);
+ }else if(kind==="snowcap"){
+  rect("#88a9b8",2,9,12,6);rect("#f8faf3",4,4,8,7);
+  rect("#b8d9e4",7,7,3,7);
+ }else if(kind==="dunes"){
+  rect("#b99060",1,10,14,5);rect("#e8d098",4,5,10,8);
+  rect("#f7e4af",7,3,5,3);
+ }
+}
 function make(name) {
   const m = window.WORLD_MAPS[name], c = document.createElement("canvas");
   c.width = m.width * T; c.height = m.height * T;
@@ -100,6 +152,7 @@ function make(name) {
       if (r % 8 === 0) { g.fillStyle = p[4]; g.fillRect(px + 10, py + 4, 3, 3); }
     }
   }
+  landmark(g,m,name,p);
   // Simple but unmistakable entrances; keep marker art inside the warp tile.
   for (const warp of m.warps || []) {
     const x = warp.x * T, y = warp.y * T;
@@ -115,5 +168,5 @@ function draw(g, name, x, y) {
   if (!c) { c = make(name); cache.set(name, c); }
   g.drawImage(c, x, y);
 }
-window.AlolaArt = { draw, style, themes, clear: () => cache.clear() };
+window.AlolaArt = { draw, style, themes, LANDMARKS, clear: () => cache.clear() };
 })();
