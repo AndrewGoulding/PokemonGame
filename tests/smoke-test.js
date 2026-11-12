@@ -6358,6 +6358,13 @@ assert.deepStrictEqual([WORLD_MAPS.RockTunnel_1F.floor, WORLD_MAPS.RockTunnel_B1
     const megas = t.events.filter((e) => e[0] === "-mega").map((e) => e[1].replace(/:.*/, ""));
     assert.deepStrictEqual(megas.sort(), ["p1b", "p2a"], "the partner's and the foe's Mega Evolution: " + megas);
   }
+  // Red's three fight at Giovanni's level there: the average of Giovanni's six (Lv. 42 after Kanto's raise, not 36).
+  {
+    const rocketSrc = fs.readFileSync(path.join(root, "ui/kanto-rocket.js"), "utf8");
+    assert(/const redLevel = Math\.round\(team\.reduce\(\(n, m\) => n \+ m\.level, 0\) \/ team\.length\);/.test(rocketSrc) && /Party\.create\(sp, redLevel\)/.test(rocketSrc), "Red at Giovanni's level");
+    const g = WORLD_TRAINERS.TRAINER_BOSS_GIOVANNI_2.party.map((m) => m.level), six = g.slice(0, -1).concat([42, 43], g.slice(-1));
+    assert.strictEqual(Math.round(six.reduce((n, l) => n + l, 0) / six.length), 42);
+  }
   const before = JSON.stringify(party[2]);
   const synced = D.syncBack(party, chosen, b.sides.p1.pokemon, (r, mon) => Party.syncFromBattle(r, mon));
   assert.deepStrictEqual(synced.map((r) => r.species), ["Bulbasaur", "Pikachu", "Squirtle"]);

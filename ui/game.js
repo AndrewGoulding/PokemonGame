@@ -5354,7 +5354,8 @@
   // Silph Co. and from Saffron; and Red goes back the way he came.
   const SILPH_RED = "LOCALID_SILPH_CO_RED";
   // Red's Pokémon now: those he had at the top of Pokémon Tower, all fully
-  // evolved, and a Snorlax, all at Lv. 36 (your partner); for the tag battle he picks three.
+  // evolved, and a Snorlax; for the tag battle he picks three, at Giovanni's level (the
+  // average of Giovanni's six, ui/kanto-rocket.js), not the Lv. 36 listed here.
   const RED_SILPH_ROSTER = [["Pikachu", 36], ["Charizard", 36, "charizardite-x"], ["Blastoise", 36], ["Venusaur", 36], ["Espeon", 36], ["Snorlax", 36]];
   const RED_SILPH_PICK = ["Charizard", "Snorlax", "Pikachu"];
   // FireRed's team for him (Nidorino, Kangaskhan, Rhyhorn, Nidoqueen), with

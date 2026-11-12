@@ -264,8 +264,10 @@
       const own = env.trainerTeam(ID).map((r) => (r.species === "Kangaskhan" ? Object.assign(r, { item: "kangaskhanite" }) : r));
       const extra = env.SILPH_GIOVANNI_EXTRA.map(([sp, lv]) => Party.create(sp, lv, { ivs: own[0].ivs.hp }));
       const team = own.slice(0, -1).concat(extra, own.slice(-1));   // (Nidoqueen, his ace, still last)
+      // (Red's three fight at Giovanni's level: the average of his six, as they are after Kanto's level raise.)
+      const redLevel = Math.round(team.reduce((n, m) => n + m.level, 0) / team.length);
       const redTeam = env.RED_SILPH_PICK.map((sp) => env.RED_SILPH_ROSTER.find((m) => m[0] === sp))
-        .map(([sp, lv, item]) => Object.assign(Party.create(sp, lv), item ? { item } : {}));
+        .map(([sp, , item]) => Object.assign(Party.create(sp, redLevel), item ? { item } : {}));
       const outcome = await env.battle("trainer", { foe: { name: "Boss Giovanni", team, pic: "leader_giovanni" },
         defeatText: env.T("SilphCo_11F_Text_GiovanniDefeat"), trainerId: ID, prizeClass: "Boss",
         prize: Player.prizeMoney("Boss Giovanni", team, "Boss"),
