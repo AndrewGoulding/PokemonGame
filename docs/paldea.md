@@ -171,3 +171,35 @@ Regression: `node tests/paldea-endgame-test.js` is included in `npm test`,
 covering map graph, all five Gym wins, Badges and level caps, all Elite Four
 battles, Geeta and Nemona, all three new Titans, Arven, Area Zero gates,
 research stations, final boss, retries and persistence.
+
+## The Hidden Treasure of Area Zero DLC (2D adaptation)
+
+The Kitakami and Blueberry Academy update adds **22 more connected maps**,
+bringing Paldea to **98 total areas**. The school trip begins at Naranja/Uva
+Academy after finishing The Way Home. Kitakami includes a bus arrival,
+Mossui Town, a Community Center, Apple Hills, Loyalty Plaza, Oni Mountain,
+Crystal Pool and Dreaded Den. Carmine, Kieran, the Festival of Masks, the
+Loyal Three, and a **catchable Ogerpon** form the Teal Mask storyline. A lost
+battle or an uncaught Ogerpon can be retried without losing completed steps.
+
+After capturing Ogerpon, Blueberry Academy opens from the Academy travel
+connection. The Terarium includes Savanna, Coastal, Canyon and Polar biomes,
+with four Blueberry League Elite Four challenges (**Crispin, Lacey, Amarys and
+Drayton**). These use the shared engine's native **double-battle** format.
+Win all four to challenge Champion Kieran in the League Club arena; thereafter,
+return to Area Zero's Zero Lab to reach the Underdepths and catch **Terapagos**.
+Catching it records completion of The Indigo Disk and both DLC adventures.
+
+After The Indigo Disk, a Mochi Mayhem epilogue is available in Mossui Town,
+featuring an optional capture of **Pecharunt**. All catches use the real
+wild-battle/capture system, rather than granting Pokémon without a battle.
+Kitakami has a healing Center and Mossui / Terarium Town Map Fly spots.
+
+This is a **playable 2D interpretation** using existing maps, battle assets,
+encounters and save infrastructure, not a verbatim import of Scarlet/Violet
+DLC maps, scripted cinematics, Blueberry point mechanics or original trials.
+Ogerpon's masks and Terapagos's special battle phases are not yet represented
+in their full original-game forms. The DLC save flags reside in
+`player.flags.paldea`; both adventures are resumable.
+
+Regression: `node tests/paldea-dlc-test.js` is included in `npm test`.
