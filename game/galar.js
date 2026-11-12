@@ -3,6 +3,8 @@
 'use strict';
 const D=window.GALAR_DATA;if(!D)return;
 Object.assign(WORLD_MAPS,D.maps);
+// GalarArt supplies complete Galar-specific tile scenes; old Kalos upper tiles must not obscure them.
+for(const m of Object.values(D.maps))m.top=false;
 const owns=map=>WORLD_MAPS[map]?.galarCampaign==='sword-shield';
 const peek=p=>p.flags.galar||{};
 function state(p){const s=p.flags.galar||(p.flags.galar={});s.visited||(s.visited=[]);s.badges||(s.badges=[]);s.gifts||(s.gifts={});return s;}
