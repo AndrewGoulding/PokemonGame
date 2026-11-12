@@ -49,6 +49,14 @@ function accessible(m){
  }
  assert.equal(GalarArt.style('GalarGlimwoodTangle'),'forest');
  assert.equal(GalarArt.style('GalarFrostpointField'),'snow');
+ // Galar encounters must surface Dynamax even when a Mega Stone or
+ // Z-Crystal would otherwise take precedence in the battle move menu.
+ const battleScreenSource=fs.readFileSync(path.join(root,'ui/battle-screen.js'),'utf8');
+ const gameSource=fs.readFileSync(path.join(root,'ui/game.js'),'utf8');
+ assert(battleScreenSource.includes('config.galarDynamax && canMax ? "dynamax"'),
+  'Galar should prioritize the Dynamax move toggle');
+ assert(gameSource.includes('galarDynamax: !opts.noGimmicks && Galar.owns(player.location.map)'),
+  'Galar battle context must reach the move menu');
  const p=Player.create('Galar Completion Tester'),s=Galar.state(p);
  p.party=[Party.create('Cinderace',80),Party.create('Corviknight',80)];
  p.location={map:'GalarWedgehurst',x:20,y:15,facing:'down'};
