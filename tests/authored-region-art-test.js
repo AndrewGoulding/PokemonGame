@@ -82,10 +82,11 @@ const SECOND_PASS={
   PaldeaAreaZero:"paldea-area-zero-lab",
   PaldeaMossuiTown:"paldea-kitakami-shrine"
 };
+const secondPassProblems=[];
 for (const [name, asset] of Object.entries(SECOND_PASS)) {
- assert.equal(R.CHOICES[name],asset,name+" missing its original sprite selection");
- assert(WORLD_MAPS[name],name+" is not a registered overworld map");
- assert(R.plan(name),name+" has no safe solid footprint for the authored sprite");
+ if(R.CHOICES[name]!==asset)secondPassProblems.push(name+": missing sprite assignment");
+ if(!WORLD_MAPS[name])secondPassProblems.push(name+": no registered map");
+ else if(!R.plan(name))secondPassProblems.push(name+": no safe solid footprint");
  const file=path.join(root,"assets/region-art",asset+".svg");
  assert(fs.existsSync(file),name+" sprite was not committed");
  const xml=fs.readFileSync(file,"utf8");
@@ -93,6 +94,7 @@ for (const [name, asset] of Object.entries(SECOND_PASS)) {
  assert(xml.includes('viewBox="0 0 96 64"')&&xml.includes('crispEdges'),asset+" lost 16px-scale source artwork");
  assert(!/<script|<image|url\(|<foreignObject/i.test(xml),asset+" contains an external resource");
 }
+assert.deepEqual(secondPassProblems,[],"All individually-authored mapped assets must be visible");
 for(const region of regions){
  assert(counts[region]>= (["galar","alola","paldea"].includes(region)?10:2),
   region+" authored source coverage");
