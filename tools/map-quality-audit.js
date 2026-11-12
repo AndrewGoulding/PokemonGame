@@ -48,7 +48,10 @@ function inspect(m) {
 }
 const all = {};
 for (const region of REGIONS) {
-  const regionMaps = maps.filter(m => m.region === region);
+  const regionMaps = maps.filter(m => m.region === region ||
+    (region === "sinnoh" && /^Platinum/.test(m.name)) ||
+    (region === "unova" && /^Unova/.test(m.name)) ||
+    (region === "kalos" && /^Kalos/.test(m.name)));
   const results = regionMaps.map(inspect), reused = results.filter(r => r.image !== r.map);
   const missing = results.filter(r => r.hasImage === false);
   all[region] = {
