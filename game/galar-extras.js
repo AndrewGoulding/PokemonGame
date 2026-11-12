@@ -13,6 +13,12 @@ function place(id,key,x=17,y=13){
 const diglett=['FieldsOfHonor','SoothingWetlands','ChallengeBeach','ForestFocus','TrainingLowlands','BrawlersCave','WorkoutSea','HoneycalmIsland','ArmorStation','MasterDojo'];
 diglett.forEach((m,i)=>place(m,'diglett-'+i,24,17));
 place('MasterDojo','dojo-sparring',27,11);
+// Wild Area Watt Rally: two optional daily activity checkpoints.
+place('WildAreaSouth','watt-rally-south',28,17);
+place('WildAreaNorth','watt-rally-north',28,17);
+place('WildAreaSouth','watt-exchange',31,17);
+place('FieldsOfHonor','watt-rally-armor',28,17);
+place('FrostpointField','watt-rally-crown',28,17);
 // Optional Pokemon Camp locations in the mainland Wild Area and the expansions.
 for(const [name,key] of [
  ['WildAreaSouth','south'],['WildAreaNorth','north'],
