@@ -36,15 +36,15 @@ function allowed(p,map){
  if(!owns(map))return null;
  const flag=requirements[map];return flag&&!Paldea.peek(p)[flag]?hints[flag]||'Finish the previous DLC challenge.':null;
 }
-const center=D.maps.PaldeaCommunityCenter;
-const spots=[];
-for(let y=2;y<center.height-2;y++)for(let x=2;x<center.width-2;x++)
- if(!center.collision[y*center.width+x]&&!center.warps.some(w=>w.x===x&&w.y===y)&&
-  !center.people.some(n=>n.x===x&&n.y===y))
-  spots.push({x,y,d:Math.abs(x-9)+Math.abs(y-12)});
-spots.sort((a,b)=>a.d-b.d);
-if(!spots.length)throw Error('Kitakami Community Center has no safe healing spot');
-Player.CENTERS.PaldeaCommunityCenter={map:'PaldeaCommunityCenter',
- x:spots[0].x,y:spots[0].y,facing:'up'};
+for(const name of ['PaldeaCommunityCenter','PaldeaTerariumHub']){
+ const center=D.maps[name],spots=[];
+ for(let y=2;y<center.height-2;y++)for(let x=2;x<center.width-2;x++)
+  if(!center.collision[y*center.width+x]&&!center.warps.some(w=>w.x===x&&w.y===y)&&
+   !center.people.some(n=>n.x===x&&n.y===y))
+   spots.push({x,y,d:Math.abs(x-9)+Math.abs(y-12)});
+ spots.sort((a,b)=>a.d-b.d);
+ if(!spots.length)throw Error('Paldea DLC healing spot unavailable on '+name);
+ Player.CENTERS[name]={map:name,x:spots[0].x,y:spots[0].y,facing:'up'};
+}
 window.PaldeaDlc={owns,allowed};
 })();
