@@ -66,8 +66,10 @@ for (const name of ["AlolaIkiTown","AlolaHauoliCity","AlolaMalieCity",
 const landmarkFixture = { ...sample, name: "AlolaIkiTown",
   collision: sample.collision.slice(), behavior: sample.behavior.slice(),
   people: [], signs: [], warps: sample.warps.slice() };
+landmarkFixture.collision[5 * 12 + 5] = 1;
 WORLD_MAPS.AlolaIkiTown = landmarkFixture;
-const unchanged = JSON.stringify(landmarkFixture);
+const unchanged = JSON.stringify(landmarkFixture), beforeLandmark = paints.length;
 AlolaArt.draw(output, "AlolaIkiTown", 0, 0);
+assert(paints.length > beforeLandmark, "landmark tile art was not rendered");
 assert.equal(JSON.stringify(landmarkFixture), unchanged, "landmark altered map data");
 console.log("Custom region art hooks and Alola rendering: OK");
