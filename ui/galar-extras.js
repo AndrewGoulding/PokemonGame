@@ -3,7 +3,7 @@
 'use strict';
 function create(env,{battle}){
  const R=Galar,p=()=>env.player(),s=()=>R.state(p()),say=env.say,save=env.saveCheckpoint;
- const swords=['Cobalion','Terrakion','Virizion','Keldeo'];
+ const swords=['Cobalion','Terrakion','Virizion','Keldeo-Ordinary'];
  async function run(key){
   let m=/^diglett-(\d+)$/.exec(key);
   if(m){
