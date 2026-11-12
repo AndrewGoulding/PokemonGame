@@ -13,6 +13,7 @@ function create(env){
  }
  const mid=PaldeaMidStory.create(env,{fight});
  const legends=PaldeaLegendsStory.create(env,{fight});
+ const starfall=PaldeaStarfallStory.create(env,{fight});
  function goal(){
   const a=s();
   return !a.starter?'Choose a starter in Cabo Poco.':
@@ -27,13 +28,16 @@ function create(env){
    !a.kofuClear?'Challenge Kofu in Cascarrafa.':
    !a.herbaKlawf?'Join Arven at Stony Cliff for the first Titan.':
    !a.herbaBombirdier?'Challenge the Open Sky Titan with Arven.':
-   'Three Gym Badges and two Titan expeditions complete! Continue Paldea’s remaining story paths.';
+   !a.seginClear?'Challenge Giacomo at the Segin Squad base.':
+   !a.schedarClear?'Challenge Mela at the Schedar Squad base.':
+   'Three Gyms, two Titans and two Team Star bases completed! Continue the Paldea adventure.';
  }
  async function run(script){
   if(!script?.startsWith('sv:'))return false;
   const key=script.slice(3);
   if(await mid.run(key))return true;
   if(await legends.run(key))return true;
+  if(await starfall.run(key))return true;
   switch(key){
    case'travel':
     if(!await env.confirm('Travel to Paldea? Scarlet and Violet share one adventure.'))break;
