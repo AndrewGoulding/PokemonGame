@@ -275,3 +275,25 @@ Regression tests `tests/paldea-layouts-test.js` and
 `tests/paldea-dlc-test.js` check town/interior connectivity, preserved
 anchors, non-Paldea isolation, matching renderer metadata and valid sprite
 sheet paints.
+
+## Chromium exploration and navigation QA
+
+`tests/browser/paldea-exploration.js` boots an actual browser from a Paldea
+save, walks through selected towns and interiors using keyboard controls,
+checks rendered pixels and different scenery, validates real 9-frame SVG image
+loads, interacts with the Kitakami Community Center NPC through the game's
+normal dialogue system, and records screenshots. GitHub Actions installs
+Chromium/Playwright and runs this browser test after the complete `npm test`
+suite. Screenshot artifacts are uploaded from
+`tests/browser/out/paldea/` (retained for seven days).
+
+A separate movement pass corrected **invisible elevation differences** on
+Paldea's newly drawn 2D floorplans. The former Kalos map heights could block
+a route even when both the visual map and collision grid showed a clear floor.
+Custom town and interior layouts now have normalized flat elevation; the
+`tests/paldea-layouts-test.js` regression performs actual `World.step`
+traversal checks, not just collision flood-fills, and verifies NPC approaches,
+Fly/respawn positions and door access without altering the other regions.
+
+The automated Chromium checks are still a representative exploration sample,
+not full human QA or a claim that all 98 maps have been visually inspected.
