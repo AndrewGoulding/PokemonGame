@@ -95,7 +95,7 @@
   // (A map made from another's pictures, the Battle Tower from the Trainer
   // Tower's lobby: WORLD_MAPS[..].image names whose to draw.)
   const mapImage = (name, part) => { const m = World.map(name); return image("assets/world/maps/" + ((m && m.image) || name) + (part ? "-" + part : "") + ".png"); };
-  const spriteImage = (name) => {const pic=image("assets/world/sprites/" + name + ".png");return name.startsWith("player_custom")&&window.CharacterStyle?CharacterStyle.render(pic,ctx?.player):pic;};
+  const spriteImage = (name) => {const pic=image("assets/world/sprites/" + name + (name.startsWith("paldea/") ? ".svg" : ".png"));return name.startsWith("player_custom")&&window.CharacterStyle?CharacterStyle.render(pic,ctx?.player):pic;};
 
   // FireRed's tile animations (TilesetAnim_General): a counter of frames
   // (60 a second) going round 640; the sand's water edge takes its next frame
