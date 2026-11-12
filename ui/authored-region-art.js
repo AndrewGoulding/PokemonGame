@@ -103,7 +103,7 @@
     PaldeaCoastalBiome:"paldea-crystal",
     PaldeaCanyonBiome:"paldea-adobe",
     PaldeaPolarBiome:"paldea-crystal",
-    PaldeaAreaZero:"paldea-area-zero-lab",
+    PaldeaZeroLab:"paldea-area-zero-lab",
     PaldeaUnderdepths:"paldea-crystal",
     PaldeaLeagueGate:"paldea-arena",
     PaldeaZeroLab:"paldea-crystal",
