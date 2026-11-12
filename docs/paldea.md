@@ -248,3 +248,30 @@ Original pixel scenery also now includes **specific landmarks** on solid tiles
 dome, and Terapagos chamber crystal) in addition to regional biome palettes.
 Landmarks preserve collision and are drawn beneath NPCs. The DLC regression
 checks named cast assets, the nine-frame format, and landmark coverage.
+
+## Original navigable towns, interiors, and refined character sheets
+
+Paldea's geometry is no longer exclusively copied from Kalos. The
+`game/paldea-layouts.js` module now constructs **original navigable 2D
+ground plans** for selected mainland towns, Kitakami sites, Blueberry spaces,
+Gyms, the Academy and other important interiors. It distinguishes avenues,
+plazas, garden blocks, counters, halls, labs, garages, arenas and dedicated
+rooms. The plans are deterministic and preserve all reciprocal warps, NPC
+coordinates, healing spots, Fly landings and older save points. The remainder
+of the region still uses 2D map templates until future work replaces it.
+
+`ui/paldea-art.js` renders corresponding paving, accent floors, room
+furniture, stadium motifs and location landmarks over those custom collision
+grids. The visual art and walkable geometry now agree for the selected spaces.
+This is an original top-down interpretation, **not** a recreation of the
+original Scarlet/Violet open-world layouts, assets or exact building plans.
+
+The **21 custom character sheets** have also been corrected and refined:
+actual hexadecimal paint colors, distinct hairstyle silhouettes, coat and
+scarf accents, and character-specific accessories. The sheets remain
+lightweight 9-frame SVG pixel artwork, not official character sprite rips.
+
+Regression tests `tests/paldea-layouts-test.js` and
+`tests/paldea-dlc-test.js` check town/interior connectivity, preserved
+anchors, non-Paldea isolation, matching renderer metadata and valid sprite
+sheet paints.
