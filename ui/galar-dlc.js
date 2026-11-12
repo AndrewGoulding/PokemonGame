@@ -5,6 +5,13 @@ function create(env,{battle}){
  const R=Galar,D=R.data(),p=()=>env.player(),s=()=>R.state(p()),say=env.say,save=env.saveCheckpoint;
  const fight=async(id,name,roster)=>await battle(id,name,roster)==='won';
 
+ async function legendary(species,level,message,opts={}){
+  if(!env.wildEncounter){await say('Wild capture is unavailable right now.');return false;}
+  if(!env.canBattle()){await say('You need a healthy Pokémon to challenge '+species+'.');return false;}
+  const outcome=await env.wildEncounter(Party.create(species,level),{music:'mus_vs_legend',noBlackout:true,noGimmicks:true,...opts});
+  if(outcome!=='caught'){await say(species+' escaped. Bring Poké Balls to try again.');return false;}
+  await say(message);return true;
+ }
  async function mark(flag,id,name,team,text){
   if(s()[flag]){await say(name+' has already been defeated.');return true;}
   if(!await fight(id,name,team))return false;
@@ -148,41 +155,48 @@ function create(env,{battle}){
     if(!s().calyrexMet){await say('Meet Calyrex in Freezington first.');break;}
     if(s().crownHorseChosen){await say('Calyrex has chosen '+s().crownHorseChosen+' as its steed.');break;}
     const species=key==='spectrier'?'Spectrier':'Glastrier';
-    if(!await fight('STEED_'+key.toUpperCase(),species,[[species,70]]))break;
+    if(!await legendary(species,70,'You caught '+species+'! Calyrex can now reunite with its steed.'))break;
     s().crownHorseChosen=species;s().reinsComplete=true;await save();await say('The Reins of Unity have been prepared for '+species+'.');break;
    }
    case'calyrex-final':
     if(!s().reinsComplete||!s().crownHorseChosen){await say('Find a steed and the Reins of Unity first.');break;}
-    if(s().calyrexWon){await say('Calyrex’s crown has already been restored.');break;}
     const species=s().crownHorseChosen==='Spectrier'?'Calyrex-Shadow':'Calyrex-Ice';
-    if(!await fight('CALYREX_RIDER','Calyrex',[[species,80]]))break;
-    s().calyrexWon=true;await save();await say('Calyrex’s power was restored! Return to Peony in Freezington.');break;
+    if(s().calyrexWon&&Player.hasCaught(p(),species)){await say('Calyrex is already in your collection.');break;}
+    if(!await legendary(species,80,'You caught '+species+'! Calyrex’s power was restored.'))break;
+    s().calyrexWon=true;await save();await say('Return to Peony in Freezington.');break;
    case'regi-clue':await say('The stone ruins are said to house ancient legendary giants. Look for three seals.');break;
    case'regi-stones':await say('A deep rumbling points toward Three-Point Pass. The three ancient Regis must be faced first.');break;
    case'regi-choice':{
     s().regisWon||(s().regisWon=[]);
-    if(s().regisWon.length===3){s().regisThree=true;await save();await say('The three ancient seals are active. Three-Point Pass has opened.');break;}
-    const i=s().regisWon.length,mons=['Regirock','Regice','Registeel'];
-    if(!await fight('REGI_'+i,mons[i],[[mons[i],70]]))break;
-    s().regisWon.push(i);if(s().regisWon.length===3)s().regisThree=true;
-    await save();await say('You restored seal '+s().regisWon.length+'/3.');break;
+    const mons=['Regirock','Regice','Registeel'];
+    const i=mons.findIndex(name=>!Player.hasCaught(p(),name));
+    if(i<0){s().regisThree=true;await save();await say('You caught all three Regis. Three-Point Pass is open.');break;}
+    if(!await legendary(mons[i],70,'You caught '+mons[i]+'!'))break;
+    if(!s().regisWon.includes(i))s().regisWon.push(i);
+    if(mons.every(name=>Player.hasCaught(p(),name)))s().regisThree=true;
+    await save();await say('Ancient seals recovered: '+s().regisWon.length+'/3.');break;
    }
    case'regi-final':{
     if(!s().regisThree){await say('Restore all three original Regi seals first.');break;}
-    if(s().regiFinal){await say('Your legendary Regi challenge is complete.');break;}
-    const chosen=await env.choose('Choose the final legendary giant!',['Regieleki','Regidrago']);
-    if(!chosen)break;
-    if(!await fight('REGI_FINAL',chosen,[[chosen,75]]))break;
-    s().regiFinal=chosen;await save();await say(chosen+' acknowledged your strength.');break;
+    const available=['Regieleki','Regidrago'].filter(name=>!Player.hasCaught(p(),name));
+    if(!available.length){await say('Both legendary giants are already registered!');break;}
+    const chosen=await env.choose('Choose the final legendary giant!',available);
+    if(!chosen||!available.includes(chosen))break;
+    if(!await legendary(chosen,75,'You caught '+chosen+'!'))break;
+    s().regiFinalCaught||(s().regiFinalCaught=[]);if(!s().regiFinalCaught.includes(chosen))s().regiFinalCaught.push(chosen);
+    if(!s().regiFinal)s().regiFinal=chosen;
+    await save();break;
    }
    case'legendary-birds':{
     if(!s().peonyMet){await say('Speak to Peony first.');break;}
     const mons=['Articuno-Galar','Zapdos-Galar','Moltres-Galar'];
     s().birdsWon||(s().birdsWon=[]);
-    if(s().birdsWon.length===3){await say('All three Galarian legendary birds have been encountered.');break;}
-    const i=s().birdsWon.length,mon=mons[i];
-    if(!await fight('BIRD_'+i,mon,[[mon,70]]))break;
-    s().birdsWon.push(i);await save();await say('Legendary bird encounter '+s().birdsWon.length+'/3 completed.');break;
+    const i=mons.findIndex(name=>!Player.hasCaught(p(),name));
+    if(i<0){await say('All three Galarian legendary birds have been caught.');break;}
+    const mon=mons[i];
+    if(!await legendary(mon,70,'You caught '+mon+'!'))break;
+    if(!s().birdsWon.includes(i))s().birdsWon.push(i);
+    await save();await say('Legendary birds caught: '+s().birdsWon.length+'/3.');break;
    }
    case'dynamax-guide':{
     if(!s().peonyMet){await say('Peony must introduce you to the Max Lair first.');break;}
@@ -195,9 +209,11 @@ function create(env,{battle}){
      a.stage++;await save();await say('Max Lair encounter '+a.stage+'/3 cleared. Continue to the legendary den.');break;
     }
     const i=a.run%adventureLegends.length,legend=adventureLegends[i];
-    if(!await fight('ADVENTURE_BOSS_'+a.run,'Dynamax Adventure '+legend,[[legend,70]])){a.stage=0;await save();await say('The legendary escaped. Start another expedition.');break;}
+    if(!await legendary(legend,70,'You caught '+legend+' in the Max Lair!',{galarRaid:true,galarRaidHp:2,noGimmicks:false})){
+     a.stage=0;await save();await say('The legendary escaped. Start another expedition.');break;
+    }
     a.records.push(legend);a.wins++;a.run++;a.stage=0;await save();
-    await say('Dynamax Adventure complete! '+legend+' defeated. Total expeditions: '+a.wins+'.');
+    await say('Dynamax Adventure complete! '+legend+' was caught. Total expeditions: '+a.wins+'.');
     break;
    }
    default:return false;
