@@ -6,6 +6,10 @@ T.loadHeadless();
 vm.runInThisContext(fs.readFileSync(path.join(root,"ui/authored-region-art.js"),"utf8"),
   {filename:"ui/authored-region-art.js"});
 const candidates=[
+ ["orre",["PhenacCity","PyriteTown"]],
+ ["sinnoh",["SnowpointCity","FloaromaTown"]],
+ ["unova",["UnovaNimbasaCity","UnovaCasteliaCity"]],
+ ["kalos",["KalosLumioseSouth","KalosLaverreCity"]],
  ["galar",["GalarPostwick","GalarHammerlocke","GalarMotostoke","GalarBallonlea"]],
  ["alola",["AlolaIkiTown","AlolaHeaheaCity","AlolaPaniolaTown","AlolaSeafolkVillage"]],
  ["paldea",["PaldeaMesagoza","PaldeaLevincia","PaldeaCaboPoco","PaldeaMossuiTown"]]
@@ -41,6 +45,7 @@ for(const [region,names] of candidates){
  const start=selected[0].at;
  const s=await T.start(p=>{
   p.repelSteps=999999;p.flags.orre=2;p.flags.orreStory=44;
+  p.flags.orreMail={got:Object.keys(Orre.MAIL),read:Object.keys(Orre.MAIL)};
  },start,{out});
  const bad=new Set();
  s.page.on("response",r=>{
