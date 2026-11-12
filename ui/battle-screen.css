@@ -354,6 +354,10 @@ body {
    This lasting styling remains active until the engine ends Dynamax. */
 /* Dynamax (Sword and Shield): the Pokémon grows, lit red. */
 .sprite.dynamax { scale: 1.35; filter: drop-shadow(0 0 3px #ff2050) drop-shadow(0 0 6px #ff2050); }
+/* Gigantamax uses its own Pokémon sprite (the DEX -Gmax id), not a scaled
+   ordinary form. Keep an extra magenta glow after the expansion animation. */
+.sprite.dynamax.gigantamax { filter: drop-shadow(0 0 4px #f52b64) drop-shadow(0 0 8px #df205f); }
+
 
 /* Fly: the Pokémon is up in the air (FireRed hides its picture); Transform's mosaic over the picture. */
 .sprite.flying, .sprite.mosaic-hidden { opacity: 0 !important; transition: none !important; }
