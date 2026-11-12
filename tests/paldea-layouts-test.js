@@ -19,6 +19,8 @@ for(const [name,[kind,accent]] of Object.entries(plans)){
  assert(m.paldeaLayout.independent,name+' must have independent geometry');
  assert.equal(m.collision.length,m.width*m.height);
  assert.equal(m.behavior.length,m.width*m.height);
+ assert.equal(m.elevation.length,m.width*m.height);
+ assert(m.elevation.every(z=>z===0),name+' original floor elevations must be flat');
  assert(m.collision.some(Boolean)&&m.collision.some(v=>!v),name+' must have solid and free tiles');
  const difference=m.collision.filter((v,i)=>v!==base.collision[i]).length;
  assert(difference>0,name+' must not retain borrowed Kalos collisions');
@@ -48,6 +50,33 @@ for(const [name,[kind,accent]] of Object.entries(plans)){
   }
  }
  for(const a of events)assert(seen.has(a.y*m.width+a.x),name+' unreachable '+a.x+','+a.y);
+ // Unlike a plain flood fill, these movements use the actual engine rules:
+ // height changes, collision masks and one-way movement behavior all apply.
+ const personOccupies=(_map,x,y)=>m.people.some(n=>n.x===x&&n.y===y);
+ const walkable=[[cx,cy]];
+ const walked=new Set([cx+','+cy]);
+ for(let i=0;i<walkable.length;i++){
+  const [x,y]=walkable[i];
+  for(const dir of ['up','down','left','right']){
+   const step=World.step({map:name,x,y},dir,personOccupies);
+   if(!step.ok||step.warp||step.map!==name)continue;
+   const key=step.x+','+step.y;
+   if(!walked.has(key)){walked.add(key);walkable.push([step.x,step.y]);}
+  }
+ }
+ // No hidden elevation steps may block the long corridor of a room.
+ assert(walkable.length>=Math.min(12,Math.floor(m.width*m.height/10)),name+' engine traversal unexpectedly restricted');
+ for(const a of events){
+  if(m.people.includes(a)){
+   const adjacent=[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>walked.has((a.x+dx)+','+(a.y+dy)));
+   assert(adjacent,name+' has an unapproachable NPC at '+a.x+','+a.y);
+  }else if(!m.warps.includes(a)){
+   assert(walked.has(a.x+','+a.y),name+' has an unreachable landing/center '+a.x+','+a.y);
+  }else{
+   const entry=walked.has(a.x+','+a.y)||[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>walked.has((a.x+dx)+','+(a.y+dy)));
+   assert(entry,name+' has an unreachable doorway '+a.x+','+a.y);
+  }
+ }
  if(m.paldeaLayout.interior)interiors++;else towns++;
 }
 assert(towns>=10,'Custom town layouts expected');
