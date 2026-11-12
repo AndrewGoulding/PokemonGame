@@ -23,6 +23,21 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
       - run: npm test
+
+  paldea-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium for Paldea playtest
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
       - name: Playtest Paldea with real Chromium
         run: node tests/browser/paldea-exploration.js
       - name: Upload Paldea playtest screenshots
