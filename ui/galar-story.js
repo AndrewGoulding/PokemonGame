@@ -54,6 +54,7 @@ function create(env){
  const mid=GalarMidStory.create(env,{battle});
  const finale=GalarFinaleStory.create(env,{battle});
  const features=GalarFeaturesStory.create(env);
+ const extras=GalarExtrasStory.create(env,{battle});
  const dlc=GalarDlcStory.create(env,{battle});
  async function run(script){
   if(!script?.startsWith('swsh:'))return false;
@@ -62,6 +63,7 @@ function create(env){
   if(await finale.run(key))return true;
   if(await dlc.run(key))return true;
   if(await features.run(key))return true;
+  if(await extras.run(key))return true;
   switch(key){
    case'travel-galar':
     if(!await env.confirm('Travel to Galar? Sword and Shield share one campaign.'))break;
