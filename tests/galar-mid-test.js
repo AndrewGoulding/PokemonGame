@@ -7,11 +7,11 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const [,src]of html.matchAll(/<script src="([^"]+)"><\/script>/g)){
  if(!src.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,src),'utf8'),{filename:src});
 }
-for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-story.js'])
+for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/galar-story.js'])
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 (async()=>{
  const D=Galar.data(),M=GalarMid,T=TOWN_MAP.galar;
- assert.equal(D.mapNames.length,62);assert.equal(D.midgame.mapNames.length,24);
+ assert.equal(D.mapNames.length,90);assert.equal(D.midgame.mapNames.length,24);
  for(const name of D.midgame.mapNames){
   const m=WORLD_MAPS[name],at=T.at[name];
   assert(Galar.owns(name)&&M.owns(name)&&at&&T.map[at[1]][at[0]],name+' not on map');
