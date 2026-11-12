@@ -72,6 +72,22 @@ for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/
  assert(flags.armorClear&&flags.crownClear);assert.equal(flags.urshifuStyle,'Waters');
  assert.equal(flags.crownHorseChosen,'Spectrier');assert.equal(flags.adventure.stage,1);
  assert.equal(JSON.stringify(saved.flags.alola),oldAlola);
+ // A separate save can choose Darkness and Glastrier without changing the first save.
+ const alt=Player.create('Alternate DLC tester'),a=Galar.state(alt);
+ alt.party=[Party.create('Kubfu',60)];
+ alt.location={map:'GalarMasterDojo',x:11,y:11,facing:'down'};
+ Object.assign(a,{started:true,starter:'Grookey',championClear:true,armorArrival:true,mustardIntro:true,kubfuGift:true,kubfuBond:true,
+  crownArrival:true,peonyMet:true,calyrexMet:true});
+ const envAlt={...env,player:()=>alt,teleport:async loc=>{alt.location={...loc};Galar.visit(alt,loc.map);}};
+ const altStory=GalarStory.create(envAlt);
+ await altStory.run('swsh:urshifu-dark');
+ assert.equal(a.urshifuStyle,'Darkness');
+ assert(alt.party.some(mon=>mon.species==='Urshifu'));
+ await altStory.run('swsh:glastrier');
+ assert.equal(a.crownHorseChosen,'Glastrier');
+ await altStory.run('swsh:calyrex-final');
+ assert(a.calyrexWon);
+ assert(!a.zacianWon,'Other regional postgame flags remain untouched');
  assert(saves>20&&said.length>20);
  console.log('Galar DLC: 28 maps, Armor and Crown stories, Regis, birds, Max Lair and save/return passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
