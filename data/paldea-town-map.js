@@ -18,7 +18,9 @@ const groups=[
  ['WestProvince',8,7,['WestProvince']],
  ['Cascarrafa',6,6,['Cascarrafa','CascarrafaCenter','CascarrafaGym']],
  ['StonyCliff',17,9,['StonyCliff','StonyCave']],
- ['OpenSkyTrail',5,8,['OpenSkyTrail','OpenSkySummit']]
+ ['OpenSkyTrail',5,8,['OpenSkyTrail','OpenSkySummit']],
+ ['SeginRoad',12,10,['SeginRoad','SeginBase','SeginGarage']],
+ ['SchedarRoad',16,10,['SchedarRoad','SchedarBase','SchedarGarage']]
 ];
 for(const [id,x,y,aliases] of groups){
  const sec='PALDEA_'+id.replace(/([a-z])([A-Z])/g,'$1_$2').toUpperCase();
