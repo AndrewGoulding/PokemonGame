@@ -11,6 +11,9 @@ for (const [, file] of html.matchAll(/<script src="([^"]+)"><\/script>/g)) {
   if (!file.startsWith("ui/"))
     vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
 }
+const artworkFile = path.join(root, "ui/authored-region-art.js");
+if (fs.existsSync(artworkFile))
+  vm.runInThisContext(fs.readFileSync(artworkFile, "utf8"), { filename: artworkFile });
 const REGIONS = ["orre", "sinnoh", "unova", "kalos", "alola", "galar", "paldea"];
 const maps = Object.values(WORLD_MAPS);
 const inBounds = (m, a) => Number.isInteger(a.x) && Number.isInteger(a.y) &&
@@ -54,7 +57,12 @@ for (const region of REGIONS) {
     (region === "kalos" && /^Kalos/.test(m.name)));
   const results = regionMaps.map(inspect), reused = results.filter(r => r.image !== r.map);
   const missing = results.filter(r => r.hasImage === false);
+  const handAuthored = regionMaps.map(m => ({
+    map: m.name, ...((global.AuthoredRegionArt || window.AuthoredRegionArt)?.plan(m.name) || {})
+  })).filter(p => p.asset);
   all[region] = {
+    mapsWithExtraHandAuthoredSprite: handAuthored.length,
+    extraSpriteArtFamilies: new Set(handAuthored.map(p => p.asset)).size,
     maps: results.length,
     imageAliases: reused.length, // not proof of inferior art, but review candidates
     missingImages: missing.length,
@@ -63,7 +71,8 @@ for (const region of REGIONS) {
     disconnectedAnchors: results.reduce((s, r) => s + r.unreachable, 0),
     ...(process.argv.includes("--details") ? {
       issues: results.filter(r => r.problem || r.invalid || r.blocked || r.unreachable ||
-        r.hasImage === false || r.image !== r.map)
+        r.hasImage === false || r.image !== r.map),
+      authoredPlacements: handAuthored
     } : {})
   };
 }
