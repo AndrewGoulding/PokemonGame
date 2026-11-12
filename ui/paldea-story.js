@@ -30,7 +30,12 @@ function create(env){
    !a.herbaBombirdier?'Challenge the Open Sky Titan with Arven.':
    !a.seginClear?'Challenge Giacomo at the Segin Squad base.':
    !a.schedarClear?'Challenge Mela at the Schedar Squad base.':
-   'Three Gyms, two Titans and two Team Star bases completed! Continue the Paldea adventure.';
+   !a.naviClear?'Challenge Atticus at the Navi Squad base.':
+   !a.ruchbahClear?'Challenge Ortega at the Ruchbah Squad base.':
+   !a.caphClear?'Challenge Eri at the Caph Squad base.':
+   !a.cliveClear?'Meet Clive in the academy courtyard.':
+   !a.cassiopeiaClear?'Face Cassiopeia at the academy courtyard.':
+   'Starfall Street is complete! Continue Victory Road and Path of Legends in Paldea.';
  }
  async function run(script){
   if(!script?.startsWith('sv:'))return false;
