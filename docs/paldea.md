@@ -94,3 +94,27 @@ remaining three bases and the Clive/Cassiopeia finale remain later chapters.
 
 The Paldea regression validates the map graph, both base gates, retryability,
 boss completion, independence from Gym/Titan progress, and save persistence.
+
+## Starfall Street: the final three squads and Cassiopeia
+
+Ten new 2D locations bring Paldea to **41 connected maps**. The Navi (Poison),
+Ruchbah (Fairy), and Caph (Fighting) squads each receive an approach road,
+base, and garage; the Academy gets a courtyard for the Starfall finale.
+Explore from Schedar Road toward Tagtree Thicket (Navi), West Province toward
+Ruchbah, or East Province toward Caph. The Treasure Hunt unlocks the roads,
+while each crew's three staged battles unlock its own garage.
+
+**Atticus, Ortega, and Eri** have save-backed gatekeeper battles, three
+base waves, their standard party challenge, and a separate Revavroom
+Starmobile adaptation. Defeats are retryable and completed stages stay cleared.
+After defeating all five squads, meet **Clive (Director Clavell)** in the
+Academy Courtyard, then battle **Penny as Cassiopeia**. These final encounters
+are saved individually; repeating them cannot award additional completions.
+
+This concludes the **Starfall Street story adaptation**, not the entire
+Paldea campaign. As before, the original timed auto-battle mechanic, exact
+Starmobile forms and 3D cinematics have not been ported. Victory Road's
+remaining Gyms, the final three Titans, Area Zero and DLC remain unfinished.
+
+The expanded `tests/paldea-test.js` checks all five squads, failed battle
+retries, save persistence, gated garages, and the academy finale.
