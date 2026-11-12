@@ -7,7 +7,7 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const [,src]of html.matchAll(/<script src="([^"]+)"><\/script>/g)){
  if(!src.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,src),'utf8'),{filename:src});
 }
-for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/galar-story.js'])
+for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/galar-features.js','ui/galar-extras.js','ui/galar-story.js'])
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 (async()=>{
  const D=Galar.data(),M=GalarMid,T=TOWN_MAP.galar;
