@@ -197,3 +197,20 @@ The interface change does not change the move-menu preference in other regions.
 The Galar completion regression checks that the battle context reaches the
 menu and the Galar-specific preference is present. End-to-end browser behavior
 is verified by the repository's automated test workflow.
+
+## Imported Dynamax/Gigantamax battle animation
+
+Battle transformation now plays **pokeemerald-expansion**'s general
+`B_ANIM_DYNAMAX_GROWTH` / `gBattleAnimGeneral_DynamaxGrowth` via the
+already-integrated expansion battle animation interpreter (and its imported
+animation resources). Dynamax and Gigantamax share this growth animation;
+Gigantamax's distinct appearance comes from its separate `-Gmax` species
+sprite and form-change event. The red-lit enlarged sprite persists for the
+engine's three Dynamax turns. Reversion has a short browser tween while
+restoring the ordinary sprite; the GBA script is used for the growth, not
+claimed for the reversion tween. If the imported animation table is missing
+from an older build, a brief CSS/Web Animations fallback runs instead.
+
+Original upstream implementation: https://github.com/rh-hideout/pokeemerald-expansion
+(`src/battle_anim.c`, `data/battle_anim_scripts.s`). Existing animation
+asset extraction and compilation are handled by `tools/build-battle-anims.py`.
