@@ -10,7 +10,7 @@ for(const file of ['ui/paldea-mid.js','ui/paldea-legends.js','ui/paldea-starfall
  'ui/paldea-endgame.js','ui/paldea-story.js'])
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 const D=Paldea.data(),T=TOWN_MAP.paldea;
-assert.equal(D.mapNames.length,76,'Paldea main story should have 76 connected areas');
+assert.equal(D.mapNames.length,98,'76 mainland and 22 DLC areas should connect');
 assert.equal(D.endgame.mapNames.length,35);
 assert.equal(D.endgame.gyms.length,5);
 assert.equal(D.endgame.titans.length,3);
@@ -114,7 +114,7 @@ const story=PaldeaStory.create(env),go=k=>story.run('sv:'+k);
  assert.equal(loaded.badges.length,8);
  assert(loaded.rideJump&&loaded.rideGlide&&loaded.rideClimb);
  assert.equal(loaded.version,'Scarlet');
- assert(story.goal().includes('All three Paldea main stories'));
+ assert(story.goal().includes('The Way Home is complete'));
  assert(saves>20&&battles.length>20&&speech.length>20);
  // Violet's Quaking Earth Titan and the AI Professor must stay consistent.
  const violetPlayer=Player.create('Violet Expedition'),vs=Paldea.state(violetPlayer);
