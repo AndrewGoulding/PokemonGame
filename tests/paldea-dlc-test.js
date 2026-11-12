@@ -72,11 +72,11 @@ assert(D.maps.PaldeaTerariumHub.people.some(n=>n.script==='sv:heal'),'Blueberry 
 const p=Player.create('Paldea DLC Tester'),s=Paldea.state(p);
 p.party=[Party.create('Skeledirge',85),Party.create('Tinkaton',85)];
 p.location={map:'PaldeaAcademy',x:10,y:13,facing:'down'};
-let won=true,wildOutcome='caught',saves=0,battles=[],wilds=[],speech=[],portraits=[],arenas=[];
+let won=true,wildOutcome='caught',wrongChoice=false,saves=0,battles=[],wilds=[],speech=[],portraits=[],arenas=[];
 const env={
  player:()=>p,say:async t=>speech.push(t),confirm:async()=>true,
  showPicture:species=>portraits.push('show:'+species),hidePicture:()=>portraits.push('hide'),
- choose:async(_,choices)=>choices[0],canBattle:()=>true,
+ choose:async(_,choices)=>wrongChoice?choices.at(-1):choices[0],canBattle:()=>true,
  showWorld(){},resume:async()=>{},
  saveCheckpoint:async()=>{saves++;},
  battle:async(_kind,opts)=>{battles.push({id:opts.trainerId,double:!!opts.double,terrain:opts.terrain});return won?'won':'lost';},
@@ -96,7 +96,8 @@ const story=PaldeaStory.create(env),go=x=>story.run('sv:'+x);
  won=true;await go('teal-carmine');assert(s.tealCarmineClear);
  assert.equal(Paldea.allowed(p,'PaldeaAppleHills'),null);
  await go('teal-kieran');assert(s.tealKieranFirst);
- await go('teal-festival');assert(s.tealFestival);
+ wrongChoice=true;await go('teal-festival');assert(!s.tealFestival,'Wrong mask should not finish festival');
+ wrongChoice=false;await go('teal-festival');assert(s.tealFestival);
  await go('teal-kieran-final');assert(!s.tealKieranFinal,'Loyal Three required');
  won=false;await go('teal-loyal-0');assert(!s.tealLoyal0);
  won=true;
@@ -119,7 +120,13 @@ const story=PaldeaStory.create(env),go=x=>story.run('sv:'+x);
  await go('indigo-club');assert(s.indigoEnrollment);
  assert.equal(Paldea.allowed(p,'PaldeaSavannaTrial'),null);
  assert(Paldea.allowed(p,'PaldeaKieranArena'),'need BB Elite Four');
+ wrongChoice=true;
+ const beforeTrial=battles.length;await go('indigo-crispin');
+ assert(!s.indigoTrialcrispin&&!s.indigoElitecrispin,'Failed cooking trial cannot award victory');
+ assert.equal(battles.length,beforeTrial,'Failed cooking trial cannot start battle');
+ wrongChoice=false;
  won=false;await go('indigo-crispin');assert(!s.indigoElitecrispin);
+ assert(s.indigoTrialcrispin,'Passed trial should persist after losing the battle');
  won=true;
  for(const [key,flag]of [
   ['indigo-crispin','indigoElitecrispin'],
@@ -128,6 +135,7 @@ const story=PaldeaStory.create(env),go=x=>story.run('sv:'+x);
   ['indigo-drayton','indigoElitedrayton']
  ]){
   await go(key);assert(s[flag],flag+' must be saved');
+  assert(s['indigoTrial'+key.replace('indigo-','')],'Blueberry trial must be completed: '+key);
   const end=battles.length;await go(key);
   assert.equal(battles.length,end,key+' cannot duplicate');
  }
