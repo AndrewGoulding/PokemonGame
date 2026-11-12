@@ -106,7 +106,6 @@
     PaldeaZeroLab:"paldea-area-zero-lab",
     PaldeaUnderdepths:"paldea-crystal",
     PaldeaLeagueGate:"paldea-arena",
-    PaldeaZeroLab:"paldea-crystal",
     PaldeaAppleHills:"paldea-kitakami"
   };
   const WORLD = window.WORLD_MAPS;
