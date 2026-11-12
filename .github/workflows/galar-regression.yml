@@ -23,6 +23,16 @@ jobs:
           npm install --no-save playwright
           npx playwright install --with-deps chromium
       - run: npm test
+      - name: Playtest Paldea with real Chromium
+        run: node tests/browser/paldea-exploration.js
+      - name: Upload Paldea playtest screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paldea-exploration-screenshots
+          path: tests/browser/out/paldea/
+          if-no-files-found: ignore
+          retention-days: 7
 
   galar-regressions:
     runs-on: ubuntu-latest
