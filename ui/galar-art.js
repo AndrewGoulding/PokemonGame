@@ -26,6 +26,47 @@ function style(name){
  return'meadow';
 }
 const noise=(a,b,seed)=>{let n=(a*374761393+b*668265263+seed*1442695041)>>>0;n=(n^(n>>>13))*1274126177>>>0;return(n^(n>>>16))>>>0;};
+// Recognizable regional landmarks are stamped only onto blocked tiles, so
+// their silhouettes never hide an NPC, scripted exit or walkable corridor.
+const LANDMARKS={
+ GalarPostwick:'cottage',GalarWedgehurst:'station',GalarMotostoke:'factory',
+ GalarTurffield:'hill',GalarHulbury:'harbor',GalarHammerlocke:'castle',
+ GalarBallonlea:'mushroom',GalarSpikemuth:'neon',GalarWyndon:'tower',
+ GalarSlumberingWeald:'ancient-tree',GalarFreezington:'cottage',
+ GalarCrownShrine:'shrine',GalarFieldsOfHonor:'dojo'
+};
+function landmark(g,m,name,p){
+ const type=LANDMARKS[name];if(!type)return;
+ const cx=Math.floor(m.width/2),cy=Math.floor(m.height/2),spots=[];
+ for(let y=2;y<m.height-2;y++)for(let x=2;x<m.width-2;x++){
+  if(!m.collision[y*m.width+x]||m.warps.some(a=>a.x===x&&a.y===y)||
+    m.people.some(a=>a.x===x&&a.y===y))continue;
+  spots.push({x,y,d:Math.abs(x-cx)+Math.abs(y-cy)});
+ }
+ spots.sort((a,b)=>a.d-b.d);if(!spots.length)return;
+ const x=spots[0].x*T,y=spots[0].y*T;
+ const fill=(color,xx,yy,w,h)=>{g.fillStyle=color;g.fillRect(x+xx,y+yy,w,h);};
+ if(type==='cottage'||type==='station'){
+  fill(p[3],2,7,12,8);fill(type==='station'?'#7b8e96':'#b86e54',1,4,14,5);
+  fill('#efdfb9',7,10,3,5);fill('#e5ebd1',3,9,3,3);
+ }else if(type==='factory'||type==='tower'||type==='castle'){
+  fill('#505b68',2,6,12,9);fill('#a8bbc3',5,3,6,6);
+  fill(type==='factory'?'#c17b5b':'#f1c98d',7,1,3,5);fill('#e6d9aa',4,10,3,3);
+ }else if(type==='mushroom'||type==='ancient-tree'){
+  fill('#614d68',7,7,3,8);fill(type==='mushroom'?'#a886c7':'#4e8d64',2,3,12,8);
+  fill('#d6d4bd',4,5,3,2);fill('#f4dfa4',10,4,2,2);
+ }else if(type==='harbor'){
+  fill('#507b96',1,10,14,5);fill('#e0d6b9',2,6,12,3);
+  fill('#f7f2d7',6,2,5,7);fill('#7b8a9b',7,4,1,6);
+ }else if(type==='hill'){
+  fill('#587b52',2,9,12,6);fill('#8fb772',4,5,8,8);fill('#dfc57f',7,2,2,11);
+ }else if(type==='neon'){
+  fill('#343e50',2,4,12,11);fill('#d45b9a',4,6,8,2);fill('#7fc6d4',5,10,7,2);
+ }else if(type==='shrine'||type==='dojo'){
+  fill('#6b6c73',2,8,12,7);fill('#c7a18a',3,4,10,5);
+  fill('#e5d2a4',7,9,3,6);fill('#f4ecd6',6,2,4,3);
+ }
+}
 function make(name){
  const m=window.WORLD_MAPS[name],cv=document.createElement('canvas');
  cv.width=m.width*T;cv.height=m.height*T;
@@ -65,6 +106,7 @@ function make(name){
    }
   }
  }
+ landmark(g,m,name,palette);
  for(const warp of m.warps||[]){
   const x=warp.x*T,y=warp.y*T;
   g.fillStyle='#f4e2a1';g.fillRect(x+3,y+5,10,9);
@@ -78,5 +120,5 @@ function draw(g,name,x,y){
  let cv=cache.get(name);if(!cv){cv=make(name);cache.set(name,cv);}
  g.drawImage(cv,x,y);
 }
-window.GalarArt={draw,style,PALETTES,clear:()=>cache.clear()};
+window.GalarArt={draw,style,PALETTES,LANDMARKS,clear:()=>cache.clear()};
 })();

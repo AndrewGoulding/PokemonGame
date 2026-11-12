@@ -187,8 +187,9 @@ function make(name){
    }else if(layout&&!layout.interior){
     // Town-specific avenues and courtyards: road paving follows the custom
     // grid rather than the unrelated Kalos map's artwork.
-    const street=Math.abs(x-Math.floor(map.width/2))<=1||
-     Math.abs(y-Math.floor(map.height/2))<=1||x%8===0||y%8===0;
+    const builtUp=!/^(coast|snow|crystal|mountain|forest|savanna|route)$/.test(layout.style);
+    const street=builtUp&&(Math.abs(x-Math.floor(map.width/2))<=1||
+     Math.abs(y-Math.floor(map.height/2))<=1||x%8===0||y%8===0);
     if(street){
      rect(g,themed,px,py,16,16);
      rect(g,p[1],px+2,py+2,12,12);
