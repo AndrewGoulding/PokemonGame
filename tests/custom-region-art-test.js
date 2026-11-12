@@ -58,4 +58,16 @@ for (const [name, expected] of [
   ["AlolaIkiTown", "village"],
   ["AlolaLushJungle", "tropical"]
 ]) assert.equal(AlolaArt.style(name), expected, name + " missing regional biome");
+for (const name of ["AlolaIkiTown","AlolaHauoliCity","AlolaMalieCity",
+  "AlolaAetherLobby","AlolaPoTown","AlolaSeafolkVillage","AlolaLanakilaSummit"]) {
+  assert(AlolaArt.LANDMARKS[name], name + " should have a distinguishing landmark");
+}
+// A landmark tile must never mutate the map's collision or entrance coordinates.
+const landmarkFixture = { ...sample, name: "AlolaIkiTown",
+  collision: sample.collision.slice(), behavior: sample.behavior.slice(),
+  people: [], signs: [], warps: sample.warps.slice() };
+WORLD_MAPS.AlolaIkiTown = landmarkFixture;
+const unchanged = JSON.stringify(landmarkFixture);
+AlolaArt.draw(output, "AlolaIkiTown", 0, 0);
+assert.equal(JSON.stringify(landmarkFixture), unchanged, "landmark altered map data");
 console.log("Custom region art hooks and Alola rendering: OK");
