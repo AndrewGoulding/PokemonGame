@@ -24,8 +24,8 @@ function create(env,{battle}){
  'cup-raihan':['cupRaihanWon','cupAllisterWon','CUP_RAIHAN','Raihan',[['Torkoal',53],['Flygon',54],['Goodra',54],['Duraludon',55]]]
  };
  const commanders={
- 'swordward':['swordwardWon',null,'SWORDWARD','Sordward',[['Sirfetchd',61],['Bisharp',61],['Doublade',62]]],
- 'shieldbert':['shieldbertWon','swordwardWon','SHIELDBERT','Shielbert',[['Bronzong',61],['Falinks',61],['Aegislash',62]]]
+ 'swordward':['swordwardWon',null,'SWORDWARD','Sordward',[["Sirfetch'd",61],['Bisharp',61],['Doublade',62]]],
+ 'shieldbert':['shieldbertWon','swordwardWon','SHIELDBERT','Shielbert',[['Bronzong',61],['Falinks',61],['Aegislash-Shield',62]]]
  };
  async function fight(flag,id,name,team,message){
   if(s()[flag]){await say(name+': We have already battled.');return true;}
@@ -109,7 +109,7 @@ function create(env,{battle}){
    case'champion-leon':
     if(!s().cupFinalistsClear||!s().eternatusClear){await say('Win the Cup finals and stop Eternatus before Leon’s Championship match.');break;}
     if(!s().leonWon){
-     if(await battle('CHAMPION_LEON','Champion Leon',[['Aegislash',62],['Dragapult',62],['Haxorus',63],['Rhyperior',62],['Mr. Rime',63],['Charizard',65]])!=='won')break;
+     if(await battle('CHAMPION_LEON','Champion Leon',[['Aegislash-Shield',62],['Dragapult',62],['Haxorus',63],['Rhyperior',62],['Mr. Rime',63],['Charizard',65]])!=='won')break;
      s().leonWon=true;await save();
     }
     s().championClear=true;s().galarTitles=(s().galarTitles||0)+1;await save();
@@ -129,7 +129,7 @@ function create(env,{battle}){
      [['Corviknight',66],['Excadrill',66]],
      [['Dragapult',68],['Grimmsnarl',68]],
      [['Cinderace',69],['Inteleon',69],['Rillaboom',69]],
-     [['Charizard',72],['Aegislash',71],['Dragapult',71]]
+     [['Charizard',72],['Aegislash-Shield',71],['Dragapult',71]]
     ];
     if(await battle('BATTLE_TOWER_'+count,'Battle Tower Challenger',rosters[count%rosters.length])!=='won'){
      s().battleTowerBest=Math.max(s().battleTowerBest||0,count);s().battleTowerStreak=0;
