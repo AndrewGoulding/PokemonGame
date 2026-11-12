@@ -9,7 +9,14 @@ function create(env,{battle}){
   if(m){
    if(!s().armorArrival){await say('The Diglett expedition begins after visiting the Isle of Armor.');return true;}
    const i=+m[1];s().diglettFound||(s().diglettFound=[]);
-   if(s().diglettFound.includes(i)){await say('You already found this Alolan Diglett.');return true;}
+   if(s().diglettFound.includes(i)){
+    if(s().diglettFound.length===10&&!s().diglettReward){
+     const gift=R.gift(p(),'armor-diglett-reward','rare-candy',5);
+     if(!gift.full){s().diglettReward=true;await save();await say('Your Diglett hunt reward: five Rare Candies!');}
+     else await say('Make room in your Bag to claim your five Rare Candies.');
+    }else await say('You already found this Alolan Diglett.');
+    return true;
+   }
    s().diglettFound.push(i);await save();await say('An Alolan Diglett was found! '+s().diglettFound.length+'/10.');
    if(s().diglettFound.length===10&&!s().diglettReward){
     const gift=R.gift(p(),'armor-diglett-reward','rare-candy',5);
