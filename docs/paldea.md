@@ -203,3 +203,25 @@ in their full original-game forms. The DLC save flags reside in
 `player.flags.paldea`; both adventures are resumable.
 
 Regression: `node tests/paldea-dlc-test.js` is included in `npm test`.
+
+## Visual polish pass — original 2D Paldea environments
+
+`ui/paldea-art.js` draws **original, deterministic pixel tile scenery**
+over the still-navigable 2D layouts; it does not change their collision,
+warps, NPC positions or wild encounter tables. The overworld renderer caches
+one generated canvas per location. Kitakami's village, apple orchards,
+mountains and festival areas now have distinct palette and landmark motifs.
+Blueberry Academy's Savanna, Coastal, Canyon and Polar biomes have individual
+visual treatments, while Area Zero and the Terapagos chamber use glowing
+crystal-like pixel motifs. The styling also covers mainland Paldea so it no
+longer looks identical to its borrowed Kalos map images.
+
+The BB League now uses different **existing battle backdrops** for Crispin,
+Lacey, Amarys, Drayton and Kieran. Ogerpon, Terapagos and Pecharunt show their
+existing Pokémon sprite portraits before their catchable encounters, and
+those battles use terrain-appropriate backgrounds. These are adaptations
+using existing assets, not ported 3D models, canonical DLC tilesets, original
+character sprites or new soundtracks.
+
+`tests/paldea-dlc-test.js` verifies distinct biome classes, cached drawing,
+region isolation, legendary portraits and battle background selection.
