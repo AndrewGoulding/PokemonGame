@@ -48,4 +48,14 @@ AlolaArt.draw(output, "AlolaRoute1", -16, 20);
 assert.equal(paints.length, painted, "overlay should cache generated map");
 AlolaArt.draw(output, "PalletTown", 0, 0);
 assert.equal(draws, 2, "non-Alola regions should not get an Alola overlay");
+for (const [name, expected] of [
+  ["AlolaLanakilaSlope", "snow"],
+  ["AlolaHainaDesert", "desert"],
+  ["AlolaWelaVolcano", "volcanic"],
+  ["AlolaAetherLab", "facility"],
+  ["AlolaRuinsOfLife", "ruins"],
+  ["AlolaHauoliBeach", "beach"],
+  ["AlolaIkiTown", "village"],
+  ["AlolaLushJungle", "tropical"]
+]) assert.equal(AlolaArt.style(name), expected, name + " missing regional biome");
 console.log("Custom region art hooks and Alola rendering: OK");
