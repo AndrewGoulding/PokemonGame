@@ -79,7 +79,7 @@ const SECOND_PASS={
   GalarWyndonCity:"galar-wyndon-clock",
   PaldeaCascarrafa:"paldea-cascarrafa-terraces",
   PaldeaGlaseado:"paldea-glaseado-peak",
-  PaldeaAreaZero:"paldea-area-zero-lab",
+  PaldeaZeroLab:"paldea-area-zero-lab",
   PaldeaMossuiTown:"paldea-kitakami-shrine"
 };
 const secondPassProblems=[];
