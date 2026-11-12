@@ -3,6 +3,17 @@
 'use strict';
 function create(env,{battle}){
  const R=Galar,p=()=>env.player(),s=()=>R.state(p()),say=env.say,save=env.saveCheckpoint;
+ async function legendary(flag,species,level,message){
+  if(s()[flag]&&Player.hasCaught(p(),species)){await say(species+' is already in your collection.');return true;}
+  if(!env.wildEncounter){await say('Wild Pokémon capture is not available right now.');return false;}
+  if(!env.canBattle()){await say('You need a healthy Pokémon for this encounter.');return false;}
+  const outcome=await env.wildEncounter(Party.create(species,level),{music:'mus_vs_legend',noBlackout:true,noGimmicks:true});
+  if(outcome!=='caught'){
+   await say(species+' escaped. It will return; bring Poké Balls and try again.');
+   return false;
+  }
+  s()[flag]=true;await save();await say(message);return true;
+ }
  const matches={
  'cup-marnie':['cupMarnieWon',null,'CUP_MARNIE','Marnie',[['Liepard',47],['Toxicroak',47],['Morpeko',48],['Grimmsnarl',49]]],
  'cup-hop':['cupHopWon','cupMarnieWon','CUP_HOP','Hop',[['Dubwool',48],['Corviknight',48],['Pincurchin',47],[R.rivalSpecies(p()),50]]],
@@ -88,9 +99,13 @@ function create(env,{battle}){
     await fight('roseWon','CHAIRMAN_ROSE','Chairman Rose',[['Escavalier',55],['Ferrothorn',55],['Perrserker',56],['Copperajah',57]],'Rose was defeated! Eternatus is rampaging deeper in the Energy Plant.');break;
    case'eternatus':
     if(!s().roseWon){await say('Chairman Rose must be stopped before challenging Eternatus.');break;}
-    if(s().eternatusClear){await say('Eternatus has already been defeated. Galar’s skies are clear.');break;}
-    if(await battle('ETERNATUS','Eternatus',[['Eternatus',60]])!=='won')break;
-    s().eternatusClear=true;await save();await say('Eternatus was defeated! Zacian and Zamazenta aided you against the Darkest Day. Return to Wyndon Stadium to face Leon.');break;
+    if(!s().eternatusSubdued){
+     if(await battle('ETERNATUS','Eternatus',[['Eternatus',60]])!=='won')break;
+     s().eternatusSubdued=true;await save();
+     await say('Eternatus weakened! Zacian and Zamazenta helped you stop the Darkest Day. Now catch Eternatus.');
+    }
+    await legendary('eternatusClear','Eternatus',60,'You caught Eternatus! The Darkest Day has ended. Return to Wyndon Stadium to face Leon.');
+    break;
    case'champion-leon':
     if(!s().cupFinalistsClear||!s().eternatusClear){await say('Win the Cup finals and stop Eternatus before Leon’s Championship match.');break;}
     if(!s().leonWon){
@@ -106,9 +121,7 @@ function create(env,{battle}){
    case'zamazenta':{
     if(!s().swordwardWon||!s().shieldbertWon){await say('Defeat Sordward and Shielbert before the legendary wolves appear.');break;}
     const isSword=key==='zacian',flag=isSword?'zacianWon':'zamazentaWon',species=isSword?'Zacian':'Zamazenta';
-    if(s()[flag]){await say(species+' has already acknowledged your strength.');break;}
-    if(await battle(isSword?'ZACIAN':'ZAMAZENTA',species,[[species,70]])!=='won')break;
-    s()[flag]=true;await save();await say(species+' acknowledged your strength. Both Sword and Shield legends are available in this unified campaign.');break;
+    await legendary(flag,species,70,species+' was caught and registered! Both Sword and Shield legends are available in this unified campaign.');break;
    }
    case'galar-battle-tower':{
     if(!s().championClear){await say('The Battle Tower opens to Galar Champions.');break;}
