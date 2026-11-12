@@ -44,6 +44,11 @@ for(const name of names){
      ...(m.signs||[]),...(m.triggers||[]),...(m.hidden||[])]
       .some(a=>Math.abs(a.x-x)<=1&&Math.abs(a.y-y)<=1)),name+" paints an event");
  }
+ const oldTile=m.collision[p.y*m.width+p.x];
+ m.collision[p.y*m.width+p.x]=0;
+ assert.equal(R.footprintIntact(m,p),false,name+" should detect an opened path");
+ m.collision[p.y*m.width+p.x]=oldTile;
+ assert.equal(R.footprintIntact(m,p),true,name+" should accept restored geometry");
  const before=surface.calls;
  R.draw(surface,name,16,48);
  assert.equal(surface.calls,before+1,name+" didn't draw its sprite");
