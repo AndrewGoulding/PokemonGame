@@ -108,6 +108,7 @@ function create(env,{battle}){
     break;
    case'champion-leon':
     if(!s().cupFinalistsClear||!s().eternatusClear){await say('Win the Cup finals and stop Eternatus before Leon’s Championship match.');break;}
+    if(s().leonWon&&s().championClear){await say('You are already Galar Champion. Register for a title defense to battle again.');break;}
     if(!s().leonWon){
      if(await battle('CHAMPION_LEON','Champion Leon',[['Aegislash-Shield',62],['Dragapult',62],['Haxorus',63],['Rhyperior',62],['Mr. Rime',63],['Charizard',65]])!=='won')break;
      s().leonWon=true;await save();
