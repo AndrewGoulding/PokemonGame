@@ -24,7 +24,6 @@
     UnovaCasteliaCity:"unova-skyline",
     UnovaDriftveilCity:"unova-driftveil-crane",
     UnovaOpelucidCity:"unova-opelucid-towers",
-    UnovaSkyarrowBridge:"unova-skyarrow-bridge",
     KalosLumioseSouth:"kalos-cafe",
     KalosLaverreCity:"kalos-garden",
     KalosShalourCity:"kalos-shalour-tower",
