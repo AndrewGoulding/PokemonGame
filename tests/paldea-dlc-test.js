@@ -11,6 +11,31 @@ for(const file of ['ui/paldea-mid.js','ui/paldea-legends.js','ui/paldea-starfall
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-art.js'),'utf8'),{filename:'ui/paldea-art.js'});
 const D=Paldea.data(),R=TOWN_MAP.paldea;
+assert(window.PaldeaCharacters,'Paldea cast mappings must be registered');
+const castSprites=new Set();
+for(const name of D.mapNames)for(const npc of D.maps[name].people){
+ if(!npc.sprite.startsWith('paldea/'))continue;
+ castSprites.add(npc.sprite);
+ assert.equal(npc.width,32);
+ assert.equal(npc.height,32);
+ assert.equal(npc.frames,9);
+}
+assert(PaldeaCharacters.count>=30,'Named Paldea story NPCs should use individual pixel sheets');
+assert(castSprites.size>=20,'At least 20 distinct named character appearances');
+for(const sprite of castSprites){
+ const file=path.join(root,'assets/world/sprites',sprite+'.svg');
+ assert(fs.existsSync(file),'Missing Paldea character artwork '+sprite);
+ const data=fs.readFileSync(file,'utf8');
+ assert(/width="288"/.test(data)&&/height="32"/.test(data),sprite+' should use 9 frames at 32x32');
+ assert((data.match(/transform="translate\(/g)||[]).length===9,sprite+' lacks directional frames');
+}
+const overworldSource=fs.readFileSync(path.join(root,'ui/overworld.js'),'utf8');
+assert(overworldSource.includes('name.startsWith("paldea/") ? ".svg" : ".png"'),
+ 'The overworld renderer must load Paldea SVG sprites without affecting legacy PNG sheets');
+assert.equal(PaldeaCharacters.forScript('sv:teal-carmine'),'paldea/carmine');
+assert.equal(PaldeaCharacters.forScript('sv:nemona-mesagoza'),'paldea/nemona');
+assert.equal(PaldeaCharacters.forScript('swsh:guide'),null);
+
 assert.equal(D.mapNames.length,98,'76 mainland + 22 DLC areas');
 assert.equal(D.dlc.mapNames.length,22);
 assert.equal(D.dlc.kitakami.length,8);
@@ -46,6 +71,13 @@ for(const name of ['PaldeaMossuiTown','PaldeaTerariumHub']){
  assert.equal(PaldeaArt.style('PaldeaUnderdepths'),'crystal');
  assert.equal(PaldeaArt.style('PaldeaTerapagosChamber'),'chamber');
  assert.equal(PaldeaArt.style('GalarPostwick'),null);
+ for(const [name,landmark] of [
+  ['PaldeaAcademy','academy'],['PaldeaMossuiTown','lantern'],
+  ['PaldeaLoyaltyPlaza','masks'],['PaldeaTerariumHub','dome'],
+  ['PaldeaSavannaBiome','savanna'],['PaldeaCoastalBiome','coast'],
+  ['PaldeaCanyonBiome','cliff'],['PaldeaPolarBiome','snow'],
+  ['PaldeaUnderdepths','crystal'],['PaldeaTerapagosChamber','terapagos']
+ ])assert.equal(PaldeaArt.LANDMARKS[name],landmark,name+' landmark missing');
  let canvasCreates=0,tileRects=0,imageDraws=0,activeCanvas=null;
  const priorDocument=global.document;
  global.document={createElement(tag){
