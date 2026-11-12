@@ -57,6 +57,44 @@ for(const name of names){
  assert.equal(JSON.stringify({collision:m.collision,behavior:m.behavior,warps:m.warps,people:m.people}),
  snapshot,name+" sprite renderer changed gameplay map");
 }
+// Second pass: every new sprite is a real, editable asset, and every
+// selected location must be a registered world map with a safe footprint.
+const SECOND_PASS={
+  AgateVillage:"orre-agate-tree",
+  MtBattle:"orre-mtbattle-gantry",
+  RealgamTower_Exterior:"orre-realgam-dome",
+  SpearPillar:"sinnoh-spear-pillar",
+  CanalaveCity:"sinnoh-canalave-bridge",
+  EternaForest:"sinnoh-eterna-forest",
+  UnovaDriftveilCity:"unova-driftveil-crane",
+  UnovaOpelucidCity:"unova-opelucid-towers",
+  KalosShalourCity:"kalos-shalour-tower",
+  KalosGeosengeTown:"kalos-geosenge-stones",
+  KalosSnowbelleCity:"kalos-snowbelle-chalet",
+  AlolaSeafolkVillage:"alola-seafolk-boat",
+  AlolaMalieCity:"alola-malie-pagoda",
+  AlolaPoTown:"alola-po-town",
+  GalarBallonlea:"galar-ballonlea-shrooms",
+  GalarTurffield:"galar-turffield-glyph",
+  GalarWyndonCity:"galar-wyndon-clock",
+  PaldeaCascarrafa:"paldea-cascarrafa-terraces",
+  PaldeaGlaseado:"paldea-glaseado-peak",
+  PaldeaZeroLab:"paldea-area-zero-lab",
+  PaldeaMossuiTown:"paldea-kitakami-shrine"
+};
+const secondPassProblems=[];
+for (const [name, asset] of Object.entries(SECOND_PASS)) {
+ if(R.CHOICES[name]!==asset)secondPassProblems.push(name+": missing sprite assignment");
+ if(!WORLD_MAPS[name])secondPassProblems.push(name+": no registered map");
+ else if(!R.plan(name))secondPassProblems.push(name+": no safe solid footprint");
+ const file=path.join(root,"assets/region-art",asset+".svg");
+ assert(fs.existsSync(file),name+" sprite was not committed");
+ const xml=fs.readFileSync(file,"utf8");
+ assert(xml.startsWith('<svg xmlns="http://www.w3.org/2000/svg"'),asset+" malformed SVG");
+ assert(xml.includes('viewBox="0 0 96 64"')&&xml.includes('crispEdges'),asset+" lost 16px-scale source artwork");
+ assert(!/<script|<image|url\(|<foreignObject/i.test(xml),asset+" contains an external resource");
+}
+assert.deepEqual(secondPassProblems,[],"All individually-authored mapped assets must be visible");
 for(const region of regions){
  assert(counts[region]>= (["galar","alola","paldea"].includes(region)?10:2),
   region+" authored source coverage");
