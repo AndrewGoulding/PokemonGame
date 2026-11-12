@@ -81,7 +81,7 @@ function accessible(m){
  raidOutcome='lost';await go('galar-den-0');assert.equal(Player.itemCount(p,'poke-ball'),balls);
  raidOutcome='won';await go('galar-den-0');
  assert.equal(s.raidCatches,1);assert.equal(Player.itemCount(p,'poke-ball'),balls-1);
- assert(Player.hasCaught(p(),W.raid(p,0)?.species||den.species)||s.raidCatches);
+ assert(Player.hasCaught(p,den.species)||s.raidCatches);
  assert.equal(W.raid(p,0),null);
  p.clockSteps+=2400;
  await go('galar-roamer-0');assert(Object.keys(s.roamers||{}).length===1);
