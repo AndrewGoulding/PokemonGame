@@ -62,16 +62,32 @@ const PLANS={
  PaldeaRuchbahGarage:['garage','#baa4c0'],
  PaldeaCaphGarage:['garage','#bc8b74']
 };
+// Unlisted routes and DLC areas also need independent geometry; the explicitly
+// planned towns above retain their hand-picked styles and palette accents.
+const inferPlan=name=>{
+ if(!/^Paldea/.test(name))return null;
+ if(/Center|House|Home|Academy|Shop|Lab|Garage|Hall|Club|Chamber|Room|Station|Gate|Gym|Dojo|Trial|Arena|Den|Office/.test(name))return ['hall','#a7b8c0'];
+ if(/Sea|Beach|Coast|Lake|River|Water|Cascarrafa/.test(name))return ['coast','#87b5c1'];
+ if(/Snow|Ice|Polar|Glaseado/.test(name))return ['snow','#b7d5db'];
+ if(/Cave|Tunnel|Depth|Zero|Crater|Underdepth|AreaZero/.test(name))return ['crystal','#98b3c9'];
+ if(/Oni|Mountain|Cliff|Rock|Canyon|Earth/.test(name))return ['mountain','#b59b8c'];
+ if(/Forest|Woods|Apple|Grove|Bamboo|Jungle/.test(name))return ['forest','#8faf7c'];
+ if(/Savanna|Desert|Dunes/.test(name))return ['savanna','#cbb683'];
+ if(/City|Town|Village|Market|Plaza/.test(name))return ['hamlet','#c5af90'];
+ return ['route','#a9bf90'];
+};
 const hash=(x,y,seed)=>{
  let n=(Math.imul(x+23,374761393)+Math.imul(y+31,668265263)+Math.imul(seed,1442695041))>>>0;
  return (n^(n>>>16))>>>0;
 };
 function layout(name){
- const m=D.maps[name],plan=PLANS[name];if(!m||!plan)return false;
+ const m=D.maps[name],plan=PLANS[name]||inferPlan(name);if(!m||!plan)return false;
  const [kind,accent]=plan,w=m.width,h=m.height,n=w*h;
  const collision=Array(n).fill(0),behavior=Array(n).fill(0),elevation=Array(n).fill(0);
+ const previousBehavior=m.behavior.slice();
  const seeds=[...name].reduce((a,c)=>(Math.imul(a,31)+c.charCodeAt(0))>>>0,47);
  const indoor=/^(center|home|academy|arena|hall|lab|garage|club|dome|shrine)$/.test(kind);
+ const natural=/^(coast|snow|crystal|mountain|forest|savanna|route)$/.test(kind);
  const entrance=kind==='arena'||kind==='hall'?3:2;
  const cx=Math.floor(w/2),cy=Math.floor(h/2);
  const edge=(x,y)=>x<1||y<1||x>=w-1||y>=h-1;
@@ -89,12 +105,13 @@ function layout(name){
     const block=Math.floor(x/6)%2===Math.floor(y/6)%2;
     const square=Math.abs(x-cx)<=3&&Math.abs(y-cy)<=3;
     const avenue=(Math.abs(x-cx)<=1 || Math.abs(y-cy)<=1 || x%8===0 || y%8===0);
-    solid=!square&&!avenue&&block&&r<(kind==='capital'?72:kind==='canal'?57:64);
+    solid=natural ? !square&&!avenue&&r<(kind==='forest'?67:kind==='mountain'?65:kind==='crystal'?63:kind==='snow'?48:kind==='coast'?31:49) :
+      !square&&!avenue&&block&&r<(kind==='capital'?72:kind==='canal'?57:64);
     if(kind==='garden'&&r<14)solid=true;
    }
   }
   collision[i]=solid?1:0;
-  if(!solid&&!indoor&&r%19===0)behavior[i]=2;
+  if(!solid&&!indoor&&m.wild&&(previousBehavior[i]===2||r%19===0))behavior[i]=2;
  }
  const open=(x,y,r=0)=>{
   for(let yy=Math.max(0,y-r);yy<=Math.min(h-1,y+r);yy++)
@@ -109,7 +126,7 @@ function layout(name){
  open(cx,cy,3);
  const anchors=[
   ...m.warps.map(a=>({...a,warp:true})),
-  ...(m.people||[]),
+  ...(m.people||[]), ...(m.signs||[]), ...(m.triggers||[]), ...(m.hidden||[]),
   ...Object.values(window.TOWN_MAP?.paldea?.fly||{}).filter(a=>a.map===name),
   ...Object.values(window.Player?.CENTERS||{}).filter(a=>a.map===name),
   ...(D.start?.map===name?[D.start]:[])
@@ -136,6 +153,6 @@ function layout(name){
  return true;
 }
 let count=0;
-for(const name of Object.keys(PLANS))if(layout(name))count++;
-window.PaldeaLayouts={plans:PLANS,layout,count};
+for(const name of Object.keys(D.maps))if(layout(name))count++;
+window.PaldeaLayouts={plans:PLANS,inferPlan,layout,count};
 })();
