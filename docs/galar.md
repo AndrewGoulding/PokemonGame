@@ -46,3 +46,34 @@ The first three Gyms are implemented; Hammerlocke, the remaining Gyms,
 Darkest Day, Champion Cup, Isle of Armor and Crown Tundra are not yet built.
 
 Regression: `node tests/galar-test.js`, included in `npm test`.
+
+## Midgame: Hammerlocke to eight badges
+
+After Kabu’s Fire Badge, return through Motostoke Outskirts into the
+northern Wild Area and reach Hammerlocke. The expanded chapter adds
+**24 connected maps**, bringing Galar to **49 maps**: northern Wild Area,
+Hammerlocke and Stadium, Route 6, Stow-on-Side and Stadium, Glimwood Tangle,
+Ballonlea and Stadium, Routes 7 and 8, Circhester and Stadium, Route 9,
+Spikemuth and Gym, the Route 9 Tunnel, Hammerlocke Gate and five new
+Pokémon Centers.
+
+The story includes Hop in Hammerlocke and on Route 7, Team Yell on Routes
+6 and 9, Bede’s Stow-on-Side encounter, Marnie in Spikemuth, and the
+remaining five Gym Challenges. To keep Sword and Shield content merged,
+**both Bea and Allister** are defeated before receiving the Stow-on-Side
+Badge, and **both Gordie and Melony** before receiving the Circhester Badge.
+Opal awards the Fairy Badge, Piers the Dark Badge, and Raihan the Dragon
+Badge. The native battle engine adapts the challenges into staged trainer
+battles and does not recreate 3D Stadium puzzles or Dynamax battles.
+
+Each Gym stores individual trainer and leader victories, allowing retries
+without repeating cleared fights. The Galar level cap rises to **80** after
+Raihan. The Town Map now covers all 49 maps, including centers and Stadiums,
+with visited-only Fly destinations for Hammerlocke, Stow-on-Side, Ballonlea,
+Circhester and Spikemuth. Existing Galar and Alola saves are preserved.
+
+The Champion Cup, Wyndon, Darkest Day, Zacian and Zamazenta finale, Isle of
+Armor and Crown Tundra are planned subsequent chapters, not part of this
+release.
+
+Regression: `node tests/galar-mid-test.js`, included in `npm test`.
