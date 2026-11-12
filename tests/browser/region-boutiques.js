@@ -1,5 +1,5 @@
 'use strict';
-// Regional boutiques through native input: Celadon's boutique, a building of its own, sells from FireRed's Mart screen and dresses, and every other region's boutique opens.
+// Regional boutiques through native input: Celadon's boutique, a building of its own, sells from FireRed's Mart screen and dresses, and every other region's boutique opens the same screen.
 const assert=require('node:assert/strict'),T=require('./lib');
 (async()=>{
  const s=await T.start(p=>{p.money=100000;},{map:'CeladonCity',x:35,y:13,facing:'up'},{out:'/tmp/pokemon-region-boutiques',storage:{'pokemon-options':JSON.stringify({textSpeed:2,sound:2})}});
@@ -20,9 +20,10 @@ const assert=require('node:assert/strict'),T=require('./lib');
   for(let i=0;i<6&&await s.eval(()=>Overworld.position().map==='CeladonCity_Boutique');i++)await s.walk('down',1);await C.until(()=>Overworld.position().map==='CeladonCity'&&Overworld.idle(),'back out of the boutique');assert.deepEqual(await s.eval(()=>[Overworld.position().x,Overworld.position().y]),[35,12]);
   await s.eval(()=>Save.write(Game.player));await s.page.reload();await s.boot();assert(await s.eval(id=>KalosFashion.owned(Game.player,id),id));assert.equal(await s.eval(()=>KalosFashion.current(Game.player).shirt),id);
   for(const vendor of await s.eval(()=>TeamFashion.vendors.filter(v=>v.boutique&&v.id!=='boutique-kanto').map(v=>v.id))){
-   await approach(vendor);await C.until(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Browse clothes'),'boutique '+vendor,300);await C.choose('Browse clothes');await C.until(()=>!!document.querySelector('.xy-fashion'),'shop '+vendor,300);assert.equal(await s.eval(()=>document.querySelector('.xy-fashion h2').textContent),await s.eval(id=>TeamFashion.vendor(id).name,vendor));await s.shot(vendor);await C.choose('Done');await C.until(C.idle,'closed '+vendor,300);console.log('ok: '+vendor);
+   await approach(vendor);const name=await s.eval(id=>TeamFashion.vendor(id).name,vendor);await s.page.waitForFunction(name=>document.body.innerText.includes('Welcome to '+name)&&!!GbaMenus.showing,name,{timeout:20000});await s.wait(500);await s.press('z');await C.until(()=>ShopScreen.showing,'Mart screen '+vendor,300);await s.wait(500);
+   assert.equal(await s.eval(()=>ShopScreen.state.item),await s.eval(id=>BoutiqueMart.stock(Game.player,TeamFashion.vendor(id))[0].id,vendor));await s.shot(vendor);await s.press('x');await C.until(()=>!ShopScreen.showing&&!!GbaMenus.showing,'menu again '+vendor,300);await s.wait(400);await s.press('ArrowDown');await s.press('ArrowDown');await s.press('z');await C.until(()=>document.body.innerText.includes('Please come again'),'goodbye '+vendor,300);await s.wait(700);await s.press('z');await C.until(C.idle,'closed '+vendor,300);console.log('ok: '+vendor);
   }
   assert.deepEqual(s.errors.filter(e=>!/^Failed to load resource:/.test(e)),[]);
-  console.log('ok: native Celadon Boutique door, Mart-screen purchase/wear/reload and all eight regional boutique dispatches');
+  console.log('ok: native Celadon Boutique door, Mart-screen purchase/wear/reload and the Mart screen at every other regional boutique');
  }catch(e){console.log(await s.text());console.log(s.errors);await s.shot('failure');throw e;}finally{await s.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

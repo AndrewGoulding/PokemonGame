@@ -21,20 +21,24 @@ every day. Pieces are authored, not from any game's catalogue; their names choos
 patterns (Plaid, Knit, Camo, Boots, Skirt and so on), so they draw on the player's sprites like the X/Y pieces.
 Buying here doesn't add Kalos style points, and a boutique only sells its own line.
 
-The Celadon Boutique has a building of its own: the awning-fronted shop on Celadon's main street, in the row of
-houses between the Celadon Mansion and the Pokémon Center (its shop window reads as its sign). Its clerk stands
-behind the counter and serves as a Poké Mart does: **Buy** opens FireRed's Mart buy screen with the line for the
+Every boutique's clerk serves as a Poké Mart does: **Buy** opens FireRed's Mart buy screen with the line for the
 collection you're wearing, one of each piece (a piece you own shows `-----`), an icon in the piece's colour, and
-a fitting window that shows you in the piece under the cursor before you buy. Leaving the screen, she offers to
-put on what you bought. **Wardrobe** opens the shared wardrobe; **See ya!** leaves. The other boutiques work as below.
+a fitting window that shows you in the piece under the cursor before you buy. Leaving the screen, the clerk offers
+to put on what you bought. **Wardrobe** opens the shared wardrobe; **See ya!** leaves.
 
-Talk to the clerk and choose **Browse clothes** to preview, buy and wear, or **Change clothes** for the shared
-wardrobe. Clerks take a free spot that keeps every entrance connected, like the team outfitters.
+The Celadon Boutique has a building of its own: the awning-fronted shop on Celadon's main street, in the row of
+houses between the Celadon Mansion and the Pokémon Center (its shop window reads as its sign), its clerk behind
+the counter. The other boutiques' clerks take a free spot that keeps every entrance connected, like the team
+outfitters (who keep the wardrobe's own shop screen).
+
+Pieces are fitted to the character as drawn (`game/kalos-fashion-art.js`): a hat is the character's own cap in
+the hat's colours and trim, a bag their backpack, a top what's worn from collar to belt, and a skirt spans the
+legs as they stand, on the battle pictures and every overworld sheet.
 
 Implementation: the `boutiques` table in `game/team-fashion.js`, which feeds the shared vendor, stock and art paths.
 The Celadon Boutique's building, room and door are built by `tools/build-celadon-boutique.js` (into
 `data/celadon-boutique.js` and `assets/world/maps/CeladonCity-patch-boutique*.png`, `CeladonCity_Boutique*.png`);
-its Mart screen stock, icons and previews are `ui/boutique-mart.js`, opened by `boutiqueMart` in `ui/game.js`.
+the boutiques' Mart screen stock, icons and previews are `ui/boutique-mart.js`, opened by `boutiqueMart` in `ui/game.js`.
 Tests: `tests/region-boutiques-test.js` (placement, both collections, shop isolation, prices, distinct art, saves)
 and `tests/browser/region-boutiques.js` (in at the Celadon Boutique's door, buying on the Mart screen and wearing through native input, then opening every other
-boutique).
+boutique's Mart screen).

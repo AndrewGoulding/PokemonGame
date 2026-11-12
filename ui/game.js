@@ -6087,7 +6087,7 @@
     }finally{if(temporary||st.pwtBackup){player.party=original;delete st.pwtBackup;delete st.facilityPending;if(lastRecord){UnovaFacilities.state(player).lastRecord=lastRecord;lastRecord=null;}Save.write(player);}show('world');await Overworld.resume();}
   }
 
-  // A boutique with a shop of its own, the Celadon Boutique: served as a Poké Mart is (mart, above), "Buy" FireRed's
+  // A regional boutique (the Celadon Boutique in its own shop, the others' clerks where they stand): served as a Poké Mart is (mart, above), "Buy" FireRed's
   // buy screen with its clothes on it (ui/boutique-mart.js: one of each, you in the piece the cursor's on), and
   // "Wardrobe" the shared wardrobe; what you've bought, put on as you leave the screen, if you like.
   async function boutiqueMart(vendor){

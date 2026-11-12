@@ -1,5 +1,5 @@
-// A boutique's stock for FireRed's Poké Mart buy screen (ui/shop-screen.js), as the Celadon
-// Boutique sells it (game/team-fashion.js's `mart`): the pieces of the collection you're
+// A boutique's stock for FireRed's Poké Mart buy screen (ui/shop-screen.js), as every regional
+// boutique sells it (game/team-fashion.js's `mart`): the pieces of the collection you're
 // wearing, one of each (one you own shows "-----", as a TM does), an icon for each in its
 // own colour, and you in it, in the screen's fitting window, before you buy.
 //
