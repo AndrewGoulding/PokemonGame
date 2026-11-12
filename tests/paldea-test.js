@@ -8,10 +8,12 @@ for(const [,file] of html.matchAll(/<script src="([^"]+)"><\/script>/g))
  if(!file.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-mid.js'),'utf8'),{filename:'ui/paldea-mid.js'});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-legends.js'),'utf8'),{filename:'ui/paldea-legends.js'});
+vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-starfall.js'),'utf8'),{filename:'ui/paldea-starfall.js'});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-story.js'),'utf8'),{filename:'ui/paldea-story.js'});
 assert(Paldea&&PaldeaStory&&TOWN_MAP.paldea);
 const D=Paldea.data(),T=TOWN_MAP.paldea;
-assert.equal(D.mapNames.length,25);
+assert.equal(D.mapNames.length,31);
+assert.equal(D.starfall.mapNames.length,6);
 assert.equal(D.legends.mapNames.length,4);
 assert.equal(D.midgame.mapNames.length,8);
 assert.deepEqual(D.starters,['Sprigatito','Fuecoco','Quaxly']);
@@ -101,6 +103,7 @@ const story=PaldeaStory.create(env),go=x=>story.run('sv:'+x),s=Paldea.state(p);
  // Titans progress independently from Gym badges after the Treasure Hunt,
  // and losing either stage must never award Herba Mystica.
  const titanTester=Player.create('Titan Story Test'),ts=Paldea.state(titanTester);
+ titanTester.location={map:'PaldeaHome',x:10,y:13,facing:'down'};
  titanTester.party=[Party.create('Pikachu',35)];
  Object.assign(ts,{starter:'Fuecoco',treasureHunt:true});
  const titanBattles=[],titanEnv={
@@ -133,6 +136,44 @@ const story=PaldeaStory.create(env),go=x=>story.run('sv:'+x),s=Paldea.state(p);
  assert(Paldea.peek(reloaded).herbaKlawf&&Paldea.peek(reloaded).herbaBombirdier);
  assert(Paldea.peek(reloaded).rideDash&&Paldea.peek(reloaded).rideSwim);
  assert(titanBattles.includes('SV_TITAN_KLAWF_1')&&titanBattles.includes('SV_TITAN_BOMBIRDIER_2'));
+ // Starfall Street works independently from the Gym and Titan storylines.
+ const starTester=Player.create('Starfall Test'),ss=Paldea.state(starTester);
+ starTester.location={map:'PaldeaHome',x:10,y:13,facing:'down'};
+ starTester.party=[Party.create('Pikachu',35)];
+ Object.assign(ss,{starter:'Quaxly',treasureHunt:true});
+ const starBattles=[],starEnv={
+  player:()=>starTester,say:async()=>{},confirm:async()=>true,
+  choose:async(_,o)=>o[0],canBattle:()=>true,showWorld(){},resume:async()=>{},
+  saveCheckpoint:async()=>{},teleport:async()=>{},
+  battle:async(_,opts)=>{starBattles.push(opts.trainerId);return won?'won':'lost';}
+ };
+ const starStory=PaldeaStory.create(starEnv),starGo=key=>starStory.run('sv:'+key);
+ assert.equal(Paldea.allowed(starTester,'PaldeaSeginBase'),null);
+ assert(Paldea.allowed(starTester,'PaldeaSeginGarage'));
+ assert(Paldea.allowed(starTester,'PaldeaSchedarGarage'));
+ await starGo('segiu-challenge');assert(!ss.seginChallengeClear,'gatekeeper required');
+ won=false;await starGo('segiu-guard');assert(!ss.seginGuardClear);
+ won=true;await starGo('segiu-guard');assert(ss.seginGuardClear);
+ won=false;await starGo('segiu-challenge');assert(!ss.seginWave0);
+ won=true;await starGo('segiu-challenge');assert(ss.seginChallengeClear);
+ assert.equal(Paldea.allowed(starTester,'PaldeaSeginGarage'),null);
+ won=false;await starGo('giacomo-boss');assert(!ss.seginClear);
+ won=true;await starGo('giacomo-boss');
+ assert(ss.seginClear&&ss.starfallCrews.includes('Segin'));
+ const starCount=starBattles.length;await starGo('giacomo-boss');
+ assert.equal(starBattles.length,starCount,'Giacomo reward must be single-use');
+ await starGo('schedar-guard');assert(ss.schedarGuardClear);
+ await starGo('schedar-challenge');assert(ss.schedarChallengeClear);
+ won=false;await starGo('mela-boss');assert(!ss.schedarClear);
+ won=true;await starGo('mela-boss');
+ assert(ss.schedarClear&&ss.starfallCrews.includes('Schedar'));
+ assert.equal(ss.starfallCrews.length,2);
+ assert.equal(Paldea.allowed(starTester,'PaldeaSchedarGarage'),null);
+ assert.equal(Player.levelCap(starTester),23,'Starfall Street does not require Gym badges');
+ const starLoaded=Player.load(JSON.parse(Player.serialize(starTester))).player;
+ assert(Paldea.peek(starLoaded).seginClear&&Paldea.peek(starLoaded).schedarClear);
+ assert.deepEqual(Paldea.peek(starLoaded).starfallCrews,['Segin','Schedar']);
+ assert(starBattles.includes('SV_SEGIN_STARMOBILE')&&starBattles.includes('SV_SCHEDAR_STARMOBILE'));
  for(const name of D.midgame.mapNames)assert(D.maps[name]&&T.at[name],name+' midgame missing');
- console.log('Paldea: 25 maps, 3 Gyms, Klawf and Bombirdier Titans, story rewards and saves');
+ console.log('Paldea: 31 maps, three Gyms, two Titans, Giacomo and Mela, rewards and saves');
 })().catch(e=>{console.error(e);process.exitCode=1;});
