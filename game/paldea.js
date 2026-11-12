@@ -54,7 +54,7 @@ const hints={
  nemonaMesagoza:'Meet Nemona in Mesagoza before entering the academy.',
  treasureHunt:'Talk to Director Clavell at the academy to begin the Treasure Hunt.'
 };
-function allowed(p,map){if(!owns(map))return null;if(window.PaldeaMid?.owns(map))return PaldeaMid.allowed(p,map);if(window.PaldeaLegends?.owns(map))return PaldeaLegends.allowed(p,map);if(window.PaldeaStarfall?.owns(map))return PaldeaStarfall.allowed(p,map);if(window.PaldeaEndgame?.owns(map))return PaldeaEndgame.allowed(p,map);const key=requirements[map];return key&&!peek(p)[key]?hints[key]:null;}
+function allowed(p,map){if(!owns(map))return null;if(window.PaldeaMid?.owns(map))return PaldeaMid.allowed(p,map);if(window.PaldeaLegends?.owns(map))return PaldeaLegends.allowed(p,map);if(window.PaldeaStarfall?.owns(map))return PaldeaStarfall.allowed(p,map);if(window.PaldeaEndgame?.owns(map))return PaldeaEndgame.allowed(p,map);if(window.PaldeaDlc?.owns(map))return PaldeaDlc.allowed(p,map);const key=requirements[map];return key&&!peek(p)[key]?hints[key]:null;}
 function cap(p){const s=peek(p);return s.paldeaClear?100:s.nemonaChampionClear?85:s.leagueClear?80:s.grushaClear?70:s.tulipClear?66:s.rymeClear?62:s.larryClear?58:s.ionoClear?50:s.kofuClear?45:s.brassiusClear?36:s.katyClear?30:s.treasureHunt?23:s.nemonaRoute?20:s.nemonaFirst?16:s.starter?12:7;}
 function visit(p,map){if(!owns(map))return;const s=state(p);if(!s.visited.includes(map))s.visited.push(map);s.resume={...p.location};}
 function recover(p){
