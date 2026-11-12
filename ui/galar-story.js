@@ -53,6 +53,7 @@ function create(env){
  }
  const mid=GalarMidStory.create(env,{battle});
  const finale=GalarFinaleStory.create(env,{battle});
+ const features=GalarFeaturesStory.create(env);
  const dlc=GalarDlcStory.create(env,{battle});
  async function run(script){
   if(!script?.startsWith('swsh:'))return false;
@@ -60,6 +61,7 @@ function create(env){
   if(await mid.run(key))return true;
   if(await finale.run(key))return true;
   if(await dlc.run(key))return true;
+  if(await features.run(key))return true;
   switch(key){
    case'travel-galar':
     if(!await env.confirm('Travel to Galar? Sword and Shield share one campaign.'))break;
@@ -112,7 +114,11 @@ function create(env){
     else await say('Marnie: Good luck in your Gym Challenge.');break;
    case'league-ceremony':
     if(!s().endorsement){await say('The stadium requires Professor Magnolia’s endorsement.');break;}
-    if(!s().ceremony){s().ceremony=true;await save();await say('Chairman Rose opened the Gym Challenge! You received a Dynamax Band and the road to Turffield is open.');}
+    if(!s().ceremony){
+      const gift=R.gift(p(),'galar-dynamax-band','dynamax-band');
+      if(gift.full){await say('Make room in your Bag to receive the Dynamax Band.');break;}
+      s().ceremony=true;await save();await say('Chairman Rose opened the Gym Challenge! You received a Dynamax Band and the road to Turffield is open.');
+     }
     else await say('Motostoke Stadium: Your Gym Challenge is underway!');break;
    case'route3-trainer':await markFight('route3Trainer','ROUTE3_TRAINER','Route 3 Schoolkid',[['Rolycoly',13],['Gossifleur',13]],'You defeated the Route 3 trainer.');break;
    case'bede-mine':
