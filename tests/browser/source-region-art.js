@@ -35,6 +35,7 @@ function safe(m) {
     p.repelSteps = 999999;
     p.flags.orre = 2;
     p.flags.orreStory = 44;
+    p.flags.orreMail = { got: Object.keys(Orre.MAIL), read: Object.keys(Orre.MAIL) };
   }, places[0][1], { out });
   const missing = new Set();
   s.page.on("response", r => {
