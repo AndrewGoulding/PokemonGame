@@ -2557,10 +2557,15 @@
         // Ultra Burst or a Z-Move (with the Z-Ring), or Dynamax (with the
         // Dynamax Band); a Z-Move or Dynamax shows the moves it makes.
         const toggled = () => { if (trigger) Object.assign(trigger, { on: mega.on, altOn: !!(mega.alt && mega.alt.on), focus: mega.focus || 0 }); };
-        const kind = active.canMega && config.megaRing && !(dbl && dbl.megaTaken) ? "mega"
+        // In Galar, START should offer Dynamax before Mega Evolution or Z-Moves.
+        // Both mechanics already exist in the battle engine, but the former
+        // ordering hid Dynamax when a Pokémon held an eligible Mega Stone.
+        const canMax = active.canDynamax && config.dynamaxBand && !(dbl && dbl.dynamaxTaken);
+        const kind = config.galarDynamax && canMax ? "dynamax"
+          : active.canMega && config.megaRing && !(dbl && dbl.megaTaken) ? "mega"
           : active.canUltraBurst && config.zRing ? "ultra"
           : active.zMoves && config.zRing && !(dbl && dbl.zTaken) ? "zmove"
-          : active.canDynamax && config.dynamaxBand && !(dbl && dbl.dynamaxTaken) ? "dynamax"
+          : canMax ? "dynamax"
           : active.canTera && config.teraOrb && !(dbl && dbl.teraTaken) ? "tera" : null;
         const shown = kind === "zmove" ? active.zMoves : kind === "dynamax" ? active.maxMoves : null;
         // (This game's own: Mega Evolve and Terastallize, the same turn if you like: two triggers.)
