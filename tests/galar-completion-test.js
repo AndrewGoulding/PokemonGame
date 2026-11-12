@@ -51,10 +51,17 @@ function accessible(m){
  assert.equal(GalarArt.style('GalarFrostpointField'),'snow');
  // Galar encounters must surface Dynamax even when a Mega Stone or
  // Z-Crystal would otherwise take precedence in the battle move menu.
+ const battleAnimSource=fs.readFileSync(path.join(root,'ui/battle-anim.js'),'utf8');
+ assert(battleAnimSource.includes('hasAnim: (kind, id) => animIdOf(kind, id) != null'),
+  'Expansion general animation table must be available to the Galar renderer');
  const battleScreenSource=fs.readFileSync(path.join(root,'ui/battle-screen.js'),'utf8');
  const gameSource=fs.readFileSync(path.join(root,'ui/game.js'),'utf8');
  assert(battleScreenSource.includes('config.galarDynamax && canMax ? "dynamax"'),
   'Galar should prioritize the Dynamax move toggle');
+ assert(battleScreenSource.includes('tableAnim("general", "DYNAMAX_GROWTH", pos)'),
+  'Dynamax must use pokeemerald-expansion growth animation');
+ assert(battleScreenSource.includes('case "-dynamaxend":'),
+  'Dynamax must restore its normal appearance');
  assert(gameSource.includes('galarDynamax: !opts.noGimmicks && Galar.owns(player.location.map)'),
   'Galar battle context must reach the move menu');
  const p=Player.create('Galar Completion Tester'),s=Galar.state(p);
