@@ -6,7 +6,7 @@ global.localStorage={getItem:()=>null,setItem(){},removeItem(){}};
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const[,src]of html.matchAll(/<script src="([^"]+)"><\/script>/g))
  if(!src.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,src),'utf8'),{filename:src});
-for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/galar-story.js'])
+for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/galar-features.js','ui/galar-extras.js','ui/galar-story.js'])
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 (async()=>{
  const D=Galar.data(),F=GalarFinale,T=TOWN_MAP.galar;
@@ -34,6 +34,7 @@ for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/
  let won=true,saves=0,battles=[],spoken=[],yes=true;
  const env={player:()=>p,say:async v=>spoken.push(v),confirm:async()=>yes,canBattle:()=>true,
  choose:async(_,options)=>options[0],battle:async(_,data)=>{battles.push(data.trainerId);return won?'won':'lost';},
+ wildEncounter:async mon=>{if(!won)return 'won';Player.receive(p,mon);return 'caught';},
  showWorld(){},resume:async()=>{},mart:async()=>{},
  saveCheckpoint:async()=>{saves++;},teleport:async loc=>{p.location={...loc};Galar.visit(p,loc.map);}};
  const story=GalarStory.create(env),go=k=>story.run('swsh:'+k);
@@ -48,7 +49,8 @@ for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/
  for(const key of ['cup-bede','cup-nessa','cup-bea','cup-allister','cup-raihan'])await go(key);
  assert(s.cupFinalistsClear);assert.equal(Galar.cap(p),85);
  await go('chairman-rose');assert(s.roseWon);
- await go('eternatus');assert(s.eternatusClear);assert.equal(Galar.cap(p),90);
+ won=false;await go('eternatus');assert(!s.eternatusClear,'Knockout must not count as capture');
+ won=true;await go('eternatus');assert(s.eternatusClear);assert.equal(Galar.cap(p),90);
  await go('champion-leon');assert(s.championClear);assert.equal(Galar.cap(p),100);
  assert.equal(s.galarTitles,1);
  assert.equal(F.allowed(p,'GalarBattleTower'),null);
@@ -61,6 +63,8 @@ for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-dlc.js','ui/
  await go('shieldbert');assert(!s.shieldbertWon);
  await go('swordward');await go('shieldbert');
  await go('zacian');await go('zamazenta');assert(s.zacianWon&&s.zamazentaWon);
+ assert(Player.hasCaught(p,'Eternatus')&&Player.hasCaught(p,'Zacian')&&Player.hasCaught(p,'Zamazenta'));
+
  const count=battles.length;await go('zacian');await go('zamazenta');assert.equal(battles.length,count);
  for(let i=0;i<3;i++)await go('galar-battle-tower');
  assert.equal(s.battleTowerStreak,3);assert.equal(s.battleTowerBest,3);
