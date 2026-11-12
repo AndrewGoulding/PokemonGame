@@ -38,14 +38,14 @@ cached and drawn below the player/NPC sprites.
 ## Second hand-authored location pass
 
 The following **22 additional original 96×64 SVG assets** are now editable separately
-instead of borrowing an all-purpose region sprite. They are assigned to named
+instead of borrowing an all-purpose region sprite. Most are assigned to named
 locations in `ui/authored-region-art.js`:
 
 | Region | Specific new designs |
 |---|---|
 | Orre | Agate Village's great tree, Mt. Battle gantry, Realgam Tower dome |
 | Sinnoh | Spear Pillar ruins, Canalave's bridge, Eterna Forest architecture |
-| Unova | Driftveil harbor crane, Opelucid's towers, Skyarrow Bridge |
+| Unova | Driftveil harbor crane, Opelucid's towers, Skyarrow Bridge (asset prepared, placement deferred) |
 | Kalos | Tower of Mastery, Geosenge monoliths, Snowbelle chalet |
 | Alola | Seafolk Village's boat, Malie pagoda, Po Town hideout |
 | Galar | Ballonlea's luminous mushrooms, Turffield geoglyph, Wyndon's clocktower |
