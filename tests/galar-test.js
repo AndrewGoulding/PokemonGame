@@ -6,10 +6,11 @@ global.localStorage={getItem:()=>null,setItem(){},removeItem(){}};
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const[,src]of html.matchAll(/<script src="([^"]+)"><\/script>/g))
  if(!src.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,src),'utf8'),{filename:src});
+vm.runInThisContext(fs.readFileSync(path.join(root,'ui/galar-mid.js'),'utf8'),{filename:'ui/galar-mid.js'});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/galar-story.js'),'utf8'),{filename:'ui/galar-story.js'});
 const D=Galar.data(),R=TOWN_MAP.galar;
-assert.equal(Object.keys(D.maps).length,25);
-assert.equal(D.mapNames.length,25);
+assert.equal(Object.keys(D.maps).length,49);
+assert.equal(D.mapNames.length,49);
 assert.deepEqual(D.starters,['Grookey','Scorbunny','Sobble']);
 assert(R);assert.equal(D.townMap,R);
 for(const name of D.mapNames){
@@ -108,5 +109,5 @@ const story=GalarStory.create(env),go=k=>story.run('swsh:'+k),s=Galar.state(p);
  assert.equal(JSON.stringify(reload.flags.alola),oldAlola);
  assert.equal(JSON.stringify(p.flags.kalos||{}),oldKalos);
  assert(saves>15&&spoken.length>15);
- console.log('Galar: 25 connected maps, starter, Hop/Bede, three gyms, Fly, save/return and version union passed');
+ console.log('Galar: 49 connected maps, starter, Hop/Bede, three gyms, Fly, save/return and version union passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
