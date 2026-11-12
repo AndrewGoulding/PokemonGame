@@ -68,7 +68,6 @@ const SECOND_PASS={
   EternaForest:"sinnoh-eterna-forest",
   UnovaDriftveilCity:"unova-driftveil-crane",
   UnovaOpelucidCity:"unova-opelucid-towers",
-  UnovaSkyarrowBridge:"unova-skyarrow-bridge",
   KalosShalourCity:"kalos-shalour-tower",
   KalosGeosengeTown:"kalos-geosenge-stones",
   KalosSnowbelleCity:"kalos-snowbelle-chalet",
