@@ -9,6 +9,7 @@ for(const [,file] of html.matchAll(/<script src="([^"]+)"><\/script>/g))
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-mid.js'),'utf8'),{filename:'ui/paldea-mid.js'});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-legends.js'),'utf8'),{filename:'ui/paldea-legends.js'});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-starfall.js'),'utf8'),{filename:'ui/paldea-starfall.js'});
+vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-endgame.js'),'utf8'),{filename:'ui/paldea-endgame.js'});
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-story.js'),'utf8'),{filename:'ui/paldea-story.js'});
 assert(Paldea&&PaldeaStory&&TOWN_MAP.paldea);
 const D=Paldea.data(),T=TOWN_MAP.paldea;
