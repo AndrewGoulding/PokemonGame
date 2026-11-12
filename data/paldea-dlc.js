@@ -77,6 +77,7 @@ for(const [id,key,sprite] of [
  ['DreadedDen','teal-ogerpon','bw2_105'],
  ['BlueberryDock','indigo-briar','bw2_scientist_f_46'],
  ['TerariumHub','indigo-guide','bw2_105'],
+ ['TerariumHub','heal','bw2_147'],
  ['LeagueClub','indigo-club','bw2_youngster'],
  ['SavannaTrial','indigo-crispin','bw2_105'],
  ['CoastalTrial','indigo-lacey','bw2_lass'],
