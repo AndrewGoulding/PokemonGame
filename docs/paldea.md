@@ -118,3 +118,54 @@ remaining Gyms, the final three Titans, Area Zero and DLC remain unfinished.
 
 The expanded `tests/paldea-test.js` checks all five squads, failed battle
 retries, save persistence, gated garages, and the academy finale.
+
+## Main-story finale — all eight Gyms, five Titans, Area Zero
+
+The endgame chapter adds **35 Paldea maps**, bringing the combined Scarlet /
+Violet main-story region to **76 connected 2D locations**. The three paths
+remain separately tracked through the existing `player.flags.paldea` save.
+The game still uses existing Kalos-derived 2D geometry and ordinary battle
+mechanics rather than importing Scarlet/Violet's original open-world scenes.
+
+### Victory Road
+
+The final five Gym Leaders now have connected approach roads, towns, Gyms and
+Pokémon Centers: **Iono (Levincia, Electric), Larry (Medali, Normal), Ryme
+(Montenevera, Ghost), Tulip (Alfornada, Psychic), and Grusha (Glaseado, Ice)**.
+Each challenge has two saved preliminary trainers, a Leader team, a single-use
+Badge flag and a regional level-cap increase. This 2D version uses linear gates
+across those five Gyms. After eight Badges, the Pokémon League opens, with
+Elite Four Rika, Poppy, Larry and Hassel, Top Champion Geeta, and a concluding
+Champion battle against Nemona. Each success is recorded independently and
+losses may be retried without repeating cleared Elite Four members.
+
+### Path of Legends
+
+In addition to Klawf and Bombirdier, meet **Orthworm (Lurking Steel), the
+Quaking Earth Titan, and Dondozo / Tatsugiri (False Dragon)**. Each Titan has
+an approach map, a retreat destination and a two-stage encounter. Their final
+Herba Mystica milestones are saved once, alongside recorded jump, glide and
+climb ride upgrades. Ride controls are still unimplemented story milestones.
+With all five herbs found, Arven can be challenged at the Academy to complete
+Path of Legends and recover Mabosstiff's strength.
+
+### The Way Home / Area Zero
+
+**Area Zero is gated on all three story completions**: the Champion Nemona
+battle, all five Herba Mystica and Arven's final battle, and the Team Star
+Cassiopeia finale. Speak with the party at the crater gate to choose the
+Scarlet or Violet variant. Traverse the upper crater, reactivate two Research
+Stations, reach the depths and confront AI Professor Sada or Turo in Zero Lab.
+Both variants share the same map, but encounters and the final battle team
+follow the selected variant. Defeating the AI Professor records the main-story
+completion and removes the regional level cap.
+
+This is a **playable 2D story adaptation**, not a complete recreation of the
+Terastal-themed Gym tests, ride mechanics, cooperative Titan cinematics,
+Paradox capture cutscenes or full Scarlet/Violet engine. The Teal Mask and
+Indigo Disk expansion campaigns are still future work.
+
+Regression: `node tests/paldea-endgame-test.js` is included in `npm test`,
+covering map graph, all five Gym wins, Badges and level caps, all Elite Four
+battles, Geeta and Nemona, all three new Titans, Arven, Area Zero gates,
+research stations, final boss, retries and persistence.
