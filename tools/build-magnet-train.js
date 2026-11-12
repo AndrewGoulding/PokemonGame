@@ -4,9 +4,11 @@
 // their scripts (zones T25R0501-0503 and T11R0601-0603); this gives FireRed's
 // Saffron City, which has no station, a door into it, and changes what HGSS's
 // stations need:
-//   - the north-west house of Saffron's top-left row, which has no door, gets
-//     one (its neighbour's, the Copycat's house's, as the map's patch
-//     "magnettrain", always on: ui/game.js), leading into the station;
+//   - the north-west house of Saffron's top-left row, which has no door,
+//     becomes the station: Goldenrod's station's building (this game's
+//     picture of HGSS's), two windows and a strip of its roof narrower to fit
+//     the row, as the map's patch "magnettrain", always on (ui/game.js), its
+//     door leading in;
 //   - no Magnet Train Pass: the ticket gates let you through (HasItem
 //     ITEM_PASS, always yes; the gates' "Here is your Pass back." left out);
 //   - Goldenrod's station always runs (where HGSS waits for Kanto's Power
@@ -23,7 +25,7 @@
 //   node tools/build-magnet-train.js
 //
 // Writes:
-//   assets/world/maps/SaffronCity-patch-magnettrain.png   the station's door
+//   assets/world/maps/SaffronCity-patch-magnettrain.png, -top.png   the station (its roof's top, over people)
 //   tools/lib/johto-magnet-train.generated.js   the door's warp and patch, and
 //                       the scripts' changes; build-johto.js puts it at the
 //                       end of data/johto-maps.js.
@@ -35,22 +37,44 @@ const { readPng, writePng } = require("./lib/png");
 
 const root = path.join(__dirname, "..");
 const mapsDir = path.join(root, "assets/world/maps");
-// (The house's door: where the Copycat's house next door has its own, one row
-// of houses, four tiles each, so the same tiles one house to the left.)
-const DOOR = { x: 18, y: 14 }, FROM = { x: 22, y: 14 };
+// (The station: five tiles by five, over the house (four wide) and the
+// pavement west of it, its door in the middle, on the row the houses' doors are on.)
+const AT = { x: 16, y: 10, w: 5, h: 5 }, DOOR = { x: 18, y: 14 };
 const STATION = "SaffronCity_MagnetTrainStation_1F";
 // (The trains' doors on the stations' platforms: Heart & Soul's warps onto them, GoldenrodCity_TrainStation's
 // and SaffronCity_TrainStation's, as the maps are cut out here: tools/data/hns-johto-maps.json's rects.)
 const DOORS = [["GoldenrodCity_MagnetTrainStation_1F", 19, 5], [STATION, 30, 5]];
 
-// The door's picture: the Copycat's house's door and the wall round it (2x2 tiles).
-const T = 16, saffron = readPng(path.join(mapsDir, "SaffronCity.png"));
-const img = new Uint8ClampedArray(2 * T * 2 * T * 4);
-for (let y = 0; y < 2 * T; y++) {
-  const i = ((FROM.y - 1) * T + y) * saffron.width + (FROM.x - 1) * T;
-  img.set(saffron.rgba.slice(i * 4, (i + 2 * T) * 4), y * 2 * T * 4);
+// The station's picture: Goldenrod's (112 by 91 pixels at (336, 261), its roof's
+// top in the map's top layer) less its outer windows (16 pixels each side) and
+// 16 rows of its roof, on Saffron's pavement. What's on the patch's top row is
+// drawn over people, as the houses' roofs are.
+const T = 16, SRC = { x: 336, y: 261, w: 112, h: 91 }, CUT_X = [[344, 360], [424, 440]], CUT_Y = [[280, 296]];
+const png = (n) => readPng(path.join(mapsDir, n + ".png"));
+const saffron = png("SaffronCity"), gold = png("GoldenrodCity"), goldTop = png("GoldenrodCity-top");
+const kept = (from, len, cuts) => Array.from({ length: len }, (_, i) => from + i).filter((v) => !cuts.some(([a, b]) => v >= a && v < b));
+const xs = kept(SRC.x, SRC.w, CUT_X), ys = kept(SRC.y, SRC.h, CUT_Y);
+const PW = AT.w * T, PH = AT.h * T, img = new Uint8ClampedArray(PW * PH * 4), top = new Uint8ClampedArray(PW * PH * 4);
+if (xs.length !== PW || ys.length > PH) throw new Error("the station doesn't fit its patch");
+for (let y = 0; y < PH; y++) {
+  const i = ((AT.y * T + y) * saffron.width + AT.x * T) * 4;
+  img.set(saffron.rgba.slice(i, i + PW * 4), y * PW * 4);
 }
-writePng(path.join(mapsDir, "SaffronCity-patch-magnettrain.png"), 2 * T, 2 * T, img);
+const y0 = PH - ys.length;
+ys.forEach((sy, j) => xs.forEach((sx, x) => {
+  const s = (sy * gold.width + sx) * 4, d = ((y0 + j) * PW + x) * 4;
+  // (Above the roof's scalloped edge, Goldenrod's ground: only the roof itself there.)
+  const from = goldTop.rgba[s + 3] ? goldTop : sy >= 272 ? gold : null;
+  if (!from) return;
+  for (let c = 0; c < 3; c++) img[d + c] = from.rgba[s + c];
+  img[d + 3] = 255;
+  if (y0 + j < T) top.set(img.slice(d, d + 4), d);
+}));
+writePng(path.join(mapsDir, "SaffronCity-patch-magnettrain.png"), PW, PH, img);
+writePng(path.join(mapsDir, "SaffronCity-patch-magnettrain-top.png"), PW, PH, top);
+// (Solid all through, the door too, as FireRed's are, walked up into; behind its roof's top, the way round the back.)
+const SOLID = [];
+for (let y = AT.y + 1; y < AT.y + AT.h; y++) for (let x = AT.x; x < AT.x + AT.w; x++) SOLID.push(x === DOOR.x && y === DOOR.y ? [x, y, 1, 0x69] : [x, y, 1]);
 
 // What the stations' people say that's changed: Saffron's policeman until
 // you're Champion (HGSS's is about the Power Plant), the gates (no Pass), and
@@ -69,7 +93,7 @@ const js = "// The Magnet Train (tools/build-magnet-train.js): Saffron City's do
   "  if (!saffron || !station || !J || saffron.warps.some((w) => w.map === station.name)) return;\n" +
   "  // (The door: solid, as FireRed's are, walked up into.)\n" +
   "  saffron.warps.push({ x: " + DOOR.x + ", y: " + DOOR.y + ", map: station.name, warp: 0 });\n" +
-  "  saffron.patches = Object.assign({}, saffron.patches, { magnettrain: { x: " + (DOOR.x - 1) + ", y: " + (DOOR.y - 1) + ", w: 2, h: 2, top: false, collision: [[" + DOOR.x + ", " + DOOR.y + ", 1, 0x69]] } });\n" +
+  "  saffron.patches = Object.assign({}, saffron.patches, { magnettrain: { x: " + AT.x + ", y: " + AT.y + ", w: " + AT.w + ", h: " + AT.h + ", top: true, collision: " + JSON.stringify(SOLID) + " } });\n" +
   "  for (const w of station.warps) if (w.mapConst === \"MAP_SAFFRON\") { w.map = \"SaffronCity\"; w.warp = saffron.warps.length - 1; delete w.mapConst; }\n" +
   "  // (On Kanto's Town Map, in Saffron City: data/town-map.js, loaded after this, has only FireRed's maps; ui/magnet-train.js adds these.)\n" +
   "  for (const m of [station.name, \"SaffronCity_MagnetTrainStation_2F\", \"SaffronCity_MagnetTrainStation_2F_Empty\"]) if (W[m]) W[m].townMapSection = \"SAFFRON_CITY\";\n" +
@@ -96,4 +120,4 @@ const js = "// The Magnet Train (tools/build-magnet-train.js): Saffron City's do
   "})();\n";
 const file = path.join(__dirname, "lib/johto-magnet-train.generated.js");
 fs.writeFileSync(file, js);
-console.log("wrote", path.relative(root, file), "and assets/world/maps/SaffronCity-patch-magnettrain.png");
+console.log("wrote", path.relative(root, file), "and assets/world/maps/SaffronCity-patch-magnettrain.png, -top.png");

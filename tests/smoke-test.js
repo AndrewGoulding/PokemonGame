@@ -2587,7 +2587,11 @@ if (window.JOHTO_TOWN_MAP) {
     assert(st && st.region === "kanto" && platform("SaffronCity_MagnetTrainStation_2F") && platform("SaffronCity_MagnetTrainStation_2F_Empty"), "Saffron's station");
     const door = saffron.warps.find((w) => w.map === st.name);
     assert(door && st.warps[0].map === "SaffronCity" && saffron.warps[st.warps[0].warp] === door && saffron.patches.magnettrain, "its door");
-    assert(fs.existsSync(path.join(root, "assets/world/maps/SaffronCity-patch-magnettrain.png")));
+    // (The station itself, Goldenrod's building in the row's north-west house's place: its roof's top over people, solid but for nothing, its door in it.)
+    for (const part of ["", "-top"]) assert(fs.existsSync(path.join(root, "assets/world/maps/SaffronCity-patch-magnettrain" + part + ".png")));
+    const pt = saffron.patches.magnettrain;
+    assert(pt.top && door.x >= pt.x && door.x < pt.x + pt.w && door.y === pt.y + pt.h - 1 && pt.collision.every((c) => c[2] === 1), "the station's building");
+    assert(!saffron.people.some((p) => pt.collision.some((c) => c[0] === p.x && c[1] === p.y)) && saffron.collision[(door.y + 1) * saffron.width + door.x] === 0);
     for (const z of ["T25R0501", "T11R0601"]) assert(!JOHTO_SCRIPTS.zones[z].cmds.some((c) => c[0] === "HasItem"), "no Pass: " + z);
     assert(!JOHTO_SCRIPTS.zones.T25R0501.cmds.some((c) => c.includes("FLAG_RESTORED_POWER")) && JOHTO_SCRIPTS.zones.T11R0601.cmds.some((c) => c.includes("FLAG_RESTORED_POWER")));
     assert(/Champion/.test(JOHTO_SCRIPTS.messages.msg_0535_T11R0601_00000.join(" ")));
