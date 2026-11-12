@@ -56,6 +56,13 @@
   if(!painted){painted=make(m,sheet);cache.set(name,painted);}
   g.drawImage(painted.canvas,x,y);
  }
- window.RegionInteriorTiles={draw,isInterior,tileStyle,make,
+ function imageStatus(name) {
+  const m=window.WORLD_MAPS?.[name];
+  if(!isInterior(m))return null;
+  const img=sheets.get(m.region);
+  return {asset:m.region+"-interiors.svg",requested:!!img,
+    ready:!!(img?.complete && img.naturalWidth)};
+ }
+ window.RegionInteriorTiles={draw,isInterior,tileStyle,make,imageStatus,
    clear:()=>cache.clear()};
 })();
