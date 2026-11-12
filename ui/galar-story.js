@@ -27,7 +27,7 @@ function create(env){
    !f.nessaClear?'Earn the Water Badge from Nessa in Hulbury.':
    !f.mine2Clear?'Defeat Bede in Galar Mine No. 2.':
    !f.kabuClear?'Return to Motostoke Stadium for Kabu’s Fire Gym.':
-   !f.raihanClear?mid.goal():finale.goal();
+   !f.raihanClear?mid.goal():!f.championClear?finale.goal():dlc.goal();
  }
  const rivalTeam=level=>[['Wooloo',level], [R.rivalSpecies(p()),level+1]];
  async function gym({gate,flag,leader,id,team,badge,puzzle,text}){
@@ -53,11 +53,13 @@ function create(env){
  }
  const mid=GalarMidStory.create(env,{battle});
  const finale=GalarFinaleStory.create(env,{battle});
+ const dlc=GalarDlcStory.create(env,{battle});
  async function run(script){
   if(!script?.startsWith('swsh:'))return false;
   const key=script.slice(5);
   if(await mid.run(key))return true;
   if(await finale.run(key))return true;
+  if(await dlc.run(key))return true;
   switch(key){
    case'travel-galar':
     if(!await env.confirm('Travel to Galar? Sword and Shield share one campaign.'))break;
