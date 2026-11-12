@@ -132,7 +132,7 @@ function accessible(m){
  assert(s.swordsUnlocked);
  wildOutcome='won';await go('sword-0');assert(!(s.swordsCaught||[]).length);
  wildOutcome='caught';for(let i=0;i<4;i++)await go('sword-'+i);
- assert.equal(s.swordsCaught.length,4);assert(Player.hasCaught(p,'Keldeo'));
+ assert.equal(s.swordsCaught.length,4);assert(Player.hasCaught(p,'Keldeo-Ordinary'));
  for(let i=0;i<3;i++)await go('dojo-sparring');
  assert.equal(s.dojoSparring.wins,3);
  for(let i=0;i<3;i++)await go('galar-star-tournament');
