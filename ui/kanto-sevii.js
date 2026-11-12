@@ -923,6 +923,7 @@
           if (!env.player.party.some((r) => r !== mine && Party.canFight(r))) { await env.say(env.DC("WhatWillYouBattleWith")); return; }
           env.player.party.splice(env.player.party.indexOf(mine), 1);
           list.push(DayCare.deposit(mine));
+          if (where === "unova" && window.UnovaRecords) UnovaRecords.record(env.player, "daycare");   // (Day-Care Faithful: source global_2200's record 24)
           env.cry(mine.species);
           await env.say(env.DC("WellRaiseYourMon"), [Party.displayName(mine)]);
           if (list.length !== 1) return;

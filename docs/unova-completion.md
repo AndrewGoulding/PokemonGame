@@ -51,7 +51,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Offline Funfest/Entralink, Pass Powers and forest/dream research ([scope](unova-funfest.md))
 - [x] Stadium/court source trainer catalogs, daily sports rosters and rematches ([scope](unova-activities.md))
 - [x] Five source Trainer Card milestones, saved signature and expanded Medal Rally tracking ([scope](unova-records.md))
-- [ ] Remaining Medal Rally field, multiplayer and format-specific conditions
+- [ ] Remaining Medal Rally conditions: link/online-only (passersby, Link Battles, other-version trades, Friend Codes, Spin Trade, Feeling Check, Xtransceiver minigames, 10/30-player Funfest, Game Sync) and field features absent here (Trainer Tips signs, vending machines, trash cans, TVs, B2W2 Strength boulders, Pokérus, Wailord, face board, truck quiz, diamond dust, Unity Tower, Mail, seasonal Ferris riders) ([scope](unova-records.md))
 - [x] Mapped-area source pickups, native Dowsing Machine and field journal ([scope](unova-field.md))
 - [x] Royal Unova cabin search, daily source crews, cruise timer and weekday prizes ([scope](unova-cruise.md))
 - [x] Optional interiors and garden, Game Freak battles, Castelia Boss, market services, Rotom appliances and TM collection ([scope](unova-interiors.md))

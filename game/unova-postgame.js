@@ -15,7 +15,7 @@
   const group=Math.floor(seedStep(s)*4),roll=seedStep(s)*100,weights=[1,4,15,1,4,10,25,1,4,10,25];let sum=0,slot=10;for(let j=0;j<weights.length;j++){sum+=weights[j];if(roll<sum){slot=j;break;}}
   g.content={kind:slot<3?'pokemon':slot<7?'item':'hidden',slot,group,gender:Math.floor(seedStep(s)*100),level:seedStep(s),seed:Math.floor(seedStep(s)*4294967296)};
  }
- function beginGrottos(p){const s=state(p);if(s.grottoIntro)return false;s.grottoIntro=true;s.grottoSeed=((p.trainerId||1)^0x425732)>>>0;s.grottos=Array.from({length:20},()=>({generation:0,content:null}));for(let i=0;i<20;i++)populate(p,i,true);s.grottoBlock=Math.floor(Player.gameTime(p).steps/256);return true;}
+ function beginGrottos(p){const s=state(p);if(s.grottoIntro)return false;s.grottoIntro=true;s.grottoSeed=((p.trainerId||1)^0x425732)>>>0;s.grottos=Array.from({length:20},()=>({generation:0,content:null}));for(let i=0;i<20;i++)populate(p,i,true);s.grottoBlock=Math.floor(Player.gameTime(p).steps/256);window.UnovaRecords?.visit(p);return true;}
  function clearGrotto(p,i){const g=state(p).grottos?.[i];if(g)g.content=null;}
  function grotto(p,i){const s=state(p),g=s.grottos?.[i],c=g?.content;if(!c)return null;const table=D.grottoTables[i],v=s.version||'black2';if(c.kind==='pokemon'){const a=table.pokemon[v][c.slot],species=a.species[c.group];return{...c,species,level:a.min_level[c.group]+Math.floor(c.level*(a.max_level[c.group]-a.min_level[c.group]+1)),female:c.gender<a.female_below[c.group]};}
   const item=c.kind==='item'?table.items[c.slot-3][c.group]:table.hidden_items[c.slot-7][c.group];return{...c,item,flag:'BW_GROTTO_HIDDEN_'+i+'_'+g.generation};

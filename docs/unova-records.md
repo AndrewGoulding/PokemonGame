@@ -36,8 +36,8 @@ source `type_species.json`. Historical Hall of Fame entries have no Egg flag
 and use the saved team as recorded. Unsupported medals explicitly say they
 are not tracked; they remain unawarded. In particular, local Funfest starts
 never count as 10/30 simultaneous players, and single-player battles do not
-count as Link Battles. Online-only conditions, several field-event counters,
-and remaining field/multiplayer conditions remain on the completion checklist.
+count as Link Battles. Field and facility conditions, and those that stay
+unawarded, are listed below.
 
 Validation: `tests/unova-records-test.js` covers milestone boundaries, no
 zero-threshold collection awards, independent facility records, full Funfest
@@ -62,3 +62,60 @@ ordering for every entry size, exclusions and IVs, type-win deduplication,
 earned-BP spending, actual engine move events, replay/NPC guards, daily EXP and
 sports boundaries and save persistence. The rental browser test enters a Mixed
 Rotation tournament through native menus and verifies exact party restoration.
+
+## Field, facility and remaining conditions
+
+These follow `PokemonCenter_CheckMedals` and its special checks in
+`src/ov065/scrcmd_pokemon_center.c`, the field scripts' `RecordAdd`/`MedalGive`
+commands and `global_10735.s` for Unova's Challenge. Action counters still
+begin with the Medal Box; places found are kept from any time, as the source's
+event flags are.
+
+- First Step: given with the Medal Box (and recognized for any save that holds it).
+- Capturing Spree: best number of catches in one saved game day (records
+  0x53/0x54), counted once per completed native battle that ends in a catch.
+- Naming Champ: nicknames typed for a newly hatched Pokémon (record 30). Unova
+  has no Name Rater and catching offers no naming screen, so hatching is the
+  region's naming point.
+- Sweet Home: resting with Mom in the Aspertia home (record 72).
+- Day-Care Faithful: Pokémon left with the Unova Day-Care lady (record 24).
+- Archeology Lover: fossils restored at the Nacrene Museum (record 89).
+- Hidden Grotto Adept: all 20 grottoes entered once Bianca has introduced
+  them (flags 0xa50–0xa63); a grotto entered before that is not counted.
+- Pure Youth: one of N’s released Pokémon in the party, boxes or Day-Care.
+- Ruins Raider: reaching the Abyssal Ruins’ deepest floor (4F).
+- Bridge Enthusiast: Skyarrow, Tubeline and Marvelous Bridges visited (flags
+  0x9bd–0x9bf).
+- 20/50/100/1,000 Victories: every Black Tower/White Treehollow trainer, area
+  boss and Benga beaten (record 49).
+- Undefeated, Pinpoint and Quick Clear: judged when Areas 2–5 (easy) or 6–10
+  (hard) are cleared: every floor trainer beaten; no more than three (easy) or
+  five (hard) floor-trainer battles; no more than 100 or 1,000 steps since
+  entering the area. The adapted floors hold three trainers each, so every
+  easy clear (one floor) also meets the easy Pinpoint limit. Runs
+  started before this tracking existed are not judged.
+- Blockbuster Star: a released film scoring 1,000 or more (record 0x33 keeps
+  the best single score; unreleased takes do not count).
+- Scored 1,000: a cleared Funfest mission total of 1,000 points, alongside
+  the existing 100-point Medal.
+
+Not awarded, because this game has no such feature: Trainer Tips signs and the
+Route 2 graffiti (16–18; the imported maps have no Trainer Tips signs),
+vending machines (51, 52), Strength boulders on B2W2 maps (58), trash cans
+(59), televisions (65), Pokérus (94), the Marine Tube Wailord (97), the
+Humilau face board (98), Twist Mountain’s construction-truck quiz (99),
+diamond dust (101), Unity Tower for Around Unova (103), Pokémon Mail (166)
+and the four seasonal Ferris-wheel trainers with the special riders
+(181; the park’s daily Rolan/Colette ride is a different adaptation).
+Link- or online-only, with no genuine offline stand-in: wireless passersby
+(73–76), Link Battles (109–112; NPC partner and facility battles are not
+link battles), trading with the other version (165), Pal Pad Friend Codes
+(174–177), Spin Trade (178), Feeling Check (179, 180), Xtransceiver minigames
+with another player (195–202), Funfest missions with 10 or 30 players (221,
+222) and Game Sync (232). They report no progress rather than a guess.
+
+`tests/unova-records-test.js` covers each new counter, its Medal Box gate, day
+rollover, duplicate-battle guard, grotto/bridge/ruins places, N’s Pokémon in
+the Day-Care, film release, Funfest score, all six Tower area outcomes and
+save/reload. `tests/browser/unova-records-field.js` rests at home through the
+native Mom conversation and checks Sweet Home after reload.

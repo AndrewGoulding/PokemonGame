@@ -1214,7 +1214,7 @@
       }
     });
     const b = result.battle;
-    if(result.outcome!=="cancelled"&&!opts.safari)UnovaRecords.battle(player,b);
+    if(result.outcome!=="cancelled"&&!opts.safari)UnovaRecords.battle(player,b,{caught:result.outcome==="caught"});
     if(opts.onResult)opts.onResult({turns:b.turn,outcome:result.outcome,megaUsed:!!(b.sides.p1.megaUsed||b.sides.p1.megaUsedBy?.some(Boolean))});
     if(wild&&foe.team.length===1)Sinnoh.finishRoamer(player,b.sides.p2.pokemon[0],result.outcome);
     lastRecord = result.record || null;
@@ -10830,7 +10830,7 @@
       await jingle;
       if (await confirm("Would you like to nickname the newly\nhatched " + name + "?")) {
         const typed = await enterText(name + "'s nickname?", name, 10);
-        if (typed && typed !== name) egg.nickname = typed;
+        if (typed && typed !== name) { egg.nickname = typed; UnovaRecords.record(player,"nicknames"); }
       } else await s.fadeOut();
     } finally {
       s.close();
