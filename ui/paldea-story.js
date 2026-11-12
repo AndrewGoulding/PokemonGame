@@ -17,6 +17,9 @@ function create(env){
  const endgame=PaldeaEndgameStory.create(env,{fight});
  function goal(){
   const a=s();
+  // Main-story completion takes precedence over older individual chapter
+  // flags, including progress imported from an earlier Paldea save.
+  if(a.paldeaClear)return 'All three Paldea main stories and The Way Home are complete!';
   return !a.starter?'Choose a starter in Cabo Poco.':
    !a.nemonaFirst?'Battle Nemona on Poco Path.':
    !a.legendaryMet?'Investigate Inlet Grotto.':
