@@ -1557,7 +1557,7 @@
     const pos = posOf(a);
     const v = view[pos];
     // (Dynamax ends when it faints or leaves the field: the picture goes back to size.)
-    if ((type === "switch" || type === "drag" || type === "faint") && el.sides[pos]) el.sides[pos].sprite.classList.remove("dynamax");
+    if ((type === "switch" || type === "drag" || type === "faint") && el.sides[pos]) el.sides[pos].sprite.classList.remove("dynamax", "gigantamax");
     // (Up in the air from Fly until it comes down: back when it can't move, faints or leaves.)
     if ((type === "switch" || type === "drag" || type === "faint" || type === "cant") && el.sides[pos]) el.sides[pos].sprite.classList.remove("flying");
 
@@ -1624,9 +1624,13 @@
         return battle.sides.p2.name + " sent out " + nameOf(a) + "!";
       }
       case "detailschange":
+        // The engine sends a distinct species ID (e.g. Charizard-Gmax)
+        // immediately after its Dynamax growth event. Screen.setSprite
+        // resolves that ID to the dedicated front/back G-Max PNG.
         v.species = b;
         v.form = "";
         renderSide(pos);
+        if (el.sides[pos]) el.sides[pos].sprite.classList.toggle("gigantamax", /-Gmax$/.test(b));
         return null;
       case "move": {
         hitNotes = []; hitSound = null; heldAfterHit = [];
@@ -1948,6 +1952,16 @@
         const verb = b === "Gmax" ? "Gigantamaxed" : b === "Eternamax" ? "Eternamaxed" : "Dynamaxed";
         return async () => {
           const sprite = el.sides[pos].sprite;
+          // Prime the distinct G-Max sprite in the browser cache before the
+          // expansion animation finishes. The following detailschange event
+          // swaps the actual image without a base-form flash.
+          const change = battle.events.slice(cursor).find(e => e[0] === "detailschange" && e[1] === a);
+          const species = change && change[2];
+          if (species && /-Gmax$/.test(species)) {
+            const art = new Image();
+            art.src = window.Screen.spriteUrl(species, "", side === "p1", !!v.shiny);
+            if (art.decode) art.decode().catch(() => {});
+          }
           await message(fill("{who} " + verb + "!", a));
           // The script handles the expansion's growth visuals while the
           // CSS class maintains the enlarged, red-lit battle sprite afterward.
@@ -1975,7 +1989,7 @@
               { transform: "scale(1)", opacity: 1 }
             ], { duration: 300, easing: "ease-in-out" }).finished;
           }
-          sprite.classList.remove("dynamax");
+          sprite.classList.remove("dynamax", "gigantamax");
           setHp(a, b);
           await message(fill("{who} returned to its normal size!", a));
         };
