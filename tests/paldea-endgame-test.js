@@ -116,5 +116,28 @@ const story=PaldeaStory.create(env),go=k=>story.run('sv:'+k);
  assert.equal(loaded.version,'Scarlet');
  assert(story.goal().includes('All three Paldea main stories'));
  assert(saves>20&&battles.length>20&&speech.length>20);
+ // Violet's Quaking Earth Titan and the AI Professor must stay consistent.
+ const violetPlayer=Player.create('Violet Expedition'),vs=Paldea.state(violetPlayer);
+ violetPlayer.location={map:'PaldeaHome',x:10,y:13,facing:'down'};
+ violetPlayer.party=[Party.create('Pikachu',80)];
+ vs.treasureHunt=true;
+ const violetTeams=[];
+ const violetEnv={
+  player:()=>violetPlayer,say:async()=>{},confirm:async()=>true,
+  choose:async(_,options)=>options.includes('Violet')?'Violet':options[0],
+  canBattle:()=>true,showWorld(){},resume:async()=>{},saveCheckpoint:async()=>{},
+  battle:async(_,opts)=>{violetTeams.push(opts.foe.team.map(mon=>mon.species));return'won';}
+ };
+ const violetStory=PaldeaStory.create(violetEnv),violetGo=k=>violetStory.run('sv:'+k);
+ await violetGo('quaking-titan');assert.equal(vs.version,'Violet');
+ assert.equal(violetTeams[0][0],'Iron Treads');
+ await violetGo('quaking-herba');assert(vs.herbaQuaking);
+ Object.assign(vs,{nemonaChampionClear:true,arvenClear:true,starfallComplete:true,
+  herbaKlawf:true,herbaBombirdier:true,herbaOrthworm:true,herbaFalseDragon:true});
+ await violetGo('zero-gateway');assert.equal(vs.version,'Violet');
+ await violetGo('zero-entrance');await violetGo('zero-station-1');
+ await violetGo('zero-station-2');await violetGo('zero-depths');await violetGo('zero-lab');
+ assert(vs.paldeaClear);
+ assert(violetTeams.at(-1).includes('Miraidon'),'Violet professor must lead with future Pokémon');
  console.log('Paldea main story: 76 maps, 8 Gyms, League, 5 Titans, Starfall and Area Zero');
 })().catch(e=>{console.error(e);process.exitCode=1;});
