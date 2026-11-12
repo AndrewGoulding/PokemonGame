@@ -9,12 +9,20 @@ const requirements={
  PaldeaSeginGarage:'seginChallengeClear',
  PaldeaSchedarRoad:'treasureHunt',
  PaldeaSchedarBase:'treasureHunt',
- PaldeaSchedarGarage:'schedarChallengeClear'
+ PaldeaSchedarGarage:'schedarChallengeClear',
+ PaldeaNaviRoad:'treasureHunt',PaldeaNaviBase:'treasureHunt',PaldeaNaviGarage:'naviChallengeClear',
+ PaldeaRuchbahRoad:'treasureHunt',PaldeaRuchbahBase:'treasureHunt',PaldeaRuchbahGarage:'ruchbahChallengeClear',
+ PaldeaCaphRoad:'treasureHunt',PaldeaCaphBase:'treasureHunt',PaldeaCaphGarage:'caphChallengeClear',
+ PaldeaAcademyCourtyard:'starfallAllClear'
 };
 const hints={
  treasureHunt:'Begin the Treasure Hunt at the academy to start Starfall Street.',
  seginChallengeClear:'Defeat the Segin Squad gatekeeper and clear its base challenge first.',
- schedarChallengeClear:'Defeat the Schedar Squad gatekeeper and clear its base challenge first.'
+ schedarChallengeClear:'Defeat the Schedar Squad gatekeeper and clear its base challenge first.',
+ naviChallengeClear:'Clear the Navi Squad gatekeeper and its base challenge first.',
+ ruchbahChallengeClear:'Clear the Ruchbah Squad gatekeeper and its base challenge first.',
+ caphChallengeClear:'Clear the Caph Squad gatekeeper and its base challenge first.',
+ starfallAllClear:'Defeat all five Team Star bosses to open the academy courtyard finale.'
 };
 function owns(map){return names.has(map);}
 function allowed(p,map){
