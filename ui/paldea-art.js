@@ -215,8 +215,31 @@ function make(name){
 }
 function draw(g,name,x,y){
  if(!window.WORLD_MAPS?.[name]||!window.Paldea?.owns(name))return;
+ const map=window.WORLD_MAPS[name];
  let cv=cache.get(name);
  if(!cv){cv=make(name);cache.set(name,cv);}
+ // Small rooms fit within less than the 240x192 viewport. The overworld
+ // otherwise leaves pitch-black empty space outside the room's actual image.
+ // Paint an ambient wall/background ONLY outside the traversable map bounds:
+ // no extra walkable tiles, no collision changes, and no occluded NPCs.
+ if(map.paldeaLayout?.interior&&g.canvas?.width&&typeof g.fillRect==='function'){
+  const palette=PALETTES[style(name)],W=g.canvas.width,H=g.canvas.height;
+  const left=Math.max(0,Math.min(W,Math.ceil(x)));
+  const right=Math.max(0,Math.min(W,Math.floor(x+cv.width)));
+  const top=Math.max(0,Math.min(H,Math.ceil(y)));
+  const bottom=Math.max(0,Math.min(H,Math.floor(y+cv.height)));
+  const fill=(xx,yy,w,h)=>{
+   if(w<=0||h<=0)return;
+   g.fillStyle=palette[2];g.fillRect(xx,yy,w,h);
+   // A restrained horizontal trim gives the margin a deliberate room border.
+   g.fillStyle=palette[3];
+   for(let line=yy+15;line<yy+h;line+=32)g.fillRect(xx,line,w,1);
+  };
+  fill(0,0,W,top);
+  fill(0,bottom,W,H-bottom);
+  fill(0,top,left,bottom-top);
+  fill(right,top,W-right,bottom-top);
+ }
  g.drawImage(cv,x,y);
 }
 window.PaldeaArt={draw,style,PALETTES,LANDMARKS,clear:()=>cache.clear()};
