@@ -28,6 +28,10 @@ for(const sprite of castSprites){
  const data=fs.readFileSync(file,'utf8');
  assert(/width="288"/.test(data)&&/height="32"/.test(data),sprite+' should use 9 frames at 32x32');
  assert((data.match(/transform="translate\(/g)||[]).length===9,sprite+' lacks directional frames');
+ const colors=[...data.matchAll(/fill="([^"]+)"/g)].map(m=>m[1]);
+ assert(colors.length>35,'Sprite sheet needs substantial colored detail: '+sprite);
+ assert(colors.every(color=>/^#[0-9a-fA-F]{6}$/.test(color)),sprite+' has an invalid SVG paint color');
+ assert(!/<image\b/.test(data),sprite+' must have self-contained vector pixels');
 }
 const overworldSource=fs.readFileSync(path.join(root,'ui/overworld.js'),'utf8');
 assert(overworldSource.includes('name.startsWith("paldea/") ? ".svg" : ".png"'),
