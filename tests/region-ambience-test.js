@@ -49,7 +49,11 @@ for (const [name, region, expected] of cases) {
     },
     globalAlpha: 1, fillStyle: ""
   };
-  let count = RegionAmbience.render(g, name, -192, -160, 0);
+  // Each cell animates on one of five frames; exercise a full cycle rather
+  // than assuming the synthetic collision grid happens to light up at t=0.
+  let count = 0;
+  for (let tick = 0; tick < 5; tick++)
+    count += RegionAmbience.render(g, name, -192, -160, tick * 220);
   assert.equal(count > 0, Boolean(expected), name + " activity");
   assert.equal(draws > 0, Boolean(expected), name + " draw calls");
   assert.equal(g.globalAlpha, 1, name + " paint state leaked");
