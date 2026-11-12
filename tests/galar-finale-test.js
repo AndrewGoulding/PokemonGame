@@ -66,7 +66,7 @@ for(const file of ['ui/galar-mid.js','ui/galar-finale.js','ui/galar-story.js'])
  assert.equal(s.battleTowerStreak,3);assert.equal(s.battleTowerBest,3);
  won=false;await go('galar-battle-tower');assert.equal(s.battleTowerStreak,0);
  assert.equal(s.battleTowerBest,3);
- for(const name of D.mapNames)assert.equal(Galar.allowed(p,name),null,name+' locked after storyline');
+ for(const name of D.finale.mapNames)assert.equal(Galar.allowed(p,name),null,name+' locked after storyline');
  const copy=Player.load(JSON.parse(Player.serialize(p))).player;
  assert.equal(Galar.peek(copy).galarTitles,2);
  assert(Galar.peek(copy).zacianWon&&Galar.peek(copy).zamazentaWon);
