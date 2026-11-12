@@ -60,12 +60,13 @@ function raid(p,i){
  const s=Galar.state(p),state=s.maxRaids||(s.maxRaids={});
  const prev=state[i];
  if(prev&&prev.status==='active')return prev;
+ if(prev&&prev.status==='cleared'&&prev.completed===day(p))return null;
  const index=(day(p)+hash(den.map)+i)%den.species.length;
  const stars=Math.max(1,Math.min(5,1+Math.floor((s.badges||[]).length/2)));
  const entry={status:'active',species:den.species[index],level:Math.min(75,15+stars*10),stars,started:day(p)};
  state[i]=entry;return entry;
 }
-function clear(p,i){const state=Galar.state(p).maxRaids||{};if(state[i])state[i].status='cleared';}
+function clear(p,i){const state=Galar.state(p).maxRaids||{};if(state[i]){state[i].status='cleared';state[i].completed=day(p);}}
 function roamer(p,i){
  const map=AREAS[i],pool=POOLS[map];if(!pool)return null;
  const index=(day(p)+i)%pool.length,entry=pool[index];
