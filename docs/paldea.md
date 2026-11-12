@@ -227,3 +227,24 @@ character sprites or new soundtracks.
 
 `tests/paldea-dlc-test.js` verifies distinct biome classes, cached drawing,
 region isolation, legendary portraits and battle background selection.
+
+## Paldea cast sprite and landmark upgrade
+
+The overworld now supports **21 original, simplified nine-frame character sprite
+sheets** for the major Paldea and DLC cast, including Nemona, Arven, Penny,
+Clavell, five newly introduced Gym Leaders, five Team Star bosses, Carmine,
+Kieran, Briar and the Blueberry Elite Four. These are hand-authored,
+color-coded 32×32 pixel-styled SVG sheets, with standing down/up/side and
+walking down/up/side poses, in `assets/world/sprites/paldea/`. They are **not
+ripped or exact reconstructions** of official Scarlet/Violet character art.
+
+The `data/paldea-character-looks.js` mapping replaces generic NPC sprites
+for the named scenes without moving any NPC, changing its dialogue, or
+altering story gates. The overworld sprite renderer uses the SVG extension
+only for sprites prefixed `paldea/`, leaving all legacy PNGs untouched.
+
+Original pixel scenery also now includes **specific landmarks** on solid tiles
+(e.g., the Academy façade, Mossui lantern, Festival of Masks sign, Terarium
+dome, and Terapagos chamber crystal) in addition to regional biome palettes.
+Landmarks preserve collision and are drawn beneath NPCs. The DLC regression
+checks named cast assets, the nine-frame format, and landmark coverage.
