@@ -34,6 +34,29 @@ cached and drawn below the player/NPC sprites.
 | Galar | Cottage, railway station, industrial skyline, stadium, mushroom wood, castle, dojo, shrine |
 | Paldea | Adobe town, academy, arena, Levincia lighting, windmill, Kitakami roofs, crystalline terrain |
 
+
+## Second hand-authored location pass
+
+The following **22 additional original 96×64 SVG assets** are now editable separately
+instead of borrowing an all-purpose region sprite. They are assigned to named
+locations in `ui/authored-region-art.js`:
+
+| Region | Specific new designs |
+|---|---|
+| Orre | Agate Village's great tree, Mt. Battle gantry, Realgam Tower dome |
+| Sinnoh | Spear Pillar ruins, Canalave's bridge, Eterna Forest architecture |
+| Unova | Driftveil harbor crane, Opelucid's towers, Skyarrow Bridge |
+| Kalos | Tower of Mastery, Geosenge monoliths, Snowbelle chalet |
+| Alola | Seafolk Village's boat, Malie pagoda, Po Town hideout |
+| Galar | Ballonlea's luminous mushrooms, Turffield geoglyph, Wyndon's clocktower |
+| Paldea | Cascarrafa water terraces, Glaseado summit, Area Zero laboratory, Kitakami shrine |
+
+These are source artwork files, not screenshots or merely shader effects.
+Their visible placement still depends on an existing collision-safe footprint.
+Some locations may need a hand-adjusted layout to display the entire structure
+at full size. The existing 2D maps, scripts, reciprocal warps and encounter
+geometry remain authoritative.
+
 ## Editing a specific place
 
 1. Find its map key in `WORLD_MAPS` and its existing anchors (warps,
