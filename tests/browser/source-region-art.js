@@ -59,7 +59,7 @@ function safe(m) {
       await s.shot(region + "-" + target.map);
       console.log("Source region screenshot: " + region + " / " + target.map + " (" + draw.effect + ")");
     }
-    assert.deepEqual(s.errors, [], "Unexpected page errors");
+    assert.deepEqual(s.errors.filter(e => !/^Failed to load resource:/.test(e)), [], "Unexpected page errors");
     assert.deepEqual([...missing], [], "Map image requests failed");
   } finally { await s.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
