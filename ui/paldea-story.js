@@ -15,11 +15,15 @@ function create(env){
  const legends=PaldeaLegendsStory.create(env,{fight});
  const starfall=PaldeaStarfallStory.create(env,{fight});
  const endgame=PaldeaEndgameStory.create(env,{fight});
+ const dlc=PaldeaDlcStory.create(env,{fight});
  function goal(){
   const a=s();
   // Main-story completion takes precedence over older individual chapter
   // flags, including progress imported from an earlier Paldea save.
-  if(a.paldeaClear)return 'All three Paldea main stories and The Way Home are complete!';
+  if(a.mochiMayhemClear)return 'Paldea, both DLC stories, and Mochi Mayhem are complete!';
+  if(a.indigoClear)return 'Both DLC adventures complete! Return to Mossui Town for Mochi Mayhem.';
+  if(a.tealClear)return 'The Teal Mask is complete! Explore Blueberry Academy and the Indigo Disk.';
+  if(a.paldeaClear)return 'The Way Home is complete! Join Briar’s Kitakami school trip at the academy.';
   return !a.starter?'Choose a starter in Cabo Poco.':
    !a.nemonaFirst?'Battle Nemona on Poco Path.':
    !a.legendaryMet?'Investigate Inlet Grotto.':
@@ -59,6 +63,7 @@ function create(env){
   if(await legends.run(key))return true;
   if(await starfall.run(key))return true;
   if(await endgame.run(key))return true;
+  if(await dlc.run(key))return true;
   switch(key){
    case'travel':
     if(!await env.confirm('Travel to Paldea? Scarlet and Violet share one adventure.'))break;
