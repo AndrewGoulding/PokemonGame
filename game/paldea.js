@@ -54,8 +54,8 @@ const hints={
  nemonaMesagoza:'Meet Nemona in Mesagoza before entering the academy.',
  treasureHunt:'Talk to Director Clavell at the academy to begin the Treasure Hunt.'
 };
-function allowed(p,map){if(!owns(map))return null;const key=requirements[map];return key&&!peek(p)[key]?hints[key]:null;}
-function cap(p){const s=peek(p);return s.katyClear?30:s.treasureHunt?23:s.nemonaRoute?20:s.nemonaFirst?16:s.starter?12:7;}
+function allowed(p,map){if(!owns(map))return null;if(window.PaldeaMid?.owns(map))return PaldeaMid.allowed(p,map);const key=requirements[map];return key&&!peek(p)[key]?hints[key]:null;}
+function cap(p){const s=peek(p);return s.kofuClear?45:s.brassiusClear?36:s.katyClear?30:s.treasureHunt?23:s.nemonaRoute?20:s.nemonaFirst?16:s.starter?12:7;}
 function visit(p,map){if(!owns(map))return;const s=state(p);if(!s.visited.includes(map))s.visited.push(map);s.resume={...p.location};}
 function recover(p){
  if(!owns(p.location?.map))return false;
