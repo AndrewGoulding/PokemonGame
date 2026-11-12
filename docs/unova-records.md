@@ -122,12 +122,10 @@ event flags are.
   pier (`docs/unova-houses.md`).
 - Pen Pal (record 29): giving any Mail to a Pokémon asks for a message; each
   written Mail counts.
-Link- or online-only, with no genuine offline stand-in: wireless passersby
-(73–76), Link Battles (109–112; NPC partner and facility battles are not
-link battles), trading with the other version (165), Pal Pad Friend Codes
-(174–177), Spin Trade (178), Feeling Check (179, 180), Xtransceiver minigames
-with another player (195–202), Funfest missions with 10 or 30 players (221,
-222) and Game Sync (232). They report no progress rather than a guess.
+Link- and online-only medals (passersby, Link Battles, other-version trades,
+the Pal Pad, Spin Trade, Feeling Check, Xtransceiver minigames, 10/30-player
+Funfest and Game Sync) use the single-player stand-ins in `docs/unova-link.md`.
+Every Medal Rally medal can now be earned.
 
 `tests/unova-records-test.js` covers each new counter, its Medal Box gate, day
 rollover, duplicate-battle guard, grotto/bridge/ruins places, N’s Pokémon in
