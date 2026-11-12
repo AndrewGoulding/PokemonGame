@@ -4,6 +4,7 @@
 function create(env,{battle}){
  const R=Galar,D=R.data(),p=()=>env.player(),s=()=>R.state(p()),say=env.say,save=env.saveCheckpoint;
  const fight=async(id,name,roster)=>await battle(id,name,roster)==='won';
+ const adventureLegends=['Suicune','Dialga','Palkia','Giratina','Rayquaza','Zygarde','Lugia','Ho-Oh','Kyogre','Groudon'];
  async function mark(flag,id,name,team,text){
   if(s()[flag]){await say(name+' has already been defeated.');return true;}
   if(!await fight(id,name,team))return false;
