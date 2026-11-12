@@ -13,7 +13,7 @@
     laverre: { stone:"#acb99c", seam:"#778d79", accent:"#c3a0bd", light:"#f2dfb7" }
   };
   function style(m) {
-    if (!m) return null;
+    if (!m || m.type === "indoor") return null;
     const n = m.name || "";
     if (m.region === "unova") {
       if (/NimbasaCity/.test(n)) return "nimbasa";
@@ -22,7 +22,7 @@
       if (/OpelucidCity/.test(n)) return "opelucid";
     }
     if (m.region === "kalos") {
-      if (/Lumiose/.test(n)) return "lumiose";
+      if (/Lumiose(South|North|City|Plaza|Square|Boulevard)/.test(n)) return "lumiose";
       if (/LaverreCity/.test(n)) return "laverre";
     }
     return null;
