@@ -12,7 +12,7 @@ function safe(name){
  const m=WORLD_MAPS[name];assert(m,name+' missing');
  const free=(x,y)=>x>=2&&y>=2&&x<m.width-2&&y<m.height-2&&
   !m.collision[y*m.width+x]&&m.behavior[y*m.width+x]!==2&&
-  ![...m.warps,...m.people].some(a=>Math.abs(a.x-x)+Math.abs(a.y-y)<3);
+  ![...m.warps,...m.people].some(a=>Math.abs(a.x-x)+Math.abs(a.y-y)<2);
  const cx=Math.floor(m.width/2),cy=Math.floor(m.height/2);
  const candidates=[];
  for(let y=3;y<m.height-3;y++)for(let x=3;x<m.width-3;x++){
@@ -29,7 +29,7 @@ function safe(name){
   p.repelSteps=999999;
   p.party=[Party.create('Skeledirge',75)];
   Object.assign(Paldea.state(p),{
-   starter:'Fuecoco',treasureHunt:true,paldeaClear:true,
+   starter:'Fuecoco',arvenMet:true,nemonaRoute:true,nemonaMesagoza:true,treasureHunt:true,paldeaClear:true,
    tealArrival:true,tealCarmineClear:true,tealKieranFirst:true,
    tealFestival:true,tealLoyalThree:true,tealKieranFinal:true,
    tealClear:true,indigoArrival:true,indigoEnrollment:true,
