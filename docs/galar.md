@@ -214,3 +214,16 @@ from an older build, a brief CSS/Web Animations fallback runs instead.
 Original upstream implementation: https://github.com/rh-hideout/pokeemerald-expansion
 (`src/battle_anim.c`, `data/battle_anim_scripts.s`). Existing animation
 asset extraction and compilation are handled by `tools/build-battle-anims.py`.
+
+## Gigantamax sprite validation
+
+All forms named `*-Gmax` in `data/dex-forms.js` must have dedicated
+front and back assets at `assets/sprites/pokemon/<dexId>.png` and
+`assets/sprites/pokemon/back/<dexId>.png`. The Galar completion regression
+checks both images, rather than accepting a resized regular sprite.
+
+When the engine emits the `detailschange` event, the battle screen switches
+to the distinct G-Max species asset and enables the lingering G-Max aura.
+The front/back PNG is preloaded when growth begins to reduce visual flashing.
+On Dynamax end, switch-out, or fainting, the G-Max aura is removed; the
+engine's original species-form reversion restores the normal image.
