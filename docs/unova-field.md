@@ -63,3 +63,17 @@ The [versioned-area pass](unova-versioned.md) resolves six previously unmapped f
 The [Abyssal treasure pass](unova-ruins.md) maps three more event banks and replaces the earlier simplified treasure set with 45 source placements. Older collected rewards transfer to matching source flags.
 
 The [Frigate import](unova-frigate.md) maps its 17 remaining room banks, including all four remaining Frigate item banks. Version-exclusive pickups are filtered in the native map and journal.
+
+The [house and gatehouse pass](unova-houses.md) clears the last 20 unmapped banks.
+These `*_gate` banks are not gatehouses: their zones reuse the town or route's
+place name (numbered `_2`) and its coordinates, with placeholder actors, and are
+the Entralink's copies of the overworld. They hold the 31 hidden Pass Orbs
+(`src/ov012/hidden_item.c` entries 9–39). Each copy's orbs are projected onto the
+real area's map with the same safe hidden-item placement and keep their source
+flags (`bw2-hidden:2829`–`2859`), so `field.unmapped` is now empty: 213 hidden
+placements and 596 unique rewards. These are the source's respawning hidden items:
+on the first Unova map change of a new game day, each found Pass Orb has a
+one-in-five chance to come back, as `TryClearRepeatableHiddenItemFlags` does. This
+offline game has no Entralink copy of the overworld, so the orbs are found in the
+real towns and routes at any time.
+

@@ -17,8 +17,8 @@ Room bank names are stored in `interiors.rooms`; their scripts and text are
 included in the normal provenance. Geometry is an authored 2D projection.
 The two Route 4 houses remain available in this offline adaptation; exact
 version-dependent exterior geometry remains part of the separate map audit.
-Source flavor text does not claim to execute every DS house script; further
-house gifts and dialogue conditions remain on the completion checklist.
+Source flavor text does not claim to execute every DS house script. The remaining
+houses, gatehouses, their people and one-time gifts are in [houses](unova-houses.md).
 
 Morimoto and Nishino can each be challenged once per game day, with their
 source early and post-League parties. Early Morimoto uses the three level-14

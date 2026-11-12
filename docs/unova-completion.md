@@ -57,7 +57,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Optional interiors and garden, Game Freak battles, Castelia Boss, market services, Rotom appliances and TM collection ([scope](unova-interiors.md))
 - [x] Source dungeon-floor alignment, 28 additional rooms, active indoor encounters and five field healers ([scope](unova-dungeons.md))
 - [x] Abyssal Ruins source treasure quantities and legacy reward migration ([scope](unova-ruins.md))
-- [ ] Remaining field-item banks, gifts, optional houses and encounter audit
+- [x] Remaining field-item banks, house gifts, optional houses and gatehouses ([scope](unova-houses.md), [Pass Orbs](unova-field.md)); the encounter audit is still open
 - [x] Source Easy/Challenge levels and alternate teams, saved keys and local sharing ([scope](unova-modes.md))
 - [x] Versioned Reversal Mountain rooms and phased Giant Chasm forest ([scope](unova-versioned.md))
 - [ ] Remaining version-specific geometry and campaign-event audit
