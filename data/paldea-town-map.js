@@ -20,7 +20,11 @@ const groups=[
  ['StonyCliff',17,9,['StonyCliff','StonyCave']],
  ['OpenSkyTrail',5,8,['OpenSkyTrail','OpenSkySummit']],
  ['SeginRoad',12,10,['SeginRoad','SeginBase','SeginGarage']],
- ['SchedarRoad',16,10,['SchedarRoad','SchedarBase','SchedarGarage']]
+ ['SchedarRoad',16,10,['SchedarRoad','SchedarBase','SchedarGarage']],
+ ['NaviRoad',16,5,['NaviRoad','NaviBase','NaviGarage']],
+ ['RuchbahRoad',4,5,['RuchbahRoad','RuchbahBase','RuchbahGarage']],
+ ['CaphRoad',20,4,['CaphRoad','CaphBase','CaphGarage']],
+ ['AcademyCourtyard',13,5,['AcademyCourtyard']]
 ];
 for(const [id,x,y,aliases] of groups){
  const sec='PALDEA_'+id.replace(/([a-z])([A-Z])/g,'$1_$2').toUpperCase();
