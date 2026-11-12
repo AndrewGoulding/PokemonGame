@@ -11,6 +11,7 @@ function create(env){
   if(result!=='won')return;
   s()[flag]=true;await save();await say(after);
  }
+ const mid=PaldeaMidStory.create(env,{fight});
  function goal(){
   const a=s();
   return !a.starter?'Choose a starter in Cabo Poco.':
@@ -21,11 +22,14 @@ function create(env){
    !a.nemonaMesagoza?'Meet Nemona in Mesagoza.':
    !a.treasureHunt?'Start the Treasure Hunt at the academy.':
    !a.katyClear?'Earn Katy’s Bug Badge in Cortondo.':
-   'The opening Paldea chapter is complete. More Victory Road, Path of Legends and Starfall Street chapters are next.';
+   !a.brassiusClear?'Challenge Brassius in Artazon.':
+   !a.kofuClear?'Challenge Kofu in Cascarrafa.':
+   'Three Paldea Gym badges earned! Further Victory Road, Path of Legends and Starfall Street chapters are next.';
  }
  async function run(script){
   if(!script?.startsWith('sv:'))return false;
   const key=script.slice(3);
+  if(await mid.run(key))return true;
   switch(key){
    case'travel':
     if(!await env.confirm('Travel to Paldea? Scarlet and Violet share one adventure.'))break;
