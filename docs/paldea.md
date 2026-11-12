@@ -193,7 +193,7 @@ Catching it records completion of The Indigo Disk and both DLC adventures.
 After The Indigo Disk, a Mochi Mayhem epilogue is available in Mossui Town,
 featuring an optional capture of **Pecharunt**. All catches use the real
 wild-battle/capture system, rather than granting Pokémon without a battle.
-Kitakami has a healing Center and Mossui / Terarium Town Map Fly spots.
+Kitakami and the Terarium each have a healing/respawn point, alongside Mossui / Terarium Town Map Fly spots.
 
 This is a **playable 2D interpretation** using existing maps, battle assets,
 encounters and save infrastructure, not a verbatim import of Scarlet/Violet
