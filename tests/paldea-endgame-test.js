@@ -7,7 +7,7 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 for(const[,file]of html.matchAll(/<script src="([^"]+)"><\/script>/g))
  if(!file.startsWith('ui/'))vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 for(const file of ['ui/paldea-mid.js','ui/paldea-legends.js','ui/paldea-starfall.js',
- 'ui/paldea-endgame.js','ui/paldea-story.js'])
+ 'ui/paldea-endgame.js','ui/paldea-dlc.js','ui/paldea-story.js'])
  vm.runInThisContext(fs.readFileSync(path.join(root,file),'utf8'),{filename:file});
 const D=Paldea.data(),T=TOWN_MAP.paldea;
 assert.equal(D.mapNames.length,98,'76 mainland and 22 DLC areas should connect');
