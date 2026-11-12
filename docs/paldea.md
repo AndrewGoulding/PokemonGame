@@ -46,3 +46,26 @@ and optional trainer challenges are included. All progress shares the existing
 Paldea save flags and works alongside the earlier Cabo Poco–Cortondo story.
 
 Regression: `node tests/paldea-test.js`, run via `npm test`.
+
+## Path of Legends — Stony Cliff and Open Sky
+
+Four 2D areas bring Paldea to **25 connected maps**. From East Province, climb
+Stony Cliff and enter the Herba Mystica cave; from West Province, follow the
+Open Sky Trail to Bombirdier's summit. The paths branch from the existing
+map network and are unlocked through the academy's Treasure Hunt independently
+of Gym victories. The second Titan area opens after the Stony Cliff challenge.
+
+**Klawf:** Defeat the Stony Cliff Titan, follow it into the cave, then win a
+second battle with Arven's help. The Sweet Herba Mystica milestone unlocks
+the recorded dash upgrade. **Bombirdier:** Defeat the Open Sky Titan in two
+stages to discover Bitter Herba Mystica and record the swim upgrade.
+Losing either round leaves that round available for retry. Completed Titans
+cannot be repeatedly battled for story rewards, and progress survives saves.
+
+The ride upgrades are **saved story milestones**; they do not yet add physical
+sprint or swim controls to this browser game's 2D movement engine. Titan fights
+use ordinary trainer-style combat (no cooperative double-battle cinematic),
+and the cave/nest are built on the game's existing 2D layouts.
+
+The Paldea regression now checks both Titans, retry behavior, repeated
+interactions, saved story flags, and map connectivity.
