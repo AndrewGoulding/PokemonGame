@@ -1,0 +1,64 @@
+// Offline B2/W2 download facilities from fuddlesworth/pokebw2: PWT Download Tournaments, the Wi-Fi Train and the
+// Battle Institute's special Battle Tests. Source checkout is read-only. Distributed content (the actual tournaments,
+// Wi-Fi rooms and Battle Tests) is not in the ROM, so the packs below are authored stand-ins built from source pools.
+'use strict';
+const fs=require('fs'),path=require('path'),vm=require('vm'),{execFileSync}=require('child_process');
+const root=path.join(__dirname,'..'),source=path.resolve(process.argv[2]||process.env.POKEBW2||'');
+if(!fs.existsSync(path.join(source,'res/battle/regulations/regulation.schema.json')))throw Error('Pass a pokebw2 source checkout');
+const read=f=>fs.readFileSync(path.join(source,f),'utf8'),json=f=>JSON.parse(read(f)),git=f=>execFileSync('git',['-C',source,'show','HEAD:'+f],{encoding:'utf8'}),ctx={};ctx.window=ctx;vm.createContext(ctx);
+for(const f of ['data/dex.js','data/items.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx);
+const key=s=>s.toLowerCase().replace(/[^a-z0-9]/g,''),dexIds={},items=Object.fromEntries(Object.keys(ctx.ITEMS).map(s=>[key(s),s]));for(const[name,d]of Object.entries(ctx.DEX))if(d.id<10000){dexIds[key(name)]??=d.id;dexIds[key(name.replace(/-[^-]+$/,""))]??=d.id;}
+const species=s=>{const id=dexIds[key(s.slice(8))]??dexIds[key(s.slice(8).replace(/_/g,'-'))];if(!id)throw Error('Unknown species '+s);return id;},item=s=>{const v=items[key(s.slice(5))];if(!v)throw Error('Unknown item '+s);return v;};
+// Source text: {be01}/{be00} split pages; number/name placeholders keep their argument index as {n}.
+function texts(file,prefix){const out={};for(const line of read(file).split(/\r?\n/)){const at=line.indexOf(' = ');if(at<0||!line.startsWith(prefix))continue;out[line.slice(prefix.length,at)]=line.slice(at+3).replace(/\\n/g,'\n').replace(/\{be0[01]\}/g,'\f').replace(/\\x\{ffff\}/g,'').replace(/\{01[0-9a-f]{2}:(\d)\}/g,'{$1}').replace(/\{02[0-9a-f]{2}:(\d)\}/g,'{$1}').replace(/[⒆⒇]+/g,'Pokémon').replace(/\f\s*$/,'').trim();}return out;}
+const pick=(t,keys)=>Object.fromEntries(keys.map(k=>{if(t[k]==null)throw Error('Missing source text '+k);return[k,t[k]];}));
+const c=(file,re)=>{const m=git(file).match(re);if(!m)throw Error('Missing '+re+' in '+file);return m[1].split(',').map(s=>+s.trim()).filter(n=>!isNaN(n));};
+
+// Regulations used by the packs (res/battle/regulations/<n>.json, as WbtSystem_GetRegulation copies a download's rules).
+const regulations={};for(const n of [16,21,24,26,27,32,33,37]){const r=json('res/battle/regulations/'+n+'.json');regulations[n]={id:n,minCount:r.min_count,maxCount:r.max_count,level:r.level,levelMode:r.level_mode,maxLevelTotal:r.max_level_total,allowSameSpecies:r.allow_same_species,allowSameItem:r.allow_same_item,bannedSpecies:r.banned_species.map(species),bannedItems:r.banned_items.map(item),battleType:r.battle_type,timeLimit:r.time_limit};}
+
+// PWT: ov036 PWT_TOURNAMENT_INFO row 3 (Download Tournament), ov135 wbt_makematch.c bracket tables, ov055 scoring.
+const info=git('src/ov036/scrcmd_leaves.c').match(/WorldTournamentParty_Text_DownloadTournament,\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*\{([^}]*)\}/),mm='src/ov135/wbt_makematch.c',sys='src/ov055/wbt_system.c';
+const chart=git(sys).match(/sTypeChart\[17\]\[17\] = \{([\s\S]*?)\n\};/)[1].split('\n').map(l=>l.match(/\d+/g)).filter(Boolean).map(a=>a.map(Number));
+const pwt={record:+info[1],kind:+info[3],trainerArc:+info[4],bp:info[5].split(',').map(Number),saveSlots:3,receivedMax:12,firstTen:Array.from({length:10},(_,i)=>0x44+i),secondTen:Array.from({length:10},(_,i)=>0x4e+i),firstPlace:c(mm,/sFirstPlace\[8\] = \{([^}]*)\}/),secondPlace:c(mm,/sSecondPlace\[8\] = \{([^}]*)\}/),thirdPlace:c(mm,/sThirdPlace\[8\] = \{([^}]*)\}/),firstOpponents:c(sys,/sFirstOpponents\[\] = \{([^}]*)\}/),secondMatches:c(sys,/sSecondMatches\[\] = \{([^}]*)\}/),thirdMatches:c(sys,/sThirdMatches\[\] = \{([^}]*)\}/),typeChart:chart,countMax:9999,
+ text:{...pick(texts('res/text/script/global_10655.txt','Global10655_Text_'),['DownloadTournamentTournamentCan','DontMeetConditionsCant_11','TournamentDownloadSystemAccessed','CanDownloadTournamentsThrough','TournamentDownload','WinningRecords','ByWayEggsCannot']),...pick(texts('res/text/system/world_tournament_download.txt','WorldTournamentDownload_Text_'),['SearchingTournamentDataPlease','PleaseChooseTournamentWould','TournamentHasAlreadyBeen','ReceivedTournamentData','SavingTournamentDontTurn','TournamentDataHasBeen','TournamentDataSlotsFull','OkDelete','ReallyOkDelete','TournamentDataHasBeen_2','WhatWouldLike','PleaseChooseTournamentWould_2','WillParticipate','Participate','SeeDetails','BannedPokemon','BannedItems','BannedMoves','None','BattleRules','SingleBattle','DoubleBattle','TripleBattle','RotationBattle','SavedTournaments','Save'])}};
+if(pwt.bp.length!==4||pwt.typeChart.length!==17)throw Error('PWT tables changed');
+const pwtMeta=json('res/trainers/facilities/pwt_trainers.json').trainers,names=read(['res/text/system/world_tournament_trainer_names.txt','res/text/system/scrcmd_bsubway.txt'].find(f=>fs.existsSync(path.join(source,f)))).split(/\r?\n/).filter(s=>s.includes('=')).map(s=>s.slice(s.indexOf('=')+1).trim().replace(/\\c/g,''));
+const leader=name=>{const i=names.indexOf(name);if(i<0||typeof pwtMeta[i]?.trainer_class!=='string')throw Error('Missing PWT trainer '+name);return i;};
+// Authored offline packs: names, text, cast choices and slot ranks are stand-ins; the rules are source regulations
+// (plus WbtDownloadRules' requiredType/bannedMove/extra bans), cast teams come from the source PWT catalogs, and the
+// table slots draw the source's dedicated download Trainers 0x44-0x57 (pwt_regular); a 'number' slot names a table
+// Trainer directly (WBT_SLOT_NUMBER), used for Triples, where only six-set Trainers can field a full team.
+const cast=(group,...who)=>who.map(n=>({group,trainer:leader(n)+1,name:n}));
+const slots=(...s)=>s.map(([type,rank,index=0])=>({type,rank,index}));
+pwt.packs=[
+ {id:1,name:'Unova Leaders Cup',author:'PWT Download Desk',text:'Unova’s Gym Leaders hold a Single\nBattle cup. Legendary Pokémon are\nbanned and levels are capped at 50.',regulation:24,style:0,cast:cast('pwt_leaders','Cheren','Elesa','Drayden','Marlon'),slots:slots(['downloaded',4,0],['downloaded',4,0],['downloaded',3,0],['downloaded',3,0],['first',2],['first',2],['second',1]),lines:['Show me what you learned\non your journey!','Well fought. You earned it.']},
+ {id:2,name:'Dragon Type Cup',author:'PWT Download Desk',text:'Only Dragon-type Pokémon may enter.\nSky Drop is banned. Levels are\ncapped at 50.',regulation:24,style:0,requiredType:'Dragon',bannedMove:'Sky Drop',cast:cast('pwt_leaders','Drayden','Clair').concat(cast('pwt_masters','Lance')),slots:slots(['downloaded',4,0],['downloaded',4,0],['downloaded',4,0],['first',2],['first',2],['second',1],['second',1]),lines:['Dragons answer only to the strong.','Your dragons are worthy.']},
+ {id:3,name:'Champions Doubles Invitational',author:'PWT Download Desk',text:'A World Championships-style Double\nBattle cup. Chatot and the Soul Dew\nare banned. Levels are capped at 50.',regulation:16,style:1,isWcs:true,cast:cast('pwt_masters','Blue','Steven','Cynthia','Alder'),slots:slots(['downloaded',5,0],['downloaded',5,0],['downloaded',4,0],['downloaded',4,0],['first',2],['first',2],['second',1]),lines:['Champions do not hold back.','A splendid Double Battle!']},
+ {id:4,name:'Kanto Classic Triples',author:'PWT Download Desk',text:'Kanto’s Gym Leaders and the Striaton\nbrothers battle in a Triple Battle\ncup. Six Pokémon enter, Lv. 50 cap.',regulation:26,style:2,cast:cast('pwt_leaders','Brock','Misty','Erika','Giovanni'),slots:slots(['downloaded',4,0],['downloaded',3,0],['downloaded',3,0],['downloaded',3,0],['number',2,9],['number',2,10],['number',1,11]),lines:['Three at once! Let’s see you\nhandle it.','Your Triple Battle skills\nare impressive.']},
+ {id:5,name:'Sinnoh Rotation Free-for-All',author:'PWT Download Desk',text:'Anything goes in this Rotation\nBattle cup. Duplicate species and\nitems are allowed at level 50.',regulation:32,style:3,cast:cast('pwt_leaders','Volkner','Byron','Candice','Fantina'),slots:slots(['downloaded',4,0],['downloaded',3,0],['downloaded',3,0],['downloaded',3,0],['first',2],['first',2],['second',1]),lines:['Round and round we go!','You rotated like a pro.']},
+ {id:6,name:'Hoenn Item Clause Cup',author:'PWT Download Desk',text:'Hoenn’s Leaders and Champion hold\na Single Battle cup. Focus Sash and\nChoice items are banned.',regulation:33,style:0,bannedItems:['focus-sash','choice-band','choice-specs','choice-scarf'],cast:cast('pwt_leaders','Norman','Winona','Juan').concat(cast('pwt_masters','Wallace')),slots:slots(['downloaded',5,0],['downloaded',4,0],['downloaded',4,0],['downloaded',3,0],['first',2],['first',2],['second',1]),lines:['Hoenn’s finest are ready.','A beautiful victory!']},
+];
+for(const p of pwt.packs){if(!regulations[p.regulation])throw Error('Missing regulation '+p.regulation);for(const i of p.bannedItems||[])if(!ctx.ITEMS[i])throw Error('Unknown item '+i);if(p.slots.length!==7||p.slots.filter(s=>s.type==='downloaded').length!==p.cast.length)throw Error('Bad slots '+p.name);}
+
+// Wi-Fi Train: bsubway_save.h sizes, ov033 bsubway_scr.c lose limits and BP row, bsubway_savedata.c score.
+const save=read('include/save/bsubway_save.h'),def=n=>+save.match(new RegExp('#define '+n+' (\\d+)'))[1],scr='src/ov033/bsubway_scr.c';
+const bpRows=git(scr).match(/sBattlePointRewards\[7\]\[10\] = \{([\s\S]*?)\n\};/)[1].split('\n').map(l=>l.match(/\d+/g)).filter(Boolean).map(a=>a.map(Number));
+const wifi={rankMax:def('BSUBWAY_WIFI_RANK_MAX'),roomMax:def('BSUBWAY_WIFI_ROOM_MAX'),players:def('BSUBWAY_WIFI_PLAYER_MAX'),leaders:def('BSUBWAY_WIFI_LEADER_MAX'),members:3,level:50,loseLimits:c(scr,/sWifiRankLoseLimits\[12\] = \{([^}]*)\}/),bp:bpRows[6],unrankedBp:5,
+ // Authored offline train count per rank (the server decided it) and the rank → source Subway trainer ranges, which
+ // reuse the bsubway_trainers.c normal/Super ranges in rising order.
+ rooms:20,ranges:[[0,49],[30,69],[50,109],[110,159],[140,179],[160,199],[180,219],[200,239],[200,299],[220,299]],
+ text:{...pick(texts('res/text/script/global_10330.txt','Global10330_Text_'),['WelcomeBattleSubwayWill_4','WiFiTrainWill','WouldLikeBoardWi','NowPleaseBoardWi','SCurrentRank','UnfortunatelyHaveBeenDemoted','SuccessiveRecords','EarlierTrain','Board','Info','DontHaveEligiblePokemon']),...pick(texts('res/text/script/battle_subway_2.txt','BattleSubway2_Text_'),['HaveBeenPromotedRank','EndWiFiTrain','ReceivedBp','CongratulationsYouveSuccessfullyReached']),...pick(texts('res/text/system/wifi_battle_subway.txt','WifiBattleSubway_Text_'),['EnterTrainNumber01','ReceivingDataRankTrain','MayNotChallengeTrain','DataHasBeenReceived','EnterRankTrain01'])}};
+if(wifi.loseLimits.length!==12||wifi.bp.length!==10)throw Error('Wi-Fi tables changed');
+
+// Battle Institute special tests: trial_house.c rank thresholds and source text; the five opponents are authored picks
+// from the source Subway catalog (super ranges, then the Subway Boss sets as the fifth examiner).
+const th=git('src/ov033/trial_house.c'),thresholds=[...th.matchAll(/points >= (\d+)\)/g)].map(m=>+m[1]).reverse();
+const institute={thresholds,ranks:['BEGINNER RANK','NOVICE RANK','NORMAL RANK','SUPER RANK','HYPER RANK','ELITE RANK','MASTER RANK'],
+ text:pick(texts('res/text/script/global_10440.txt','Global10440_Text_'),['WouldLikeDownloadSpecial','DownloadedSpecialSingleBattle','DownloadedSpecialDoubleBattle','WouldLikeChallengeRight','IveBeenWaitingWould','IveBeenWaitingWould_2','SeemHaveTakenAll','WillFacingOpponentNo','AllRightWillTell','MasterRankWonderfulPlease','ResultEliteRankThats','ResultHyperRankMust','ResultSuperRankQuite','ResultNormalRankStrength','ResultNoviceRankCould','ResultBeginnerRankMaybe','ThereNoTestResult','HmmDontSeeAnything']),
+ tests:[{id:1,name:'Special Single Battle Test',double:false,opponents:[150,175,205,240,307],ivs:[12,15,21,31,31]},{id:2,name:'Special Double Battle Test',double:true,opponents:[160,185,215,250,309],ivs:[15,18,21,31,31]}]};
+if(thresholds.join()!=='1000,2000,3000,4000,5000,6000')throw Error('Trial House thresholds changed');
+
+const data={regulations,pwt,wifi,institute,source:{repository:'https://github.com/fuddlesworth/pokebw2',commit:execFileSync('git',['-C',source,'rev-parse','HEAD'],{encoding:'utf8'}).trim(),scope:'Offline stand-ins for downloadable PWT tournaments, Wi-Fi Train rooms and special Battle Tests'}};
+fs.writeFileSync(path.join(root,'data/unova-downloads.js'),'// Generated by tools/build-unova-downloads.js from pokebw2.\nwindow.UNOVA_DOWNLOADS = '+JSON.stringify(data)+';\n');
+console.log('Wrote '+pwt.packs.length+' tournament packs, '+wifi.rankMax+' Wi-Fi ranks and '+institute.tests.length+' Battle Tests');

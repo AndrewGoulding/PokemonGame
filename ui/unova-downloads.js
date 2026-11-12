@@ -1,0 +1,41 @@
+(function(){
+ 'use strict';
+ // Scenes for the offline download facilities (game/unova-downloads.js); entered through env.facility like the others.
+ function create({env,resume,checkpoint}){
+ const X=window.UnovaDownloads,R=window.UnovaFacilities;if(!X)return{run:async()=>false,pwt:async()=>{},institute:async()=>{}};
+ const D=X.data(),p=()=>env.player(),say=x=>env.say(x),T=(s,...a)=>X.text(s,...a),pad=n=>String(n).padStart(2,'0');
+ async function play(spec){if(!env.facility)return null;const result=await env.facility(spec);await resume();return result;}
+
+ // Tournament Download System (the black PC beside the PWT reception): receive, save to three slots, delete, records.
+ async function details(pack){await say(X.describe(pack));}
+ async function system(){const t=D.pwt.text;await say(T(t.TournamentDownloadSystemAccessed));if(!X.pwtOpen(p())){await say('Win the Driftveil Tournament\nbefore downloading tournaments.');return;}const choice=await env.choose(t.TournamentDownload,[t.TournamentDownload,t.SavedTournaments,t.WinningRecords]);if(!choice)return;
+  if(choice===t.TournamentDownload){await say(T(t.SearchingTournamentDataPlease).concat(T(t.PleaseChooseTournamentWould),['These tournaments are bundled\nwith the game for offline play.']));const names=D.pwt.packs.map(a=>a.name),pick=await env.choose('Received tournaments',names);if(!pick)return;const pack=D.pwt.packs[names.indexOf(pick)],act=await env.choose(T(t.WhatWouldLike,pack.name).join('\n'),[t.Save,t.SeeDetails]);if(act===t.SeeDetails){await details(pack);return;}if(act!==t.Save)return;const r=X.receive(p(),pack.id);if(r.already)await say(T(t.TournamentHasAlreadyBeen));else if(r.full)await say(T(t.TournamentDataSlotsFull));else{await checkpoint();await say(T(t.ReceivedTournamentData).concat(T(t.TournamentDataHasBeen)));}return;}
+  const list=X.saved(p());if(!list.length){await say('No tournaments are saved.');return;}
+  if(choice===t.WinningRecords){await say(list.map(a=>'Slot '+(a.slot+1)+': '+a.pack.name+'\nWins: '+a.wins));return;}
+  const labels=list.map(a=>(a.slot+1)+'. '+a.pack.name),pick=await env.choose(t.SavedTournaments,labels);if(!pick)return;const a=list[labels.indexOf(pick)],act=await env.choose(T(t.WhatWouldLike,a.pack.name).join('\n'),[t.SeeDetails,'Delete']);if(act===t.SeeDetails)await details(a.pack);else if(act==='Delete'&&await env.confirm(T(t.OkDelete,a.pack.name).join('\n'))&&await env.confirm(T(t.ReallyOkDelete,a.pack.name).join('\n'))){X.remove(p(),a.slot);await checkpoint();await say(T(t.TournamentDataHasBeen_2));}}
+
+ // PWT reception's Download Tournament: choose a saved slot, check the rules, then play the bracket.
+ async function pwt(){const t=D.pwt.text;if(!X.pwtOpen(p())){await say('Win the Driftveil Tournament\nto enter Download Tournaments.');return;}const list=X.saved(p());if(!list.length){await say(T(t.DownloadTournamentTournamentCan));return;}await say(T(t.PleaseChooseTournamentWould_2));const labels=list.map(a=>(a.slot+1)+'. '+a.pack.name),pick=await env.choose(t.SavedTournaments,labels);if(!pick)return;const a=list[labels.indexOf(pick)],act=await env.choose(a.pack.name,[t.Participate,t.SeeDetails]);if(act===t.SeeDetails){await details(a.pack);return;}if(act!==t.Participate)return;
+  const rule=X.rules(a.pack);if(!X.eligible(rule,p().party)){await say(T(t.DontMeetConditionsCant_11).concat(T(t.ByWayEggsCannot)));return;}if(!await env.confirm(T(t.WillParticipate,a.pack.name).join('\n')))return;const spec=X.planPack(p(),a.slot);if(spec.locked)return;await checkpoint();const pairs=[0,2,4,6].map(i=>spec.bracket[i]+' vs '+spec.bracket[i+1]);await say(['Tournament bracket:\n'+pairs.slice(0,2).join('\n'),pairs.slice(2).join('\n')+'\nFirst opponent: '+spec.opponents[0].name]);
+  const result=await play(spec),prize=X.finishPack(p(),spec,result);if(!prize)return;await checkpoint();await say((result.outcome==='won'?'You won '+spec.name+'!':'Your tournament is over.')+'\nWins: '+result.wins+'/3'+(prize.bp?'\nEarned '+prize.bp+' BP.':''));}
+
+ // Wi-Fi Train (Gear Station platform): ranked trains, the earlier train, successive records and info.
+ async function wifi(){const t=D.wifi.text,w=X.wifiState(p());if(!p().badges.includes('bolt')){await say('Earn the Bolt Badge before\nboarding the challenge trains.');return;}await say(T(t.WelcomeBattleSubwayWill_4));const choice=await env.choose('Wi-Fi Train',[t.Board,t.EarlierTrain,t.SuccessiveRecords,t.Info]);if(!choice)return;
+  if(choice===t.Info){await say(T(t.WiFiTrainWill).concat(['Offline, each Train Number is a\nbundled room of seven Trainers.','Clear seven battles to rank up.\nLosses in a row can lower your rank.']));return;}
+  if(choice===t.SuccessiveRecords){const rank=await env.choose(T(t.EnterRankTrain01).join('\n'),Array.from({length:D.wifi.rankMax},(_,i)=>'Rank '+pad(i+1)));if(!rank)return;const r=+rank.slice(5),rooms=Object.entries(w.records).filter(([k])=>+k.split('-')[0]===r);await say(rooms.length?rooms.map(([k,v])=>'Rank '+pad(r)+' Train No. '+pad(k.split('-')[1])+'\nBest score: '+v.best+' · Clears: '+v.clears):['No records for Rank '+pad(r)+' yet.']);return;}
+  let spec;if(choice===t.EarlierTrain){spec=X.earlierWifi(p());if(spec.none){await say('No train has been downloaded yet.');return;}await say('Rank '+pad(spec.rank)+' Train No. '+pad(spec.room)+'\nThis earlier train does not\nchange your rank.');}
+  else{await say(T(t.SCurrentRank,p().name,w.rank));const rooms=Array.from({length:D.wifi.rooms},(_,i)=>'Train No. '+pad(i+1)+(X.taken(p(),w.rank,i+1)?' ·':'')),room=await env.choose(T(t.EnterTrainNumber01,pad(D.wifi.rooms)).join('\n'),rooms);if(!room)return;spec=X.boardWifi(p(),rooms.indexOf(room)+1);if(spec.taken){await say(T(t.MayNotChallengeTrain));return;}await checkpoint();await say(T(t.ReceivingDataRankTrain,pad(spec.room),pad(spec.rank)).concat(T(t.DataHasBeenReceived)));}
+  if(!await env.confirm(T(t.WouldLikeBoardWi).join('\n')))return;await say(T(t.NowPleaseBoardWi)[0]);if(spec.ranked)w.pending=true;const result=await play(spec),prize=X.finishWifi(p(),spec,result);if(!prize){await checkpoint();return;}await checkpoint();
+  if(result.outcome==='won')await say(T(t.CongratulationsYouveSuccessfullyReached).concat(T(t.ReceivedBp,p().name,prize.bp)));else await say('Your Wi-Fi Train challenge ended.\nWins: '+result.wins+'/7');if(prize.promoted)await say(T(t.HaveBeenPromotedRank,p().name,prize.rank));if(prize.demoted)await say(T(t.UnfortunatelyHaveBeenDemoted,prize.rank));await say('Score: '+prize.score+(result.outcome==='won'?'\n'+T(t.EndWiFiTrain)[0]:''));}
+
+ // Battle Institute's special Battle Test: download the next bundled test, one try, then a source-ranked result.
+ async function institute(){const t=D.institute.text;let test=X.pendingTest(p());if(!test){if(!X.offer(p())){await say(T(t.SeemHaveTakenAll));return;}if(!await env.confirm(T(t.WouldLikeDownloadSpecial).join('\n')))return;test=X.receiveTest(p());await checkpoint();await say(T(test.double?t.DownloadedSpecialDoubleBattle:t.DownloadedSpecialSingleBattle));if(!await env.confirm(T(t.WouldLikeChallengeRight).join('\n')))return;}
+  else if(!await env.confirm(T(test.double?t.IveBeenWaitingWould_2:t.IveBeenWaitingWould).join('\n')))return;
+  const spec=X.planTest(p(),test.id);if(spec.locked)return;X.state(p()).institute.pending=test.id;const result=await play(spec),prize=X.finishTest(p(),spec,result);await checkpoint();if(!prize)return;const lines=['ResultBeginnerRankMaybe','ResultNoviceRankCould','ResultNormalRankStrength','ResultSuperRankQuite','ResultHyperRankMust','ResultEliteRankThats','MasterRankWonderfulPlease'];await say(T(t.AllRightWillTell).concat(['TEST RESULT\n'+prize.points+' POINTS · '+prize.name],T(t[lines[prize.rank]])));}
+ async function results(){const s=X.state(p()).institute,done=D.institute.tests.filter(a=>s.records[a.id]);if(!done.length){await say(T(D.institute.text.ThereNoTestResult));return;}await say(done.map(a=>a.name+'\n'+s.records[a.id].points+' POINTS · '+D.institute.ranks[s.records[a.id].rank]));}
+
+ async function run(key){if(key==='download-pwt'){await system();return true;}if(key==='download-wifi'){await wifi();return true;}return false;}
+ return{run,pwt,institute,results};
+ }
+ window.UnovaDownloadStory={create};
+})();

@@ -8,7 +8,7 @@
   else if([F.data().east?.iris,F.data().east?.irisRematch].includes(id))key='SEQ_BGM_VS_CHAMP';
   else if(/GHETSIS/.test(id))key='SEQ_BGM_VS_G_CIS';
   else if(/^BW_TRAINER_N(?:_|$)/.test(id))key='SEQ_BGM_VS_N_2';
-  else if(F.peek(p).facilityPending?.kind==='subway'||/SUBWAY_(?:BOSS|MASTER)/.test(id))key='SEQ_BGM_VS_SUBWAY_TRAINER';
+  else if(['subway','wifi'].includes(F.peek(p).facilityPending?.kind)||/SUBWAY_(?:BOSS|MASTER)/.test(id))key='SEQ_BGM_VS_SUBWAY_TRAINER';
   else if(t?.className==='Leader'||/^Leader /.test(foe?.name||''))key='SEQ_BGM_VS_GYMLEADER';
   else if(/PLASMA|COLRESS/.test(id))key='SEQ_BGM_VS_PLASMA';
   else if(/RIVAL|HUGH|CHEREN|BIANCA/.test(id))key='SEQ_BGM_VS_RIVAL';

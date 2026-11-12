@@ -45,7 +45,7 @@ feature. See [opening scope and provenance](unova-opening.md) and [the Castelia 
 - [x] Native Triple Battles, adjacency/Shift and six-member PWT tournaments ([scope](unova-facilities.md))
 - [x] Source rental pools, distinct Type Expert wins and native battle Medal counters ([scope](unova-facilities.md))
 - [x] Native Rotation Battles, four-member PWT tournaments and versioned Charles lessons ([scope](unova-facilities.md))
-- [ ] Online/download facilities
+- [x] Offline download facilities: PWT Download Tournaments, Wi-Fi Train ranks/rooms and special Battle Tests; live online play is out of scope ([scope](unova-facilities.md))
 - [x] Offline Pokémon Musical, source four shows/100 props, saved finales ([scope](unova-activities.md))
 - [x] Offline Pokéstar catalog, all 41 casts/goals, scripts, premieres and records ([scope](unova-movies.md))
 - [x] Offline Funfest/Entralink, Pass Powers and forest/dream research ([scope](unova-funfest.md))

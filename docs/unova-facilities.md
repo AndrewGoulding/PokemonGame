@@ -55,8 +55,8 @@ cancellation. Loading an interrupted challenge restores it and ends that Subway
 streak. Native browser tests exercise entry, consecutive matches, restoration and
 saved records.
 
-Triple/Rotation battles, full multi-partner facility ladders, online/download
-opponents and the original DS Institute scoring remain outside these formats.
+Triple/Rotation battles, full multi-partner facility ladders and the original DS
+Institute scoring remain outside these formats; download opponents are below.
 The existing source partner tag event is still playable separately.
 
 ## Multi Trains
@@ -87,7 +87,8 @@ Multi and Super Multi retain separate saved streaks/bests/attempts. A basic
 no Link Battle medal is awarded for playing with a local NPC. Rentals, level-50
 copies, moves/PP, held items, HP and the exact original party continue through
 the existing restoration and interrupted-save recovery. The last match remains
-available for recorded playback. Triple/Rotation are described below. Online/download facilities remain pending.
+available for recorded playback. Triple/Rotation and the offline download
+facilities are described below.
 
 `tests/unova-multi-test.js` runs 21 native model tag battles and checks all six
 source partner pools, entry compatibility, exact boss teams, saved streaks,
@@ -138,7 +139,6 @@ Ally support and Intimidate, exact seeded replay, 45 randomized/AI battles,
 source rental pools/IVs/exclusions and six-member entry for every PWT category.
 The browser test enters six Pokémon, renders all six, performs Shift, plays a
 three-match bracket and checks recorded format and original-party/save recovery.
-Online/download facilities remain pending.
 
 
 ## Rotation Battles
@@ -176,3 +176,88 @@ parts. Opponents use the same mode, retain source trainer IVs and exclude the
 player’s selected species. All original party and interrupted-save protections
 continue to apply. Type Expert records retain each of the seventeen completed
 types independently; repeated wins of one type cannot earn All Types Champ.
+
+
+## Offline download facilities
+
+The DS distributed PWT tournaments, Wi-Fi Train rooms and special Battle Tests over
+Nintendo Wi-Fi Connection or wireless delivery. That content is not in the ROM or the
+decomp, so these facilities ship bundled offline "downloads" that follow the source
+structure and rules. `tools/build-unova-downloads.js` (`npm run build:unova-downloads`)
+writes `data/unova-downloads.js` from pokebw2; it does not touch `data/unova.js`.
+
+**PWT Download Tournaments.** A Tournament Download System attendant stands beside
+the PWT stage reception. As in `t_download.c`, it lists received tournaments, shows
+each one's rules and bans, saves up to three tournaments (`WBT_SLOT_COUNT`), refuses
+duplicates ("already been saved") and a fourth slot ("slots are full"), deletes with
+the source double confirmation, and shows each slot's win count. The reception's
+tournament list gains Download, which opens after a Driftveil win (or the story
+tournament) as `WbtTournament_IsOpen` requires. Choosing a saved slot plays an
+eight-Trainer bracket built as `WbtMakeMatch_PickDownloaded`/`PlaceEntrants`/
+`WbtSystem_PlayFirstRounds` do: the player, up to four cast Trainers and the table's
+dedicated download Trainers (0x44-0x57); the three highest ranks are seated in the
+first round, semifinal and final; other matches are decided by rank, then the source
+type chart (70%) or a coin flip. The regulation is enforced at entry and in battle:
+count, level mode (cap/all/raise/maximum/minimum), banned species and items, duplicate
+species/items, a required type and a banned move. Both sides take the regulation's
+level. Wins give the source Download BP (2/2/3/3 by style) and count per slot.
+
+The six bundled packs are authored stand-ins. Their names, descriptions, cast choices,
+slot ranks, extra item bans and lines are not source data; their rules are source
+regulations (24, 16, 26, 32, 33) and their teams come from the source PWT catalogs:
+
+| Pack | Style | Regulation | Cast |
+| --- | --- | --- | --- |
+| Unova Leaders Cup | Singles, 3 | 24 (Lv. 50 cap, legend bans) | Cheren, Elesa, Drayden, Marlon |
+| Dragon Type Cup | Singles, 3 | 24 + Dragon type, no Sky Drop | Drayden, Clair, Lance |
+| Champions Doubles Invitational | Doubles, 4 | 16 (WCS-style, Chatot/Soul Dew) | Blue, Steven, Cynthia, Alder |
+| Kanto Classic Triples | Triples, 6 | 26 | Brock, Misty, Erika, Giovanni (+ Striaton trio) |
+| Sinnoh Rotation Free-for-All | Rotation, 4 | 32 (duplicates allowed, all Lv. 50) | Volkner, Byron, Candice, Fantina |
+| Hoenn Item Clause Cup | Singles, 3 | 33 + Focus Sash/Choice item bans | Norman, Winona, Juan, Wallace |
+
+Downloaded Trainers use the cast's source set pool (drawn like a table Trainer) rather
+than a fixed six-Pokémon download record, and their source IVs. The regulation's time
+limit, the World Championships battle background and source trainer-class message sets
+are not reproduced.
+
+**Wi-Fi Train.** A Wi-Fi Train attendant stands on the Gear Station platform (Bolt
+Badge required). Board downloads your rank's numbered train; as in `wifi_bsubway.c`, a
+train taken today cannot be taken again until the next game day ("until the next
+update"). Earlier train replays the last downloaded train without changing rank.
+Successive records lists your best score and clears per rank and train. Trains use the
+source sizes (ranks 1–10, seven Trainers, three level-50 Pokémon, Subway entry rules)
+and dialogue. Rank rules follow `BsubwayScr_UpdateStageRank`: a ranked seven-win clear
+promotes (to rank 10) and clears the loss count; ranked losses in a row demote at the
+source limits 5/4/4/3/3/2/2/1/1 for ranks 2–10; rank 1 never drops. Quitting a ranked
+train by reloading counts as a loss, as the source's unsaved-quit check does. BP is the
+source Wi-Fi row (10 for a ranked clear) and 5 for an earlier train. The score uses
+`BSubwayScoreData_CalcWifiScore` without its fainted-Pokémon and damage terms.
+
+Offline, each rank has 20 trains (the server decided the count, up to 200). A train's
+seven Trainers and their Pokémon are generated deterministically from its rank and
+number using the source Subway catalog; rank N draws from the source
+`bsubway_trainers.c` ranges in rising order (0–49 at rank 1 up to 220–299 at rank 10)
+with the source IV bands. Real players, their messages and the 30 room leaders are not
+available; successive records show only your own results.
+
+**Special Battle Tests.** The Battle Institute menu gains Special. As in the Trial
+House delivery flow, it downloads the next bundled test (Single, then Double), allows
+one try (a reload mid-test spends it), runs five battles even after a loss, and ranks
+the result with the source thresholds (1000–6000) and Beginner–Master dialogue. The two
+tests' examiners are authored picks from the source Subway catalog, ending with the
+Subway Bosses. Points weigh wins at 1000 as `TrialHouseCalcPointScore` does; its other
+statistics are not tracked, so a turn bonus stands in for them. Tests give no BP.
+
+Original parties are restored after every challenge through the shared facility runner.
+
+Skipped as live online or not a facility: Random/Rating/Wi-Fi Club/Union Room battles
+and Wi-Fi Competitions (live opponents), Comm Multi trains (wireless partner), Global
+Link/Dream World, the Wonder Launcher, Mystery Gift and Musical prop distributions
+(not battle facilities), and Entralink/Funfest online missions (covered offline
+elsewhere).
+
+`tests/unova-downloads-test.js` checks the source tables, every pack's rules and
+brackets across seeds, slots, BP and records, Wi-Fi ranks/day locks/demotion/recovery
+and Battle Test one-try scoring. `tests/browser/unova-downloads.js` saves a tournament
+at the PC, plays it through native entry and battles, boards a Wi-Fi Train and checks
+saved progress and exact party restoration.
