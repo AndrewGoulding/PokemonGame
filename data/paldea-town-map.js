@@ -24,14 +24,29 @@ const groups=[
  ['NaviRoad',16,5,['NaviRoad','NaviBase','NaviGarage']],
  ['RuchbahRoad',4,5,['RuchbahRoad','RuchbahBase','RuchbahGarage']],
  ['CaphRoad',20,4,['CaphRoad','CaphBase','CaphGarage']],
- ['AcademyCourtyard',13,5,['AcademyCourtyard']]
+ ['AcademyCourtyard',13,5,['AcademyCourtyard']],
+ ['LevinciaRoad',18,8,['LevinciaRoad']],['Levincia',19,8,['Levincia','LevinciaGym','LevinciaCenter']],
+ ['MedaliRoad',5,8,['MedaliRoad']],['Medali',6,7,['Medali','MedaliGym','MedaliCenter']],
+ ['MonteneveraRoad',7,3,['MonteneveraRoad']],['Montenevera',8,2,['Montenevera','MonteneveraGym','MonteneveraCenter']],
+ ['AlfornadaRoad',3,9,['AlfornadaRoad']],['Alfornada',2,9,['Alfornada','AlfornadaGym','AlfornadaCenter']],
+ ['GlaseadoRoad',18,3,['GlaseadoRoad']],['Glaseado',19,2,['Glaseado','GlaseadoGym','GlaseadoCenter']],
+ ['LeagueRoad',13,4,['LeagueRoad']],['LeagueGate',14,3,['LeagueGate']],['LeagueHall',15,3,['LeagueHall']],
+ ['SteelTrail',18,10,['SteelTrail','SteelCave']],
+ ['EarthTrail',3,7,['EarthTrail','EarthDen']],
+ ['DragonTrail',4,7,['DragonTrail','DragonLake']],
+ ['AreaZeroGate',12,4,['AreaZeroGate']],
+ ['AreaZeroUpper',12,3,['AreaZeroUpper']],
+ ['ResearchOne',12,2,['ResearchOne']],
+ ['ResearchTwo',12,1,['ResearchTwo']],
+ ['AreaZeroDepths',11,2,['AreaZeroDepths']],
+ ['ZeroLab',11,1,['ZeroLab']]
 ];
 for(const [id,x,y,aliases] of groups){
  const sec='PALDEA_'+id.replace(/([a-z])([A-Z])/g,'$1_$2').toUpperCase();
  const name='Paldea'+id,m=D.maps[name];if(!m)throw Error('Paldea map missing '+name);
  map[y][x]=sec;names[sec]=m.title;
  for(const alias of aliases){const key='Paldea'+alias;if(!D.maps[key])throw Error('Paldea map missing '+key);at[key]=[x,y];mapSections[key]=sec;}
- if(['CaboPoco','LosPlatos','Mesagoza','Cortondo','Artazon','Cascarrafa'].includes(id))towns.push(sec);
+ if(['CaboPoco','LosPlatos','Mesagoza','Cortondo','Artazon','Cascarrafa','Levincia','Medali','Montenevera','Alfornada','Glaseado'].includes(id))towns.push(sec);
 }
 for(const name of D.mapNames)if(!at[name])throw Error('Paldea Town Map missing '+name);
 function landing(name){
@@ -43,7 +58,7 @@ function landing(name){
  choices.sort((a,b)=>a.d-b.d);if(!choices.length)throw Error('No Paldea Fly tile '+name);
  return{map:name,x:choices[0].x,y:choices[0].y};
 }
-for(const id of ['CaboPoco','LosPlatos','Mesagoza','Cortondo','Artazon','Cascarrafa'])fly[mapSections['Paldea'+id]]=landing('Paldea'+id);
+for(const id of ['CaboPoco','LosPlatos','Mesagoza','Cortondo','Artazon','Cascarrafa','Levincia','Medali','Montenevera','Alfornada','Glaseado'])fly[mapSections['Paldea'+id]]=landing('Paldea'+id);
 const R={id:'PALDEA',label:'Paldea',image:'assets/town-map/paldea.svg',x0:32,y0:16,
  width,height,map,dungeon,at,mapSections,names,towns,fly};
 T.paldea=R;Object.assign(T.mapSections,mapSections);Object.assign(T.names,names);Object.assign(T.fly,fly);
