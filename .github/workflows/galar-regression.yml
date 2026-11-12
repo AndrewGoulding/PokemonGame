@@ -52,6 +52,16 @@ jobs:
           path: tests/browser/out/source-regions/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Photograph Alola Galar and Paldea terrain
+        run: node tests/browser/regional-terrain.js
+      - name: Upload regional terrain screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regional-terrain-screenshots
+          path: tests/browser/out/regional-terrain/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload Paldea playtest screenshots
         if: always()
         uses: actions/upload-artifact@v4
