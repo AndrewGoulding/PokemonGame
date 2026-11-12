@@ -74,6 +74,15 @@ function safe(name){
    });
    assert(sample.nonzero>300,name+' rendered a blank or incomplete canvas');
    assert(sample.layout,name+' missing original walkable layout');
+   if(name==='PaldeaCommunityCenter'||name==='PaldeaTerapagosChamber'){
+    const bg=await s.eval(()=>{
+     const cv=document.getElementById('world'),g=cv.getContext('2d');
+     const pixels=[[cv.width-4,cv.height-4],[cv.width-4,4]].map(([x,y])=>
+      [...g.getImageData(x,y,1,1).data].slice(0,3));
+     return pixels;
+    });
+    assert(bg.every(rgb=>rgb.some(v=>v>20)),name+' has unpainted black interior margins');
+   }
    hashes.push(sample.hash);
    if(i<4){
     const before=await s.eval(()=>Overworld.position());
