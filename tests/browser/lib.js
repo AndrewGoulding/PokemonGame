@@ -45,7 +45,7 @@ function makeSave(edit, location) {
   return Player.serialize(p);
 }
 
-const TYPES = { ".js": "text/javascript", ".html": "text/html", ".css": "text/css", ".png": "image/png", ".wav": "audio/wav", ".json": "application/json", ".ttf": "font/ttf", ".woff2": "font/woff2" };
+const TYPES = { ".js": "text/javascript", ".html": "text/html", ".css": "text/css", ".svg": "image/svg+xml", ".png": "image/png", ".wav": "audio/wav", ".json": "application/json", ".ttf": "font/ttf", ".woff2": "font/woff2" };
 function serve() {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
