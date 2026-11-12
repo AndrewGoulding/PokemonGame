@@ -1182,6 +1182,8 @@
       megaRing: !opts.noGimmicks && Player.itemCount(player, "mega-ring") > 0,
       zRing: !opts.noGimmicks && !opts.megaOnly && Player.itemCount(player, "z-ring") > 0,
       dynamaxBand: !opts.noGimmicks && !opts.megaOnly && Player.itemCount(player, "dynamax-band") > 0,
+      // Prefer Galar's own battle gimmick where Dynamax is available.
+      galarDynamax: !opts.noGimmicks && Galar.owns(player.location.map),
       teraOrb,
       safari: opts.safari ? Object.assign({ balls: player.flags.safari.balls,park:!!player.flags.safari.park, hgss: !!(player.flags.safari.hgss || player.flags.safari.sinnoh), ...(player.flags.safari.sinnoh ? { fleeRate: PLATINUM_DATA.daily.flee[foe.team[0].species] || 0 } : {}) },
         player.flags.safari.hoenn ? { hoenn: true, pokeblocks: () => hoennPokeblock.blocks().map(HoennPokeblock.name), usePokeblock: (i) => hoennPokeblock.blocks().splice(i, 1)[0] } : {}) : undefined,
