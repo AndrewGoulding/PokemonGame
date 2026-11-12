@@ -64,6 +64,13 @@
     const bottom = Math.min(m.height, Math.ceil((H - offsetY) / TILE) + 1);
     if (left >= right || top >= bottom) return 0;
     const seed = name.length * 41 + name.charCodeAt(0);
+    // Construct this small set once per visible frame rather than scanning
+    // actors and event records for each of the ~200 visible tiles.
+    const reserved = new Set([
+      ...(m.people || []), ...(m.warps || []), ...(m.signs || []),
+      ...(m.triggers || []), ...(m.hidden || [])
+    ].filter(a => Number.isInteger(a.x) && Number.isInteger(a.y))
+      .map(a => a.y * m.width + a.x));
     let count = 0;
     g.save();
     // Infrequent highlight pixels; don't paint over event tiles, entrances,
@@ -71,9 +78,7 @@
     for (let y = top; y < bottom; y++) for (let x = left; x < right; x++) {
       const i = y * m.width + x, solid = !!m.collision[i];
       const wet = m.behavior[i] === 0x10, r = noise(x, y, seed);
-      const safe = !(m.people || []).some(p => p.x === x && p.y === y) &&
-        !(m.warps || []).some(p => p.x === x && p.y === y);
-      if (!safe) continue;
+      if (reserved.has(i)) continue;
       let eligible = false;
       if (kind === "spring" || kind === "glitter") eligible = wet || (!solid && (r % 13 === 0));
       else if (kind === "embers" || kind === "lamps" || kind === "neon" || kind === "crystal")
