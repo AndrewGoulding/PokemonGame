@@ -124,6 +124,7 @@
   "CianwoodCity_CentralHouse": "CianwoodHouse3",
   "CianwoodCity_Pharmacy": "CianwoodShop",
   "CianwoodCity_KirksHouse": { "drop": true },
+  "LakeOfRage": { "hns": "LakeOfRage", "place": { "obj_T29_rgyaradosu": [27, 33] } },
   "LakeOfRage_HiddenPowerHouse": "LakeOfRage_House1",
   "LakeOfRage_FishingGuruHouse": "LakeOfRage_House2",
   "BlackthornCity_WestHouse": "BlackthornCity_House1",
