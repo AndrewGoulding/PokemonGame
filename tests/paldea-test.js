@@ -13,7 +13,7 @@ vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-endgame.js'),'utf8
 vm.runInThisContext(fs.readFileSync(path.join(root,'ui/paldea-story.js'),'utf8'),{filename:'ui/paldea-story.js'});
 assert(Paldea&&PaldeaStory&&TOWN_MAP.paldea);
 const D=Paldea.data(),T=TOWN_MAP.paldea;
-assert.equal(D.mapNames.length,76);
+assert.equal(D.mapNames.length,98);
 assert.equal(D.starfall.mapNames.length,16);
 assert.equal(D.starfall.crews.length,5);
 assert.equal(D.legends.mapNames.length,4);
