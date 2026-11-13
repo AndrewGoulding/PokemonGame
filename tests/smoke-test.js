@@ -840,6 +840,12 @@ for (const share of [false, true]) {
     const ob = [...oldBalls.matchAll(/\{ map: "(\w+)", x: (\d+), y: (\d+), item: "([\w-]+)" \}/g)].map((m) => ({ map: m[1], x: +m[2], y: +m[3], item: m[4] }));
     assert.strictEqual(ob.length, 31, "30 TMs and a Metal Coat");
     assert(!ob.some((b) => b.item === "tm26"), "no Earthquake ball: Giovanni gives TM26");
+    // Hoenn's map joins the Fly screen only once you've been to Hoenn: Emerald's list of place names holds Kanto's too.
+    assert(/const beenToHoenn = \(\) => \(player\.flags\.visitedSections \|\| \[\]\)\.some\(\(sec\) => hoennOnly\.has\(sec\)\);/.test(gJs0), "Hoenn's own sections only");
+    { const elsewhere = new Set(Object.values(TOWN_MAP.mapSections).concat(Object.keys((window.JOHTO_TOWN_MAP || {}).names || {}))), own = Object.keys(HOENN_TOWN_MAP.names).filter((x) => !elsewhere.has(x));
+      assert(own.includes("LITTLEROOT_TOWN") && own.includes("ROUTE_101") && !own.includes("PALLET_TOWN") && !own.includes("ONE_ISLAND") && "PALLET_TOWN" in HOENN_TOWN_MAP.names); }
+    // Red brings no Lapras to a raid.
+    assert(/teams\.Red = \(\) => \[championTeam\(false\), championTeam\(true\), team\("HGSS_TRAINER_PKMN_TRAINER_RED_RED"\)\.filter\(\(m\) => m\.species !== "Lapras"\), mega\("red"\)\];/.test(gJs0));
     assert(ob.some((b) => b.map === "RockTunnel_B1F" && b.item === "metal-coat") && ob.some((b) => b.map === "MtMoon_1F" && Bag.machineMove(b.item) === "Water Gun"));
     // (Johto's at HGSS's tiles, on its maps as they are now, Heart & Soul's: ui/johto-coords.js, as ui/game.js places them.)
     if (!window.JohtoCoords) vm.runInThisContext(fs.readFileSync(path.join(root, "ui/johto-coords.js"), "utf8"));

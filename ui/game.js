@@ -1916,7 +1916,14 @@
     T.fly = Object.assign({}, T.fly, HOENN_MAP.fly);
   }
   // (Have you been to Hoenn: any of its sections visited.)
-  const beenToHoenn = () => !!HOENN_MAP && (player.flags.visitedSections || []).some((sec) => sec in HOENN_MAP.names);
+  // (Emerald's list of names holds Kanto's and the Sevii Islands' places too, FireRed's being the same list: those
+  // don't count, or Hoenn's map would turn up on the Fly screen from Pallet Town on.)
+  const hoennOnly = (() => {
+    if (!HOENN_MAP) return new Set();
+    const elsewhere = new Set(Object.values((window.TOWN_MAP || {}).mapSections || {}).concat(Object.keys((JOHTO_MAP || {}).names || {})));
+    return new Set(Object.keys(HOENN_MAP.names).filter((sec) => !elsewhere.has(sec)));
+  })();
+  const beenToHoenn = () => (player.flags.visitedSections || []).some((sec) => hoennOnly.has(sec));
   // (And Kanto's Victory Road, once you've been inside: outside its entrance
   // on Route 23. This game's own; FireRed has no Fly to caves.)
   if (window.TOWN_MAP && window.TOWN_MAP.fly && !window.TOWN_MAP.fly.KANTO_VICTORY_ROAD)
@@ -13335,7 +13342,8 @@
       teams[o.name] = () => o.ids.filter((id) => /^TRAINER_/.test(id)).map(team).concat(johto(o.name), o.name === "Lance" ? ["HGSS_TRAINER_CHAMPION_LANCE", "HGSS_TRAINER_CHAMPION_LANCE_2"].map(team) : []);
     const mega = (key) => listed(MEGA_RIVALS.find((r) => r.key === key).team());
     teams.Blue = () => [listed(VICTORY_ROAD_RIVAL_TEAM), mega("gary")];
-    teams.Red = () => [championTeam(false), championTeam(true), team("HGSS_TRAINER_PKMN_TRAINER_RED_RED"), mega("red")];
+    // (HeartGold's Red has a Lapras; this game's Red has none, so he brings none to a raid.)
+    teams.Red = () => [championTeam(false), championTeam(true), team("HGSS_TRAINER_PKMN_TRAINER_RED_RED").filter((m) => m.species !== "Lapras"), mega("red")];
     teams.Leaf = () => [route22LeafTeam(), mega("leaf")];
     RaidDens.setTeams(teams, { Blue: () => player.rival });
   }
