@@ -2581,6 +2581,15 @@ if (window.JOHTO_TOWN_MAP) {
     assert(WORLD_TRAINERS[r.trainer] && WORLD_TRAINERS[r.rematch] && r.intro && r.after && r.look && fs.existsSync(path.join(root, "assets/world/sprites", r.look.sprite + ".png")), r.trainer);
   }
   assert.deepStrictEqual(JOHTO_LEAGUE.map((r) => WORLD_TRAINERS[r.trainer].name), ["Will", "Koga", "Bruno", "Karen", "Lance"]);
+  // (Bruno: a Steelix for HGSS's Onix, at its level, tools/lib/johto-changes.js; no Onix in his rematch either.)
+  {
+    const bruno = WORLD_TRAINERS[JOHTO_LEAGUE[2].trainer].party, again = WORLD_TRAINERS[JOHTO_LEAGUE[2].rematch].party;
+    assert.deepStrictEqual(bruno.map((m) => m.species + " " + m.level), ["Hitmontop 42", "Hitmonlee 42", "Hitmonchan 42", "Steelix 43", "Machamp 46"]);
+    assert.deepStrictEqual(again.map((m) => m.species + " " + m.level), ["Hitmontop 62", "Hitmonlee 61", "Hitmonchan 61", "Hariyama 62", "Machamp 64", "Lucario 64"]);
+    assert.deepStrictEqual(bruno[3], { species: "Steelix", level: 43, iv: 250 }, "as the Onix was: no item, its moves by its level");
+    assert(RandomTeam.levelUpMoves("Steelix", 43).length === 4 && RandomTeam.levelUpMoves("Steelix", 43).every((m) => MOVES[m]));
+    assert(/species === "Onix" \? Object\.assign\(\{\}, m, \{ species: "Steelix" \}\)/.test(fs.readFileSync(path.join(root, "tools/lib/johto-changes.js"), "utf8")), "the generator makes the same change");
+  }
   // The S.S. Aqua: off at Vermilion's dock once it's arrived there, and its sailor back to Olivine.
   assert(/function ssAquaExit\(\)/.test(readGameSource()) && /^SSAqua_OlivinePort/.test(WORLD_MAPS.SSAqua_1F.warps[0].map));
   // The Magnet Train (tools/build-magnet-train.js, ui/magnet-train.js): Saffron's station, Kanto's, and
@@ -7827,6 +7836,15 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
     assert.strictEqual(HS.decor.filter((d) => !d.oras).length, 120);
     assert.strictEqual(HS.decor.filter((d) => d.oras).length, 52);
     assert(HS.decor.every((d, i) => d.id === i + 1) && new Set(HS.decor.map((d) => d.key)).size === HS.decor.length, "ids in order, no key twice");
+    // (ORAS's English names, on the keys the list first had: saves hold decorations by key. See docs/decorations.md.)
+    {
+      const named = (key) => HS.decor.find((d) => d.key === key).name;
+      assert.strictEqual(new Set(HS.decor.map((d) => d.name)).size, HS.decor.length, "no name twice");
+      assert.deepStrictEqual(["OLD_LAMP", "RETURN_MAT", "GREEN_PUSH_PANEL", "GREEN_WARP_PANEL", "COMFY_BED", "PLEASANT_BALL", "LUMIOSE_MODEL", "PILLAR_PIECE", "STAR_TROPHY", "ROLY_POLY_TOY", "SANDBAG"].map(named),
+        ["Worn-Out Light", "Square-One Mat", "Yellow Spin Panel", "Yellow Warp Panel", "Comfortable Bed", "Confetti Ball", "Mini Lumiose", "Standing Stone", "Star Light", "Boppoyama", "Makiwara"]);
+      assert.deepStrictEqual(["DAYDREAM", "SHORTCUT", "ENDLESS_LOOP", "VISITOR_MAT", "TURTWIG_MAT", "PLAIN_MAT", "GROUDON_PAINTING", "NATIONAL_DIPLOMA", "TIME_TRAVEL_AWARD", "MIMIC_DOLL", "SUBSTITUTE_DOLL"].map(named),
+        ["Meditative Seat", "Heterarchical Loop", "Paradoxical Popper", "Welcome Mat", "Green Mat", "Flat Mat", "Red Scroll", "National Award", "Time Travel Award", "Invisible Doll", "Substitute Doll"]);
+    }
     const orasSheet = require("../tools/lib/png").readPng(path.join(root, "assets/world/maps/_decor_oras-mt.png"));
     for (const d of HS.decor) {
       assert(d.name && d.price >= 0 && d.cat >= 0 && d.cat < 8 && d.w * d.h >= 1 && d.desc.length, d.key + " is in the catalogue");

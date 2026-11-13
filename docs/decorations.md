@@ -40,11 +40,22 @@ This game's own changes:
 
 ## Honest limits
 
-- **Names are translated.** The ORAS list was taken from a German reference
-  (no English one could be reached), so some English names are my translation
-  and may differ from the official ones. Sizes, descriptions and the prices of
-  pieces ORAS only gave as gifts are this game's own.
-- **They are ornaments only.** Warp panels, push panels, the pitfall mat, the
+- **Names are ORAS's English ones; the rest is this game's.** The list was
+  first taken from a German reference (Pokéwiki's "Super-Geheimbasis/
+  Deko-Objekte") and translated, which got 28 of the 52 names wrong. They
+  were then matched, description by description, against Serebii's English
+  ORAS decoration list, which has 51 of them; the Welcome Mat is not on that
+  list and its name comes from Bulbapedia's Generation VI list. Neither was
+  checked against the game's own text, so a spelling could still differ.
+  Sizes, pictures, descriptions and the prices of pieces ORAS only gave as
+  gifts are this game's own, so a picture need not look like ORAS's piece
+  (the Makiwara is drawn as a hanging bag, the Paradoxical Popper as endless
+  stairs, the Invisible Doll can be seen).
+- **Keys kept the old names.** A decoration's key (`OLD_LAMP` for the
+  Worn-Out Light, `GREEN_PUSH_PANEL` for the Yellow Spin Panel, and so on)
+  is what a save holds, so the keys were left as they were when the names
+  were corrected.
+- **They are ornaments only.** Warp panels, spin panels, the pitfall mat, the
   jukebox, the vending machine and the rest are for show; they do nothing when
   stepped on or used.
 - **Everything is bought.** Pieces ORAS handed out for Secret Base Guild rank,

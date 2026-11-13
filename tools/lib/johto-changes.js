@@ -211,6 +211,12 @@ function apply({ maps, scripts, trainers }) {
     const top = t.party.filter((m) => m.species === keep).sort((a, b) => b.level - a.level)[0];
     if (top) t.party = [top].concat(more.map(([species, level]) => ({ species, level, iv: top.iv })));
   }
+  // Bruno (Johto's League): a Steelix for his Onix, at its level, as in Kanto's League (ui/game.js's TEAM_SWAPS).
+  // (Its moves are the last four it learns by that level, as every trainer's are. His rematch team has no Onix.)
+  for (const id of ["HGSS_TRAINER_ELITE_FOUR_BRUNO_BRUNO", "HGSS_TRAINER_ELITE_FOUR_BRUNO_BRUNO_2"]) {
+    const t = trainers[id];
+    if (t) t.party = t.party.map((m) => (m.species === "Onix" ? Object.assign({}, m, { species: "Steelix" }) : m));
+  }
   // Silver, from his first battle.
   for (const id of ["HGSS_TRAINER_PASSERBY_BOY", "HGSS_TRAINER_PASSERBY_BOY_2", "HGSS_TRAINER_PASSERBY_BOY_3"]) {
     if (trainers[id]) Object.assign(trainers[id], { className: "Rival", name: "Silver", pic: "hgss_silver" });
