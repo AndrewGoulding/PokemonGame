@@ -68,9 +68,7 @@ const SECOND_PASS={
   EternaForest:"sinnoh-eterna-forest",
   UnovaDriftveilCity:"unova-driftveil-crane",
   UnovaOpelucidCity:"unova-opelucid-towers",
-  KalosShalourCity:"kalos-shalour-tower",
   KalosGeosengeTown:"kalos-geosenge-stones",
-  KalosSnowbelleCity:"kalos-snowbelle-chalet",
   AlolaSeafolkVillage:"alola-seafolk-boat",
   AlolaMalieCity:"alola-malie-pagoda",
   AlolaPoTown:"alola-po-town",
@@ -96,7 +94,8 @@ for (const [name, asset] of Object.entries(SECOND_PASS)) {
 }
 assert.deepEqual(secondPassProblems,[],"All individually-authored mapped assets must be visible");
 for(const region of regions){
- assert(counts[region]>= (["galar","alola","paldea"].includes(region)?10:2),
+ // (Kalos's cities now have full street plans with their own landmarks: data/city-layouts.js.)
+ assert(counts[region]>= (["galar","alola","paldea"].includes(region)?10:region==="kalos"?1:2),
   region+" authored source coverage");
  assert.equal(placed[region],counts[region],
   region+" has a landmark planned but not safely placeable");

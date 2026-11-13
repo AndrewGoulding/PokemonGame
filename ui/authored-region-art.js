@@ -23,10 +23,7 @@
     UnovaNimbasaCity:"unova-ferris",
     UnovaDriftveilCity:"unova-driftveil-crane",
     UnovaOpelucidCity:"unova-opelucid-towers",
-    KalosLaverreCity:"kalos-garden",
-    KalosShalourCity:"kalos-shalour-tower",
     KalosGeosengeTown:"kalos-geosenge-stones",
-    KalosSnowbelleCity:"kalos-snowbelle-chalet",
     // Galar: timber cottages, railway towns, brick industry, northern castles,
     // stadiums, the Isle of Armor and the Crown Tundra.
     GalarPostwick:"galar-cottage",

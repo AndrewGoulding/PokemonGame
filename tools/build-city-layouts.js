@@ -18,10 +18,19 @@ for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").ma
 const HOMES = { UNOVA_DATA: ctx.UNOVA_DATA.maps, KALOS_DATA: ctx.KALOS_DATA.maps };
 const homeOf = (name) => Object.keys(HOMES).find((k) => HOMES[k][name]);
 const DOOR = 0x69, STEP = 0x61, WATER = 0x10;
-const layouts = {}, points = [];
+const layouts = {}, points = [], aliases = {}, borrowed = {};
+// Other regions' maps drawn with one of these cities' old pictures (Alola's Hau'oli
+// uses Santalune's): the old picture is kept under a "Classic" name for them.
+for (const key of Object.keys(ctx)) for (const m of Object.values((ctx[key] && ctx[key].maps) || {}))
+  if (m && m.image && m.image !== m.name && homeOf(m.image)) (borrowed[m.image] = borrowed[m.image] || []).push([key, m.name]);
+function keepClassic(name) {
+  if (!borrowed[name] || fs.existsSync(path.join(out, name + "Classic.png"))) return;
+  for (const f of fs.readdirSync(out)) if (f === name + ".png" || f.startsWith(name + "-")) fs.copyFileSync(path.join(out, f), path.join(out, name + "Classic" + f.slice(name.length)));
+}
 
 // One city being laid out: a grid of ground kinds, then buildings and props.
 function city(name, ground) {
+  keepClassic(name);
   const home = homeOf(name), base = HOMES[home][name], W = base.width, H = base.height;
   const m = { name, home, W, H, base, kinds: [], solid: new Uint8Array(W * H), behavior: new Uint8Array(W * H), items: [], doors: {},
     warps: base.warps.map((w) => ({ ...w })), people: base.people.map((p) => ({ ...p })), signs: [], moved: {} };
@@ -45,8 +54,9 @@ function city(name, ground) {
   return m;
 }
 
-const GROUND_TILE = { paving: "paving", road: "asphalt", brick: "brick", ornate: "ornate", water: "water", deck: "deck", lawn: "lawn", tree: "tree" };
-const WALK = new Set(["paving", "road", "brick", "ornate", "deck", "plaza"]);
+const GROUND_TILE = { paving: "paving", road: "asphalt", brick: "brick", ornate: "ornate", water: "water", deck: "deck", lawn: "lawn", tree: "tree",
+  rock: "rock", grass: "grass", meadow: "meadow", flowersRed: "flowersRed", flowersBlue: "flowersBlue", flowersPink: "flowersPink", sand: "sand", snow: "snow", pine: "pine" };
+const WALK = new Set(["paving", "road", "brick", "ornate", "deck", "plaza", "grass", "meadow", "sand", "snow", "flowersRed", "flowersBlue", "flowersPink"]);
 
 function finish(m, extra = {}) {
   const { W, H, base, name } = m, c = canvas(W * 16, H * 16), top = canvas(W * 16, H * 16);
@@ -80,6 +90,7 @@ function finish(m, extra = {}) {
   c.save(path.join(out, name + ".png")); top.save(path.join(out, name + "-top.png"));
   if (extra.border) { const b = canvas(32, 32); for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) A.tile(b, extra.border, x, y); b.save(path.join(out, name + "-border.png")); }
   for (const stale of ["-anim.png"]) fs.rmSync(path.join(out, name + stale), { force: true });
+  if (borrowed[name]) aliases[name] = borrowed[name];
   layouts[name] = { home: m.home, map: { collision, behavior, encounter: Array(W * H).fill(0), warps: m.warps, people: m.people, signs: m.signs, top: true, cityLayout: true } };
   m.collision = collision; m.walkable = seen;
   return m;
@@ -297,9 +308,150 @@ function prismTower(cx, by, split) {
   retarget(m);
 }
 
+// ---------------------------------------------------------------- the other Kalos cities
+// Each keeps its gates where they were and gets the ground and landmarks it is
+// known for. box(x0,y0,x1,y1) is the walkable town; everything else is its border.
+const within = (x, y, [x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1;
+const gateCells = (m) => m.warps.filter((w, k) => m.base.behavior[w.y * m.W + w.x] === STEP);
+// A leafy crown over a building, for the Gyms grown inside great trees.
+const crown = (cx, cy, rx, ry) => (c, top) => { for (const [dx, dy, r, col] of [[0, 0.12, 1, [38, 92, 58]], [-0.3, 0, 0.72, [52, 124, 70]], [0.3, 0, 0.72, [52, 124, 70]], [0, -0.22, 0.74, [74, 152, 84]], [-0.18, -0.36, 0.4, [112, 184, 104]]]) top.ellipse(cx + dx * rx, cy + dy * ry, rx * r, ry * r, col); for (let k = 0; k < 46; k++) { const a = hash(k, 7, cx) * 6.28, d = hash(k, 9, cy) * 0.82; top.rect(cx + Math.cos(a) * rx * d, cy + Math.sin(a) * ry * d - 3, 3, 2, k % 3 ? [140, 204, 120] : [30, 76, 50]); } };
+function simple(name, box, kinds, border, lay) {
+  const base = HOMES.KALOS_DATA[name], gates = base.warps.filter((w) => base.behavior[w.y * base.width + w.x] === STEP);
+  const m = city(name, (x, y) => {
+    const k = kinds(x, y);
+    if (k) return k;
+    if (gates.some((w) => w.x === x && w.y === y)) return kinds.road;
+    return within(x, y, box) ? kinds.ground : border;
+  });
+  // A road from each gate to the town's edge, so no gate is left in the border.
+  for (const w of gates) { let x = w.x, y = w.y; for (let k = 0; k < 8 && !within(x, y, box); k++) { m.set(x, y, 1, 1, kinds.road); x += x < box[0] ? 1 : x > box[2] ? -1 : 0; y += y < box[1] ? 1 : y > box[3] ? -1 : 0; } }
+  lay(m);
+  finish(m, { border: typeof border === "string" ? border : "tree" });
+  retarget(m);
+  return m;
+}
+const road = (kind, rects, ground, extra) => Object.assign((x, y) => (extra && extra(x, y)) || (rects.some((r) => within(x, y, r)) ? kind : null), { road: kind, ground });
+const flowerBeds = (m, kind, list) => { for (const [x, y, w, h] of list) m.set(x, y, w, h, kind); };
+
+// Santalune: the fountain plaza where the avenues cross, the Gym to the north-east.
+simple("KalosSantaluneCity", [4, 4, 39, 33], road(COBBLE, [[21, 3, 23, 34], [4, 23, 40, 25]], "brick"), "tree", (m) => {
+  plaza(m, 22.5, 18.5, 4.6, [244, 228, 190, 120]); m.prop("fountain", 21, 16);
+  m.build("church", 6, 5, { warp: 4 });                                  // Trainers' School
+  m.build("gym", 30, 6, { warp: 5 });                                    // Santalune Gym
+  m.build("hearthCenter", 6, 26, { warp: 3 });
+  m.build("mart", 14, 14, { warp: 6 });                                  // boutique
+  m.build("gable", 6, 15, { warp: 7, tint: roof(0.8, 1, 1.6) });         // trade house
+  m.build("gable", 28, 27, { tint: roof(1.5, 0.8, 0.8) }); m.build("gable", 34, 27);
+  m.build("gable", 30, 14, { tint: roof(1.9, 1.5, 0.6) });
+  flowerBeds(m, "flowersRed", [[15, 6, 5, 3], [26, 6, 3, 3], [16, 27, 4, 2], [35, 14, 4, 5]]);
+  hedges(m, [[20, 6], [20, 10], [24, 6], [24, 10], [20, 28], [20, 31], [24, 28], [24, 31], [14, 22], [17, 22], [28, 22], [31, 22], [34, 22], [11, 22]]);
+  m.person("xy:rinka", 33, 13); m.person("xy:alexa", 22, 8); m.person("xy:guide", 23, 29);
+});
+
+// Cyllage: sea and beach to the west, the town on its shelf, the Gym up against the cliffs.
+simple("KalosCyllageCity", [10, 4, 37, 34], road(COBBLE, [[22, 3, 24, 35]], "brick", (x, y) => (y < 2 || y > 37 ? null : x >= 2 && x <= 8 ? "water" : x >= 9 && x <= 12 && y >= 2 ? "sand" : null)), "rock", (m) => {
+  m.build("gym", 31, 5, { warp: 2 });                                    // Cyllage Gym
+  m.build("hearthCenter", 14, 6, { warp: 4 });
+  m.build("mart", 14, 15, { warp: 5 });                                  // boutique
+  m.build("gable", 27, 14, { warp: 6, tint: roof(0.8, 1, 1.6) });        // trade house
+  m.build("gable", 15, 24, { warp: 1, tint: roof(1.9, 1.5, 0.6) });      // bicycle shop
+  m.build("gable", 27, 25); m.build("gable", 32, 25, { tint: roof(1.5, 0.8, 0.8) });
+  for (const [x, y, w, h] of [[26, 4, 4, 3], [36, 12, 2, 6], [10, 4, 3, 1], [34, 32, 4, 3]]) m.set(x, y, w, h, "rock");
+  for (const [x, y] of [[4, 8], [6, 20], [3, 29], [7, 33]]) m.paint(y + 1, (c) => { c.ellipse(x * 16 + 8, y * 16 + 9, 7, 6, [70, 78, 96]); c.ellipse(x * 16 + 7, y * 16 + 7, 5, 4, [120, 130, 150]); });
+  hedges(m, [[21, 8], [21, 14], [21, 20], [21, 26], [25, 8], [25, 20], [25, 30], [20, 31], [19, 16], [19, 18]]);
+  m.person("xy:strength", 29, 24);
+});
+
+// Shalour: the Tower of Mastery on its islet in the bay, reached over the sand.
+simple("KalosShalourCity", [4, 15, 40, 33], road(COBBLE, [[22, 14, 24, 33], [4, 23, 41, 25]], "paving", (x, y) => (y >= 2 && y <= 14 && x >= 2 && x <= 43 ? (Math.hypot(x - 22.5, (y - 7) * 1.25) <= 6.6 || (x >= 21 && x <= 24 && y >= 9) ? "sand" : "water") : null)), "tree", (m) => {
+  m.build("temple", 18, 3, { warp: 1 });                                 // Tower of Mastery
+  m.paint(10, (c, top) => { const cx = 23 * 16, by = 3 * 16 + 6; top.poly([[cx - 26, by], [cx - 16, by - 34], [cx + 16, by - 34], [cx + 26, by]], [150, 158, 172]); top.poly([[cx - 22, by], [cx - 13, by - 31], [cx + 13, by - 31], [cx + 22, by]], [196, 202, 212]); for (let k = 0; k < 3; k++) top.rect(cx - 12 + k * 10, by - 22, 4, 9, [84, 96, 124]); top.poly([[cx - 18, by - 34], [cx, by - 46], [cx + 18, by - 34]], [112, 122, 146]); });
+  m.build("gym", 32, 21, { warp: 2 });                                   // Shalour Gym
+  m.build("hearthCenter", 7, 22, { warp: 4 });
+  m.build("gable", 8, 15, { tint: roof(0.8, 1, 1.6) }); m.build("gable", 14, 15); m.build("gable", 28, 15, { tint: roof(1.5, 0.8, 0.8) }); m.build("gable", 14, 27); m.build("mart", 27, 27);
+  hedges(m, [[21, 17], [21, 20], [25, 17], [25, 20], [21, 28], [21, 31], [25, 28], [25, 31], [5, 22], [38, 28], [38, 30]]);
+  m.person("xy:intriguing-stone", 23, 16); m.person("xy:surf-gift", 38, 26); m.person("xy:travel", 34, 31);
+});
+
+// Coumarine, seaside: the harbour front, its jetties and the monorail station.
+simple("KalosCoumarineLower", [4, 5, 39, 27], road(COBBLE, [[21, 4, 23, 27], [4, 16, 39, 18]], "paving", (x, y) => (y >= 28 && y <= 33 && x >= 2 && x <= 41 ? ([10, 11, 20, 21].includes(x) && y <= 32 ? "deck" : "water") : null)), "tree", (m) => {
+  m.build("hall", 27, 19, { warp: 1 });                                  // Seaside Station
+  m.build("gable", 6, 6, { tint: roof(0.8, 1, 1.6) }); m.build("gable", 12, 6); m.build("mart", 27, 7); m.build("gable", 34, 6, { tint: roof(1.9, 1.5, 0.6) });
+  m.build("gable", 6, 20, { tint: roof(1.5, 0.8, 0.8) }); m.build("gable", 14, 20);
+  for (const x of [5, 8, 13, 16, 18, 24, 26]) m.prop("barrel", x, 27);
+  hedges(m, [[20, 7], [20, 11], [24, 7], [24, 11], [20, 21], [24, 21], [19, 12], [25, 12]]);
+  m.person("xy:good-rod", 12, 17);
+});
+
+// Coumarine, hillcrest: the clifftop quarter, its station and the Gym in the great tree.
+simple("KalosCoumarineUpper", [4, 4, 37, 31], road("sand", [[20, 11, 22, 31], [5, 28, 36, 30], [20, 10, 31, 12]], "grass"), "rock", (m) => {
+  m.build("gym", 27, 5, { warp: 3, tint: roof(0.6, 1.3, 0.6) }); m.paint(99, crown(30 * 16 + 8, 5 * 16 + 8, 68, 34));   // Coumarine Gym
+  m.build("hall", 5, 20, { warp: 0 });                                   // Hillcrest Station
+  m.build("hearthCenter", 27, 22, { warp: 2 });
+  m.build("gable", 7, 7, { tint: roof(0.8, 1, 1.6) }); m.build("gable", 13, 7, { tint: roof(1.5, 0.8, 0.8) });
+  flowerBeds(m, "flowersBlue", [[6, 15, 8, 2], [24, 15, 3, 4], [34, 14, 3, 6]]);
+  hedges(m, [[19, 14], [19, 18], [19, 22], [23, 18], [23, 22], [17, 22], [17, 25]]);
+  m.person("xy:coumarine-rival", 28, 13);
+});
+
+// Laverre: meadow paths through the flowers, the Gym in the old tree, the factory to the north.
+simple("KalosLaverreCity", [4, 3, 38, 33], road("sand", [[21, 9, 23, 34], [5, 28, 37, 30], [21, 18, 39, 20], [6, 9, 23, 10]], "meadow"), "tree", (m) => {
+  m.build("hall", 18, 1, { warp: 2 });                                   // Poké Ball Factory
+  m.build("gym", 27, 19 + 0, { warp: 4, tint: roof(0.7, 1.2, 0.6) }); m.paint(99, crown(30 * 16 + 8, 19 * 16 + 8, 72, 36));   // Laverre Gym
+  m.set(27, 24, 7, 1, "sand");
+  m.build("hearthCenter", 7, 22, { warp: 0 });
+  m.build("mart", 5, 4, { warp: 5 });                                    // boutique
+  m.build("gable", 11, 13, { tint: roof(1.6, 0.8, 1.4) }); m.build("gable", 31, 5, { tint: roof(1.6, 0.8, 1.4) }); m.build("gable", 15, 22, { tint: roof(1.9, 1.5, 0.6) });
+  flowerBeds(m, "flowersPink", [[5, 11, 5, 6], [25, 11, 12, 3], [25, 31, 12, 2], [5, 31, 14, 2], [16, 12, 4, 5]]);
+  flowerBeds(m, "flowersRed", [[30, 11, 4, 2], [34, 22, 4, 5]]);
+  hedges(m, [[20, 12], [20, 15], [24, 12], [24, 15], [20, 23], [20, 26], [24, 26]]);
+  m.person("xy:travel", 35, 29); m.person("xy:factory-invitation", 22, 22);
+});
+
+// Anistar: the terraced town above the eastern sea and its crystal sundial.
+simple("KalosAnistarCity", [4, 4, 35, 33], road(COBBLE, [[21, 3, 23, 33], [4, 18, 35, 20], [5, 28, 35, 30]], "paving", (x, y) => (x >= 36 && x <= 41 && y >= 2 && y <= 35 ? (Math.hypot(x - 36, y - 19) <= 3.4 ? "paving" : "water") : null)), "tree", (m) => {
+  m.build("gym", 27, 6, { warp: 3, tint: roof(1.3, 0.7, 1.5) });         // Anistar Gym
+  m.build("mart", 5, 4, { warp: 4 });                                    // boutique
+  m.build("hearthCenter", 7, 22, { warp: 0 });
+  m.build("gable", 12, 5, { tint: roof(1.3, 0.7, 1.5) }); m.build("gable", 15, 22); m.build("gable", 27, 22, { tint: roof(0.8, 1, 1.6) }); m.build("gable", 13, 12, { tint: roof(1.5, 0.8, 0.8) });
+  // The sundial: a rose crystal on its dais at the water's edge.
+  m.block(36, 18, 2, 2);
+  m.paint(21, (c, top) => { const cx = 37 * 16, by = 20 * 16 - 2; c.ellipse(cx, by - 4, 22, 9, [150, 158, 176]); c.ellipse(cx, by - 6, 19, 7, [206, 212, 224]); const t = canvas(c.w, c.h); t.poly([[cx - 9, by - 6], [cx - 4, by - 58], [cx + 2, by - 70], [cx + 9, by - 50], [cx + 8, by - 6]], [214, 92, 150]); t.poly([[cx - 6, by - 8], [cx - 3, by - 56], [cx + 1, by - 66], [cx + 1, by - 8]], [246, 150, 196]); t.poly([[cx + 2, by - 8], [cx + 2, by - 64], [cx + 7, by - 50], [cx + 6, by - 8]], [176, 58, 122]); t.line(cx - 2, by - 50, cx - 2, by - 14, [255, 222, 238]); for (let i = 0; i < t.data.length; i += 4) if (t.data[i + 3]) { const y = (i / 4 / t.w) | 0; (y < 18 * 16 ? top : c).p((i / 4) % t.w, y, [t.data[i], t.data[i + 1], t.data[i + 2]]); } });
+  hedges(m, [[20, 6], [20, 10], [24, 6], [24, 10], [20, 23], [24, 23], [20, 31], [24, 31], [33, 14], [33, 24]]);
+  m.person("xy:travel", 35, 29); m.person("xy:anistar-rival", 22, 22); m.person("xy:legend-lore", 12, 12); m.person("xy:mega-upgrade", 29, 11);
+});
+
+// Snowbelle: log cabins in the snow, ringed by frosted pines.
+simple("KalosSnowbelleCity", [4, 4, 39, 33], road("snow", [], "snow"), "pine", (m) => {
+  m.set(21, 34, 3, 1, "snow");                                           // room to walk round to the bridge gate
+  m.build("snowGym", 27, 7, { warp: 4 });                                // Snowbelle Gym
+  m.build("snowMart", 5, 4, { warp: 5 });                                // boutique
+  m.build("cabin", 14, 4, { warp: 6 });                                  // trade house
+  m.build("snowCenter", 8, 23, { warp: 0 });
+  m.build("cabin", 15, 22); m.build("cabin", 27, 22); m.build("cabin", 33, 22);
+  for (const [x, y, w, h] of [[4, 12, 6, 4], [12, 14, 4, 4], [34, 4, 6, 4], [24, 14, 4, 2], [32, 14, 8, 2], [4, 30, 8, 4], [26, 30, 6, 4], [16, 30, 4, 4], [36, 20, 4, 2]]) m.set(x, y, w, h, "pine");
+  m.paint(0, (c) => { for (const [x0, y0, x1, y1] of [[22, 5, 22, 33], [10, 20, 39, 20], [10, 28, 10, 29], [30, 12, 30, 20], [7, 9, 22, 10]]) for (let y = y0 * 16; y < y1 * 16 + 16; y++) for (let x = x0 * 16; x < x1 * 16 + 16; x++) if (hash(x >> 1, y >> 1, 5) > 0.55) c.p(x, y, [196, 208, 230, 120]); });
+  m.person("xy:travel", 35, 29);
+});
+
+// Kiloude: the southern resort, with the Battle Maison at its heart.
+simple("KalosKiloudeCity", [4, 4, 39, 34], road("sand", [[20, 18, 22, 25], [5, 23, 38, 25], [9, 12, 37, 14], [20, 5, 22, 9]], "grass"), "tree", (m) => {
+  m.build("church", 18, 10, { warp: 1 });                                // Battle Maison
+  m.build("hall", 16, 26, { warp: 0 });                                  // Kiloude Station
+  m.build("gable", 9, 17, { warp: 2, tint: roof(1.9, 1.5, 0.6) });       // the fashion artist's house
+  m.build("gym", 33, 8, { warp: 3, tint: roof(0.6, 1.3, 0.6) });         // Friend Safari
+  m.build("hearthCenter", 7, 6, { warp: 4 });
+  m.build("gable", 30, 17, { tint: roof(0.8, 1, 1.6) }); m.build("gable", 35, 17, { tint: roof(1.5, 0.8, 0.8) });
+  flowerBeds(m, "flowersBlue", [[14, 16, 3, 5], [26, 16, 3, 5], [5, 27, 9, 3], [29, 27, 9, 3]]);
+  flowerBeds(m, "flowersRed", [[15, 6, 4, 3], [27, 5, 4, 2]]);
+  hedges(m, [[17, 12], [26, 12], [17, 15], [26, 15], [15, 31], [27, 31]]);
+  m.person("xy:kiloude-rival", 22, 7); m.person("xy:travel", 33, 29); m.person("xy:vs-recorder", 23, 23); m.person("xy:activity-fashion-artist", 9, 23);
+});
+
 // ---------------------------------------------------------------- output
 const lines = ["// Generated by tools/build-city-layouts.js. Street plans and decisions: docs/city-layouts.md.",
-  "(function(){", "const L=" + JSON.stringify(layouts) + ",P=" + JSON.stringify(points) + ";",
+  "(function(){", "const L=" + JSON.stringify(layouts) + ",P=" + JSON.stringify(points) + ",B=" + JSON.stringify(aliases) + ";",
+  "for(const n in B)for(const[home,map]of B[n])if(window[home].maps[map].image===n)window[home].maps[map].image=n+'Classic';",
   "for(const n in L){const m=window[L[n].home].maps[n];delete m.anim;Object.assign(m,L[n].map);}",
   "for(const[trail,x,y]of P){let o=window;for(const k of trail)o=o[k];o.x=x;o.y=y;}",
   "window.CITY_LAYOUTS=Object.keys(L);", "})();", ""];

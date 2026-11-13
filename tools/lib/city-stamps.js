@@ -22,6 +22,7 @@ module.exports = function (root) {
     JubilifeCity: [[30, 8], [12, 20]],
     HearthomeCity: [[24, 42], [36, 40], [16, 16]],
     CanalaveCity: [[10, 8], [10, 16]],
+    SnowpointCity: [[10, 30]],
   };
   // [source, x, y, w, h, door column (or null)] in 16px tiles.
   const STAMPS = {
@@ -50,12 +51,20 @@ module.exports = function (root) {
     fountain: ["HearthomeCity", 19, 40, 3, 4, null],
     hedge: ["HearthomeCity", 24, 20, 1, 1, null],
     barrel: ["HearthomeCity", 24, 12, 1, 1, null],
+    temple: ["SnowpointCity", 10, 3, 10, 7, 4],
+    cabin: ["SnowpointCity", 0, 16, 5, 5, 1],
+    snowGym: ["SnowpointCity", 12, 31, 7, 5, 3],
+    snowMart: ["SnowpointCity", 0, 42, 5, 5, 2],
+    snowCenter: ["SnowpointCity", 25, 41, 5, 5, 2],
   };
   const TILES = {
     paving: ["JubilifeCity", 30, 8], asphalt: ["JubilifeCity", 12, 20],
     brick: ["HearthomeCity", 24, 42], ornate: ["HearthomeCity", 36, 40],
     water: ["CanalaveCity", 16, 3], deck: ["CanalaveCity", 22, 15],
     lawn: ["HearthomeCity", 42, 14, 1], tree: ["HearthomeCity", 14, 6],
+    rock: ["EternaCity", 40, 44], grass: ["EternaCity", 12, 12], meadow: ["PastoriaCity", 40, 20],
+    flowersRed: ["FloaromaTown", 20, 6], flowersBlue: ["FloaromaTown", 14, 6], flowersPink: ["FloaromaTown", 12, 44],
+    sand: ["FloaromaTown", 19, 46, 1], snow: ["SnowpointCity", 10, 30], pine: ["SnowpointCity", 22, 10],
   };
   // Neighbouring trees, hedges and fences that fall inside a stamp's rectangle.
   const green = ([r, g, b]) => g > r * 1.15 && g > b * 1.15;
@@ -65,6 +74,8 @@ module.exports = function (root) {
     hearthCenter: (x, y, col) => x >= 96 && green(col),
     church: (x, y, col) => x < 24 && y >= 104 && green(col),
     hall: (x, y) => y < 16 && (x < 26 || x >= 150),
+    snowCenter: (x, y, [r, g, b]) => y < 14 && g > r,
+    cabin: (x, y, [r, g, b]) => y < 20 && g > r * 1.2 && b > r,
   };
   const same = (a, i, b, j) => a[i] === b[j] && a[i + 1] === b[j + 1] && a[i + 2] === b[j + 2];
   // Pixels of a stamp: null where the source shows only its own ground.

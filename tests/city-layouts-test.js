@@ -10,7 +10,8 @@ global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g))
   if (!file.startsWith("ui/")) vm.runInThisContext(fs.readFileSync(path.join(root, file), "utf8"), { filename: file });
 
-const CITIES = { UnovaCasteliaCity: 22, KalosLumioseSouth: 9, KalosLumioseNorth: 15 };
+const CITIES = { UnovaCasteliaCity: 22, KalosLumioseSouth: 9, KalosLumioseNorth: 15, KalosSantaluneCity: 8, KalosCyllageCity: 7, KalosShalourCity: 5,
+  KalosCoumarineLower: 2, KalosCoumarineUpper: 4, KalosLaverreCity: 6, KalosAnistarCity: 5, KalosSnowbelleCity: 7, KalosKiloudeCity: 5 };
 assert.deepEqual(window.CITY_LAYOUTS, Object.keys(CITIES));
 const open = (m, x, y) => x >= 0 && y >= 0 && x < m.width && y < m.height && !m.collision[y * m.width + x] && m.behavior[y * m.width + x] !== 0x10;
 let checks = 0;
@@ -43,6 +44,8 @@ for (const [name, warps] of Object.entries(CITIES)) {
   for (const a of [...m.people, ...m.signs]) assert([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => seen.has((a.x + dx) + "," + (a.y + dy))), name + ": " + a.script + " can be walked up to");
   for (const p of m.people) assert(!m.collision[p.y * m.width + p.x], name + ": " + p.script + " stands on open ground");
   assert(q.length > 250, name + " has streets to walk");
+  // Nobody else draws a map with this city's new picture.
+  for (const other of Object.values(WORLD_MAPS)) assert(other.image !== name, other.name + " still borrows " + name + "'s picture");
   checks += m.warps.length + m.people.length + m.signs.length;
 }
 
@@ -69,8 +72,16 @@ assert(door(N, "KalosRoute13").x < 5 && door(N, "KalosRoute16").x > 42 && door(N
 const tower = door(N, "KalosPrismLobby");
 assert(Math.abs(tower.x - 24) <= 1 && tower.y > 20, "Prism Tower stands on Centrico Plaza");
 
+// Alola's Hau'oli and Konikoni were drawn over Santalune's and Laverre's old pictures, and still are.
+for (const [alola, classic] of [["AlolaHauoliCity", "KalosSantaluneCityClassic"], ["AlolaKonikoniCity", "KalosLaverreCityClassic"]]) {
+  assert.equal(WORLD_MAPS[alola].image, classic);
+  for (const suffix of ["", "-top", "-border"]) assert(fs.existsSync(path.join(root, "assets/world/maps/" + classic + suffix + ".png")), classic + suffix);
+}
+// Fishing still works off Cyllage's shore.
+assert(WORLD_MAPS.KalosCyllageCity.behavior.includes(0x10) && WORLD_MAPS.KalosCyllageCity.kalosWater === "CyllageCity");
+
 // A save left where a wall now stands is moved to open ground with nothing else lost.
-for (const [region, map, x, y] of [[Unova, "UnovaCasteliaCity", 20, 20], [Kalos, "KalosLumioseSouth", 30, 9], [Kalos, "KalosLumioseNorth", 30, 14]]) {
+for (const [region, map, x, y] of [[Unova, "UnovaCasteliaCity", 20, 20], [Kalos, "KalosLumioseSouth", 30, 9], [Kalos, "KalosLumioseNorth", 30, 14], [Kalos, "KalosSantaluneCity", 8, 8], [Kalos, "KalosCyllageCity", 16, 8]]) {
   const m = WORLD_MAPS[map];
   assert(m.collision[y * m.width + x], map + " test tile is solid");
   const p = Player.create("RED", 0); p.party = [Party.create("Pikachu", 20)]; p.money = 4321; p.location = { map, x, y, facing: "down" };
@@ -78,4 +89,4 @@ for (const [region, map, x, y] of [[Unova, "UnovaCasteliaCity", 20, 20], [Kalos,
   assert.equal(p.location.map, map); assert(open(m, p.location.x, p.location.y), map + " save moved to open ground");
   assert.equal(p.money, 4321); assert.equal(p.party[0].species, "Pikachu");
 }
-console.log("ok: Castelia and Lumiose street plans (" + checks + " anchors, " + landings + " landings, old saves relocated)");
+console.log("ok: Castelia, Lumiose and the Kalos cities' street plans (" + checks + " anchors, " + landings + " landings, old saves relocated)");

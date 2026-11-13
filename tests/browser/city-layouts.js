@@ -3,7 +3,7 @@
 // Run: node tests/browser/city-layouts.js
 'use strict';
 const assert=require('node:assert/strict'),T=require('./lib'),fixture=require('./kalos-post-fixture');
-const CITIES=['UnovaCasteliaCity','KalosLumioseSouth','KalosLumioseNorth'];
+const CITIES=['UnovaCasteliaCity','KalosLumioseSouth','KalosLumioseNorth','KalosSantaluneCity','KalosCyllageCity','KalosShalourCity','KalosCoumarineLower','KalosCoumarineUpper','KalosLaverreCity','KalosAnistarCity','KalosSnowbelleCity','KalosKiloudeCity'];
 (async()=>{
  const s=await T.start(p=>{fixture(p);p.repelSteps=100000;p.party.forEach(m=>{m.level=75;Party.heal(m);});
    Object.assign(Kalos.state(p),{champion:true,azEnded:true,tmvPass:true,kiloudeRival:true,megaUpgraded:true,lookerMalva:true,lookerChapter:5});p.flags.kalosLeagueClear=true;for(const id of Object.keys(Kalos.data().trainers))p.flags[id]=true;

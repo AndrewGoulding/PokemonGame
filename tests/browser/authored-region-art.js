@@ -9,7 +9,7 @@ const candidates=[
  ["orre",["AgateVillage","RealgamTower_Exterior","PhenacCity"]],
  ["sinnoh",["SpearPillar","CanalaveCity","FloaromaTown"]],
  ["unova",["UnovaDriftveilCity","UnovaOpelucidCity","UnovaNimbasaCity"]],
- ["kalos",["KalosShalourCity","KalosGeosengeTown","KalosLaverreCity"]],
+ ["kalos",["KalosGeosengeTown"]],
  ["galar",["GalarBallonlea","GalarWyndonCity","GalarPostwick"]],
  ["alola",["AlolaMalieCity","AlolaSeafolkVillage","AlolaIkiTown"]],
  ["paldea",["PaldeaCascarrafa","PaldeaZeroLab","PaldeaMossuiTown"]]
