@@ -220,12 +220,14 @@
     if (!lim.max && st.opts.soldOut && st.opts.soldOut(it.id)) { await message(lim.why); return; }
     if (money < it.price) { await message(st.opts.currency ? st.opts.currency.short : "You don't have enough money."); return; }
     if (!lim.max) { await message(lim.why); return; }
-    await print(it.name + "? Certainly.\nHow many would you like?");
+    // Clothes, TMs and anything else that can only be bought once: no "How many?".
+    const single = lim.max === 1;
+    if (!single) await print(it.name + "? Certainly.\nHow many would you like?");
     const max = Math.max(1, Math.min(lim.max, 99, Math.floor(money / it.price)));
-    const n = max === 1 ? 1 : await howMany(it, max);
+    const n = single || max === 1 ? 1 : await howMany(it, max);
     st.qty = null;
     if (!n) return;
-    await print(it.name + ", and you want " + n + ".\nThat will be " + yen(n * it.price) + ". Okay?");
+    await print(single ? it.name + "? Certainly.\nThat will be " + yen(it.price) + ". Okay?" : it.name + ", and you want " + n + ".\nThat will be " + yen(n * it.price) + ". Okay?");
     const yes = await window.GbaMenus.yesNo(overlayEl, { frame: st.frame, left: 21, top: 9 });
     if (!yes) return;
     const r = st.opts.buy(it.id, n);
