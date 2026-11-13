@@ -7817,11 +7817,37 @@ console.log("ok: Gen 9, " + GEN9 + " random battles finished (" + gen9Turns + " 
   }
   // Secret Bases and decorations: the catalogue, its pictures, the spots and the rooms.
   {
-    assert.strictEqual(HS.decor.length, 120);
+    // (Emerald's 120, then Omega Ruby and Alpha Sapphire's own: data/oras-decor.js, on a tile sheet of their own from 4096.)
+    assert.strictEqual(HS.decor.filter((d) => !d.oras).length, 120);
+    assert.strictEqual(HS.decor.filter((d) => d.oras).length, 52);
+    assert(HS.decor.every((d, i) => d.id === i + 1) && new Set(HS.decor.map((d) => d.key)).size === HS.decor.length, "ids in order, no key twice");
+    const orasSheet = require("../tools/lib/png").readPng(path.join(root, "assets/world/maps/_decor_oras-mt.png"));
     for (const d of HS.decor) {
-      assert(d.name && d.price >= 0 && d.cat >= 0 && d.cat < 8 && d.w * d.h >= 1, d.key + " is in the catalogue");
+      assert(d.name && d.price >= 0 && d.cat >= 0 && d.cat < 8 && d.w * d.h >= 1 && d.desc.length, d.key + " is in the catalogue");
       if (d.perm === "sprite") assert(d.tiles[0] && fs.existsSync(path.join(root, "assets/world/sprites/" + d.tiles[0].sprite + ".png")), d.key + "'s picture");
-      else assert(d.tiles.length === d.w * d.h && d.tiles.every((t) => t >= 512 && t <= 0x340), d.key + "'s tiles");
+      else if (!d.oras) assert(d.tiles.length === d.w * d.h && d.tiles.every((t) => t >= 512 && t <= 0x340), d.key + "'s tiles");
+      else {
+        assert(d.tiles.length === d.w * d.h, d.key + "'s tiles");
+        // (each of its tiles is on the sheet, and something is drawn on the decoration)
+        let drawn = 0;
+        for (const t of d.tiles) { const k = t - 512 - 4096, tx = (k % 16) * 16, ty = Math.floor(k / 16) * 16; assert(k >= 0 && ty + 16 <= orasSheet.height, d.key + " tile " + t); for (let i = 0; i < 256; i++) if (orasSheet.rgba[((ty + (i >> 4)) * orasSheet.width + tx + (i & 15)) * 4 + 3]) drawn++; }
+        assert(drawn > 40, d.key + " has a picture");
+      }
+    }
+    // Every decoration can be got: a shop's counter sells it, or a script gives it.
+    {
+      const scripts = JSON.stringify(HS.s), sold = new Set(Object.values(HS.tb).flat().map((r) => r[0]));
+      const counters = new Set([...scripts.matchAll(/\["pokemartdecoration2?","(\w+)"/g)].map((m) => m[1]));
+      const onSale = new Set([...counters].flatMap((k) => (HS.tb[k] || []).map((r) => r[0])));
+      for (const k of counters) assert(HS.tb[k] && HS.tb[k].length, k + " has stock");
+      const none = HS.decor.filter((d) => !onSale.has("DECOR_" + d.key) && !new RegExp("DECOR_" + d.key + "\\b").test(scripts)).map((d) => d.key);
+      assert.deepStrictEqual(none, [], "decorations nothing sells or gives");
+      for (const k of sold) if (/^DECOR_/.test(k)) assert(HS.decor.some((d) => "DECOR_" + d.key === k), k + " is in the catalogue");
+      // (And the Poké Marts' own lists, which the same fault had emptied.)
+      const marts = new Set([...scripts.matchAll(/\["pokemart","(\w+)"/g)].map((m) => m[1]));
+      assert(marts.size >= 20);
+      for (const k of marts) assert(HS.tb[k] && HS.tb[k].length >= 2, k + " has stock");
+      assert.deepStrictEqual(HS.tb.OldaleTown_Mart_Pokemart_Basic.map((r) => r[0]), ["ITEM_POTION", "ITEM_ANTIDOTE", "ITEM_PARALYZE_HEAL", "ITEM_AWAKENING"]);
     }
     for (const t of ["RedCave", "BrownCave", "BlueCave", "YellowCave", "Tree", "Shrub"]) assert(fs.existsSync(path.join(root, "assets/world/maps/_decor_" + t + "-mt.png")), t + "'s decoration tiles");
     const bases = Object.values(WORLD_MAPS).filter((m) => /^SecretBase_/.test(m.name));

@@ -2245,7 +2245,8 @@
   // Hoenn's decorations (ui/hoenn-decor.js): the ones you own, and those out in your Secret Base and your room.
   const hoennDecor = HoennDecor.create({
     player: () => player, say: (p) => say(p), confirm: (q) => confirm(q), sfx,
-    choose: async (q, texts) => { const i = await multichoice(q, 0, 0, texts); Screen.say(""); return i; },
+    // (A long list, a shop's counter or a full category, scrolls six at a time.)
+    choose: async (q, texts) => { const i = await multichoice(q, 0, 0, texts, texts.length > 7 ? { shown: 6 } : undefined); Screen.say(""); return i; },
     canvas: () => overlayCanvas(), baseMap: () => (player.flags.secretBase || {}).map || null,
     // (Someone else's base, while you're in it: its decorations, not yours.)
     visitMap: () => { const v = hoennVisiting(); return v && player.location.map === v.room ? v.room : null; }, visitPlaced: () => (hoennVisiting() || {}).placed || [],

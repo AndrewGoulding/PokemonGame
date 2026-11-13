@@ -15,7 +15,8 @@
   "use strict";
 
   const W = 240, H = 160, TILE = 16;
-  const CAPACITY = [10, 10, 10, 30, 30, 10, 40, 10];   // (desks, chairs, plants, ornaments, mats, posters, dolls, cushions)
+  // (Emerald's, with room made for Omega Ruby and Alpha Sapphire's: more ornaments, mats and posters.)
+  const CAPACITY = [12, 10, 12, 70, 45, 20, 45, 10];   // (desks, chairs, plants, ornaments, mats, posters, dolls, cushions)
   const MAX_PLACED = { base: 16, room: 12 };
 
   const images = {};
@@ -129,14 +130,16 @@
       const g = layer.getContext("2d");
       const sheet = sheetOf(map), below = image("assets/world/maps/" + map + ".png"), top = m.top ? image("assets/world/maps/" + map + "-top.png") : null;
       const dBelow = sheet ? image("assets/world/maps/_decor_" + sheet + "-mt.png") : null, dTop = sheet ? image("assets/world/maps/_decor_" + sheet + "-mt-top.png") : null;
-      await Promise.all([below, top, dBelow, dTop].filter(Boolean).map((i) => i.loaded));
+      const dOras = image("assets/world/maps/_decor_oras-mt.png");
+      await Promise.all([below, top, dBelow, dTop, dOras].filter(Boolean).map((i) => i.loaded));
       canvas.classList.remove("hidden");
       g.imageSmoothingEnabled = false;
       let cx = Math.min(m.width - 1, Math.max(0, (m.warps[0] || { x: 1 }).x)), cy = Math.max(0, Math.min(m.height - 1, (m.warps[0] || { y: m.height - 2 }).y - 2));
       // (It starts on the first place it can go, if there is one.)
       first: for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) if (canPlace(ctx, map, d, x, y)) { cx = x; cy = y; break first; }
       const ok = () => canPlace(ctx, map, d, cx, cy);
-      const drawTiles = (list, sheetImg) => { if (!ready(sheetImg)) return; for (const [x, y, n] of list) g.drawImage(sheetImg, (n % 16) * 16, Math.floor(n / 16) * 16, 16, 16, x * TILE - camX, y * TILE - camY, 16, 16); };
+      // (Omega Ruby and Alpha Sapphire's own tiles, n from 4096, are on a sheet of their own, below the people.)
+      const drawTiles = (list, sheetImg) => { for (const [x, y, n] of list) { const from = n >= 4096 ? (sheetImg === dTop ? null : dOras) : sheetImg, k = n >= 4096 ? n - 4096 : n; if (from && ready(from)) g.drawImage(from, (k % 16) * 16, Math.floor(k / 16) * 16, 16, 16, x * TILE - camX, y * TILE - camY, 16, 16); } };
       const ghostTiles = () => (d.perm === "sprite" ? [] : footprint(d, cx, cy).map(([x, y, r, c]) => [x, y, d.tiles[r * d.w + c] - 512]));
       let camX = 0, camY = 0;
       for (;;) {

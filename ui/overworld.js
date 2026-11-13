@@ -174,8 +174,12 @@
     // (Decorations put out in a secret base: the base's kind's tiles, a sheet each: ctx.decor(map) -> [[x, y, n]].)
     const m = World.map(name), deco = ctx && ctx.decor && m && m.decorSheet ? ctx.decor(name) : null;
     if (deco && deco.length) {
-      const img = mapImage("_decor_" + m.decorSheet, top ? "mt-top" : "mt");
-      if (ready(img)) for (const [x, y, n] of deco) g.drawImage(img, (n % 16) * 16, Math.floor(n / 16) * 16, 16, 16, x0 + x * TILE, y0 + y * TILE, 16, 16);
+      // (Omega Ruby and Alpha Sapphire's own, n from 4096: one sheet for every kind of base, drawn below the people.)
+      const img = mapImage("_decor_" + m.decorSheet, top ? "mt-top" : "mt"), oras = top ? null : mapImage("_decor_oras", "mt");
+      for (const [x, y, n] of deco) {
+        const from = n >= 4096 ? oras : img, k = n >= 4096 ? n - 4096 : n;
+        if (from && ready(from)) g.drawImage(from, (k % 16) * 16, Math.floor(k / 16) * 16, 16, 16, x0 + x * TILE, y0 + y * TILE, 16, 16);
+      }
     }
   }
 
@@ -185,7 +189,7 @@
     if (m.top) list.push(mapImage(name, "top"));
     if (m.anim) list.push(mapImage(name, "anim"));
     if (m.mt) list.push(mapImage(name, "mt"), mapImage(name, "mt-top"));
-    if (m.decorSheet) list.push(mapImage("_decor_" + m.decorSheet, "mt"), mapImage("_decor_" + m.decorSheet, "mt-top"));
+    if (m.decorSheet) list.push(mapImage("_decor_" + m.decorSheet, "mt"), mapImage("_decor_" + m.decorSheet, "mt-top"), mapImage("_decor_oras", "mt"));
     for (const p of Object.keys(m.patches || {})) list.push(mapImage(name, "patch-" + p), ...(m.patches[p].anim ? [mapImage(name, "patch-" + p + "-anim")] : []));
     for (const c of m.connections) if (c.map && World.map(c.map)) list.push(mapImage(c.map), ...(World.map(c.map).top ? [mapImage(c.map, "top")] : []));
     for (const p of m.people) { list.push(spriteImage(p.sprite)); if (p.alt) list.push(spriteImage(p.alt.sprite)); }

@@ -22,6 +22,8 @@
     "build:breeding": "node tools/build-breeding.js",
     "build:orre-layouts": "node tools/build-orre-layouts.js",
     "build:city-layouts": "node tools/build-city-layouts.js",
+    "build:hoenn-marts": "node tools/build-hoenn-marts.js",
+    "build:oras-decor": "node tools/build-oras-decor.js",
     "build:platinum": "node tools/build-platinum.js",
     "build:unova": "node tools/build-unova.js",
     "build:unova-bw": "node tools/build-unova-bw.js",
