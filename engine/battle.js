@@ -3318,12 +3318,14 @@
         const w = this.getWeather();
         const sunSkip = ((move.id === "solarbeam" || move.id === "solarblade") && (w === "SunnyDay" || w === "DesolateLand" || user.hasAbility("Mega Sol")))
           || (move.id === "electroshot" && (w === "RainDance" || w === "PrimordialSea"));
-        if (sunSkip && move.id === "electroshot") this.boost(user, { spa: 1 }, user, E("Move", "electroshot", "Electro Shot"));
+        // (What charging it raises: with a Power Herb, or Electro Shot in the rain, too.)
+        const rise = move.id === "skullbash" ? { def: 1 } : move.id === "meteorbeam" || move.id === "electroshot" ? { spa: 1 } : null;
+        if (rise && (sunSkip || user.item === "power-herb")) this.boost(user, rise, user, E("Move", move.id, move.name));
         if (sunSkip) { /* fires immediately */ }
         else if (user.item === "power-herb") { this.consumeItem(user); this.add("-enditem", user, "Power Herb"); }
         else {
           this.add("-prepare", user, move.name);
-          if (move.id === "meteorbeam" || move.id === "electroshot") this.boost(user, { spa: 1 }, user, E("Move", move.id, move.name));
+          if (rise) this.boost(user, rise, user, E("Move", move.id, move.name));
           user.volatiles.twoturnmove = { id: "twoturnmove", move: move.name, invuln: INVULN[move.id] || null };
           // (Doubles: it strikes the same position next turn.)
           if (this.doubles && target && target !== user) user.volatiles.twoturnmove.targetLoc = this.locOf(target, user);

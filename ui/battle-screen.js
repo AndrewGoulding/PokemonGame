@@ -149,11 +149,13 @@
     wanderingspirit: "{who} swapped Abilities with its target!", iceface: null, gulpmissile: null
   };
   const PREPARE = {
-    solarbeam: "{who} absorbed light!", dig: "{who} burrowed its way under the ground!", electroshot: "{who} absorbed electricity!",
+    solarbeam: "{who} absorbed light!", solarblade: "{who} absorbed light!", dig: "{who} burrowed its way under the ground!", electroshot: "{who} absorbed electricity!",
     fly: "{who} flew up high!", bounce: "{who} sprang up!", dive: "{who} hid underwater!",
     phantomforce: "{who} vanished instantly!", shadowforce: "{who} vanished instantly!",
     skullbash: "{who} tucked in its head!", skyattack: "{who} became cloaked in a harsh light!",
     razorwind: "{who} whipped up a whirlwind!", geomancy: "{who} is absorbing power!",
+    freezeshock: "{who} became cloaked in a freezing light!", iceburn: "{who} became cloaked in freezing air!",
+    meteorbeam: "{who} is overflowing with space power!",
     skydrop: "{who} took its target into the sky!"
   };
   const ABILITY = {
@@ -873,7 +875,8 @@
   const subSwapped = {};
   function placeDoll(id) {
     const v = view[id], { sprite, doll } = el.sides[id];
-    const on = !!(v && v.species && v.substitute && !subSwapped[id] && !v.fainted && !v.inBall && !v.commanding);
+    // (Not while it's out of sight for a two-turn move: under the ground, up in the air.)
+    const on = !!(v && v.species && v.substitute && !subSwapped[id] && !v.fainted && !v.inBall && !v.commanding && !sprite.classList.contains("flying"));
     doll.classList.toggle("hidden", !on);
     sprite.classList.toggle("behind-sub", on);
     if (!on) return;
@@ -991,7 +994,14 @@
   // positions it aims at (the Pokémon opposite otherwise, as in singles).
   // setUp: a two-turn move's first turn (its charging animation, not its strike).
   // Two-turn moves whose user is out of sight between its turns (Fly has its own scene).
-  const GOES_AWAY = new Set(["Dig", "Dive", "Bounce", "Phantom Force", "Shadow Force"]);
+  const GOES_AWAY = new Set(["Dig", "Dive", "Bounce", "Phantom Force", "Shadow Force", "Sky Drop"]);
+  // Out of sight (its Substitute's doll too), or back.
+  function outOfSight(pos, on) {
+    const sprite = el.sides[pos] && el.sides[pos].sprite;
+    if (!sprite || sprite.classList.contains("flying") === on) return;
+    sprite.classList.toggle("flying", on);
+    placeDoll(pos);
+  }
   async function animateMove(side, name, targets, setUp) {
     const data = window.MOVES && window.MOVES[name];
     if (!data || !sceneOn()) return;
@@ -1382,8 +1392,7 @@
   // target (gBasicHitSplatSpriteTemplate, 8 frames, at 12/16), the target
   // shakes (6 pixels, 8 times, every other frame) and SE_M_RAZOR_WIND.
   async function flyUp(pos) {
-    const sprite = el.sides[pos].sprite;
-    sprite.classList.add("flying");
+    outOfSight(pos, true);
     if (!sceneOn()) return;
     sfx("se_m_fly");
     const [x, y0] = gbaCenter(pos);
@@ -1401,7 +1410,7 @@
   }
   async function flyAttack(pos, aim, lands) {
     const sprite = el.sides[pos].sprite;
-    if (!sceneOn() || !lands) { sprite.classList.remove("flying"); return; }
+    if (!sceneOn() || !lands) { outOfSight(pos, false); return; }
     sfx("se_m_double_team");
     const mine = sideOf(pos) === "p1";
     const [x0, y0] = mine ? [-32, -32] : [272, -32];
@@ -1424,7 +1433,7 @@
     ball.remove();
     // (Back at once, no fade.)
     sprite.style.transition = "none";
-    sprite.classList.remove("flying");
+    outOfSight(pos, false);
     void sprite.offsetWidth;
     sprite.style.transition = "";
     await Promise.all(hits);
@@ -1564,8 +1573,10 @@
     const v = view[pos];
     // (Dynamax ends when it faints or leaves the field: the picture goes back to size.)
     if ((type === "switch" || type === "drag" || type === "faint") && el.sides[pos]) el.sides[pos].sprite.classList.remove("dynamax", "gigantamax");
-    // (Up in the air from Fly until it comes down: back when it can't move, faints or leaves.)
-    if ((type === "switch" || type === "drag" || type === "faint" || type === "cant") && el.sides[pos]) el.sides[pos].sprite.classList.remove("flying");
+    // (Up in the air from Fly, under the ground from Dig...: back when it can't move (hurting itself in its
+    // confusion too), faints or leaves, and when the Pokémon that took it up with Sky Drop lets go of it.)
+    if ((type === "switch" || type === "drag" || type === "faint" || type === "cant" || (type === "-damage" && c === "[from] confusion")
+        || (type === "-end" && effectId(b) === "skydrop")) && el.sides[pos]) outOfSight(pos, false);
 
     switch (type) {
       case "switch":
@@ -1654,18 +1665,21 @@
           const aim = (aims && aims[0]) || opposite(pos);
           return async () => { await message(text, 400); if (setUp) await flyUp(pos); else await flyAttack(pos, battle.doubles ? aim : otherSide(side), lands); };
         }
-        if (b === "Transform") return async () => { el.sides[pos].sprite.classList.remove("flying"); await message(text, 400); };
+        if (b === "Transform") return async () => { outOfSight(pos, false); await message(text, 400); };
         // (Dig, Dive and the like: the first turn's animation takes the user out of sight, and it stays
         // out of sight until it strikes; the strike's animation brings it back.)
         const charging = !!(battle.events[cursor] && battle.events[cursor][0] === "-prepare" && battle.events[cursor][1] === a);
+        // (Sky Drop: the Pokémon it takes up, "-prepare"'s, is out of sight with it, and comes down with it.)
+        const taken = b === "Sky Drop" ? posOf(charging ? battle.events[cursor][3] : ev[3]) : null;
         if (b === "Substitute" && lands) madeSub = pos;
         return async () => {
           await message(text, 400);
-          el.sides[pos].sprite.classList.remove("flying");
+          outOfSight(pos, false);
+          if (taken && !charging) outOfSight(taken, false);
           if (b === "Magnitude" || !lands) return;
           if (charging) {
-            await animateMove(pos, b, aims, true);
-            if (GOES_AWAY.has(b)) el.sides[pos].sprite.classList.add("flying");
+            await animateMove(pos, b, taken ? [taken] : aims, true);
+            if (GOES_AWAY.has(b)) { outOfSight(pos, true); if (taken) outOfSight(taken, true); }
             return;
           }
           // (Behind a Substitute: it comes out for its move and goes back
