@@ -43,7 +43,8 @@
       const team = env.VICTORY_ROAD_RIVAL_TEAM.map(([sp, lv, item]) => Object.assign(Party.create(sp, lv, { ivs: Math.floor((sp === "Umbreon" ? 250 : 150) * 31 / 255) }),
         item ? { item } : {}));
       const outcome = await env.battle("trainer", { foe: { name: "Rival " + env.player.rival, team, pic: "rival_late" },
-        defeatText: ["{RIVAL}: What!? Again!?", "Tch… I was just warming up!"], prize: 36 * 53 });
+        defeatText: ["{RIVAL}: What!? Again!?", "Tch… I was just warming up!"],
+        prize: 100 * Math.max(...team.map((m) => m.level)) });   // (the Champion's rate: 5800 for his Lv. 58 Umbreon; it was 1908)
       if (outcome !== "won") { if (Overworld.personPosition(R)) Overworld.removeObject(R); return; }
       f.victoryRoadRival = true;
       env.show("world");

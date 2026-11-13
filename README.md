@@ -1589,7 +1589,7 @@ Take Down and Swords Dance (Silph Co. 10F, 5F, 7F), Sky Attack, Submission, Mega
 Kick and Explosion (Victory Road). Gold, Silver and Crystal's: Endure (Burned
 Tower B1F), Snore (Dark Cave), Rest (Ice Path B2F), Detect (Lake of Rage), Defense
 Curl (Mt. Mortar 2F), Steel Wing (Rock Tunnel 1F), Solar Beam (Route 27), Rollout
-(Route 35), Swift (Union Cave B1F) and Earthquake (Victory Road 3F). Each is on
+(Route 35) and Swift (Union Cave B1F). Earthquake comes only from Giovanni. Each is on
 open floor you can reach, blocking no way through, ladder or door, no boulder's
 path and no spinner's or ice's slide. And a Metal Coat lies in Rock Tunnel (B1F).
 Johto's own item balls give HeartGold's TM by its move (its TM82 is Sleep Talk,

@@ -4341,7 +4341,6 @@
     { map: "Route27", x: 88, y: 23, item: "tm22" },   // (Solar Beam)
     { map: "Route35", x: 28, y: 60, item: "tm147" },   // (Rollout)
     { map: "UnionCave_B1F", x: 12, y: 42, item: "tm138" },   // (Swift)
-    { map: "VictoryRoad_3F", x: 38, y: 9, item: "tm26" },   // (Earthquake)
     { map: "RockTunnel_B1F", x: 24, y: 19, item: "metal-coat" },   // (Metal Coat)
   // (Johto's are at HGSS's tiles: on its maps as they are now, Heart & Soul's, ui/johto-coords.js. Their scripts and
   // flags keep the HGSS map's name, so one picked up stays picked up.)
