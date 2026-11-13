@@ -5744,7 +5744,7 @@
 
   // ---------- The GS Ball (Pokémon Crystal's) ----------
   //
-  // This game's way to it: once you've been through the Hall of Fame, Prof.
+  // This game's way to it: once you've beaten Johto's Pokémon League, Prof.
   // Oak in his lab gives you the GS Ball (Crystal's came from Goldenrod's
   // Pokémon Center, and Kurt looked it over first). Put it in Ilex Forest's
   // shrine (Crystal's IlexForestShrineScript, its words) and Celebi appears,
@@ -5942,8 +5942,8 @@
     TRAINER_LEADER_GIOVANNI: [[0, "Rhydon"], [1, "Persian"], [4, "Kangaskhan", { item: "kangaskhanite", teraType: "Fighting", teraAce: true }]],
     // Sabrina (Saffron Gym): Jynx in Kadabra's place.
     TRAINER_LEADER_SABRINA: [[0, "Jynx"]],
-    // Bruno: Hitmontop in his second Onix's (Steelix's) place.
-    TRAINER_ELITE_FOUR_BRUNO: [[3, "Hitmontop"]], TRAINER_ELITE_FOUR_BRUNO_2: [[3, "Hitmontop"]],
+    // Bruno: Steelix for his first Onix (his rematch team has it already), Hitmontop in his second Onix's (Steelix's) place.
+    TRAINER_ELITE_FOUR_BRUNO: [[0, "Steelix"], [3, "Hitmontop"]], TRAINER_ELITE_FOUR_BRUNO_2: [[3, "Hitmontop"]],
     // Agatha: Hisuian Typhlosion, Cursola, Alolan Marowak, Mismagius and her ace, Mega Gengar (Tera Dark).
     TRAINER_ELITE_FOUR_AGATHA: [[0, "Typhlosion-Hisui"], [1, "Cursola"], [2, "Marowak-Alola"], [3, "Mismagius"], [4, null, { item: "gengarite", teraType: "Dark", teraAce: true }]],
     TRAINER_ELITE_FOUR_AGATHA_2: [[0, "Typhlosion-Hisui"], [1, "Cursola"], [2, "Marowak-Alola"], [3, "Mismagius"], [4, null, { item: "gengarite", teraType: "Dark", teraAce: true }]],
@@ -10827,7 +10827,7 @@
   // tag battle: this game's own; FireRed's is you against one); beaten, he won't say where
   // they've taken the Pokémon until her Lapras makes him, then they run off:
   // the Rocket Warehouse on Five Island.
-  const ICEFALL_LORELEI = [["Dewgong", 40], ["Jynx", 40], ["Lapras", 42]];
+  const ICEFALL_LORELEI = [["Dewgong", 52], ["Jynx", 54], ["Lapras", 54]];   // (her Elite Four levels)
   const ICEFALL_GRUNT2 = [["Sneasel", 38], ["Koffing", 38], ["Golbat", 39]];
 
   // The Memorial Pillar: a man scrubbing his Onix's grave. Leave a Lemonade

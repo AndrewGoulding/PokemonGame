@@ -2615,7 +2615,7 @@ blocks slide along it when you walk into them, stopping at a wall (to be
 pushed again) or setting fast against someone, or frozen together against
 another block for good.
 
-**The GS Ball** (Pokémon Crystal's event): once you've been through the Hall of Fame, Prof.
+**The GS Ball** (Pokémon Crystal's event): once you've beaten Johto's Pokémon League, Prof.
 Oak in his lab in Pallet Town gives you the GS Ball (a Key Item; Crystal's came from Goldenrod's
 Pokémon Center and Kurt looked it over first). Check Ilex Forest's shrine with it and you're asked
 (Crystal's words) whether to put it in; yes, and a wild **Celebi** appears at Lv. 50 (Crystal's was

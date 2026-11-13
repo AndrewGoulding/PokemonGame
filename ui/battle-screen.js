@@ -989,12 +989,16 @@
   }
   // `side` is the user's position; `targets`, in a double battle, the
   // positions it aims at (the Pokémon opposite otherwise, as in singles).
-  async function animateMove(side, name, targets) {
+  // setUp: a two-turn move's first turn (its charging animation, not its strike).
+  // Two-turn moves whose user is out of sight between its turns (Fly has its own scene).
+  const GOES_AWAY = new Set(["Dig", "Dive", "Bounce", "Phantom Force", "Shadow Force"]);
+  async function animateMove(side, name, targets, setUp) {
     const data = window.MOVES && window.MOVES[name];
     if (!data || !sceneOn()) return;
     const foeSide = opposite(side);
     const aims = targets && targets.length ? targets : [battle.doubles ? foeSide : (side === "p1" ? "p2" : "p1")];
-    if (await expansionAnim(side, name, data, aims)) return;
+    if (await expansionAnim(side, name, data, aims, setUp)) return;
+    if (setUp) return;
     const user = el.sides[side].sprite;
     const color = TYPE_COLOR[data.type] || "#fff";
     const self = data.cat === "Status" && /^(self|allySide|allies|adjacentAllyOrSelf|all)$/.test(data.target);
@@ -1046,7 +1050,7 @@
   // The move's own animation, pokeemerald-expansion's (ui/battle-anim.js:
   // its script and C, run as the GBA runs them over the field); false if
   // there's none to play (the one above, then).
-  function expansionAnim(side, name, data, aims) {
+  function expansionAnim(side, name, data, aims, setUp) {
     const BA = window.BattleAnim;
     if (!BA || !BA.has(name)) return Promise.resolve(false);
     const target = aims.find((a) => a !== side) || aims[0];
@@ -1055,7 +1059,8 @@
       move: name, type: data.type, category: data.cat, turn: 0, power: data.power || 0, damage: 40, itemPicture: null })));
     const o = Object.assign(animOpts(side, target), {
       move: name, type: data.type, category: data.cat,
-      turn: data.flags && data.flags.charge ? 1 : 0, power: data.power || 0, damage: 40,
+      // (A two-turn move: the GBA's script has an animation for each turn, charging (0) and striking (1).)
+      turn: data.flags && data.flags.charge && !setUp ? 1 : 0, power: data.power || 0, damage: 40,
       itemPicture: heldItemPicture(name === "Poltergeist" ? target : side)
     });
     // (A horde's spread move: the GBA's script has the target and one more; what it draws round the target
@@ -1650,11 +1655,19 @@
           return async () => { await message(text, 400); if (setUp) await flyUp(pos); else await flyAttack(pos, battle.doubles ? aim : otherSide(side), lands); };
         }
         if (b === "Transform") return async () => { el.sides[pos].sprite.classList.remove("flying"); await message(text, 400); };
-        el.sides[pos].sprite.classList.remove("flying");
+        // (Dig, Dive and the like: the first turn's animation takes the user out of sight, and it stays
+        // out of sight until it strikes; the strike's animation brings it back.)
+        const charging = !!(battle.events[cursor] && battle.events[cursor][0] === "-prepare" && battle.events[cursor][1] === a);
         if (b === "Substitute" && lands) madeSub = pos;
         return async () => {
           await message(text, 400);
+          el.sides[pos].sprite.classList.remove("flying");
           if (b === "Magnitude" || !lands) return;
+          if (charging) {
+            await animateMove(pos, b, aims, true);
+            if (GOES_AWAY.has(b)) el.sides[pos].sprite.classList.add("flying");
+            return;
+          }
           // (Behind a Substitute: it comes out for its move and goes back
           // behind the doll after, as in FireRed.)
           const behind = v.substitute && !subSwapped[pos];

@@ -2086,7 +2086,7 @@ if (WORLD_MAPS.CherrygroveCity && WORLD_MAPS.CherrygroveCity.region === "johto")
 {
   assert(ITEMS["gs-ball"] && ITEMS["gs-ball"].category === "key-items" && Bag.name("gs-ball") === "GS Ball" && Bag.sprite("gs-ball"), "the GS Ball, a Key Item with its picture");
   const gJs = readGameSource();
-  assert(/else if \(f\.gameClear && !f\.gotGsBall\) await oakGsBall\(\);/.test(gJs), "Oak gives it after the Hall of Fame");
+  assert(/else if \(f\.johtoLeagueClear && !f\.gotGsBall\) await oakGsBall\(\);/.test(gJs), "Oak gives it after Johto's League");
   assert(/script === "hgss:D36R0101:scr_seq_D36R0101_012" && Player\.itemCount\(player, "gs-ball"\) > 0/.test(gJs) && /Party\.create\("Celebi", 50\)/.test(gJs), "the shrine: a Lv. 50 Celebi");
   assert(Object.keys(WORLD_MAPS).filter((n) => /PokemonCenter/.test(n)).every((n) => !WORLD_MAPS[n].cycling), "no cycling in Pokémon Centers");
   assert(Object.values(WORLD_MAPS).some((m) => m.region === "johto" && m.people.some((p) => p.sprite === "hgss_gsman3")), "HGSS's own Ace Trainers");
@@ -5499,6 +5499,7 @@ for (let seed = 1; seed <= GEN8; seed++) {
       assert.deepStrictEqual(swapped("TRAINER_ELITE_FOUR_LANCE" + r).map((m) => m.species), ["Gyarados", "Kingdra", "Charizard", "Aerodactyl", "Dragonite"]);
       assert.strictEqual(swapped("TRAINER_ELITE_FOUR_LANCE" + r)[4].teraType, "Flying");
       assert.strictEqual(swapped("TRAINER_ELITE_FOUR_BRUNO" + r)[3].species, "Hitmontop");
+      assert.strictEqual(swapped("TRAINER_ELITE_FOUR_BRUNO" + r)[0].species, "Steelix", "Bruno leads with Steelix, first battle and rematch");
     }
     assert.deepStrictEqual(swapped("TRAINER_LEADER_GIOVANNI").map((m) => m.species), ["Rhydon", "Persian", "Nidoqueen", "Nidoking", "Kangaskhan"]);
     assert.strictEqual(swapped("TRAINER_LEADER_SABRINA")[0].species, "Jynx");

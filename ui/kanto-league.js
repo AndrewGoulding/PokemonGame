@@ -172,7 +172,8 @@
       env.sfx("se_rs_door");
       env.applyPatches(env.player.location.map);
       await env.persist();
-      await env.say(X("PostBattle"));
+      // (Lance names the Champion ahead: in this game Red, not your rival.)
+      await env.say(k === 3 ? X("PostBattle").map((line) => line.replace("{RIVAL}", "Red")) : X("PostBattle"));
       await lookAway();
     }
 

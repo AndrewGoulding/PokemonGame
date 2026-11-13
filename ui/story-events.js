@@ -577,7 +577,7 @@
         case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
           if (!f.starter) await env.say(ev.person.text);
           else if (f.orreStory >= 1) await env.oakOrre();
-          else if (f.gameClear && !f.gotGsBall) await env.oakGsBall();
+          else if (f.johtoLeagueClear && !f.gotGsBall) await env.oakGsBall();
           else if (f.oaksParcel && !f.parcelDelivered) await env.pokedexScene();
           else if (f.parcelDelivered) await env.say(env.T("PalletTown_ProfessorOaksLab_Text_OakMonsAroundWorldWait"));
           else if (!f.rivalLabBattle) await env.say(env.T("PalletTown_ProfessorOaksLab_Text_OakCanReachNextTownWithMon"));
