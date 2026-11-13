@@ -35,8 +35,8 @@ only Santalune's and Cyllage's doors moved. Alola's Hau'oli and Konikoni were
 drawn over Santalune's and Laverre's old pictures, which are kept for them as
 `KalosSantaluneCityClassic*` and `KalosLaverreCityClassic*`.
 
-Kalos's towns (Vaniville, Aquacorde, Camphrier, Ambrette, Geosenge, Dendemille,
-Couriway) and routes still use the old template.
+Kalos's towns and routes, and the rest of Unova, are covered by the themed
+layouts described under [The rest of Kalos and Unova](#the-rest-of-kalos-and-unova).
 
 The buildings, paving, water and fountains are cut from the Sinnoh city
 pictures already in `assets/world/maps/` (`tools/lib/city-stamps.js`), so the
@@ -89,3 +89,66 @@ source repaints these maps' pictures, so run it again afterwards.
 To add a city: write a `city(name, ground)` block in the builder, place
 buildings with `m.build(stamp, x, y, { warp })`, set gates with `m.warp`, and
 call `finish` and `retarget`.
+
+## The rest of Kalos and Unova
+
+![Kalos towns and routes](region-layouts-kalos-preview.png)
+![Unova towns and routes](region-layouts-unova-preview.png)
+
+`tools/build-region-layouts.js` relays the other 181 outdoor maps: Kalos's seven
+towns and all its routes, every Unova city, town and route other than Castelia,
+and the Black/White campaign's copies (`BW1...`). It writes
+`data/region-layouts.js`, which loads after `data/city-layouts.js`.
+
+These are **not** hand-drawn street plans. Each map is grown from its own
+anchors:
+
+- Every door, gate, person, sign, item and stored landing stays on the tile it
+  had. Nothing in a save, script or Fly list needed to change.
+- A building cut from the Sinnoh pictures is set on each door (Pokémon Center,
+  Gym, shop, lab, station/hall, house), cave mouths and gatehouses are drawn on
+  their warps, and towns get a few extra houses with no way in.
+- Roads are routed between all the doors and gates; routes wind, town streets
+  run straight.
+- Tall grass is laid in patches, the same number of tiles as before. All the
+  old water is kept (shores are roughened), so Surf and fishing spots have not
+  moved, and land that water kept apart is still apart.
+- Trees, groves, rocks and flower beds fill the rest, then anything that would
+  cut off a person, gate or grass patch is cleared again.
+
+Each place has a theme chosen from what the games show there (the `KALOS` and
+`UNOVA` tables in the builder): forest for Santalune Forest, Pinwheel Forest and
+the Winding Woods; marsh for Kalos Routes 14 and 19 and Icirrus; autumn for
+Routes 15 and 16; snow for Dendemille, Frost Cavern and Route 17; desert for
+Route 4, the Desert Resort and the Lumiose Badlands; ash for Lentimas; a dark
+tower city for Black City; plank bridges for Skyarrow and the others; and so
+on. A few have a landmark: Nimbasa's Ferris wheel, the Mistralton and Lentimas
+runways, Anville's turntable, Floccesy's clock tower, Virbank's factory.
+
+### Honest limits of the themed layouts
+
+- **They are procedural, not the games' real maps.** The theme and the
+  landmarks come from memory; where the road bends and where the trees stand is
+  generated. Nobody should expect to recognise Route 7's actual shape.
+- **Doors did not move**, so each town's buildings stand where the old
+  template put them.
+- Two doors had no room for a building and get a small porch instead (the
+  Scary House on Kalos Route 14, which stands in water as it did before, and
+  Striaton's restaurant).
+- Water no longer animates on these maps (the old animation sheets are removed,
+  as for the cities above).
+- Caves, interiors, Gyms, the Castelia street rooms (`UnovaHouseCasteliaCity*`)
+  and the underwater ruins are unchanged.
+- Alola, Galar and Paldea maps that were drawn over a Kalos picture keep the old
+  picture as `...Classic`, exactly as Hau'oli and Konikoni do.
+
+### Regenerating
+
+```sh
+npm run build:region-layouts
+node tests/region-layouts-test.js
+node tests/browser/region-layouts.js
+```
+
+Run it after `build:city-layouts`. `node tools/build-region-layouts.js Route5 --dry`
+lays out only the maps whose name matches, without writing anything.

@@ -14,7 +14,7 @@ const A = require("./lib/city-stamps")(root);
 // The base maps, as the game loads them before this overlay.
 const ctx = {}; ctx.window = ctx; vm.createContext(ctx);
 for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="(data\/[^"]+)"><\/script>/g))
-  if (file !== "data/city-layouts.js") vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), ctx, { filename: file });
+  if (file !== "data/city-layouts.js" && file !== "data/region-layouts.js") vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), ctx, { filename: file });
 const HOMES = { UNOVA_DATA: ctx.UNOVA_DATA.maps, KALOS_DATA: ctx.KALOS_DATA.maps };
 const homeOf = (name) => Object.keys(HOMES).find((k) => HOMES[k][name]);
 const DOOR = 0x69, STEP = 0x61, WATER = 0x10;

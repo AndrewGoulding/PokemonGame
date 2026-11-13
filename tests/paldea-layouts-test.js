@@ -12,7 +12,7 @@ assert(window.PaldeaLayouts&&PaldeaLayouts.count>=40,'Paldea town/interior layou
 const plans=PaldeaLayouts.plans,D=Paldea.data();
 let towns=0,interiors=0,anchors=0,unique=0;
 for(const [name,[kind,accent]] of Object.entries(plans)){
- const m=D.maps[name],base=KALOS_DATA.maps[m.image];
+ const m=D.maps[name],base=KALOS_DATA.maps[m.image.replace(/Classic$/,'')];
  assert(m&&base&&m.paldeaLayout,name+' has no original layout');
  assert.equal(m.top,false,name+' must not draw Kalos top tiles over Paldea artwork');
  assert.equal(m.paldeaLayout.style,kind);

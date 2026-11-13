@@ -1,0 +1,48 @@
+// In the browser: every themed town and route (tools/build-region-layouts.js) is
+// visited and drawn without a missing picture or script error, and in a sample of
+// them every door and gate is walked through and back.
+// Run: node tests/browser/region-layouts.js
+'use strict';
+const assert=require('node:assert/strict'),T=require('./lib'),fixture=require('./kalos-post-fixture');
+const CITIES=['KalosVanivilleTown','KalosCamphrierTown','KalosRoute5','KalosRoute14','KalosDendemilleTown','UnovaAspertiaCity','UnovaNimbasaCity','UnovaRoute6','UnovaHumilauCity','UnovaIcirrusCity','UnovaRoute4','UnovaSkyarrowBridge','BW1NuvemaTown','BW1Route1'];
+(async()=>{
+ const s=await T.start(p=>{fixture(p);p.repelSteps=100000;p.party.forEach(m=>{m.level=75;Party.heal(m);});
+   Object.assign(Kalos.state(p),{champion:true,azEnded:true,tmvPass:true,kiloudeRival:true,megaUpgraded:true,lookerMalva:true,lookerChapter:5});p.flags.kalosLeagueClear=true;for(const id of Object.keys(Kalos.data().trainers))p.flags[id]=true;
+   Object.assign(Unova.state(p),{starter:'Snivy',rivalIntro:true,ranchRival:true,herdier:true,alderDone:true,cheren:true,roxie:true,cgear:true,movieReleased:true,plasmaVirbank:true,plasmaRoute20:true,sailed:true,sewerClear:true,cocoons:[true,true,true],burgh:true,colress:true,elesa:true,clay:true,skyla:true,drayden:true,marlon:true,ghetsis:true});p.flags.unovaLeagueClear=true;p.badges=[...new Set([...p.badges,...Unova.badges])];for(const id of Object.keys(UNOVA_DATA.trainers))p.flags[id]=true;},
+  {map:'UnovaCasteliaCity',x:28,y:40,facing:'down'},{out:process.env.SHOTS||'/tmp/pokemon-region-layouts'});
+ try{await s.boot();
+  const idle=async()=>{for(let i=0;i<80&&!await s.eval(()=>Overworld.idle()&&document.getElementById('textbox').classList.contains('empty'));i++){await s.press('x');await s.wait(200);}};
+  const map=()=>s.eval(()=>Overworld.position().map);
+  let doors=0,gates=0;const closed=[];
+  // Every rebuilt map loads and draws; so does a map of another region that kept an old picture.
+  const all=await s.eval(()=>window.REGION_LAYOUTS.filter(n=>WORLD_MAPS[n]).concat(['AlolaHauoliCity']));let visited=0;
+  for(const name of all){
+   const at=await s.eval(c=>{const m=WORLD_MAPS[c],w=m.warps[0]||{x:m.width>>1,y:m.height>>1};for(const[dx,dy]of[[0,1],[0,-1],[1,0],[-1,0],[0,2],[2,0],[-2,0],[0,-2]]){const x=w.x+dx,y=w.y+dy,i=y*m.width+x;if(x>0&&y>0&&x<m.width&&y<m.height&&!m.collision[i]&&m.behavior[i]!==16&&!m.people.some(p=>p.x===x&&p.y===y)&&!m.warps.some(v=>v.x===x&&v.y===y))return{map:c,x,y,facing:'down'};}return null;},name);
+   if(!at)continue;
+   await s.eval(a=>Overworld.teleport(a),at);await s.wait(350);await idle();visited++;
+   assert.equal((await s.eval(()=>Overworld.position())).map,name,name+' holds the player');
+   if(visited%12===1)await s.shot('visit-'+name);
+  }
+  assert.deepEqual(s.errors,[],'no script error or missing picture on any rebuilt map');
+  for(const city of CITIES){
+   await s.eval(c=>Overworld.teleport({map:c,x:WORLD_MAPS[c].warps[0].x,y:WORLD_MAPS[c].warps[0].y,facing:'down'}),city);await s.wait(700);await idle();await s.shot(city);
+   const warps=await s.eval(c=>{const m=WORLD_MAPS[c];return m.warps.map((w,k)=>({k,x:w.x,y:w.y,to:w.map,door:m.behavior[w.y*m.width+w.x]===0x69,from:[[0,1,'ArrowUp'],[0,-1,'ArrowDown'],[1,0,'ArrowLeft'],[-1,0,'ArrowRight']].filter(([dx,dy])=>{const x=w.x+dx,y=w.y+dy;return x>=0&&y>=0&&x<m.width&&y<m.height&&!m.collision[y*m.width+x]&&m.behavior[y*m.width+x]!==16&&!m.people.some(p=>p.x===x&&p.y===y)&&!m.warps.some(v=>v.x===x&&v.y===y);})[0]}));},city);
+   for(const w of warps){
+    if(!w.from){closed.push(city+' → '+w.to+': reached only over water, as before');continue;}
+    const [dx,dy,key]=w.door?[0,1,'ArrowUp']:w.from;
+    await s.eval(a=>Overworld.teleport(a),{map:city,x:w.x+dx,y:w.y+dy,facing:{ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[key]});await s.wait(400);
+    await s.press(key,300);for(let i=0;i<40&&await map()===city&&await s.eval(()=>document.getElementById('textbox').classList.contains('empty'));i++)await s.wait(100);
+    if(await map()===city){const said=(await s.text()).replace(/\s+/g,' ').slice(-90);closed.push(city+' → '+w.to+': '+said);await idle();continue;}
+    assert.equal(await map(),w.to,city+' warp '+w.k);await idle();await s.wait(500);
+    // Back out through the room's own warp to this city.
+    const back=await s.eval(({to,city,k})=>{const m=WORLD_MAPS[to],i=m.warps.findIndex(v=>v.map===city&&v.warp===k),v=m.warps[i];return{x:v.x,y:v.y};},{to:w.to,city,k:w.k});
+    await s.eval(({to,back})=>Overworld.teleport({map:to,x:back.x,y:back.y-1,facing:'down'}),{to:w.to,back}).catch(()=>{});await s.wait(400);
+    if(await map()===w.to){await s.press('ArrowDown',300);for(let i=0;i<40&&await map()===w.to;i++)await s.wait(100);}
+    if(await map()===city){const at=await s.eval(()=>Overworld.position());const ok=await s.eval(a=>!WORLD_MAPS[a.map].collision[a.y*WORLD_MAPS[a.map].width+a.x],at);assert(ok,city+' return from '+w.to+' lands on open ground');}
+    await idle();w.door?doors++:gates++;
+   }
+  }
+  assert.deepEqual(s.errors.filter(e=>!/^Failed to load resource:/.test(e)),[]);
+  console.log('ok: '+visited+' maps visited; '+doors+' doors and '+gates+' gates walked in '+CITIES.join(', ')+(closed.length?'\nstory-closed: '+closed.join('\n  '):''));
+ }catch(e){await s.shot('failure');console.log(s.errors.slice(0,5),await s.eval(()=>Overworld.position()));throw e;}finally{await s.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -23,6 +23,9 @@ module.exports = function (root) {
     HearthomeCity: [[24, 42], [36, 40], [16, 16]],
     CanalaveCity: [[10, 8], [10, 16]],
     SnowpointCity: [[10, 30]],
+    SandgemTown: [[24, 0], [26, 18], [4, 14], [4, 12]], TwinleafTown: [[14, 0], [12, 14], [16, 2]], SolaceonTown: [[18, 0], [4, 0], [16, 0]],
+    OreburghCity: [[26, 14], [8, 14], [48, 12]], SunyshoreCity: [[46, 6], [8, 6], [8, 4]], ValleyWindworks: [[26, 10], [2, 22], [6, 8]],
+    FuegoIronworks: [[20, 12], [28, 12], [16, 12], [22, 12]],
   };
   // [source, x, y, w, h, door column (or null)] in 16px tiles.
   const STAMPS = {
@@ -56,6 +59,23 @@ module.exports = function (root) {
     snowGym: ["SnowpointCity", 12, 31, 7, 5, 3],
     snowMart: ["SnowpointCity", 0, 42, 5, 5, 2],
     snowCenter: ["SnowpointCity", 25, 41, 5, 5, 2],
+    // Region layouts (tools/build-region-layouts.js).
+    lab: ["SandgemTown", 6, 5, 8, 5, 3],
+    pcSmall: ["SandgemTown", 15, 6, 5, 4, 2],
+    martSmall: ["SandgemTown", 25, 6, 5, 4, 2],
+    logHouse: ["TwinleafTown", 10, 6, 6, 6, 1],
+    peak: ["TwinleafTown", 21, 6, 4, 6, 1],
+    apartment: ["OreburghCity", 19, 3, 3, 6, null],
+    oreGym: ["OreburghCity", 28, 13, 7, 5, 3],
+    whiteHall: ["OreburghCity", 49, 3, 12, 7, 3],
+    works: ["ValleyWindworks", 16, 7, 7, 7, 3],
+    factory: ["FuegoIronworks", 3, 4, 13, 13, 6],
+    flat: ["SunyshoreCity", 45, 1, 6, 5, 3],
+    lighthouse: ["SunyshoreCity", 57, 43, 3, 7, 1],
+    tree1: ["SolaceonTown", 39, 0, 2, 3, null],
+    honeyTree: ["ValleyWindworks", 21, 14, 2, 3, null],
+    boulder: ["SolaceonTown", 9, 21, 2, 3, null],
+    barrels: ["CanalaveCity", 19, 11, 1, 2, null],
   };
   const TILES = {
     paving: ["JubilifeCity", 30, 8], asphalt: ["JubilifeCity", 12, 20],
@@ -65,6 +85,10 @@ module.exports = function (root) {
     rock: ["EternaCity", 40, 44], grass: ["EternaCity", 12, 12], meadow: ["PastoriaCity", 40, 20],
     flowersRed: ["FloaromaTown", 20, 6], flowersBlue: ["FloaromaTown", 14, 6], flowersPink: ["FloaromaTown", 12, 44],
     sand: ["FloaromaTown", 19, 46, 1], snow: ["SnowpointCity", 10, 30], pine: ["SnowpointCity", 22, 10],
+    tallgrass: ["Route201", 42, 6, 1], snowgrass: ["Route217", 31, 2, 1], marshgrass: ["GreatMarsh", 18, 6, 1],
+    desert: ["Route228", 8, 6], palms: ["Route228", 2, 0], marsh: ["GreatMarsh", 20, 10], beach: ["Route213", 28, 20], sea: ["Route213", 88, 4],
+    gravel: ["OreburghCity", 26, 14], clay: ["SunyshoreCity", 46, 6], planks: ["SunyshoreCity", 30, 12],
+    dirt: ["TwinleafTown", 18, 7, 1], drift: ["Route216", 20, 0], field: ["Route201", 56, 6],
   };
   // Neighbouring trees, hedges and fences that fall inside a stamp's rectangle.
   const green = ([r, g, b]) => g > r * 1.15 && g > b * 1.15;
@@ -76,6 +100,9 @@ module.exports = function (root) {
     hall: (x, y) => y < 16 && (x < 26 || x >= 150),
     snowCenter: (x, y, [r, g, b]) => y < 14 && g > r,
     cabin: (x, y, [r, g, b]) => y < 20 && g > r * 1.2 && b > r,
+    martSmall: (x, y) => x < 16 && y >= 48,
+    factory: (x, y, col) => y < 20 && green(col),
+    lab: (x, y, col) => x >= 100 && y >= 64 && !(col[0] > 150 && col[1] > 150 && col[2] > 150) && green(col),
   };
   const same = (a, i, b, j) => a[i] === b[j] && a[i + 1] === b[j + 1] && a[i + 2] === b[j + 2];
   // Pixels of a stamp: null where the source shows only its own ground.
