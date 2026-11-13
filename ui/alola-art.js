@@ -163,6 +163,7 @@ function make(name) {
   return c;
 }
 function draw(g, name, x, y) {
+ if(window.WORLD_MAPS?.[name]?.regionLayout)return; // drawn by tools/build-region-layouts.js
   if (window.WORLD_MAPS?.[name]?.region !== "alola") return;
   let c = cache.get(name);
   if (!c) { c = make(name); cache.set(name, c); }

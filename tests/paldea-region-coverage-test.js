@@ -15,7 +15,7 @@ assert.equal(PaldeaLayouts.count, Object.keys(D.maps).length);
 let checked = 0, wilderness = 0;
 for (const [name, m] of Object.entries(D.maps)) {
   assert(m.paldeaLayout?.independent, name + " still borrows Kalos geometry");
-  assert.equal(m.top, false, name + " has a Kalos top-sheet");
+  if (!m.regionLayout) assert.equal(m.top, false, name + " has a Kalos top-sheet");
   for (const field of ["collision", "behavior", "elevation"])
     assert.equal(m[field].length, m.width * m.height, name + " " + field);
   assert(m.elevation.every(z => z === 0), name + " foreign elevation barrier");

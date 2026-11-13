@@ -72,9 +72,10 @@ assert(door(N, "KalosRoute13").x < 5 && door(N, "KalosRoute16").x > 42 && door(N
 const tower = door(N, "KalosPrismLobby");
 assert(Math.abs(tower.x - 24) <= 1 && tower.y > 20, "Prism Tower stands on Centrico Plaza");
 
-// Alola's Hau'oli and Konikoni were drawn over Santalune's and Laverre's old pictures, and still are.
+// Alola's Hau'oli and Konikoni were drawn over Santalune's and Laverre's old pictures; they have their own now
+// (tools/build-region-layouts.js), and the old pictures are kept.
 for (const [alola, classic] of [["AlolaHauoliCity", "KalosSantaluneCityClassic"], ["AlolaKonikoniCity", "KalosLaverreCityClassic"]]) {
-  assert.equal(WORLD_MAPS[alola].image, classic);
+  assert(WORLD_MAPS[alola].regionLayout && !WORLD_MAPS[alola].image);
   for (const suffix of ["", "-top", "-border"]) assert(fs.existsSync(path.join(root, "assets/world/maps/" + classic + suffix + ".png")), classic + suffix);
 }
 // Fishing still works off Cyllage's shore.

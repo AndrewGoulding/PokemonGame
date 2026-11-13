@@ -15,7 +15,7 @@ assert.equal(AlolaLayouts.count, Object.keys(maps).length);
 let checked = 0;
 for (const [name, m] of Object.entries(maps)) {
   assert(m.alolaCustomLayout?.independent, name + " uses foreign collision");
-  assert.equal(m.top, false, name + " still draws an unrelated Kalos top sheet");
+  if (!m.regionLayout) assert.equal(m.top, false, name + " still draws an unrelated Kalos top sheet");
   for (const field of ["collision", "behavior", "elevation"])
     assert.equal(m[field].length, m.width * m.height, name + " " + field);
   assert(m.elevation.every(z => z === 0), name + " inherited elevation");

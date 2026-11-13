@@ -4,7 +4,7 @@
 // Run: node tests/browser/region-layouts.js
 'use strict';
 const assert=require('node:assert/strict'),T=require('./lib'),fixture=require('./kalos-post-fixture');
-const CITIES=['KalosVanivilleTown','KalosCamphrierTown','KalosRoute5','KalosRoute14','KalosDendemilleTown','UnovaAspertiaCity','UnovaNimbasaCity','UnovaRoute6','UnovaHumilauCity','UnovaIcirrusCity','UnovaRoute4','UnovaSkyarrowBridge','BW1NuvemaTown','BW1Route1'];
+const CITIES=['KalosVanivilleTown','KalosCamphrierTown','KalosRoute5','KalosRoute14','KalosDendemilleTown','UnovaAspertiaCity','UnovaNimbasaCity','UnovaRoute6','UnovaHumilauCity','UnovaIcirrusCity','UnovaRoute4','UnovaSkyarrowBridge','BW1NuvemaTown','BW1Route1','AlolaHauoliCity','GalarWedgehurst','PaldeaMesagoza'];
 (async()=>{
  const s=await T.start(p=>{fixture(p);p.repelSteps=100000;p.party.forEach(m=>{m.level=75;Party.heal(m);});
    Object.assign(Kalos.state(p),{champion:true,azEnded:true,tmvPass:true,kiloudeRival:true,megaUpgraded:true,lookerMalva:true,lookerChapter:5});p.flags.kalosLeagueClear=true;for(const id of Object.keys(Kalos.data().trainers))p.flags[id]=true;
@@ -15,7 +15,7 @@ const CITIES=['KalosVanivilleTown','KalosCamphrierTown','KalosRoute5','KalosRout
   const map=()=>s.eval(()=>Overworld.position().map);
   let doors=0,gates=0;const closed=[];
   // Every rebuilt map loads and draws; so does a map of another region that kept an old picture.
-  const all=await s.eval(()=>window.REGION_LAYOUTS.filter(n=>WORLD_MAPS[n]).concat(['AlolaHauoliCity']));let visited=0;
+  const all=await s.eval(()=>window.REGION_LAYOUTS.filter(n=>WORLD_MAPS[n]));let visited=0;
   for(const name of all){
    const at=await s.eval(c=>{const m=WORLD_MAPS[c],w=m.warps[0]||{x:m.width>>1,y:m.height>>1};for(const[dx,dy]of[[0,1],[0,-1],[1,0],[-1,0],[0,2],[2,0],[-2,0],[0,-2]]){const x=w.x+dx,y=w.y+dy,i=y*m.width+x;if(x>0&&y>0&&x<m.width&&y<m.height&&!m.collision[i]&&m.behavior[i]!==16&&!m.people.some(p=>p.x===x&&p.y===y)&&!m.warps.some(v=>v.x===x&&v.y===y))return{map:c,x,y,facing:'down'};}return null;},name);
    if(!at)continue;

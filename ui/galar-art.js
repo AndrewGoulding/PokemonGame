@@ -140,6 +140,7 @@ function make(name){
  return cv;
 }
 function draw(g,name,x,y){
+ if(window.WORLD_MAPS?.[name]?.regionLayout)return; // drawn by tools/build-region-layouts.js
  if(!window.Galar?.owns(name)||!window.WORLD_MAPS?.[name])return;
  let cv=cache.get(name);if(!cv){cv=make(name);cache.set(name,cv);}
  g.drawImage(cv,x,y);

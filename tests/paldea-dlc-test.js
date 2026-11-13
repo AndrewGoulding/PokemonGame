@@ -89,17 +89,20 @@ for(const name of ['PaldeaMossuiTown','PaldeaTerariumHub']){
   return{width:0,height:0,getContext:()=>({fillStyle:'',fillRect(){tileRects++;}})};
  }};
  const scene={drawImage(cv){imageDraws++;activeCanvas=cv;}};
- PaldeaArt.draw(scene,'PaldeaMossuiTown',10,20);
- assert(activeCanvas&&activeCanvas.width===D.maps.PaldeaMossuiTown.width*16);
+ // (Towns and routes have their own pictures now; the procedural scenery still draws the rooms and caves.)
+ const artMap=Object.values(D.maps).find(m=>!m.regionLayout&&PaldeaArt.LANDMARKS[m.name])?.name||Object.values(D.maps).find(m=>!m.regionLayout).name;
+ PaldeaArt.draw(scene,'PaldeaMossuiTown',10,20);assert.equal(activeCanvas,null,'rebuilt maps are not painted over');
+ PaldeaArt.draw(scene,artMap,10,20);
+ assert(activeCanvas&&activeCanvas.width===D.maps[artMap].width*16);
  assert(tileRects>100,'Procedural scenery should draw actual pixel tiles');
- PaldeaArt.draw(scene,'PaldeaMossuiTown',15,25);
+ PaldeaArt.draw(scene,artMap,15,25);
  assert.equal(canvasCreates,1,'Revisiting a map reuses cached pixel scenery');
- PaldeaArt.draw(scene,'PaldeaPolarBiome',10,20);
+ PaldeaArt.draw(scene,Object.values(D.maps).find(m=>!m.regionLayout&&m.name!==artMap).name,10,20);
  assert.equal(canvasCreates,2,'Different biomes have distinct art');
  PaldeaArt.draw(scene,'GalarPostwick',0,0);
  assert.equal(imageDraws,3,'Paldea art must never override other regions');
  PaldeaArt.clear();
- PaldeaArt.draw(scene,'PaldeaMossuiTown',10,20);
+ PaldeaArt.draw(scene,artMap,10,20);
  assert.equal(canvasCreates,3,'Cache clear rebuilds maps');
  global.document=priorDocument;
 assert(Player.CENTERS.PaldeaCommunityCenter,'Kitakami needs a real healing center');

@@ -18,23 +18,25 @@ const ONLY = process.argv[2] ? new RegExp(process.argv[2]) : null, DRY = process
 const ctx = {}; ctx.window = ctx; vm.createContext(ctx);
 for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="(data\/[^"]+)"><\/script>/g))
   if (file !== "data/region-layouts.js") vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), ctx, { filename: file });
-const HOMES = { KALOS_DATA: ctx.KALOS_DATA.maps, UNOVA_DATA: ctx.UNOVA_DATA.maps, UNOVA_BW_DATA: ctx.UNOVA_BW_DATA.maps };
+let HOMES = { KALOS_DATA: ctx.KALOS_DATA.maps, UNOVA_DATA: ctx.UNOVA_DATA.maps, UNOVA_BW_DATA: ctx.UNOVA_BW_DATA.maps }, WORLD = ctx, LATE = false;
 const homeOf = (name) => Object.keys(HOMES).find((k) => HOMES[k][name]);
-const typeOf = (name) => { const h = homeOf(name); return h ? HOMES[h][name].type : (ctx.WORLD_MAPS && ctx.WORLD_MAPS[name] || {}).type; };
+const typeOf = (name) => { const h = homeOf(name); return h ? HOMES[h][name].type : (WORLD.WORLD_MAPS && WORLD.WORLD_MAPS[name] || {}).type; };
 const DOOR = 0x69, STEP = 0x61, WATER = 0x10;
 const isWater = (b) => b === 0x10 || b === 0x11;
 const done = new Set(ctx.CITY_LAYOUTS || []);
 
 // Stored landing points (Fly, interior returns, story arrivals, hidden items) per map.
-const landings = {};
-{
+let landings = {};
+function collectLandings(rootObject) {
+  landings = {};
   const seen = new Set();
   (function walk(o) {
     if (!o || typeof o !== "object" || seen.has(o)) return; seen.add(o);
     if (typeof o.map === "string" && Number.isInteger(o.x) && Number.isInteger(o.y) && !("warp" in o)) (landings[o.map] = landings[o.map] || []).push([o.x, o.y]);
     for (const k of Object.keys(o)) { if (Array.isArray(o) && o.length > 4000) return; walk(o[k]); }
-  })({ K: ctx.KALOS_DATA, U: ctx.UNOVA_DATA, B: ctx.UNOVA_BW_DATA });
+  })(rootObject);
 }
+collectLandings({ K: ctx.KALOS_DATA, U: ctx.UNOVA_DATA, B: ctx.UNOVA_BW_DATA });
 // Maps of other regions drawn with one of these maps' old pictures keep it as "...Classic".
 const borrowed = {}, aliases = {};
 for (const key of Object.keys(ctx)) for (const m of Object.values((ctx[key] && ctx[key].maps) || {}))
@@ -139,8 +141,25 @@ const UNOVA = [
   [/Route13|Route14|Route18|Route1$/, "coast"], [/MoorOfIcirrus|Route8/, "marsh"], [/Route5|Route9|Route16/, "road"], [/Route23|VictoryRoad|Route15|Route22|Route10|Route7/, "mountain"],
   [/Dreamyard/, "crag", { ground: "field", tree: "tree1", grove: "tree" }], [/Route6|Route3|PinwheelOutskirts|RanchBack/, "plains", { density: 0.5, groves: 0.2 }], [/Route20|AbundantShrine|Route12/, "meadow"], [/./, "plains"],
 ];
+const ALOLA = [
+  [/PoTown/, "darkcity"], [/HauoliCity|HeaheaCity|MalieCity|KonikoniCity|RoyalAvenue/, "city", { border: "palms", ground: "brick" }], [/IkiTown|PaniolaTown|TapuVillage|SeafolkVillage|HauoliOutskirts/, "village", { border: "palms" }],
+  [/Beach|Breakers|PostgamePort|AetherDock/, "beach", { sea: "south" }], [/Aether|League/, "plazatown", { ground: "steel" }], [/LushJungle|PoniGrove|MalieGarden/, "forest", { border: "palms" }], [/Meadow/, "meadow", { flowers: 0.5 }],
+  [/HainaDesert/, "desert"], [/Lanakila/, "snow"], [/MountHokulani|Canyon|PoniWilds|AncientPoniPath|PoniGauntlet|MemorialHill|Route1[237]/, "mountain"], [/PaniolaRanch|PoniPlains/, "meadow"], [/./, "plains", { border: "palms", road: "sand" }],
+];
+const GALAR = [
+  [/Postwick|Turffield/, "village"], [/Wedgehurst|Hammerlocke/, "brick"], [/Motostoke$/, "industrial", { ground: "brick", factory: true }], [/Hulbury/, "port", { sea: "south" }], [/StowOnSide/, "mining"], [/Ballonlea/, "foresttown", { border: "darktree", treeTint: "dark" }],
+  [/Circhester|Freezington/, "snowtown"], [/Spikemuth/, "darkcity"], [/Wyndon/, "city"], [/RoseTowerTop|ArmorStation/, "plazatown", { ground: "steel" }], [/MasterDojo|FieldsOfHonor/, "coast", { sea: "south" }], [/ChallengeBeach|WorkoutSea/, "beach", { sea: "south" }],
+  [/SlumberingWeald|SlumberingDepths|GlimwoodTangle/, "darkforest"], [/ForestFocus/, "forest"], [/SoothingWetlands/, "marsh"], [/Route8|Route9|Route10|Frostpoint|GiantBed|Snowslide|TunnelTop|GiantFoot|CrownShrine/, "snow"],
+  [/Route6|StowOutskirts|MotostokeOutskirts/, "crag"], [/Route3|Route4|Route5/, "meadow"], [/./, "plains"],
+];
+const PALDEA = [
+  [/CaboPoco/, "village", { sea: "south" }], [/Lighthouse|PocoPath|LevinciaRoad/, "coast", { sea: "east" }], [/LosPlatos|Cortondo|MossuiTown|LoyaltyPlaza/, "village"], [/Artazon/, "village", { flowers: 0.5 }], [/Mesagoza|LeagueGate|LeagueClub/, "plazatown"],
+  [/Levincia/, "port", { sea: "east" }], [/Cascarrafa/, "city", { ground: "beach", border: "rock" }], [/Medali$/, "city"], [/Montenevera$/, "snowtown"], [/Alfornada$/, "mining"], [/Research|BlueberryDock|TerariumHub/, "plazatown", { ground: "steel" }],
+  [/Base$|StonyCliff|OpenSky|AlfornadaRoad|CanyonBiome|DreadedDen/, "crag"], [/SchedarRoad|SteelTrail|EarthTrail|EarthDen/, "desert"], [/NaviRoad/, "forest"], [/AreaZero/, "darkforest"], [/Glaseado|MonteneveraRoad|PolarBiome/, "snow"],
+  [/RuchbahRoad|CaphRoad|LeagueRoad|OniMountain|CrystalPool/, "mountain"], [/DragonTrail|DragonLake/, "coast", { sea: "north" }], [/CoastalBiome/, "beach", { sea: "south", border: "palms" }], [/SavannaBiome/, "autumn", { density: 0.25, groves: 0.05 }], [/AppleHills|MedaliRoad/, "meadow"], [/./, "plains"],
+];
 function themeFor(name) {
-  const table = name.startsWith("Kalos") ? KALOS : UNOVA, short = name.replace(/^(Kalos|Unova|BW1)/, "");
+  const table = name.startsWith("Kalos") ? KALOS : name.startsWith("Alola") ? ALOLA : name.startsWith("Galar") ? GALAR : name.startsWith("Paldea") ? PALDEA : UNOVA, short = name.replace(/^(Kalos|Unova|BW1|Alola|Galar|Paldea)/, "");
   const [, theme, extra] = table.find(([re]) => re.test(short));
   return { ...BASE, ...THEMES[theme], ...(extra || {}), theme };
 }
@@ -159,12 +178,16 @@ function layout(name) {
   // What must stay as it is.
   const mark = (x, y, r = 0) => { for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++) if (on(i, j)) clear[I(i, j)] = 1; };
   const doors = [], steps = [];
-  base.warps.forEach((w, k) => { keep[I(w.x, w.y)] = 1; mark(w.x, w.y, 1); if (base.behavior[I(w.x, w.y)] === DOOR) { doors.push(k); if (on(w.x, w.y + 1)) { keep[I(w.x, w.y + 1)] = 1; mark(w.x, w.y + 2, 0); } } else steps.push(k); });
+  const roomDoor = (w) => LATE && ["indoor", "gym"].includes(typeOf(w.map)) && on(w.x, w.y + 1) && baseOpen(I(w.x, w.y + 1)) && w.y > 3;
+  base.warps.forEach((w, k) => { keep[I(w.x, w.y)] = 1; mark(w.x, w.y, 1); if (base.behavior[I(w.x, w.y)] === DOOR || roomDoor(w)) { doors.push(k); if (on(w.x, w.y + 1)) { keep[I(w.x, w.y + 1)] = 1; mark(w.x, w.y + 2, 0); } } else steps.push(k); });
   for (const p of base.people) { keep[I(p.x, p.y)] = 1; mark(p.x, p.y, 1); const f = { face_up: [0, -1], face_left: [-1, 0], face_right: [1, 0] }[p.movement] || [0, 1]; for (let s = 1; s <= (p.trainer ? (p.trainer.sight || 2) + 1 : 1); s++) if (on(p.x + f[0] * s, p.y + f[1] * s) && baseOpen(I(p.x + f[0] * s, p.y + f[1] * s))) { keep[I(p.x + f[0] * s, p.y + f[1] * s)] = 1; clear[I(p.x + f[0] * s, p.y + f[1] * s)] = 1; } }
   for (const s of base.signs || []) { mark(s.x, s.y, 1); for (const dy of [1, -1]) if (on(s.x, s.y + dy) && baseOpen(I(s.x, s.y + dy))) keep[I(s.x, s.y + dy)] = 1; }
   for (const t of [...(base.triggers || []), ...(base.hidden || [])]) if (on(t.x, t.y)) { if (baseOpen(I(t.x, t.y))) keep[I(t.x, t.y)] = 1; mark(t.x, t.y, 1); }
   for (const [x, y] of landings[name] || []) if (on(x, y) && baseOpen(I(x, y))) { keep[I(x, y)] = 1; mark(x, y, 1); }
 
+  // Open tiles on the rim are ways out, and stay.
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!inside(x, y) && baseOpen(I(x, y)) && LATE) { keep[I(x, y)] = 1; clear[I(x, y)] = 1; }
+  if (LATE && baseOpen(I(W >> 1, H >> 1))) { keep[I(W >> 1, H >> 1)] = 1; clear[I(W >> 1, H >> 1)] = 1; }   // the middle of the map, where arrivals land
   // A. ground, water, border.
   const total = water0.reduce((a, b) => a + b, 0), bridgeMap = T.bridge;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -190,10 +213,15 @@ function layout(name) {
     if (near && !guard && fbm(x * 2, y * 2, seed + 3) > 0.56) { added[i] = 1; kind[i] = "water"; }
   }
 
+  // Seaside places with no sea yet get one along one edge, wherever nothing needs the ground.
+  if (T.sea && !total) {
+    const depth = (x, y) => (T.sea === "south" ? H - 1 - y : T.sea === "north" ? y : T.sea === "east" ? W - 1 - x : x), span = T.sea === "south" || T.sea === "north" ? H : W;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = I(x, y); if (keep[i] || clear[i]) continue; if (depth(x, y) < span * 0.2 + (fbm(x * 1.5, y * 1.5, seed + 41) - 0.5) * 5) { added[i] = 1; kind[i] = "water"; solid[i] = 0; } }
+  }
   // B. buildings on their doors.
   const rectFree = (x0, y0, w, h, own) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) { if (x < 1 || y < 0 || x >= W - 1 || y >= H) return false; const i = I(x, y); if (i === own) continue; if (built[i] || keep[i] || water0[i] || plank[i]) return false; if (base.people.some((p) => p.x === x && p.y === y) || (base.signs || []).some((s) => s.x === x && s.y === y)) return false; } return true; };
   const pickStamps = (w, k) => {
-    const n = w.map.replace(/^(Kalos|Unova|BW1)/, ""), t = typeOf(w.map), r = Math.floor(hash(w.x * 7 + k * 3, w.y * 13 + k, seed + k) * 9973);
+    const n = w.map.replace(/^(Kalos|Unova|BW1|Alola|Galar|Paldea)/, ""), t = typeOf(w.map), r = Math.floor(hash(w.x * 7 + k * 3, w.y * 13 + k, seed + k) * 9973);
     const rot = (list) => list.map((_, j) => list[(j + r) % list.length]);
     if (/Center|_PC/.test(n)) return T.center;
     if (t === "gym" || /Gym/.test(n)) return T.gym;
@@ -224,7 +252,7 @@ function layout(name) {
       // No room for a house: a porch over the door.
       for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0]]) { const x = w.x + dx, y = w.y + dy; if (!on(x, y)) continue; const i = I(x, y); if (keep[i] || water0[i] || base.people.some((p) => p.x === x && p.y === y)) continue; built[i] = 1; solid[i] = 1; }
       items.push({ z: w.y + 1, draw: (c) => { const px = w.x * 16, py = w.y * 16; c.box(px - 14, py - 10, 44, 26, [214, 204, 180], [70, 60, 60]); c.poly([[px - 18, py - 10], [px + 8, py - 26], [px + 34, py - 10]], [150, 70, 60]); c.poly([[px - 13, py - 11], [px + 8, py - 23], [px + 29, py - 11]], [196, 96, 80]); c.box(px + 2, py - 2, 12, 18, [70, 50, 40], [40, 30, 30]); c.rect(px - 9, py - 3, 7, 7, [140, 190, 230]); c.rect(px + 18, py - 3, 7, 7, [140, 190, 230]); } });
-      report.push(name + ": porch for warp " + k + " (" + w.map + ")");
+      if (!LATE) report.push(name + ": porch for warp " + k + " (" + w.map + ")");
     }
     solid[own] = 0;
   }
@@ -367,7 +395,7 @@ function layout(name) {
   }
   // Land that was apart (across water) is still apart.
   const ids = Object.keys(groups);
-  for (let a = 0; a < ids.length; a++) { const seen = flood(groups[ids[a]][0]); for (let b = a + 1; b < ids.length; b++) if (seen[groups[ids[b]][0]]) throw new Error(name + ": land areas " + ids[a] + " and " + ids[b] + " joined up"); }
+  if (!LATE) for (let a = 0; a < ids.length; a++) { const seen = flood(groups[ids[a]][0]); for (let b = a + 1; b < ids.length; b++) if (seen[groups[ids[b]][0]]) throw new Error(name + ": land areas " + ids[a] + " and " + ids[b] + " joined up"); }
   for (const p of base.people) if (solid[I(p.x, p.y)] && !base.collision[I(p.x, p.y)]) throw new Error(name + ": " + p.script + " is walled in");
 
   // I. the grids.
@@ -397,6 +425,25 @@ function layout(name) {
       if (bed[i] === "puddle") { c.ellipse(x * 16 + 8, y * 16 + 9, 7, 5, [70, 110, 130, 170]); c.ellipse(x * 16 + 7, y * 16 + 8, 4, 2, [130, 170, 190, 170]); }
       if (bed[i] === "stone") { c.ellipse(x * 16 + 8, y * 16 + 10, 5, 4, [120, 120, 128]); c.ellipse(x * 16 + 7, y * 16 + 9, 3, 2, [170, 170, 180]); }
     }
+    // Rounded corners: where a road or a shore turns, the ground beside it cuts the corner.
+    const patches = {}, patch = (name) => { if (!patches[name]) { const k = tileOf(name), t = canvas(32, 32); for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) { A.tile(t, k.tile, i, j); if (k.tint && k.tint[3]) t.rect(i * 16, j * 16, 16, 16, k.tint); } patches[name] = t; } return patches[name]; };
+    const cls = (i) => (kind[i] === "water" ? 2 : kind[i] === "ground" && road[i] && !plank[i] ? 1 : 0), R = 6;
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const i = I(x, y), me = cls(i); if (!me) continue;
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
+        const a = I(x + sx, y), b = I(x, y + sy);
+        if (cls(a) === me || cls(b) === me || built[a] || built[b] || plank[a] || plank[b] || kind[a] === "border" || kind[b] === "border" || kind[a] === "rail" || kind[b] === "rail") continue;
+        const src = patch(solid[a] || cls(a) ? (T.shore && me === 2 ? "beach" : T.ground) : shown(a));
+        const cx = sx < 0 ? R : 15 - R, cy = sy < 0 ? R : 15 - R;
+        for (let py = 0; py <= R; py++) for (let px = 0; px <= R; px++) {
+          const qx = sx < 0 ? px : 15 - px, qy = sy < 0 ? py : 15 - py, d = Math.hypot(qx - cx, qy - cy);
+          if (d <= R + 0.2) continue;
+          const o = (((y & 1) * 16 + qy) * 32 + (x & 1) * 16 + qx) * 4;
+          c.data.set(src.data.subarray(o, o + 4), ((y * 16 + qy) * c.w + x * 16 + qx) * 4);
+          if (d <= R + 1.3) c.p(x * 16 + qx, y * 16 + qy, me === 2 ? [236, 244, 250, 110] : [60, 50, 30, 40]);
+        }
+      }
+    }
     // Soft edges where water or road meets the land.
     for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
       const i = I(x, y), wet = kind[i] === "water";
@@ -419,20 +466,34 @@ function layout(name) {
 
 // ---------------------------------------------------------------- every map
 const SKIP = /^UnovaHouse|^BW1House/;
-const names = [];
-for (const home of Object.keys(HOMES)) for (const m of Object.values(HOMES[home])) if (["route", "city", "town"].includes(m.type) && !done.has(m.name) && !SKIP.test(m.name) && (!m.image || m.image === m.name)) names.push(m.name);
+const rle = (a) => { const o = []; for (let i = 0; i < a.length;) { let j = i; while (j < a.length && a[j] === a[i]) j++; o.push(a[i], j - i); i = j; } return o; };
+const pack = () => { const L = {}; for (const n of Object.keys(layouts)) L[n] = [layouts[n].home, rle(layouts[n].c), rle(layouts[n].b), rle(layouts[n].e)]; return L; };
+const DECODE = "const d=r=>{const a=[];for(let i=0;i<r.length;i+=2)for(let k=0;k<r[i+1];k++)a.push(r[i]);return a;};";
 let built = 0;
-for (const name of names) { if (ONLY && !ONLY.test(name)) continue; keepClassic(name); layout(name); built++; }
-if (report.length) console.log(report.join("\n"));
-if (!ONLY && !DRY) {
-  const rle = (a) => { const o = []; for (let i = 0; i < a.length;) { let j = i; while (j < a.length && a[j] === a[i]) j++; o.push(a[i], j - i); i = j; } return o; };
-  const L = {}; for (const n of Object.keys(layouts)) L[n] = [layouts[n].home, rle(layouts[n].c), rle(layouts[n].b), rle(layouts[n].e)];
-  const lines = ["// Generated by tools/build-region-layouts.js. What it does and why: docs/city-layouts.md.",
-    "(function(){", "const L=" + JSON.stringify(L) + ",B=" + JSON.stringify(aliases) + ";",
-    "const d=r=>{const a=[];for(let i=0;i<r.length;i+=2)for(let k=0;k<r[i+1];k++)a.push(r[i]);return a;};",
+{
+  const names = [];
+  for (const home of Object.keys(HOMES)) for (const m of Object.values(HOMES[home])) if (["route", "city", "town"].includes(m.type) && !done.has(m.name) && !SKIP.test(m.name) && (!m.image || m.image === m.name)) names.push(m.name);
+  for (const name of names) { if (ONLY && !ONLY.test(name)) continue; keepClassic(name); layout(name); built++; }
+  if (!ONLY && !DRY) fs.writeFileSync(path.join(root, "data/region-layouts.js"), ["// Generated by tools/build-region-layouts.js. What it does and why: docs/city-layouts.md.",
+    "(function(){", "const L=" + JSON.stringify(pack()) + ",B=" + JSON.stringify(aliases) + ";", DECODE,
     "for(const n in B)for(const[home,map]of B[n])if(window[home].maps[map].image===n)window[home].maps[map].image=n+'Classic';",
     "for(const n in L){const m=window[L[n][0]].maps[n];delete m.anim;m.collision=d(L[n][1]);m.behavior=d(L[n][2]);m.encounter=d(L[n][3]);m.top=true;m.cityLayout=true;m.regionLayout=true;}",
-    "window.REGION_LAYOUTS=Object.keys(L);", "})();", ""];
-  fs.writeFileSync(path.join(root, "data/region-layouts.js"), lines.join("\n"));
+    "window.REGION_LAYOUTS=Object.keys(L);", "})();", ""].join("\n"));
 }
+// Alola, Galar and Paldea lay their ground out when the game starts (game/*-layouts.js),
+// so they are read after every game script has run, and their layouts are applied last.
+{
+  const late = { localStorage: { getItem: () => null, setItem() {}, removeItem() {} }, console: { log() {}, warn() {}, error() {} } }; late.window = late; vm.createContext(late);
+  for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g))
+    if (!file.startsWith("ui/") && file !== "game/region-layouts-late.js") vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), late, { filename: file });
+  HOMES = { ALOLA_DATA: late.ALOLA_DATA.maps, GALAR_DATA: late.GALAR_DATA.maps, PALDEA_DATA: late.PALDEA_DATA.maps }; WORLD = late; LATE = true;
+  collectLandings({ A: late.ALOLA_DATA, G: late.GALAR_DATA, P: late.PALDEA_DATA });
+  for (const k of Object.keys(layouts)) delete layouts[k];
+  for (const home of Object.keys(HOMES)) for (const m of Object.values(HOMES[home])) if (m && ["route", "city", "town"].includes(m.type)) { if (ONLY && !ONLY.test(m.name)) continue; layout(m.name); built++; }
+  if (!ONLY && !DRY) fs.writeFileSync(path.join(root, "game/region-layouts-late.js"), ["// Generated by tools/build-region-layouts.js. What it does and why: docs/city-layouts.md.",
+    "(function(){", "const L=" + JSON.stringify(pack()) + ";", DECODE,
+    "for(const n in L){const m=window[L[n][0]].maps[n];if(!m)continue;delete m.anim;delete m.image;m.collision=d(L[n][1]);m.behavior=d(L[n][2]);m.encounter=d(L[n][3]);m.top=true;m.cityLayout=true;m.regionLayout=true;}",
+    "window.REGION_LAYOUTS=(window.REGION_LAYOUTS||[]).concat(Object.keys(L));", "})();", ""].join("\n"));
+}
+if (report.length) console.log(report.join("\n"));
 console.log("region layouts:", built, "maps");

@@ -215,6 +215,7 @@ function make(name){
  return canvas;
 }
 function draw(g,name,x,y){
+ if(window.WORLD_MAPS?.[name]?.regionLayout)return; // drawn by tools/build-region-layouts.js
  if(!window.WORLD_MAPS?.[name]||!window.Paldea?.owns(name))return;
  const map=window.WORLD_MAPS[name];
  let cv=cache.get(name);

@@ -95,10 +95,12 @@ call `finish` and `retarget`.
 ![Kalos towns and routes](region-layouts-kalos-preview.png)
 ![Unova towns and routes](region-layouts-unova-preview.png)
 
-`tools/build-region-layouts.js` relays the other 181 outdoor maps: Kalos's seven
+`tools/build-region-layouts.js` relays 339 outdoor maps. 181 are Kalos's seven
 towns and all its routes, every Unova city, town and route other than Castelia,
-and the Black/White campaign's copies (`BW1...`). It writes
-`data/region-layouts.js`, which loads after `data/city-layouts.js`.
+and the Black/White campaign's copies (`BW1...`); these go in
+`data/region-layouts.js`, which loads after `data/city-layouts.js`. The other
+158 are every town and route of Alola, Galar and Paldea; see
+[Alola, Galar and Paldea](#alola-galar-and-paldea).
 
 These are **not** hand-drawn street plans. Each map is grown from its own
 anchors:
@@ -141,6 +143,31 @@ runways, Anville's turntable, Floccesy's clock tower, Virbank's factory.
   and the underwater ruins are unchanged.
 - Alola, Galar and Paldea maps that were drawn over a Kalos picture keep the old
   picture as `...Classic`, exactly as Hau'oli and Konikoni do.
+
+### Alola, Galar and Paldea
+
+![Alola, Galar and Paldea towns](region-layouts-later-preview.png)
+
+These three regions used to draw every town and route as flat coloured blocks
+at run time (`ui/alola-art.js`, `ui/galar-art.js`, `ui/paldea-art.js`) over a
+borrowed Kalos picture. Their 158 outdoor maps now have pictures of their own,
+made by the same builder with the same Sinnoh artwork.
+
+- Their ground is laid out by `game/*-layouts.js` when the game starts, so the
+  builder reads the maps after every game script has run and writes
+  `game/region-layouts-late.js`, which is loaded last.
+- Doors, gates, people and the open tiles on each map's rim are kept. Rooms
+  entered by stepping onto a tile get a building over that tile where one fits.
+- None of these maps had water. Seaside places (Hulbury, Cabo Poco, Levincia,
+  the Alola beaches and so on) get a sea along one edge.
+- The run-time block art no longer draws on these maps. It still draws the
+  three regions' interiors, Gyms and caves, which are **not** rebuilt.
+
+**These are not at the level of Kanto, Johto and Hoenn, and cannot be made so
+by this route.** Those three regions are the original games' own 2D maps. Kalos,
+Alola, Galar and Paldea were 3D games with no 2D maps to take, so what is here
+is a generated layout in a matching art style: right kind of place, right
+buildings on the right doors, but not the real town plan.
 
 ### Regenerating
 
