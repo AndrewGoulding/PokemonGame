@@ -314,6 +314,31 @@ over all of it (Alola's Altar, Ultra Space) the wild encounters stay on the
 drawn floor, unseen. Kalos's and Unova's own interiors and caves are not part
 of this and are unchanged.
 
+## Checked against references
+
+The towns, cities and routes were then compared with reference pictures of the
+games (pokewiki.de's overhead map renders and overview art, Serebii's
+Pokéarth), and the plans corrected where they disagreed. `docs/map-references/`
+has one file per region with the page looked at, a verdict and notes for every
+map; no reference picture is stored in this repository.
+
+| Region | Compared | Corrected | Matches | Differs | No reference |
+|---|---|---|---|---|---|
+| The twelve city street plans | 12 | 12 | 0 | 0 | 0 |
+| Kalos towns and routes | 45 of 54 | 36 | 2 | 7 | 9 |
+| Unova (Black 2/White 2) | 73 of 80 | 62 | 8 | 3 | 7 |
+| Unova (Black/White) | 47 | 32 | 14 | 1 | 0 |
+| Alola | 49 of 50 | 28 | 13 | 8 | 1 |
+| Galar | 46 of 49 | 24 | 16 | 6 | 3 |
+| Paldea | 60 | 29 | 29 | 2 | 0 |
+
+"Corrected" means the terrain, landmarks, colours and building count now agree
+as far as the fixed doors and gates allow; many corrected maps still have a
+landmark on the wrong side for that reason, and the log says so map by map.
+For the 3D games a route's reference is usually one screenshot, so a route
+"matches" on terrain, colours and its main feature, not its exact course.
+Gyms, rooms and caves have not been compared with references.
+
 ### Regenerating
 
 ```sh

@@ -204,10 +204,13 @@ module.exports = {
   } },
   // Virbank Complex: the paved works road between pipe runs, tanks and scaffolds.
   UnovaVirbankComplex: { theme: { ground: "gravel", road: "darkpave", border: "rock", tree: "barrels", density: 0.1, groves: 0, flowers: 0, factory: false }, plan(p) {
+    // Reference (pokewiki render): pale green domed gas tanks, dark purple-roofed sheds in the north, and the sea along the east side.
+    p.fill("water", 44, 2, 45, 37);
+    bld(p, 28, 3, 5, 3, { style: "ware", roof: [70, 60, 96], wall: [150, 150, 160] }); bld(p, 34, 3, 5, 3, { style: "ware", roof: [70, 60, 96], wall: [150, 150, 160] });
     p.street("darkpave", 3, [[24, 4], [24, 9], [20, 9], [20, 20], [24, 20], [24, 35]]);
     p.street("darkpave", 2, [[20, 16], [8, 16]]); p.street("darkpave", 2, [[24, 28], [40, 28], [40, 16]]);
-    pipe(p, 27, 7, 17, 1); pipe(p, 43, 8, 1, 6); pipe(p, 3, 26, 15, 1); pipe(p, 17, 27, 1, 8); pipe(p, 14, 3, 1, 9);
-    tank(p, 28, 10, 3, 3); tank(p, 32, 10, 3, 3); tank(p, 36, 10, 3, 3); tank(p, 4, 4, 3, 3, [190, 170, 150]); tank(p, 8, 4, 3, 3, [190, 170, 150]);
+    pipe(p, 27, 7, 16, 1); pipe(p, 42, 8, 1, 6); pipe(p, 3, 26, 15, 1); pipe(p, 17, 27, 1, 8); pipe(p, 14, 3, 1, 9);
+    const GAS = [176, 226, 196]; tank(p, 28, 10, 3, 3, GAS); tank(p, 32, 10, 3, 3, GAS); tank(p, 36, 10, 3, 3, GAS); tank(p, 4, 4, 3, 3, GAS); tank(p, 8, 4, 3, 3, GAS); tank(p, 4, 20, 3, 3, GAS); tank(p, 36, 15, 3, 3, GAS);
     scaffold(p, 28, 21, 6, 3); scaffold(p, 30, 33, 5, 3); scaffold(p, 4, 30, 4, 3);
     crate(p, 36, 22, 3, [70, 120, 180]); crate(p, 36, 24, 3, [190, 80, 60]); crate(p, 40, 34, 4, [90, 150, 96]); crate(p, 10, 34, 3, [220, 170, 60]);
   } },
@@ -215,8 +218,9 @@ module.exports = {
   UnovaComplexInterior: { theme: { ground: "gravel", road: "darkpave", border: "rock", tree: "barrels", density: 0.1, groves: 0, flowers: 0, factory: false }, plan(p) {
     p.street("darkpave", 3, [[22, 4], [22, 38]]); p.street("darkpave", 2, [[5, 14], [39, 14]]); p.street("darkpave", 2, [[5, 28], [39, 28]]);
     p.street("darkpave", 2, [[5, 6], [5, 14]]); p.street("darkpave", 2, [[35, 28], [35, 39]]);
-    bld(p, 27, 4, 12, 6, { style: "ware", roof: [120, 130, 150], wall: [200, 204, 212], door: 5, up: 1 });
-    tank(p, 8, 4, 3, 3); tank(p, 12, 4, 3, 3); tank(p, 16, 4, 3, 3); tank(p, 8, 8, 3, 3); tank(p, 12, 8, 3, 3);
+    bld(p, 27, 4, 12, 6, { style: "ware", roof: [70, 60, 96], wall: [150, 150, 160], door: 5, up: 1 });
+    // Reference (pokewiki render of the works): pale green domed gas tanks, dark purple shed roofs.
+    const GAS = [176, 226, 196]; tank(p, 8, 4, 3, 3, GAS); tank(p, 12, 4, 3, 3, GAS); tank(p, 16, 4, 3, 3, GAS); tank(p, 8, 8, 3, 3, GAS); tank(p, 12, 8, 3, 3, GAS);
     pipe(p, 3, 20, 15, 1); pipe(p, 26, 20, 15, 1); pipe(p, 12, 31, 1, 9); pipe(p, 28, 31, 1, 8);
     scaffold(p, 26, 22, 6, 3); scaffold(p, 4, 32, 5, 3); scaffold(p, 14, 34, 5, 3);
     crate(p, 8, 23, 4, [70, 120, 180]); crate(p, 8, 25, 4, [190, 80, 60]); crate(p, 14, 23, 3, [90, 150, 96]); crate(p, 34, 23, 4, [220, 170, 60]); crate(p, 34, 25, 4, [70, 120, 180]); crate(p, 38, 34, 3, [190, 80, 60]);
@@ -242,9 +246,12 @@ module.exports = {
   } },
   // The excavation site off Route 4: diggers' cabins among half-buried walls and columns.
   UnovaRoute4Ruins: { theme: { ...DESERT, house: ["peak", "gable"], density: 0.15 }, plan(p) {
-    p.street("beach", 2, [[4, 16], [4, 20], [24, 20]]); p.street("beach", 1, [[18, 18], [18, 20]]); p.street("beach", 1, [[7, 20], [7, 21]]);
-    p.street("beach", 2, [[22, 20], [22, 24], [32, 24]]); p.street("beach", 1, [[27, 23], [27, 24]]); p.street("beach", 1, [[28, 16], [24, 16], [24, 20]]);
-    p.street("beach", 1, [[19, 8], [19, 10], [14, 10], [14, 20]]);
+    // Reference (pokewiki W2 Route 4 render): the houses are sandstone blocks with flat brown tops, half buried in the dunes, on
+    // grey paved lanes (they were drawn as Pokemon Centers, a cabin and gable houses).
+    for (let k = 0; k < p.warps.length; k++) if (p.warps[k].door) cottage(p, k, [150, 104, 66], [214, 180, 120]);
+    p.street("asphalt", 2, [[4, 16], [4, 20], [24, 20]]); p.street("asphalt", 1, [[18, 18], [18, 20]]); p.street("asphalt", 1, [[7, 20], [7, 21]]);
+    p.street("asphalt", 2, [[22, 20], [22, 24], [32, 24]]); p.street("asphalt", 1, [[27, 23], [27, 24]]); p.street("asphalt", 1, [[28, 16], [24, 16], [24, 20]]);
+    p.street("asphalt", 1, [[19, 8], [19, 10], [14, 10], [14, 20]]);
     wall(p, 3, 4, 7, 1, [196, 176, 132]); wall(p, 3, 5, 1, 3, [196, 176, 132]); wall(p, 8, 26, 9, 1, [196, 176, 132]); wall(p, 31, 26, 2, 3, [196, 176, 132]); wall(p, 31, 3, 2, 2, [196, 176, 132]);
     for (const [x, y] of [[11, 8], [11, 12], [13, 23], [16, 23], [30, 22], [33, 12], [5, 24], [22, 27], [25, 27]]) pillar(p, x, y);
   } },
@@ -364,7 +371,7 @@ module.exports = {
   // Route 9: the motorway past Shopping Mall Nine and its car park.
   UnovaRoute9: { theme: { road: "asphalt", density: 0.3, groves: 0.1, flowers: 0.05, big: ["hall", "academy", "mart"] }, plan(p) {
     p.street("asphalt", 4, [[36, 16], [4, 16]]); dashes(p, 5, 16, 35, 16);
-    p.fill("asphalt", 12, 10, 27, 13); p.building(1, "hall");
+    p.fill("asphalt", 12, 10, 27, 13); p.building(1, "academy", { tint: ([r, g, b]) => [Math.min(255, r * 0.9 + 60), g * 0.62 + 20, b * 0.55 + 20] });   // reference: Shopping Mall Nine is a tall red-brick block
     p.paint(0, (c) => { for (let i = 12 * U + 8; i < 28 * U; i += 16) { if (Math.abs(i - 19 * U - 8) < 20) continue; c.rect(i, 11 * U + 4, 1, 22, [244, 240, 210]); } c.rect(12 * U, 14 * U - 1, 16 * U, 1, [244, 240, 210]); });
     fence(p, 5, 19, 12, 1, [200, 204, 214]); fence(p, 22, 19, 13, 1, [200, 204, 214]); fence(p, 5, 13, 6, 1, [200, 204, 214]); fence(p, 29, 13, 6, 1, [200, 204, 214]);
     p.fill("tree", 2, 30, 37, 31);
@@ -412,12 +419,14 @@ module.exports = {
     p.fill("tree", 2, 2, 8, 3); p.fill("tree", 33, 2, 45, 4); p.fill("gravel", 28, 20, 29, 33); p.fill("gravel", 33, 20, 34, 33);
   } },
   // Victory Road's cliffs: four terraces joined by zigzag stone stairs up to the castle ledge.
-  UnovaVictoryRoadCliffs: { theme: { ...MOUNTAIN, density: 0.2 }, plan(p) {
+  UnovaVictoryRoadCliffs: { theme: { ...MOUNTAIN, ground: "sand", road: "beach", grass: "desert", groves: 0, density: 0.12 }, plan(p) {
+    // Reference (pokewiki S2W2 cliff render): the whole face is golden-brown rock - sandy ledges, earth cliffs, pale stairs and
+    // only tufts of grass - not green shelves behind grey walls.
     steps(p, 30, 25, 2, 2); steps(p, 10, 17, 2, 2); steps(p, 28, 12, 2, 2); steps(p, 14, 7, 2, 2);
-    cliff(p, 2, 25, 38, 2, GREY, GREYLIP); cliff(p, 2, 17, 38, 2, GREY, GREYLIP); cliff(p, 2, 12, 38, 2, GREY, GREYLIP); cliff(p, 2, 7, 38, 2, GREY, GREYLIP);
+    cliff(p, 2, 25, 38, 2, [176, 134, 76], [214, 176, 110]); cliff(p, 2, 17, 38, 2, [176, 134, 76], [214, 176, 110]); cliff(p, 2, 12, 38, 2, [176, 134, 76], [214, 176, 110]); cliff(p, 2, 7, 38, 2, [176, 134, 76], [214, 176, 110]);
    
-    p.street("gravel", 2, [[21, 31], [21, 29], [30, 29], [30, 27]]); p.street("gravel", 2, [[30, 24], [30, 22], [10, 22], [10, 19]]); p.street("gravel", 2, [[10, 16], [10, 15], [28, 15], [28, 14]]);
-    p.street("gravel", 2, [[28, 11], [28, 10], [14, 10], [14, 9]]); p.street("gravel", 2, [[14, 6], [14, 5]]); p.street("gravel", 2, [[6, 5], [35, 5], [35, 4]]); p.street("gravel", 2, [[21, 30], [5, 30], [5, 31]]);
+    p.street("beach", 2, [[21, 31], [21, 29], [30, 29], [30, 27]]); p.street("beach", 2, [[30, 24], [30, 22], [10, 22], [10, 19]]); p.street("beach", 2, [[10, 16], [10, 15], [28, 15], [28, 14]]);
+    p.street("beach", 2, [[28, 11], [28, 10], [14, 10], [14, 9]]); p.street("beach", 2, [[14, 6], [14, 5]]); p.street("beach", 2, [[6, 5], [35, 5], [35, 4]]); p.street("beach", 2, [[21, 30], [5, 30], [5, 31]]);
   } },
   // Route 16: the straight paved road east of Nimbasa, with the forest track turning off north.
   UnovaRoute16: { theme: { road: "asphalt", density: 0.35, groves: 0.15, flowers: 0.05 }, plan(p) {
@@ -559,16 +568,20 @@ module.exports = {
   UnovaP2Island: { theme: { ...COAST, shore: 2, density: 0.15 }, plan(p) {
     p.fill("water", 2, 2, 29, 3); p.fill("water", 2, 4, 3, 18); p.fill("water", 27, 4, 29, 25); p.fill("water", 8, 24, 26, 25);
     p.street("sand", 2, [[4, 22], [16, 22], [16, 10]]); p.street("deck", 1, [[23, 21], [23, 25]]);
-    p.building(1, "lab"); p.fill("rock", 5, 5, 9, 7); p.fill("rock", 22, 5, 25, 7);
+    // Reference (pokewiki SW render): the lab is a long shed under a dark green roof on a cliff-edged island in open sea.
+    p.building(1, "lab", { tint: ([r, g, b]) => [r * 0.45, Math.min(255, g * 0.8), b * 0.6] }); p.fill("rock", 5, 5, 9, 7); p.fill("rock", 22, 5, 25, 7);
   } },
   // Moor of Icirrus: a causeway through the fen, wide shallow pools on every side.
-  UnovaMoorOfIcirrus: { theme: MARSH, plan(p) {
+  UnovaMoorOfIcirrus: { theme: { ground: "meadow", road: "dirt", grass: "tallgrass", water: "water", puddles: 0, density: 0.35, groves: 0.3, flowers: 0.08 }, plan(p) {
+    // Reference (pokewiki S2W2 summer render): green meadow in thick forest with three big clear pools (deep in the middle),
+    // not a brown fen; the pools are real water now.
     p.street("dirt", 2, [[21, 33], [21, 26], [14, 26], [14, 16], [24, 16], [24, 8], [18, 8]]);
-    p.disc("water", 31, 11, 4.5, 3); p.disc("water", 8, 11, 3, 2); p.disc("water", 34, 27, 2.6, 1.8);
-    puddle(p, 9, 22, 3, 2); puddle(p, 28, 20, 3.5, 2); puddle(p, 19, 12, 2.5, 1.4); puddle(p, 36, 21, 1.8, 2.6); puddle(p, 10, 31, 3, 1.6); puddle(p, 27, 29, 2, 1.2); puddle(p, 30, 5, 3, 1.3);
+    p.disc("water", 31, 12, 6, 3.4); p.disc("water", 8, 12, 4, 3); p.disc("water", 33, 26, 5, 2.6); p.disc("water", 9, 26, 4.5, 2.4); p.disc("water", 19, 5, 3, 1.4);
+    shoal(p, 31.5, 12.5, 3.4, 1.6, [30, 60, 130, 140]); shoal(p, 8.5, 12.5, 2, 1.4, [30, 60, 130, 140]); shoal(p, 33.5, 26.5, 2.6, 1.2, [30, 60, 130, 140]);
+    puddle(p, 19, 12, 2.5, 1.4); puddle(p, 27, 20, 2, 1.2);
   } },
   // Route 8: the wet road east of Icirrus, puddles standing across it, and the turn north to the moor.
-  UnovaRoute8: { theme: { ground: "meadow", road: "dirt", density: 0.3, groves: 0.25, flowers: 0.1 }, plan(p) {
+  UnovaRoute8: { theme: { ground: "meadow", road: "dirt", grass: "tallgrass", water: "water", puddles: 0, density: 0.3, groves: 0.25, flowers: 0.1 }, plan(p) {
     // Reference (pokewiki S2W2 render): bright green meadow and woods round big clear rain pools (not brown fen); the pools
     // are real water now and the ones lying across the road stay as shallow puddles.
     p.street("dirt", 2, [[5, 16], [13, 16], [13, 18], [28, 18], [28, 16], [37, 16]]); p.street("dirt", 2, [[21, 18], [21, 11], [19, 11], [19, 7], [21, 7], [21, 5]]);
@@ -598,16 +611,24 @@ module.exports = {
   } },
   // Pledge Grove: a hidden track through thick trees to the mossy rock in its clearing.
   UnovaPledgeGrove: { theme: { ...FOREST, density: 0.6 }, plan(p) {
-    p.street("dirt", 2, [[18, 25], [18, 19], [13, 19], [13, 12], [18, 12], [18, 8]]);
-    p.disc("meadow", 18, 6.5, 6, 3.5); p.decor("boulder", 14, 2); p.decor("boulder", 21, 2);
-    p.paint(7, (c) => { const X = 18 * U + 8, Y = 5 * U; c.ellipse(X + 2, Y + 6, 15, 7, [0, 0, 0, 60]); c.ellipse(X, Y, 14, 10, [96, 104, 100]); c.ellipse(X - 2, Y - 3, 11, 6, [120, 160, 110]); c.line(X + 2, Y - 9, X - 2, Y + 9, [50, 54, 60], 2); }); take(p, 18, 4, 1, 1);
+    p.street("meadow", 2, [[18, 25], [18, 8]]);
+    // Reference (pokewiki S2W2 render): the rock is a big brown crag at the head of the clearing with a sand patch before it and
+    // a small pool on either side; the way up is short grass, not a marked path through tall grass.
+    p.disc("meadow", 18, 7, 7, 4); p.fill("meadow", 16, 10, 20, 24); p.disc("sand", 18.5, 7.5, 1.8, 1.1);
+    p.fill("water", 11, 6, 12, 7); p.fill("water", 23, 7, 25, 9);
+    take(p, 17, 3, 3, 2);
+    p.paint(5, (c, top) => { const s = pen(c, top, 3 * U), X = 18 * U + 8, Y = 5 * U; s.ellipse(X + 3, Y - 2, 30, 7, [0, 0, 0, 60]); s.poly([[X - 28, Y], [X - 20, Y - 30], [X - 4, Y - 46], [X + 12, Y - 42], [X + 26, Y - 22], [X + 28, Y]], [110, 80, 50]); s.poly([[X - 24, Y - 2], [X - 17, Y - 28], [X - 4, Y - 42], [X + 10, Y - 38], [X + 22, Y - 20], [X + 24, Y - 2]], [160, 120, 70]); s.line(X - 2, Y - 40, X + 4, Y - 6, [100, 72, 46], 2); s.line(X - 12, Y - 30, X - 8, Y - 8, [100, 72, 46], 1); s.poly([[X - 16, Y - 26], [X - 4, Y - 40], [X + 2, Y - 30], [X - 10, Y - 18]], [190, 150, 96]); });
     p.fill("tree", 2, 2, 9, 12); p.fill("tree", 26, 2, 33, 12); p.fill("tree", 2, 22, 12, 27);
   } },
   // The Entralink: four pools round a crossroads and the bright ring at its heart.
-  UnovaEntralink: { theme: { ground: "lawn", road: "cobble", tree: "tree1", density: 0.12, groves: 0, flowers: 0.2 }, plan(p) {
-    for (const [x, y] of [[10, 9], [31, 9], [10, 27], [31, 27]]) p.disc("water", x, y, 5, 3);
-    p.street("cobble", 3, [[21, 4], [21, 31]]); p.street("cobble", 3, [[4, 18], [37, 18]]); p.disc("ornate", 21.5, 18.5, 6, 5);
-    p.paint(0, (c) => { const X = 21 * U + 8, Y = 18 * U + 8; c.ellipse(X, Y, 44, 36, [130, 230, 250, 120]); c.ellipse(X, Y, 44, 36, [240, 252, 255], 3); c.ellipse(X, Y, 28, 22, [200, 244, 255, 150]); c.ellipse(X, Y, 28, 22, [240, 252, 255], 2); c.ellipse(X, Y, 9, 7, [255, 255, 255]); });
+  UnovaEntralink: { theme: { ground: "lawn", road: "paving", tree: "tree1", density: 0.08, groves: 0, flowers: 0.12 }, plan(p) {
+    // Reference (pokewiki screenshot of the Entree): grey flagstone paths over bright lawn meet at a round glowing moat with
+    // the twisted Entree tree on its islet. (The four big ponds were ours and are gone; the walk passes round the moat.)
+    p.street("paving", 3, [[21, 4], [21, 12]]); p.street("paving", 3, [[21, 24], [21, 31]]); p.street("paving", 3, [[4, 18], [15, 18]]); p.street("paving", 3, [[27, 18], [37, 18]]);
+    p.disc("paving", 21.5, 18.5, 7, 6); p.disc("water", 21.5, 18.5, 4.2, 3.4); p.disc("lawn", 21.5, 18.5, 2, 1.5);
+    p.paint(0.3, (c) => { const X = 21 * U + 8, Y = 18 * U + 8; c.ellipse(X, Y, 62, 50, [150, 236, 250, 120]); c.ellipse(X, Y, 64, 52, [240, 252, 255], 2); });
+    take(p, 21, 18, 1, 1);
+    p.paint(19, (c, top) => { const s = pen(c, top, 18 * U), X = 21 * U + 8, Y = 19 * U - 2; s.ellipse(X + 2, Y, 10, 4, [0, 0, 0, 60]); for (let k = 0; k < 9; k++) s.box(X - 5 + Math.round(Math.sin(k * 1.1) * 3), Y - 6 - k * 5, 9, 7, k % 2 ? [226, 222, 214] : [150, 130, 110], [90, 76, 66]); for (const [dx, dy, col] of [[-12, -54, [60, 130, 110]], [12, -52, [120, 130, 60]], [0, -60, [70, 150, 90]]]) { s.ellipse(X + dx, Y + dy, 11, 7, [40, 90, 70]); s.ellipse(X + dx - 1, Y + dy - 1, 9, 5, col); } });
   } },
   // Entree Forest: a track looping from glade to glade where the dream Pokemon wait.
   UnovaEntreeForest: { theme: { ...FOREST, density: 0.6 }, plan(p) {
@@ -634,21 +655,25 @@ module.exports = {
     stand(p, 7, 3, 12, 2); stand(p, 25, 3, 12, 2, [200, 70, 70]);
   } },
   // Victory Road's forest shelf: a woodland track over a mountain stream, up to the cave mouths.
-  UnovaVictoryRoad18: { theme: { ...FOREST, border: "rock", density: 0.5 }, plan(p) {
-    p.fill("water", 24, 2, 25, 33); p.disc("water", 24.5, 26, 3, 2);
+  UnovaVictoryRoad18: { theme: { ...FOREST, border: "darktree", treeTint: "dark", grove: "darktree", density: 0.5 }, plan(p) {
+    // Reference (pokewiki S2 forest render): a gloomy clearing walled in by black-green forest, a sandy patch before the cave
+    // and one earth bank with steps - no stream and no rock rim (both were ours and are gone).
     p.street("dirt", 2, [[5, 31], [12, 31], [12, 24], [20, 24], [20, 16], [28, 16], [28, 8], [36, 8], [36, 6]]);
-    cliff(p, 2, 20, 16, 1, GREY, GREYLIP); cliff(p, 30, 12, 10, 1, GREY, GREYLIP); p.fill("rock", 2, 2, 10, 4); p.fill("rock", 30, 28, 39, 33);
+    cliff(p, 2, 20, 16, 1); cliff(p, 30, 12, 10, 1); p.fill("darktree", 2, 2, 10, 4); p.fill("darktree", 30, 28, 39, 33); p.disc("sand", 36, 8, 2.5, 1.6);
   } },
   // Victory Road's eastern cliffs: three shelves and their stairs, climbing back and forth to the top ledge.
-  UnovaVictoryRoad25: { theme: { ...MOUNTAIN, density: 0.2 }, plan(p) {
+  UnovaVictoryRoad25: { theme: { ...MOUNTAIN, ground: "sand", road: "beach", grass: "desert", groves: 0, density: 0.12 }, plan(p) {
+    // Reference (pokewiki S2W2 cliff render): the whole face is golden-brown rock - sandy ledges, earth cliffs, pale stairs and
+    // only tufts of grass - not green shelves behind grey walls.
     steps(p, 34, 25, 2, 2); steps(p, 6, 16, 2, 2); steps(p, 30, 6, 2, 2);
-    cliff(p, 8, 25, 32, 2, GREY, GREYLIP); cliff(p, 2, 16, 34, 2, GREY, GREYLIP); cliff(p, 6, 6, 34, 2, GREY, GREYLIP);
-    p.street("gravel", 2, [[5, 30], [34, 30], [34, 27]]); p.street("gravel", 2, [[34, 24], [34, 21], [6, 21], [6, 18]]); p.street("gravel", 2, [[6, 15], [6, 12], [30, 12], [30, 8]]); p.street("gravel", 2, [[30, 5], [30, 4], [12, 4]]);
+    cliff(p, 8, 25, 32, 2, [176, 134, 76], [214, 176, 110]); cliff(p, 2, 16, 34, 2, [176, 134, 76], [214, 176, 110]); cliff(p, 6, 6, 34, 2, [176, 134, 76], [214, 176, 110]);
+    p.street("beach", 2, [[5, 30], [34, 30], [34, 27]]); p.street("beach", 2, [[34, 24], [34, 21], [6, 21], [6, 18]]); p.street("beach", 2, [[6, 15], [6, 12], [30, 12], [30, 8]]); p.street("beach", 2, [[30, 5], [30, 4], [12, 4]]);
   } },
   // Giant Chasm's frozen forest: a snowbound track between frosted pines and sheets of ice.
   UnovaGiantChasmFrozenForest: { theme: { ground: "drift", road: "frostpath", border: "rock", grass: "snowgrass", tree: "tree1", treeTint: "frost", grove: "pine", density: 0.4, groves: 0.2, flowers: 0 }, plan(p) {
     p.street("frostpath", 2, [[5, 31], [14, 31], [14, 22], [24, 22], [24, 13], [33, 13], [33, 6], [37, 6], [37, 5]]);
-    const ICE = [200, 232, 250, 210]; puddle(p, 10, 12, 5, 3, ICE); puddle(p, 31, 25, 4.5, 2.6, ICE); puddle(p, 19, 17, 2.2, 1.3, ICE);
+    // Reference (pokewiki S2W2 crater render, unfrozen): the middle of the crater is one wide bare hollow ringed by dead trees.
+    const ICE = [200, 232, 250, 210]; p.disc("snow", 19, 17, 7, 4.5); puddle(p, 19, 17, 5, 3, ICE); puddle(p, 31, 25, 2.5, 1.4, ICE);
     p.fill("pine", 2, 2, 14, 4); p.fill("pine", 26, 30, 35, 33); p.fill("pine", 16, 26, 20, 29);
   } },
 };

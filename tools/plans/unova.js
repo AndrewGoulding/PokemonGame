@@ -490,7 +490,7 @@ module.exports = {
       [[12, 15], [23, 15], [35, 15], [12, 20], [25, 20], [41, 20]].forEach(([x, y], k) => bld(p, x, y, 3, 2, { roof: roofs[k], wall: [236, 226, 204], door: 1, wallH: 14 }));
       // The parapets: stone kerbs along both edges of the deck (drawn only; the river rows already bound it).
       p.paint(0, (c) => { for (const y of [15, 21]) { const Y = y === 15 ? 15 * U : 22 * U - 4; c.rect(7 * U, Y, 36 * U, 4, [150, 146, 140]); c.rect(7 * U, Y, 36 * U, 1, [200, 196, 190]); for (let i = 7 * U; i < 43 * U; i += 12) c.rect(i, Y, 1, 4, [100, 96, 92]); } for (let k = 0; k < 6; k++) c.ellipse(10 * U + k * 6 * U, 22 * U + 8, 20, 9, [40, 60, 90, 120]); });
-      const brown = p.roof(1.15, 0.8, 0.5); for (let k = 2; k <= 9; k++) p.building(k, "gable", { tint: brown });
+      const brown = p.roof(1.15, 0.8, 0.5); for (let k = 2; k <= 9; k++) p.building(k, k === 5 || k === 9 ? "flat" : "gable", { tint: brown });
       for (const y of [15, 21]) for (const x of [31, 36]) pylon(p, x, y, 3, [96, 70, 54]);
       p.paint(22, (c, top) => { for (const y of [15, 21]) { const Y = (y - 3) * U + 4; for (let i = 0; i <= 80; i++) { const t = i / 80, yy = Y + Math.sin(t * Math.PI) * 26; top.rect(31 * U + 8 + i, yy, 1, 2, [70, 50, 40]); if (i % 10 === 0) top.rect(31 * U + 8 + i, yy, 1, Y + 44 - yy, [70, 50, 40]); } } });
       p.fill("flowersRed", 10, 4, 14, 5); p.fill("flowersBlue", 30, 4, 34, 5); p.fill("flowersPink", 10, 33, 14, 33); p.fill("flowersRed", 30, 33, 34, 33);
@@ -531,7 +531,7 @@ module.exports = {
       // Reference (pokewiki render): every hut on the boardwalks is thatched brown, and the middle of the island is
       // a lawn ringed by the beach.
       const thatch = p.roof(1.05, 0.8, 0.5);
-      p.building(2, "gym"); p.building(0, "pcSmall"); p.building(7, "gable", { tint: thatch }); for (const k of [5, 6, 8, 9]) p.building(k, "gable", { tint: thatch });
+      p.building(2, "gym"); p.building(0, "pcSmall"); p.building(7, "flat", { tint: thatch }); for (const k of [5, 6, 8, 9]) p.building(k, "gable", { tint: thatch });
       const H = (roof) => ({ roof, wall: [226, 200, 160], door: 1, wallH: 14 });
       bld(p, 28, 26, 3, 2, H([150, 110, 70])); bld(p, 34, 26, 3, 2, H([136, 98, 62])); bld(p, 10, 13, 3, 2, H([150, 110, 70])); bld(p, 30, 13, 3, 2, H([136, 98, 62]));
       p.fill("lawn", 11, 21, 19, 26);
@@ -671,7 +671,7 @@ module.exports = {
       // Reference (pokewiki SW render): the lab has an orange roof and all three homes bright blue ones; plain grass
       // with hardly a flower, woods down both sides, and a white railing along the whole sea front.
       const blue = p.roof(0.35, 0.85, 1.9);
-      p.building(1, "academy", { tint: p.roof(1.6, 0.9, 0.5) }); for (const k of [2, 3, 4, 5]) p.building(k, "gable", { tint: blue });
+      p.building(1, "lab", { tint: p.roof(1.6, 0.9, 0.5) }); for (const k of [2, 3, 4, 5]) p.building(k, "gable", { tint: blue });
       rail(p, 3, 34, 15, 1); rail(p, 25, 34, 16, 1);
       p.fill("tree", 2, 2, 4, 30); p.fill("tree", 38, 2, 41, 30);
       p.decor("bench", 19, 33); p.decor("bench", 24, 33);
