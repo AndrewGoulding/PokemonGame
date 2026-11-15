@@ -674,4 +674,15 @@ module.exports = {
       for (const [x, y] of [[5, 27], [15, 27], [24, 27], [33, 27]]) p.decor("barrel", x, y);
     },
   },
+  // Hulbury Stadium: Nessa's water Gym. A pool court with a walkway round it and across it.
+  GalarHulburyStadium: {
+    theme: { room: "arena", floor: "rGym" },
+    plan(p) {
+      p.fill("steel", p.left, p.top, p.right, p.bottom);
+      p.fill("water", p.left + 2, p.top + 2, p.right - 2, p.bottom - 4);
+      p.fill("deck", p.left + 2, 11, p.right - 2, 12); p.fill("deck", 11, p.top + 2, 12, p.bottom - 4);
+      p.paint(1, (c) => { for (let k = 0; k < 6; k++) c.rect((p.left + 3 + k * 3) * 16, (p.top + 2) * 16 + 2, 20, 3, [250, 220, 90]); c.ellipse(12 * 16, 11.5 * 16 + 8, 22, 22, [244, 244, 250, 220], 3); c.ellipse(12 * 16, 11.5 * 16 + 8, 6, 6, [70, 130, 220]); });
+      p.decor("rStatue", 8, p.bottom - 3, { optional: true }); p.decor("rStatue", 14, p.bottom - 3, { optional: true });
+    },
+  },
 };

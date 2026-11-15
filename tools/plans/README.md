@@ -50,6 +50,28 @@ Without doors (decor only): `apartment 3x6`, `towerSlim 4x14`, `towerShort 4x9`,
 Props: `fountain 3x4`, `twinFountain 4x4`, `parkFountain 9x5`, `bench 1x2`, `hedge 1x1`, `bush 1x1`, `barrels 1x2`,
 `barrel 1x1`, `tree1 2x3`, `honeyTree 2x3`, `boulder 2x3`, `board 1x1`.
 
+## Rooms (interiors, Gyms, League rooms)
+
+Indoor maps of Alola, Galar and Paldea are built as a walled room: floor from row `p.top` to `p.bottom`, columns
+`p.left`..`p.right`, a two-row wall above `p.top`, darkness outside. A plan for one replaces the default furniture.
+`p.room` is `true` in a room plan.
+
+- `theme`: `room` (`center mart house lab arena hall shrine`), `floor` (any walkable tile kind; room floors are
+  `rCenter rMart rHouse rLab rGym hallFloor ruinFloor caveFloor`), `wall` (`wCenter wMart wHouse wLab wGym`, or `null`
+  for plain stone), `top` / `bottom` (floor rows), `court: true` to keep the generic lined court under your plan.
+- `p.fill(kind, x0, y0, x1, y1)` / `p.disc(...)`: floor of that tile kind (also outside the default rectangle, to
+  shape the room). `"void"` is darkness, `"wall"` a stone wall block, `"water"` a pool (not walkable).
+- `p.decor(stamp, x, y, { optional })`: furniture; rows above `p.top` hang on the wall. It must stand on free floor.
+  Room stamps: `rDesk 7x4` (healing desk; its top two rows are wall), `rPC 1x2`, `rBooks 2x2`, `rPlant 1x2`,
+  `rSeats 3x3`, `rFridge 2x2`, `rGoods 2x2`, `rAisle 2x2`, `rKitchen 3x3`, `rTV 2x2`, `rTable 5x4`, `rPot 1x2`,
+  `rWindow 2x2`, `rMachine 3x4`, `rShelf 2x3`, `rBench 4x2`, `rLabTable 4x2`, `rStack 2x3`, `rStatue 2x3`; outdoor
+  props (`boulder`, `tree1`, `hedge`, `barrels`, `fountain`...) work too.
+- `p.paint(z, (c, top) => ...)`, `p.block(x, y, w, h)`, `p.bare(k)` (no doormat/doorway drawn on warp `k`), `p.hue`
+  (a colour picked for this room), `p.warps` (`exit: true` on the way out), `p.people`.
+
+Caves and trial sites (rock caverns) are outdoor-style maps: plan them with the town calls above; their theme is
+`cavern` (ground `caveFloor`, walls `caveVoid`).
+
 ## Checking
 
 ```sh

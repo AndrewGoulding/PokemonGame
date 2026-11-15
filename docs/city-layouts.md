@@ -188,9 +188,9 @@ teal blocks for furniture. They are rebuilt by the same builder:
   the Oreburgh Gate cave artwork. Their wild encounters are kept.
 
 Exits and people keep their tiles, and anything that blocks the way to one is
-removed. These are generic rooms of the right kind, not each building's real
-interior: every Gym is the same court in a different colour, and no Gym puzzle
-is drawn. The open tiles the old rooms had on their rims are walled off.
+removed. That is the default for a room with no plan; every room now has a plan
+of its own (see [Hand-planned routes and interiors](#hand-planned-routes-and-interiors)).
+The open tiles the old rooms had on their rims are walled off.
 
 ## Hand-planned towns
 
@@ -229,6 +229,32 @@ What a plan cannot change:
   described above.
 - The older landmark sprites (`ui/authored-region-art.js`) are no longer drawn
   on planned towns.
+
+## Hand-planned routes and interiors
+
+![Routes and wild areas](route-plans-preview.png)
+![Gyms, trial sites and rooms](room-plans-preview.png)
+
+The plans in `tools/plans/` now cover every map the builder makes (469):
+
+- **Routes and wild areas** of Kalos, Unova (both campaigns), Alola, Galar and
+  Paldea (`*-routes.js`): each route's path, water, cliffs, woods and its own
+  features — Kalos Route 10's menhir rows and Route 13's turbines, Unova's
+  great bridges and the Route 9 motorway, Mount Hokulani's switchback road,
+  Galar's Wild Area lakes and viaduct, Paldea's Titan sites and Area Zero.
+- **Interiors of Alola, Galar and Paldea** (`*-rooms.js`): every Gym with its
+  own challenge (Turffield's Wooloo fields, Stow-on-Side's spinning cups,
+  Iono's streaming stage, Larry's eatery), Alola's trial sites and Elite Four
+  rooms, the ruins, the Academy, the Team Star garages, homes, labs, and a
+  regional Pokémon Center design for each region.
+
+The same limits apply as for the towns: fixed points do not move, so real
+geography is bent to fit them; the plans are from memory; cliffs are walls with
+step gaps, not one-way ledges; weather is not drawn. Tall grass is still placed
+by the builder on whatever plain ground a plan leaves, and where a plan draws
+over all of it (Alola's Altar, Ultra Space) the wild encounters stay on the
+drawn floor, unseen. Kalos's and Unova's own interiors and caves are not part
+of this and are unchanged.
 
 ### Regenerating
 

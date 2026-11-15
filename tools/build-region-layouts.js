@@ -190,9 +190,10 @@ function roomKind(name, type) {
   return "house";
 }
 function room(name) {
-  const home = homeOf(name), base = HOMES[home][name], W = base.width, H = base.height, N = W * H, kindName = roomKind(name, base.type), K = ROOMS[kindName];
+  const home = homeOf(name), base = HOMES[home][name], W = base.width, H = base.height, N = W * H, PLAN = PLANS[name] ? (typeof PLANS[name] === "function" ? { plan: PLANS[name] } : PLANS[name]) : null, RT = (PLAN && PLAN.theme) || {};
+  const kindName = RT.room || roomKind(name, base.type), K = { ...ROOMS[kindName], ...(RT.floor ? { floor: RT.floor } : {}), ...("wall" in RT ? { wall: RT.wall } : {}) };
   const seed = [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 9973, 7), I = (x, y) => y * W + x, on = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
-  const keep = new Uint8Array(N), floor = new Uint8Array(N), solid = new Uint8Array(N).fill(1), counter = new Uint8Array(N), items = [], furniture = [];
+  const keep = new Uint8Array(N), floor = new Uint8Array(N), solid = new Uint8Array(N).fill(1), counter = new Uint8Array(N), items = [], furniture = [], tileAt = new Array(N), bare = {};
   const rim = (x, y) => x === 0 || y === 0 || x === W - 1 || y === H - 1, baseOpen = (i) => !base.collision[i];
   const exit = base.warps.reduce((a, w) => (!a || w.y > a.y ? w : a), null);
   for (const w of base.warps) keep[I(w.x, w.y)] = 1;
@@ -203,7 +204,7 @@ function room(name) {
   let ys = [], xs = []; for (let i = 0; i < N; i++) if (keep[i]) { ys.push((i / W) | 0); xs.push(i % W); }
   const nurse = kindName === "center" ? base.people.find((q) => /heal|nurse|center/i.test(q.script)) || base.people[0] : null;
   // The room: from just above its highest fixed point down to its exit.
-  const T0 = Math.max(3, nurse ? Math.min(nurse.y - 2, ...ys) : Math.min(...ys, 4)), B = Math.min(H - 2, Math.max(exit ? exit.y : 0, ...ys)), L = 1, R = W - 2;
+  const T0 = RT.top != null ? RT.top : Math.max(3, nurse ? Math.min(nurse.y - 2, ...ys) : Math.min(...ys, 4)), B = RT.bottom != null ? RT.bottom : Math.min(H - 2, Math.max(exit ? exit.y : 0, ...ys)), L = 1, R = W - 2;
   for (let y = T0; y <= B; y++) for (let x = L; x <= R; x++) { floor[I(x, y)] = 1; solid[I(x, y)] = 0; }
   const free = (x, y) => on(x, y) && floor[I(x, y)] && !solid[I(x, y)] && !keep[I(x, y)];
   // A piece of furniture, top-left at (x, y); rows above the floor hang on the wall.
@@ -218,7 +219,27 @@ function room(name) {
   const deskX = nurse ? Math.max(L, Math.min(R - 6, nurse.x - 3)) : 0;
   // (No desk if someone else stands where it would go, or behind it.)
   const deskFits = nurse && nurse.y === T0 + 2 && ![0, 1].some((r) => Array.from({ length: 7 }, (_, k) => I(deskX + k, T0 + r)).some((i) => keep[i]));
-  if (kindName === "center" && deskFits) {
+  if (PLAN && PLAN.plan) {
+    // The room's own plan (tools/plans): see README.md, "Rooms".
+    const cells = (x0, y0, x1, y1, f) => { for (let y = Math.max(1, Math.min(y0, y1)); y <= Math.min(H - 2, Math.max(y0, y1)); y++) for (let x = Math.max(1, Math.min(x0, x1)); x <= Math.min(W - 2, Math.max(x0, x1)); x++) f(I(x, y), x, y); };
+    const set = (kind, i) => {
+      if (kind === "void" || kind === "wall") { if (keep[i]) return; floor[i] = 0; solid[i] = 1; tileAt[i] = kind; return; }
+      if (!A.TILES[tileOf(kind).tile]) throw new Error(name + ": unknown floor " + kind);
+      const wet = kind === "water" || kind === "sea" || kind === "bog"; if (wet && keep[i]) return;
+      floor[i] = 1; solid[i] = wet ? 1 : 0; tileAt[i] = kind;
+    };
+    PLAN.plan({
+      W, H, name, room: true, top: T0, bottom: B, left: L, right: R, kind: kindName, hue: ARENA_HUES[seed % ARENA_HUES.length],
+      warps: base.warps.map((w, k) => ({ k, x: w.x, y: w.y, to: w.map, exit: w === exit })), people: base.people.map((q) => ({ x: q.x, y: q.y, script: q.script })),
+      fill: (kind, x0, y0, x1, y1) => cells(x0, y0, x1, y1, (i) => set(kind, i)),
+      disc: (kind, cx, cy, r, ry = r) => cells(Math.floor(cx - r), Math.floor(cy - ry), Math.ceil(cx + r), Math.ceil(cy + ry), (i, x, y) => { if (((x + 0.5 - cx) / r) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1) set(kind, i); }),
+      decor: (stamp, x, y, opts = {}) => { if (!A.STAMPS[stamp]) throw new Error(name + ": unknown stamp " + stamp); if (!put(stamp, x, y, opts) && !opts.optional) throw new Error(name + ": " + stamp + " at " + x + "," + y + " does not fit (off the floor, on a kept tile, or on other furniture)"); },
+      paint: (z, draw) => items.push({ z, draw }),
+      block: (x0, y0, w, h) => cells(x0, y0, x0 + w - 1, y0 + h - 1, (i, x, y) => { if (keep[i]) throw new Error(name + ": block covers a kept tile " + x + "," + y); solid[i] = 1; }),
+      bare: (k) => { bare[k] = true; },
+      canvas, hash, stamps: A.STAMPS,
+    });
+  } else if (kindName === "center" && deskFits) {
     // The healing desk: the nurse stands behind its counter.
     // The healing desk stands against the wall; the nurse stands in front of it.
     const x0 = deskX, y0 = T0 - 2, st = A.STAMPS.rDesk;
@@ -260,24 +281,26 @@ function room(name) {
   if (!DRY) {
     const c = canvas(W * 16, H * 16), top = canvas(W * 16, H * 16), dark = [16, 16, 24], hue = ARENA_HUES[seed % ARENA_HUES.length];
     c.rect(0, 0, c.w, c.h, dark);
-    for (let y = T0; y <= B; y++) for (let x = L; x <= R; x++) A.tile(c, K.floor, x, y);
-    if (kindName === "arena") c.rect(L * 16, T0 * 16, (R - L + 1) * 16, (B - T0 + 1) * 16, [hue[0], hue[1], hue[2], 70]);
+    for (let y = 1; y <= H - 2; y++) for (let x = 1; x <= W - 2; x++) { const i = I(x, y), t = tileAt[i]; if (t === "void" || t === "wall" || (!t && !floor[i])) continue; const k = tileOf(t || K.floor); A.tile(c, k.tile, x, y); if (k.tint && k.tint[3]) c.rect(x * 16, y * 16, 16, 16, k.tint); }
+    for (let y = 1; y <= H - 2; y++) for (let x = 1; x <= W - 2; x++) if (tileAt[I(x, y)] === "wall") { c.rect(x * 16, y * 16, 16, 16, [116, 112, 130]); c.rect(x * 16, y * 16 + 12, 16, 4, [84, 80, 98]); c.rect(x * 16, y * 16, 16, 2, [176, 172, 186]); }
+    if (kindName === "arena" && !PLAN) c.rect(L * 16, T0 * 16, (R - L + 1) * 16, (B - T0 + 1) * 16, [hue[0], hue[1], hue[2], 70]);
     for (let x = L; x <= R; x++) for (let r = 0; r < 2; r++) { const y = T0 - 2 + r; if (K.wall) A.tile(c, K.wall + r, x, y); else { c.rect(x * 16, y * 16, 16, 16, r ? [150, 146, 160] : [116, 112, 130]); if (r) { c.rect(x * 16, y * 16 + 13, 16, 3, [84, 80, 98]); c.rect(x * 16 + ((x & 1) ? 7 : 0), y * 16, 1, 13, [128, 124, 140]); } else c.rect(x * 16, y * 16, 16, 3, [176, 172, 186]); } }
     c.rect(0, (T0 - 2) * 16, 16, (B - T0 + 3) * 16 + 6, [52, 50, 66]); c.rect((R + 1) * 16, (T0 - 2) * 16, 16, (B - T0 + 3) * 16 + 6, [52, 50, 66]); c.rect(0, (B + 1) * 16, W * 16, 6, [52, 50, 66]);
     c.rect(12, (T0 - 2) * 16, 4, (B - T0 + 3) * 16, [92, 90, 108]); c.rect((R + 1) * 16, (T0 - 2) * 16, 4, (B - T0 + 3) * 16, [92, 90, 108]);
-    if (kindName === "arena" || kindName === "hall") {
+    if ((kindName === "arena" || kindName === "hall") && RT.court !== false && !(PLAN && RT.court !== true)) {
       // The court: a lined field with a Poké Ball at its centre.
       const cx = W * 8, cy = ((T0 + B + 1) / 2) * 16, hw = Math.min(W * 8 - 40, 150), hh = Math.min((B - T0) * 8 - 16, 110);
       for (let y = T0; y <= B; y++) for (let x = L; x <= R; x++) if (Math.abs(x * 16 + 8 - cx) < hw && Math.abs(y * 16 + 8 - cy) < hh) c.rect(x * 16, y * 16, 16, 16, [hue[0], hue[1], hue[2], kindName === "hall" ? 40 : 70]);
       for (const [x, y, w, h] of [[cx - hw, cy - hh, hw * 2, 2], [cx - hw, cy + hh - 2, hw * 2, 2], [cx - hw, cy - hh, 2, hh * 2], [cx + hw - 2, cy - hh, 2, hh * 2], [cx - hw, cy - 1, hw * 2, 2]]) c.rect(x, y, w, h, [244, 244, 250, 210]);
       c.ellipse(cx, cy, 26, 26, [244, 244, 250, 220], 3); c.ellipse(cx, cy, 8, 8, [244, 244, 250, 230]); c.ellipse(cx, cy, 4, 4, hue);
     }
-    if (kindName === "shrine") { const who = base.people[0]; if (who) { const cx = who.x * 16 + 8, cy = who.y * 16 + 8; c.ellipse(cx, cy, 44, 30, [96, 92, 110, 150]); c.ellipse(cx, cy, 36, 23, [150, 146, 170, 160]); c.ellipse(cx, cy, 36, 23, [220, 214, 160, 200], 2); } }
-    for (const w of base.warps) {
+    if (kindName === "shrine" && !PLAN) { const who = base.people[0]; if (who) { const cx = who.x * 16 + 8, cy = who.y * 16 + 8; c.ellipse(cx, cy, 44, 30, [96, 92, 110, 150]); c.ellipse(cx, cy, 36, 23, [150, 146, 170, 160]); c.ellipse(cx, cy, 36, 23, [220, 214, 160, 200], 2); } }
+    base.warps.forEach((w, wk) => {
+      if (bare[wk]) return;
       const px = w.x * 16, py = w.y * 16;
       if (w === exit) { c.box(px - 8, py + 2, 32, 13, [200, 60, 56], [110, 30, 34]); c.rect(px - 5, py + 5, 26, 7, [232, 96, 84]); }
       else { c.box(px - 2, py - 30, 20, 30, [40, 36, 48], [20, 18, 26]); c.rect(px + 1, py - 27, 14, 27, [24, 22, 30]); c.rect(px, py, 16, 16, [90, 86, 104]); for (let s2 = 3; s2 < 16; s2 += 4) c.rect(px, py + s2, 16, 1, [140, 136, 156]); }
-    }
+    });
     for (const it of items.sort((a, b) => a.z - b.z)) it.draw(c, top);
     c.save(path.join(out, name + ".png")); top.save(path.join(out, name + "-top.png"));
     const b = canvas(32, 32); b.rect(0, 0, 32, 32, dark); b.save(path.join(out, name + "-border.png"));
@@ -295,7 +318,7 @@ function layout(name) {
   const X = (i) => i % W, Y = (i) => (i / W) | 0, I = (x, y) => y * W + x, inside = (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2, on = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
   const water0 = new Uint8Array(N), kind = new Array(N), solid = new Uint8Array(N), built = new Uint8Array(N), clear = new Uint8Array(N), keep = new Uint8Array(N), road = new Uint8Array(N), added = new Uint8Array(N), grass = new Uint8Array(N);
   const items = [], obstacles = [], owner = new Int32Array(N).fill(-1);
-  const soft = new Uint8Array(N), over = new Array(N), roadKind = new Array(N), wallTile = new Array(N), forced = {};
+  const soft = new Uint8Array(N), unseen = new Uint8Array(N), over = new Array(N), roadKind = new Array(N), wallTile = new Array(N), forced = {};
   for (let i = 0; i < N; i++) water0[i] = isWater(base.behavior[i]) ? 1 : 0;
   const baseOpen = (i) => !base.collision[i] && !water0[i];
   // What must stay as it is.
@@ -496,7 +519,14 @@ function layout(name) {
     for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) { const i = I(x, y); if ((kind[i] !== "ground" && kind[i] !== "beach") || solid[i] || road[i] || plank[i] || over[i] || base.warps.some((w) => Math.abs(w.x - x) + Math.abs(w.y - y) <= 1)) continue; cand.push([fbm(x * 1.3, y * 1.3, seed + 5) + (base.encounter[i] ? 0.06 : 0), i]); }
     cand.sort((a, b) => b[0] - a[0]);
     for (const [, i] of cand.slice(0, want)) grass[i] = 1;
-    if (cand.length < want) report.push(name + ": only " + cand.length + " of " + want + " grass tiles fit");
+    if (cand.length < want && PLAN) {
+      // A plan that draws over all the plain ground still keeps the map's wild encounters: unseen, on its drawn floor.
+      const more = [];
+      for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) { const i = I(x, y); if (!over[i] || kind[i] !== "ground" || solid[i] || road[i] || plank[i] || grass[i] || base.warps.some((w) => Math.abs(w.x - x) + Math.abs(w.y - y) <= 1)) continue; more.push([fbm(x * 1.3, y * 1.3, seed + 5), i]); }
+      more.sort((a, b) => b[0] - a[0]);
+      for (const [, i] of more.slice(0, want - cand.length)) unseen[i] = 1;
+      if (cand.length + more.length < want) report.push(name + ": only " + (cand.length + more.length) + " of " + want + " encounter tiles fit");
+    } else if (cand.length < want) report.push(name + ": only " + cand.length + " of " + want + " grass tiles fit");
   }
 
   // F. groves, trees, rocks and flower beds.
@@ -567,7 +597,7 @@ function layout(name) {
     const wet = kind[i] === "water";
     collision[i] = solid[i] ? 1 : 0;
     behavior[i] = water0[i] ? base.behavior[i] : wet ? WATER : grass[i] ? grassBeh : 0;
-    encounter[i] = water0[i] ? base.encounter[i] : wet ? waterEnc : grass[i] ? encValue : everywhere && !solid[i] ? encValue : 0;
+    encounter[i] = water0[i] ? base.encounter[i] : wet ? waterEnc : grass[i] || (unseen[i] && !solid[i]) ? encValue : everywhere && !solid[i] ? encValue : 0;
     if (everywhere && !solid[i] && !wet && base.encounter[i] && !isWater(base.behavior[i])) behavior[i] = base.behavior[i] === DOOR || base.behavior[i] === STEP ? 0 : base.behavior[i];
   }
   for (const s of base.signs || []) collision[I(s.x, s.y)] = base.collision[I(s.x, s.y)];

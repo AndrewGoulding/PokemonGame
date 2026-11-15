@@ -2,6 +2,7 @@
 //   node tools/plan-preview.js anchors GalarHulbury        the map's fixed points as text
 //   node tools/plan-preview.js picture out.png Map1 Map2   the built pictures (ground + walk-behind layer) side by side, half size
 //   node tools/plan-preview.js list Galar                  the region's towns and cities
+//   node tools/plan-preview.js list Galar route,cave       the region's maps of those types (town city route indoor gym cave)
 "use strict";
 const fs = require("fs"), path = require("path"), vm = require("vm");
 const root = path.join(__dirname, ".."), [mode, ...args] = process.argv.slice(2);
@@ -13,7 +14,8 @@ function world() {
 }
 if (mode === "list") {
   const c = world(), done = new Set(c.CITY_LAYOUTS || []);
-  for (const m of Object.values(c.WORLD_MAPS)) if (m && m.name.startsWith(args[0]) && ["town", "city"].includes(m.type) && !done.has(m.name) && !/^(UnovaHouse|BW1House)/.test(m.name)) console.log(m.name, m.width + "x" + m.height, '"' + (m.title || "") + '"', "warps:" + m.warps.length);
+  const planned = {}; for (const f of fs.readdirSync(path.join(__dirname, "plans"))) if (f.endsWith(".js")) { try { Object.assign(planned, require(path.join(__dirname, "plans", f))); } catch (_) { /* being edited */ } }
+  for (const m of Object.values(c.WORLD_MAPS)) if (m && m.name.startsWith(args[0]) && (args[1] ? args[1].split(",") : ["town", "city"]).includes(m.type) && !done.has(m.name) && !/^(UnovaHouse|BW1House)/.test(m.name)) console.log(m.name, m.type, m.width + "x" + m.height, '"' + (m.title || "") + '"', "warps:" + m.warps.length, planned[m.name] ? "PLANNED" : "");
 } else if (mode === "anchors") {
   const c = world();
   for (const name of args) {
