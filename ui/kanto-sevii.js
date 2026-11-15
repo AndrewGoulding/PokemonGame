@@ -80,7 +80,8 @@
           f.shownOldSeaMap = true;
           await env.say(["Oh! That's an Old Sea Map!\nNow that is rare.", "We'll be happy to take you to\nFaraway Island anytime."]);
         }
-        const dests = ["Sevii Islands", "Stadium Island"].concat(oldMap ? ["Faraway Island"] : [], ["Hoenn", "Exit"]);
+        // (Hoenn only once you have beaten Johto's Pokémon League.)
+        const dests = ["Sevii Islands", "Stadium Island"].concat(oldMap ? ["Faraway Island"] : [], f.johtoLeagueClear ? ["Hoenn"] : [], ["Exit"]);
         const i = await env.multichoice(env.T("VermilionCity_Text_BoardSeagallopFerry")[0], 17, dests.length >= 5 ? 2 : dests.length === 4 ? 4 : 6, dests);
         const pick = i < 0 ? "Exit" : dests[i];
         if (pick === "Sevii Islands") { await env.say(q.slice(0, -1)); await seagallopMenu("VERMILION_CITY", q, back); return; }

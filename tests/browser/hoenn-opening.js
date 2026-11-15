@@ -1,6 +1,7 @@
 // In the browser: the start of Hoenn. The ship lands at Slateport's ferry terminal, where Prof. Birch is
 // waiting and knows Johto's Champion; his truck takes you to Littleroot Town; stepping onto Route 101 starts
 // the rescue (the Zigzagoon chase and the call for help), and a Pokémon is chosen from his Bag, as in Emerald.
+// Hoenn opens only once Johto's Pokémon League is beaten.
 // Run: node tests/browser/hoenn-opening.js
 'use strict';
 const assert=require('node:assert/strict'),T=require('./lib'),fixture=require('./kalos-post-fixture');
@@ -12,6 +13,12 @@ const assert=require('node:assert/strict'),T=require('./lib'),fixture=require('.
   const heard=[];const play=async(n,gap=600)=>{for(let i=0;i<n;i++){await s.wait(gap);const t=await txt();if(t)heard.push(t);await s.press('z');}};
   const until=async(map,tries=60)=>{for(let i=0;i<tries&&(await pos()).map!==map;i++)await s.wait(800);assert.equal((await pos()).map,map);};
   assert.equal(await v('VAR_LITTLEROOT_INTRO_STATE'),0,'Hoenn not begun');
+  // Not before Johto's Pokémon League: the ship does not sail.
+  await s.eval(()=>{delete Game.player.flags.johtoLeagueClear;});
+  s.eval(()=>{Game.sailToHoenn(false);});await play(6,700);
+  assert.equal((await pos()).map,'VermilionCity','no voyage to Hoenn before the Johto League');
+  assert(/only sail to Hoenn/.test(heard.join(' '))&&/Pokémon League in Johto/.test(heard.join(' ')),'and the sailor says why');
+  heard.length=0;await s.eval(()=>{Game.player.flags.johtoLeagueClear=true;Game.player.flags.orreStory=Game.player.flags.orreStory||1;});   // (and no call from Oak about Orre on the way)
   s.eval(()=>{Game.sailToHoenn(false);});
   await play(6,700);await until('SlateportCity_Harbor');await s.wait(1500);await s.shot('harbor');
   assert.deepEqual(await pos(),{map:'SlateportCity_Harbor',x:6,y:11,facing:'down'},'the ship lands at the ferry terminal');

@@ -2932,7 +2932,7 @@
         { label: "Tag battle", value: "tag", className: "action" },
         { label: "Go to the last Pokémon Center", value: "center", className: "action" },
         { label: "Visit Johto (New Bark Town)", value: "johto", className: "action" },
-        { label: "Visit Hoenn (the moving truck)", value: "hoenn", className: "action" },
+        ...(player.flags.johtoLeagueClear ? [{ label: "Visit Hoenn (the moving truck)", value: "hoenn", className: "action" }] : []),   // (not before Johto's League)
         { label: "Visit Sinnoh (Twinleaf Town)", value: "sinnoh", className: "action" },
         { label: Orre.inOrre(player.location) ? "Leave Orre" : "Visit Orre (the Air Strip)", value: "orre", className: "action" },
         back()]);
@@ -5982,6 +5982,8 @@
   // plays Emerald's scripts from there). flags.hoennArriving: he is in the terminal (ui/story-events.js).
   const hoennStarted = () => hoenn.getVar("VAR_LITTLEROOT_INTRO_STATE") > 0;
   async function sailToHoenn(aqua) {
+    // (No voyage to Hoenn before Johto's Pokémon League is beaten, whoever asks.)
+    if (!player.flags.johtoLeagueClear) { await say(["I'm sorry, but we only sail to Hoenn\nfor Trainers who have beaten the", "Pokémon League in Johto."]); return; }
     const ship = aqua ? "the S.S. Aqua" : "SEAGALLOP HI-SPEED 9";
     await say(["All aboard " + ship + "!", "Next stop, Slateport City in Hoenn!"]);
     if (hoennStarted()) { await ferry({ map: "SlateportCity_Harbor", x: 6, y: 11, facing: "down" }, false); return; }
