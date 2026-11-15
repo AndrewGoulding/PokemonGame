@@ -48,6 +48,13 @@ function keepClassic(name) {
   for (const f of fs.readdirSync(out)) if (f === name + ".png" || (f.startsWith(name + "-") && /^-(top|border|anim)\.png$/.test(f.slice(name.length)))) fs.copyFileSync(path.join(out, f), path.join(out, name + "Classic" + f.slice(name.length)));
 }
 
+// The whole game as it stands once every script has run: the game scripts add people and warps to maps that the
+// data files alone do not show, and those must be kept clear too.
+const FULL = { localStorage: { getItem: () => null, setItem() {}, removeItem() {} }, console: { log() {}, warn() {}, error() {} } }; FULL.window = FULL; vm.createContext(FULL);
+for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g))
+  if (!file.startsWith("ui/") && file !== "game/region-layouts-late.js" && file !== "data/region-layouts.js") vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), FULL, { filename: file });
+const extras = (name, base) => { const m = FULL.WORLD_MAPS && FULL.WORLD_MAPS[name]; if (!m || m === base) return []; const had = new Set([...base.people, ...base.warps].map((a) => a.x + "," + a.y)); return [...(m.people || []), ...(m.warps || [])].filter((a) => Number.isInteger(a.x) && Number.isInteger(a.y) && a.x >= 0 && a.y >= 0 && a.x < base.width && a.y < base.height && !had.has(a.x + "," + a.y)); };
+
 // Hand-authored town plans (tools/plans/*.js): streets, water, plazas, landmarks and
 // chosen buildings for one map, laid over what the generator would do. See tools/plans/README.md.
 const PLANS = {};
@@ -165,7 +172,7 @@ const PALDEA = [
   [/RuchbahRoad|CaphRoad|LeagueRoad|OniMountain|CrystalPool/, "mountain"], [/DragonTrail|DragonLake/, "coast", { sea: "north" }], [/CoastalBiome/, "beach", { sea: "south", border: "palms" }], [/SavannaBiome/, "autumn", { density: 0.25, groves: 0.05 }], [/AppleHills|MedaliRoad/, "meadow"], [/./, "plains"],
 ];
 function themeFor(name) {
-  if (LATE && !["route", "city", "town"].includes(typeOf(name))) return { ...BASE, ...THEMES.cavern, theme: "cavern" };
+  if (!["route", "city", "town"].includes(typeOf(name))) return { ...BASE, ...THEMES.cavern, theme: "cavern" };
   const table = name.startsWith("Kalos") ? KALOS : name.startsWith("Alola") ? ALOLA : name.startsWith("Galar") ? GALAR : name.startsWith("Paldea") ? PALDEA : UNOVA, short = name.replace(/^(Kalos|Unova|BW1|Alola|Galar|Paldea)/, "");
   const [, theme, extra] = table.find(([re]) => re.test(short));
   return { ...BASE, ...THEMES[theme], ...(extra || {}), theme };
@@ -180,8 +187,15 @@ const ROOMS = {
 };
 const ARENA_HUES = [[70, 130, 220], [220, 80, 70], [80, 170, 90], [230, 190, 60], [150, 100, 200], [90, 190, 200], [200, 120, 60], [220, 120, 170], [120, 130, 150]];
 function roomKind(name, type) {
-  const n = name.replace(/^(Alola|Galar|Paldea)/, "");
+  const n = name.replace(/^(Alola|Galar|Paldea|Kalos|Unova|BW1)/, "");
   if (/Center$|PokeCenter/.test(n)) return "center";
+  if (!LATE) {
+    if (type === "gym" || /Gym/.test(n)) return "arena";
+    if (/Lab|Research|Analytics|Observatory/.test(n)) return "lab";
+    if (/Mart|Mall|Shop|Market|Boutique|Emporium|Couture|Shoppe|Cafe|Restaurant|Sushi|Herboriste|Loto/.test(n)) return "mart";
+    if (/League|Castle|Tower|Theater|Stage|Station|Museum|Hall|Court|Stadium|Frigate|Gate|Subway|Lobby|Office|Company|Royal|Avenue|Chateau|Maison|Palace|Parfum|Mastery|Hotel|Flare|Prism|Factory|PowerPlant|Aquarium|Studio|Press|Chamber|Dock|Tube|Coaster|PWT|Black|White|Unity|School|Shelter|Cabin/.test(n)) return "hall";
+    return "house";
+  }
   if (/Mart|Shop|Kitchen|Megamart|Boutique/.test(n)) return "mart";
   if (/Lab|Observatory|Research|Garage|AetherHouse|Academy$/.test(n)) return "lab";
   if (type === "cave") return "shrine";
@@ -195,17 +209,28 @@ function room(name) {
   const seed = [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 9973, 7), I = (x, y) => y * W + x, on = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
   const keep = new Uint8Array(N), floor = new Uint8Array(N), solid = new Uint8Array(N).fill(1), counter = new Uint8Array(N), items = [], furniture = [], tileAt = new Array(N), bare = {};
   const rim = (x, y) => x === 0 || y === 0 || x === W - 1 || y === H - 1, baseOpen = (i) => !base.collision[i];
+  // Kalos and Unova rooms keep the base map's own shape: its walls, counters, PCs and fixtures stay where they are.
+  const FROM = !LATE;
+  let bx0 = W, by0 = H, bx1 = 0, by1 = 0, openCount = 0;
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) if (baseOpen(I(x, y))) { openCount++; bx0 = Math.min(bx0, x); bx1 = Math.max(bx1, x); by0 = Math.min(by0, y); by1 = Math.max(by1, y); }
+  const RECT = FROM && openCount >= 0.86 * (bx1 - bx0 + 1) * (by1 - by0 + 1) && by0 >= 2, RESKIN = FROM && !RECT;
   const exit = base.warps.reduce((a, w) => (!a || w.y > a.y ? w : a), null);
   for (const w of base.warps) keep[I(w.x, w.y)] = 1;
   for (const q of base.people) { keep[I(q.x, q.y)] = 1; if (on(q.x, q.y + 1)) keep[I(q.x, q.y + 1)] = 1; }
   for (const [x, y] of landings[name] || []) if (on(x, y) && !rim(x, y) && baseOpen(I(x, y))) keep[I(x, y)] = 1;
   if (exit && on(exit.x, exit.y - 1)) keep[I(exit.x, exit.y - 1)] = 1;
+  for (const sg of base.signs || []) for (const dy of [1, -1]) if (on(sg.x, sg.y + dy) && baseOpen(I(sg.x, sg.y + dy))) keep[I(sg.x, sg.y + dy)] = 1;   // a sign or fixture can be walked up to
+  for (const a of extras(name, base)) { keep[I(a.x, a.y)] = 1; if (on(a.x, a.y + 1)) keep[I(a.x, a.y + 1)] = 1; }
+  for (const [x, y] of landings[name] || []) if (on(x, y) && !baseOpen(I(x, y))) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (on(x + dx, y + dy) && baseOpen(I(x + dx, y + dy))) keep[I(x + dx, y + dy)] = 1;
   if (baseOpen(I(W >> 1, H >> 1))) keep[I(W >> 1, H >> 1)] = 1;
   let ys = [], xs = []; for (let i = 0; i < N; i++) if (keep[i]) { ys.push((i / W) | 0); xs.push(i % W); }
   const nurse = kindName === "center" ? base.people.find((q) => /heal|nurse|center/i.test(q.script)) || base.people[0] : null;
   // The room: from just above its highest fixed point down to its exit.
-  const T0 = RT.top != null ? RT.top : Math.max(3, nurse ? Math.min(nurse.y - 2, ...ys) : Math.min(...ys, 4)), B = RT.bottom != null ? RT.bottom : Math.min(H - 2, Math.max(exit ? exit.y : 0, ...ys)), L = 1, R = W - 2;
-  for (let y = T0; y <= B; y++) for (let x = L; x <= R; x++) { floor[I(x, y)] = 1; solid[I(x, y)] = 0; }
+  const T0 = RT.top != null ? RT.top : FROM ? by0 : Math.max(3, nurse ? Math.min(nurse.y - 2, ...ys) : Math.min(...ys, 4)), B = RT.bottom != null ? RT.bottom : FROM ? by1 : Math.min(H - 2, Math.max(exit ? exit.y : 0, ...ys)), L = FROM ? bx0 : 1, R = FROM ? bx1 : W - 2;
+  if (FROM) { for (let i = 0; i < N; i++) if (baseOpen(i)) { floor[i] = 1; solid[i] = 0; } }
+  else for (let y = T0; y <= B; y++) for (let x = L; x <= R; x++) { floor[I(x, y)] = 1; solid[I(x, y)] = 0; }
+  // What could be walked to before (a nurse behind her counter could not, and need not be now).
+  const baseReach = new Uint8Array(N); { const st0 = exit ? I(exit.x, exit.y) : -1; if (st0 >= 0) { baseReach[st0] = 1; const q = [st0]; for (let k = 0; k < q.length; k++) for (const d of [1, -1, W, -W]) { const j = q[k] + d; if (j < 0 || j >= N || (Math.abs(d) === 1 && ((j / W) | 0) !== ((q[k] / W) | 0)) || baseReach[j] || base.collision[j]) continue; baseReach[j] = 1; q.push(j); } } }
   const free = (x, y) => on(x, y) && floor[I(x, y)] && !solid[I(x, y)] && !keep[I(x, y)];
   // A piece of furniture, top-left at (x, y); rows above the floor hang on the wall.
   const put = (stamp, x, y, opts = {}) => {
@@ -218,7 +243,7 @@ function room(name) {
   };
   const deskX = nurse ? Math.max(L, Math.min(R - 6, nurse.x - 3)) : 0;
   // (No desk if someone else stands where it would go, or behind it.)
-  const deskFits = nurse && nurse.y === T0 + 2 && ![0, 1].some((r) => Array.from({ length: 7 }, (_, k) => I(deskX + k, T0 + r)).some((i) => keep[i]));
+  const deskFits = !FROM && nurse && nurse.y === T0 + 2 && ![0, 1].some((r) => Array.from({ length: 7 }, (_, k) => I(deskX + k, T0 + r)).some((i) => keep[i]));
   if (PLAN && PLAN.plan) {
     // The room's own plan (tools/plans): see README.md, "Rooms".
     const cells = (x0, y0, x1, y1, f) => { for (let y = Math.max(1, Math.min(y0, y1)); y <= Math.min(H - 2, Math.max(y0, y1)); y++) for (let x = Math.max(1, Math.min(x0, x1)); x <= Math.min(W - 2, Math.max(x0, x1)); x++) f(I(x, y), x, y); };
@@ -246,6 +271,8 @@ function room(name) {
     for (let j = T0; j < T0 + 2; j++) for (let i = x0; i < x0 + st[3]; i++) solid[I(i, j)] = 1;
     items.push({ z: y0 + 4, draw: (c) => A.draw(c, "rDesk", x0, y0) });
     put("rBooks", L, T0 - 2); put("rPC", R - 1, T0 - 2); put("rPlant", L, T0); put("rPlant", R, T0); put("rSeats", R - 3, B - 3); put("rSeats", L + 1, B - 3);
+  } else if (RESKIN) {
+    // (An irregular room, such as a Gym's puzzle paths: left exactly as it is, and only redrawn.)
   } else if (kindName === "center") {
     put("rBooks", L, T0 - 2); put("rPC", R - 1, T0 - 2); put("rPC", R - 3, T0 - 2); put("rPlant", L, T0); put("rPlant", R, T0); put("rSeats", R - 3, B - 3); put("rSeats", L + 1, B - 3);
   } else if (kindName === "mart") {
@@ -269,13 +296,13 @@ function room(name) {
   for (let guard = 0; guard < 60; guard++) {
     const seen = new Uint8Array(N); seen[start] = 1; const q = [start];
     for (let k = 0; k < q.length; k++) for (const d of [1, -1, W, -W]) { const j = q[k] + d; if (j < 0 || j >= N || (Math.abs(d) === 1 && ((j / W) | 0) !== ((q[k] / W) | 0)) || seen[j] || solid[j]) continue; seen[j] = 1; q.push(j); }
-    let lost = -1; for (let i = 0; i < N; i++) if (keep[i] && floor[i] && !solid[i] && !seen[i]) { lost = i; break; }
+    let lost = -1; for (let i = 0; i < N; i++) if (keep[i] && floor[i] && !solid[i] && !seen[i] && (!FROM || baseReach[i])) { lost = i; break; }
     if (lost < 0) break;
     const f = furniture.filter((g) => g.live).pop(); if (!f) throw new Error(name + ": room cannot reach " + (lost % W) + "," + ((lost / W) | 0));
     f.live = false; for (const i of f.cells) solid[i] = 0;
   }
   const collision = Array.from(solid), behavior = new Array(N).fill(0), encounter = new Array(N).fill(0);
-  for (let i = 0; i < N; i++) { if (counter[i]) behavior[i] = 0x80; if (!solid[i]) encounter[i] = base.encounter[i] || 0; }
+  for (let i = 0; i < N; i++) { if (counter[i]) behavior[i] = 0x80; if (!solid[i]) encounter[i] = base.encounter[i] || 0; if (FROM) behavior[i] = base.behavior[i]; }
   for (const w of base.warps) { const i = I(w.x, w.y); collision[i] = 0; behavior[i] = base.behavior[i]; encounter[i] = 0; }
   for (const q of base.people) collision[I(q.x, q.y)] = 0;
   if (!DRY) {
@@ -283,13 +310,35 @@ function room(name) {
     c.rect(0, 0, c.w, c.h, dark);
     for (let y = 1; y <= H - 2; y++) for (let x = 1; x <= W - 2; x++) { const i = I(x, y), t = tileAt[i]; if (t === "void" || t === "wall" || (!t && !floor[i])) continue; const k = tileOf(t || K.floor); A.tile(c, k.tile, x, y); if (k.tint && k.tint[3]) c.rect(x * 16, y * 16, 16, 16, k.tint); }
     for (let y = 1; y <= H - 2; y++) for (let x = 1; x <= W - 2; x++) if (tileAt[I(x, y)] === "wall") { c.rect(x * 16, y * 16, 16, 16, [116, 112, 130]); c.rect(x * 16, y * 16 + 12, 16, 4, [84, 80, 98]); c.rect(x * 16, y * 16, 16, 2, [176, 172, 186]); }
-    if (kindName === "arena" && !PLAN) c.rect(L * 16, T0 * 16, (R - L + 1) * 16, (B - T0 + 1) * 16, [hue[0], hue[1], hue[2], 70]);
-    for (let x = L; x <= R; x++) for (let r = 0; r < 2; r++) { const y = T0 - 2 + r; if (K.wall) A.tile(c, K.wall + r, x, y); else { c.rect(x * 16, y * 16, 16, 16, r ? [150, 146, 160] : [116, 112, 130]); if (r) { c.rect(x * 16, y * 16 + 13, 16, 3, [84, 80, 98]); c.rect(x * 16 + ((x & 1) ? 7 : 0), y * 16, 1, 13, [128, 124, 140]); } else c.rect(x * 16, y * 16, 16, 3, [176, 172, 186]); } }
-    c.rect(0, (T0 - 2) * 16, 16, (B - T0 + 3) * 16 + 6, [52, 50, 66]); c.rect((R + 1) * 16, (T0 - 2) * 16, 16, (B - T0 + 3) * 16 + 6, [52, 50, 66]); c.rect(0, (B + 1) * 16, W * 16, 6, [52, 50, 66]);
-    c.rect(12, (T0 - 2) * 16, 4, (B - T0 + 3) * 16, [92, 90, 108]); c.rect((R + 1) * 16, (T0 - 2) * 16, 4, (B - T0 + 3) * 16, [92, 90, 108]);
-    if ((kindName === "arena" || kindName === "hall") && RT.court !== false && !(PLAN && RT.court !== true)) {
+    if (kindName === "arena" && !PLAN && !RESKIN) c.rect(L * 16, T0 * 16, (R - L + 1) * 16, (B - T0 + 1) * 16, [hue[0], hue[1], hue[2], 70]);
+    if (FROM) {
+      // The base map's own solid things: counters, PCs, fixtures by their signs, and cabinets for the rest.
+      const fixtureAt = (x, y) => { const sg = (base.signs || []).find((q) => q.x === x && q.y === y); return sg ? (/-tv-/.test(sg.script) ? "tv" : /-trash-/.test(sg.script) ? "trash" : /-vending-/.test(sg.script) ? "vending" : "sign") : null; };
+      for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
+        const i = I(x, y); if (floor[i] && !fixtureAt(x, y)) continue; if (RESKIN && !floor[i] && !fixtureAt(x, y) && base.behavior[i] !== 0x80 && base.behavior[i] !== 0x83) continue;
+        const px = x * 16, py = y * 16, fx = fixtureAt(x, y), beh = base.behavior[i];
+        if (!floor[i]) { const k = tileOf(K.floor); A.tile(c, k.tile, x, y); }
+        items.push({ z: y + 1, draw: (cc, tp) => {
+          if (fx === "tv") { cc.box(px + 1, py - 4, 14, 14, [40, 44, 56], [20, 22, 30]); cc.rect(px + 3, py - 2, 10, 8, [96, 170, 230]); cc.rect(px + 4, py - 1, 4, 2, [190, 226, 250]); cc.rect(px + 5, py + 10, 6, 4, [70, 60, 56]); }
+          else if (fx === "trash") { cc.ellipse(px + 8, py + 12, 6, 3, [0, 0, 0, 60]); cc.box(px + 3, py + 2, 10, 12, [150, 156, 170], [70, 76, 92]); cc.rect(px + 2, py + 1, 12, 3, [196, 202, 214]); cc.rect(px + 6, py + 5, 1, 7, [110, 116, 132]); cc.rect(px + 9, py + 5, 1, 7, [110, 116, 132]); }
+          else if (fx === "vending") { cc.box(px, py - 14, 16, 30, [214, 60, 60], [90, 26, 30]); cc.rect(px + 2, py - 12, 12, 12, [230, 240, 250]); for (let k2 = 0; k2 < 3; k2++) cc.rect(px + 3 + k2 * 4, py - 10, 2, 8, [[240, 200, 70], [90, 170, 230], [110, 200, 120]][k2]); cc.rect(px + 3, py + 6, 10, 5, [40, 30, 36]); }
+          else if (fx === "sign") { cc.box(px + 2, py + 2, 12, 10, [214, 196, 150], [96, 76, 50]); cc.rect(px + 4, py + 5, 8, 1, [96, 76, 50]); cc.rect(px + 4, py + 8, 6, 1, [96, 76, 50]); }
+          else if (beh === 0x80) { cc.box(px, py + 1, 16, 15, [196, 150, 96], [96, 66, 40]); cc.rect(px, py + 1, 16, 4, [236, 214, 170]); cc.rect(px, py + 5, 16, 1, [150, 110, 66]); }
+          else if (beh === 0x83) { cc.box(px + 1, py - 8, 14, 22, [200, 206, 220], [80, 86, 104]); cc.rect(px + 3, py - 6, 10, 8, [70, 160, 220]); cc.rect(px + 3, py + 5, 10, 2, [120, 126, 146]); cc.rect(px + 4, py + 9, 3, 2, [230, 90, 80]); }
+          else if (RECT) { const up = y > by0 && !floor[I(x, y - 1)] && !fixtureAt(x, y - 1), lf = x > bx0 && !floor[I(x - 1, y)], rt = x < bx1 && !floor[I(x + 1, y)]; cc.rect(px, py - (up ? 0 : 6), 16, 16 + (up ? 0 : 6), [150, 112, 76]); cc.rect(px, py - (up ? 0 : 6), 16, up ? 0 : 5, [206, 170, 124]); if (!lf) cc.rect(px, py - (up ? 0 : 6), 1, 22, [96, 66, 44]); if (!rt) cc.rect(px + 15, py - (up ? 0 : 6), 1, 22, [96, 66, 44]); cc.rect(px, py + 14, 16, 2, [96, 66, 44]); if (!up) cc.rect(px, py - 6, 16, 1, [96, 66, 44]); cc.rect(px + 3, py + 4, 10, 1, [120, 86, 58]); cc.rect(px + 3, py + 9, 10, 1, [120, 86, 58]); }
+        } });
+      }
+    }
+    if (RESKIN) {
+      // Irregular rooms have no single back wall: a wall face stands over each stretch of floor instead.
+      for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = I(x, y); if (floor[i] || !floor[I(x, y + 1)]) continue; for (let r = 1; r >= 0; r--) { const yy = y - (1 - r); if (yy < 0 || floor[I(x, yy)]) break; if (K.wall) A.tile(c, K.wall + r, x, yy); else { c.rect(x * 16, yy * 16, 16, 16, r ? [150, 146, 160] : [116, 112, 130]); if (r) c.rect(x * 16, yy * 16 + 13, 16, 3, [84, 80, 98]); else c.rect(x * 16, yy * 16, 16, 3, [176, 172, 186]); } } }
+    }
+    if (!RESKIN) for (let x = L; x <= R; x++) for (let r = 0; r < 2; r++) { const y = T0 - 2 + r; if (K.wall) A.tile(c, K.wall + r, x, y); else { c.rect(x * 16, y * 16, 16, 16, r ? [150, 146, 160] : [116, 112, 130]); if (r) { c.rect(x * 16, y * 16 + 13, 16, 3, [84, 80, 98]); c.rect(x * 16 + ((x & 1) ? 7 : 0), y * 16, 1, 13, [128, 124, 140]); } else c.rect(x * 16, y * 16, 16, 3, [176, 172, 186]); } }
+    if (!RESKIN) { c.rect((L - 1) * 16, (T0 - 2) * 16, 16, (B - T0 + 3) * 16 + 6, [52, 50, 66]); c.rect((R + 1) * 16, (T0 - 2) * 16, 16, (B - T0 + 3) * 16 + 6, [52, 50, 66]); c.rect((L - 1) * 16, (B + 1) * 16, (R - L + 3) * 16, 6, [52, 50, 66]);
+      c.rect((L - 1) * 16 + 12, (T0 - 2) * 16, 4, (B - T0 + 3) * 16, [92, 90, 108]); c.rect((R + 1) * 16, (T0 - 2) * 16, 4, (B - T0 + 3) * 16, [92, 90, 108]); }
+    if ((kindName === "arena" || (kindName === "hall" && !FROM)) && !RESKIN && RT.court !== false && !(PLAN && RT.court !== true)) {
       // The court: a lined field with a Poké Ball at its centre.
-      const cx = W * 8, cy = ((T0 + B + 1) / 2) * 16, hw = Math.min(W * 8 - 40, 150), hh = Math.min((B - T0) * 8 - 16, 110);
+      const cx = (L + R + 1) * 8, cy = ((T0 + B + 1) / 2) * 16, hw = Math.min((R - L + 1) * 8 - 24, 150), hh = Math.min((B - T0) * 8 - 16, 110);
       for (let y = T0; y <= B; y++) for (let x = L; x <= R; x++) if (Math.abs(x * 16 + 8 - cx) < hw && Math.abs(y * 16 + 8 - cy) < hh) c.rect(x * 16, y * 16, 16, 16, [hue[0], hue[1], hue[2], kindName === "hall" ? 40 : 70]);
       for (const [x, y, w, h] of [[cx - hw, cy - hh, hw * 2, 2], [cx - hw, cy + hh - 2, hw * 2, 2], [cx - hw, cy - hh, 2, hh * 2], [cx + hw - 2, cy - hh, 2, hh * 2], [cx - hw, cy - 1, hw * 2, 2]]) c.rect(x, y, w, h, [244, 244, 250, 210]);
       c.ellipse(cx, cy, 26, 26, [244, 244, 250, 220], 3); c.ellipse(cx, cy, 8, 8, [244, 244, 250, 230]); c.ellipse(cx, cy, 4, 4, hue);
@@ -311,9 +360,10 @@ function room(name) {
 
 // ---------------------------------------------------------------- one map
 const layouts = {}, report = [];
-function layout(name) {
+function layout(name, thin = 1) {
   const home = homeOf(name), base = HOMES[home][name], W = base.width, H = base.height, N = W * H, PLAN = PLANS[name] ? (typeof PLANS[name] === "function" ? { plan: PLANS[name] } : PLANS[name]) : null, T = { ...themeFor(name), ...(PLAN ? { fountain: false, factory: false, clock: false, lookout: false, wheel: false, runway: false, turntable: false, walls: false, sea: null, lawns: 0 } : {}), ...((PLAN && PLAN.theme) || {}) };
-  if (T.cave && N < 900) { T.groves = 0.25; T.density = 0.12; }   // small caves stay roomy
+  if (T.cave && N < 1400) { T.groves = 0.25; T.density = 0.12; }
+  if (T.cave) { T.groves *= thin; T.density *= thin; }   // small caves stay roomy
   const seed = [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 9973, 7);
   const X = (i) => i % W, Y = (i) => (i / W) | 0, I = (x, y) => y * W + x, inside = (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2, on = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
   const water0 = new Uint8Array(N), kind = new Array(N), solid = new Uint8Array(N), built = new Uint8Array(N), clear = new Uint8Array(N), keep = new Uint8Array(N), road = new Uint8Array(N), added = new Uint8Array(N), grass = new Uint8Array(N);
@@ -330,6 +380,9 @@ function layout(name) {
   for (const s of base.signs || []) { mark(s.x, s.y, 1); for (const dy of [1, -1]) if (on(s.x, s.y + dy) && baseOpen(I(s.x, s.y + dy))) keep[I(s.x, s.y + dy)] = 1; }
   for (const t of [...(base.triggers || []), ...(base.hidden || [])]) if (on(t.x, t.y)) { if (baseOpen(I(t.x, t.y))) keep[I(t.x, t.y)] = 1; mark(t.x, t.y, 1); }
   for (const [x, y] of landings[name] || []) if (on(x, y) && baseOpen(I(x, y))) { keep[I(x, y)] = 1; mark(x, y, 1); }
+  // (An item ball or the like on a solid tile: the open tiles beside it stay, so it can still be walked up to.)
+  for (const [x, y] of landings[name] || []) if (on(x, y) && !baseOpen(I(x, y)) && !water0[I(x, y)]) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (on(x + dx, y + dy) && baseOpen(I(x + dx, y + dy))) { keep[I(x + dx, y + dy)] = 1; clear[I(x + dx, y + dy)] = 1; }
+  for (const a of extras(name, base)) { if (baseOpen(I(a.x, a.y))) keep[I(a.x, a.y)] = 1; mark(a.x, a.y, 1); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (on(a.x + dx, a.y + dy) && baseOpen(I(a.x + dx, a.y + dy))) keep[I(a.x + dx, a.y + dy)] = 1; }
 
   // Open tiles on the rim are ways out, and stay.
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if ((x === 0 || y === 0 || x === W - 1 || y === H - 1) && baseOpen(I(x, y)) && LATE && !T.closed) { keep[I(x, y)] = 1; clear[I(x, y)] = 1; const ix = x === 0 ? 1 : x === W - 1 ? W - 2 : x, iy = y === 0 ? 1 : y === H - 1 ? H - 2 : y; if (baseOpen(I(ix, iy))) { keep[I(ix, iy)] = 1; clear[I(ix, iy)] = 1; } }
@@ -561,15 +614,21 @@ function layout(name) {
   for (let s = 0; s < N; s++) { if (comp[s] >= 0 || !baseOpen(s)) continue; const q = [s]; comp[s] = comps; for (let k = 0; k < q.length; k++) for (const d of [1, -1, W, -W]) { const j = q[k] + d; if (j < 0 || j >= N || (Math.abs(d) === 1 && Y(j) !== Y(q[k])) || comp[j] >= 0 || !baseOpen(j)) continue; comp[j] = comps; q.push(j); } comps++; }
   const need = []; for (let i = 0; i < N; i++) if (keep[i] && comp[i] >= 0) need.push(i);
   const walk = (i) => !solid[i] && kind[i] !== "water";
-  const flood = (start) => { const seen = new Uint8Array(N); seen[start] = 1; const q = [start]; for (let k = 0; k < q.length; k++) for (const d of [1, -1, W, -W]) { const j = q[k] + d; if (j < 0 || j >= N || (Math.abs(d) === 1 && Y(j) !== Y(q[k])) || seen[j] || !walk(j)) continue; seen[j] = 1; q.push(j); } return seen; };
+  // (People stand in the way: a path may end at one, but not run through one.)
+  const occ = new Uint8Array(N); for (const q of [...base.people, ...extras(name, base)]) if (!q.item) occ[I(q.x, q.y)] = 1;
+  const flood = (start) => { const seen = new Uint8Array(N); seen[start] = 1; const q = [start]; for (let k = 0; k < q.length; k++) for (const d of [1, -1, W, -W]) { const j = q[k] + d; if (j < 0 || j >= N || (Math.abs(d) === 1 && Y(j) !== Y(q[k])) || seen[j] || !walk(j)) continue; seen[j] = 1; if (!occ[j] || k === 0 && false) q.push(j); } return seen; };
   const open = (i) => { if (owner[i] >= 0) { const ob = obstacles[owner[i]]; ob.live = false; for (const c of ob.cells) { solid[c] = 0; owner[c] = -1; if (kind[c] === "grove") kind[c] = "ground"; } } if (added[i]) { added[i] = 0; kind[i] = "ground"; } if (kind[i] === "border" && inside(X(i), Y(i))) kind[i] = "ground"; if (soft[i]) { soft[i] = 0; built[i] = 0; if (kind[i] !== "water") kind[i] = "ground"; if (PLAN) report.push(name + ": plan wall opened at " + X(i) + "," + Y(i) + " to reach something"); } if (!built[i]) solid[i] = 0; };
   for (const i of need) if (!walk(i)) { if ((built[i] && !soft[i]) || water0[i]) throw new Error(name + ": kept tile " + X(i) + "," + Y(i) + " is built over"); open(i); }
   const groups = {}; for (const i of need) (groups[comp[i]] = groups[comp[i]] || []).push(i);
+  for (const list of Object.values(groups)) { const k = list.findIndex((i) => !occ[i]); if (k > 0) list.unshift(list.splice(k, 1)[0]); }
   let cleared = 0;
   for (const list of Object.values(groups)) {
     for (let guard = 0; guard < 400; guard++) {
       const seen = flood(list[0]), lost = list.find((i) => !seen[i]); if (lost == null) break;
-      const cells = route(W, H, lost, (i) => seen[i] === 1, (i) => ((built[i] && !soft[i]) || water0[i] || X(i) < 1 || Y(i) < 1 || X(i) >= W - 1 || Y(i) >= H - 1 || (kind[i] === "border" && !baseOpen(i)) ? Infinity : walk(i) ? 1 : 6));
+      const price = (around) => (i) => ((built[i] && !soft[i]) || water0[i] || X(i) < 1 || Y(i) < 1 || X(i) >= W - 1 || Y(i) >= H - 1 || (kind[i] === "border" && !baseOpen(i)) || (around && occ[i] && i !== lost) ? Infinity : walk(i) ? 1 : 6);
+      const goal = (i) => seen[i] === 1 && !occ[i];
+      let cells = route(W, H, lost, goal, price(true));
+      if (!cells) { occ.fill(0); cells = route(W, H, lost, (i) => seen[i] === 1, price(false)); }   // (only reachable past someone, as it was before)
       if (!cells) throw new Error(name + ": cannot reconnect " + X(lost) + "," + Y(lost));
       for (const i of cells) if (!walk(i)) { open(i); cleared++; }
     }
@@ -584,6 +643,13 @@ function layout(name) {
       if (!cells) { grass[lost] = 0; continue; }
       for (const i of cells) if (!walk(i)) { open(i); cleared++; }
     }
+  }
+  // A cave has no pockets nobody can reach, and keeps a fair share of its floor; if not, it is dug again with fewer walls.
+  if (T.cave && need.length) {
+    const seen = new Uint8Array(N); for (const list of Object.values(groups)) { const part = flood(list[0]); for (let i = 0; i < N; i++) if (part[i]) seen[i] = 1; }   // (every stretch of land that water keeps apart)
+    let reach = 0, was = 0;
+    for (let i = 0; i < N; i++) { if (baseOpen(i)) was++; if (seen[i]) reach++; else if (!solid[i] && kind[i] !== "water" && !keep[i] && !occ[i]) { solid[i] = 1; if (kind[i] === "ground") kind[i] = "grove"; grass[i] = 0; road[i] = 0; } }
+    if (reach < was * 0.45 && thin > 0.15) return layout(name, thin * 0.55);
   }
   // Land that was apart (across water) is still apart.
   const ids = Object.keys(groups);
@@ -602,7 +668,7 @@ function layout(name) {
   }
   for (const s of base.signs || []) collision[I(s.x, s.y)] = base.collision[I(s.x, s.y)];
   base.warps.forEach((w) => { const i = I(w.x, w.y); collision[i] = 0; behavior[i] = base.behavior[i]; encounter[i] = 0; });
-  for (const p of base.people) { const i = I(p.x, p.y); if (!base.collision[i] && !water0[i]) collision[i] = 0; }
+  for (const p of [...base.people, ...extras(name, base)]) { const i = I(p.x, p.y); if (!base.collision[i] && !water0[i]) collision[i] = 0; }
   for (const k of doors) { const w = base.warps[k]; if (collision[I(w.x, w.y + 1)]) throw new Error(name + ": door " + k + " opens onto a wall"); }
 
   // J. the picture.
@@ -658,6 +724,27 @@ function layout(name) {
   return { cleared, placed: placed.length, doors: doors.length };
 }
 
+// A cave whose walls matter (areas that only join through other floors): its ground is left exactly as it
+// is, and only drawn again with the cave artwork.
+function caveReskin(name) {
+  const home = homeOf(name), base = HOMES[home][name], W = base.width, H = base.height, N = W * H, I = (x, y) => y * W + x;
+  if (!DRY) {
+    const c = canvas(W * 16, H * 16), top = canvas(W * 16, H * 16), face = canvas(32, 32); for (let k = 0; k < 2; k++) A.tile(face, "caveFace", k, 1);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = I(x, y), wet = isWater(base.behavior[i]);
+      A.tile(c, wet ? "water" : base.collision[i] ? "caveVoid" : "caveFloor", x, y);
+      if (base.collision[i] && !wet && y + 1 < H && !base.collision[I(x, y + 1)]) for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) { const o = ((16 + py) * 32 + (x & 1) * 16 + px) * 4; c.p(x * 16 + px, y * 16 + py, [face.data[o], face.data[o + 1], face.data[o + 2]]); }
+      else if (base.collision[i] && !wet) for (const [dx, dy] of [[1, 0], [-1, 0], [0, -1]]) { const a = x + dx, b = y + dy; if (a >= 0 && b >= 0 && a < W && !base.collision[I(a, b)]) c.rect(x * 16 + (dx > 0 ? 12 : 0), y * 16, dx ? 4 : 16, dy ? 4 : 16, [92, 62, 52]); }
+    }
+    for (const w of base.warps) { const px = w.x * 16, py = w.y * 16; c.ellipse(px + 8, py + 9, 8, 9, [60, 48, 44]); c.ellipse(px + 8, py + 10, 6, 7, [16, 14, 20]); }
+    for (const sg of base.signs || []) A.draw(c, "board", sg.x, sg.y);
+    c.save(path.join(out, name + ".png")); top.save(path.join(out, name + "-top.png"));
+    const b = canvas(32, 32); for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) A.tile(b, "caveVoid", x, y); b.save(path.join(out, name + "-border.png"));
+    fs.rmSync(path.join(out, name + "-anim.png"), { force: true });
+  }
+  layouts[name] = { home, c: Array.from(base.collision), b: Array.from(base.behavior), e: Array.from(base.encounter) };
+}
+
 // ---------------------------------------------------------------- every map
 const SKIP = /^UnovaHouse|^BW1House/;
 const CAVERN = (m) => (m.type === "cave" && m.width >= 30) || (m.type === "gym" && /Cavern|Volcano|Trial$|DragonTrial|Jungle|Mine|Den$|Grotto/.test(m.name));
@@ -669,6 +756,12 @@ let built = 0;
   const names = [];
   for (const home of Object.keys(HOMES)) for (const m of Object.values(HOMES[home])) if (["route", "city", "town"].includes(m.type) && !done.has(m.name) && !SKIP.test(m.name) && (!m.image || m.image === m.name)) names.push(m.name);
   for (const name of names) { if (ONLY && !ONLY.test(name)) continue; keepClassic(name); layout(name); built++; }
+  // Their interiors and caves too (Pokémon Centers already look the part and are left alone).
+  for (const home of Object.keys(HOMES)) for (const m of Object.values(HOMES[home])) {
+    if (!m || ["route", "city", "town", "underwater"].includes(m.type) || /Center(_1F)?$|PokemonCenter/.test(m.name) || /Reversal/.test(m.name) || (m.image && m.image !== m.name)) continue;   // (Reversal Mountain's lava differs by version and is left alone)
+    if (ONLY && !ONLY.test(m.name)) continue;
+    if (m.type === "cave") { try { layout(m.name); } catch (e) { if (!/joined up|cannot reconnect|built over|walled in|opens onto/.test(e.message)) throw e; report.push(m.name + ": kept as it is (" + e.message.replace(/^[^:]*: /, "") + ")"); caveReskin(m.name); } } else room(m.name); built++;
+  }
   if (!ONLY && !DRY) fs.writeFileSync(path.join(root, "data/region-layouts.js"), ["// Generated by tools/build-region-layouts.js. What it does and why: docs/city-layouts.md.",
     "(function(){", "const L=" + JSON.stringify(pack()) + ",B=" + JSON.stringify(aliases) + ";", DECODE,
     "for(const n in B)for(const[home,map]of B[n])if(window[home].maps[map].image===n)window[home].maps[map].image=n+'Classic';",
@@ -678,9 +771,7 @@ let built = 0;
 // Alola, Galar and Paldea lay their ground out when the game starts (game/*-layouts.js),
 // so they are read after every game script has run, and their layouts are applied last.
 {
-  const late = { localStorage: { getItem: () => null, setItem() {}, removeItem() {} }, console: { log() {}, warn() {}, error() {} } }; late.window = late; vm.createContext(late);
-  for (const [, file] of fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g))
-    if (!file.startsWith("ui/") && file !== "game/region-layouts-late.js") vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), late, { filename: file });
+  const late = FULL;
   HOMES = { ALOLA_DATA: late.ALOLA_DATA.maps, GALAR_DATA: late.GALAR_DATA.maps, PALDEA_DATA: late.PALDEA_DATA.maps }; WORLD = late; LATE = true;
   collectLandings({ A: late.ALOLA_DATA, G: late.GALAR_DATA, P: late.PALDEA_DATA });
   for (const k of Object.keys(layouts)) delete layouts[k];

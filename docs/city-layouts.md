@@ -192,6 +192,30 @@ removed. That is the default for a room with no plan; every room now has a plan
 of its own (see [Hand-planned routes and interiors](#hand-planned-routes-and-interiors)).
 The open tiles the old rooms had on their rims are walled off.
 
+### Kalos and Unova interiors and caves
+
+![Kalos and Unova rooms, Gyms and caves](kalos-unova-interiors-preview.png)
+
+The same builder now redraws the 561 interiors and caves of Kalos and Unova
+(both campaigns), which were empty rooms and open rectangles of cave floor:
+
+- **Rooms** keep their own shape. Their counters, PCs and the fixtures that
+  can be examined (TVs, trash cans, vending machines) stay on their tiles and
+  are drawn as such; the rest is floored, walled and furnished by kind (house,
+  lab, shop, hall), and Gyms get a lined court.
+- **Irregular rooms** (a Gym's puzzle paths, such as Santalune's web) are left
+  exactly as they are and only redrawn.
+- **Caves** become rock-walled caverns with winding passages. Their water,
+  wild encounters, exits, people and items stay; no pocket of floor is left
+  that nobody can reach. A cave whose separate areas only join through other
+  floors (Reflection Cave 1F) keeps its walls and is only redrawn.
+- **Left alone:** Pokémon Centers, which already looked the part; Reversal
+  Mountain, whose lava differs by version; and the underwater ruins.
+
+These have no hand-written plans: they are the builder's default for each kind
+of room, so every house of a kind is furnished alike and no Gym challenge is
+drawn. Paths are now checked without walking through people, on every map.
+
 ## Hand-planned towns
 
 ![Twenty of the hand-planned towns](town-plans-preview.png)
