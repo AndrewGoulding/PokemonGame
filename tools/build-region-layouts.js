@@ -48,6 +48,11 @@ function keepClassic(name) {
   for (const f of fs.readdirSync(out)) if (f === name + ".png" || (f.startsWith(name + "-") && /^-(top|border|anim)\.png$/.test(f.slice(name.length)))) fs.copyFileSync(path.join(out, f), path.join(out, name + "Classic" + f.slice(name.length)));
 }
 
+// Hand-authored town plans (tools/plans/*.js): streets, water, plazas, landmarks and
+// chosen buildings for one map, laid over what the generator would do. See tools/plans/README.md.
+const PLANS = {};
+{ const dir = path.join(__dirname, "plans"); if (fs.existsSync(dir)) for (const f of fs.readdirSync(dir).sort()) if (f.endsWith(".js")) { try { Object.assign(PLANS, require(path.join(dir, f))); } catch (e) { if (!ONLY) throw e; console.log("skipping tools/plans/" + f + ": " + e.message); } } }
+
 // ---------------------------------------------------------------- noise and search
 const vnoise = (x, y, seed) => { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, s = (t) => t * t * (3 - 2 * t); const a = hash(xi, yi, seed), b = hash(xi + 1, yi, seed), c = hash(xi, yi + 1, seed), d = hash(xi + 1, yi + 1, seed); return a + (b - a) * s(fx) + (c - a) * s(fy) + (a - b - c + d) * s(fx) * s(fy); };
 const fbm = (x, y, seed) => vnoise(x / 7, y / 7, seed) * 0.6 + vnoise(x / 3, y / 3, seed + 11) * 0.3 + vnoise(x, y, seed + 23) * 0.1;
@@ -167,12 +172,12 @@ function themeFor(name) {
 // ---------------------------------------------------------------- one map
 const layouts = {}, report = [];
 function layout(name) {
-  const home = homeOf(name), base = HOMES[home][name], W = base.width, H = base.height, N = W * H, T = themeFor(name);
+  const home = homeOf(name), base = HOMES[home][name], W = base.width, H = base.height, N = W * H, PLAN = PLANS[name] ? (typeof PLANS[name] === "function" ? { plan: PLANS[name] } : PLANS[name]) : null, T = { ...themeFor(name), ...(PLAN ? { fountain: false, factory: false, clock: false, lookout: false, wheel: false, runway: false, turntable: false, walls: false, sea: null, lawns: 0 } : {}), ...((PLAN && PLAN.theme) || {}) };
   const seed = [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 9973, 7);
   const X = (i) => i % W, Y = (i) => (i / W) | 0, I = (x, y) => y * W + x, inside = (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2, on = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
   const water0 = new Uint8Array(N), kind = new Array(N), solid = new Uint8Array(N), built = new Uint8Array(N), clear = new Uint8Array(N), keep = new Uint8Array(N), road = new Uint8Array(N), added = new Uint8Array(N), grass = new Uint8Array(N);
   const items = [], obstacles = [], owner = new Int32Array(N).fill(-1);
-  const soft = new Uint8Array(N);
+  const soft = new Uint8Array(N), over = new Array(N), roadKind = new Array(N), wallTile = new Array(N), forced = {};
   for (let i = 0; i < N; i++) water0[i] = isWater(base.behavior[i]) ? 1 : 0;
   const baseOpen = (i) => !base.collision[i] && !water0[i];
   // What must stay as it is.
@@ -186,7 +191,7 @@ function layout(name) {
   for (const [x, y] of landings[name] || []) if (on(x, y) && baseOpen(I(x, y))) { keep[I(x, y)] = 1; mark(x, y, 1); }
 
   // Open tiles on the rim are ways out, and stay.
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (!inside(x, y) && baseOpen(I(x, y)) && LATE) { keep[I(x, y)] = 1; clear[I(x, y)] = 1; }
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if ((x === 0 || y === 0 || x === W - 1 || y === H - 1) && baseOpen(I(x, y)) && LATE) { keep[I(x, y)] = 1; clear[I(x, y)] = 1; const ix = x === 0 ? 1 : x === W - 1 ? W - 2 : x, iy = y === 0 ? 1 : y === H - 1 ? H - 2 : y; if (baseOpen(I(ix, iy))) { keep[I(ix, iy)] = 1; clear[I(ix, iy)] = 1; } }
   if (LATE && baseOpen(I(W >> 1, H >> 1))) { keep[I(W >> 1, H >> 1)] = 1; clear[I(W >> 1, H >> 1)] = 1; }   // the middle of the map, where arrivals land
   // A. ground, water, border.
   const total = water0.reduce((a, b) => a + b, 0), bridgeMap = T.bridge;
@@ -218,6 +223,43 @@ function layout(name) {
     const depth = (x, y) => (T.sea === "south" ? H - 1 - y : T.sea === "north" ? y : T.sea === "east" ? W - 1 - x : x), span = T.sea === "south" || T.sea === "north" ? H : W;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = I(x, y); if (keep[i] || clear[i]) continue; if (depth(x, y) < span * 0.2 + (fbm(x * 1.5, y * 1.5, seed + 41) - 0.5) * 5) { added[i] = 1; kind[i] = "water"; solid[i] = 0; } }
   }
+  // The town's own plan, if it has one.
+  if (PLAN && PLAN.plan) {
+    const cells = (x0, y0, x1, y1, f) => { for (let y = Math.max(0, Math.min(y0, y1)); y <= Math.min(H - 1, Math.max(y0, y1)); y++) for (let x = Math.max(0, Math.min(x0, x1)); x <= Math.min(W - 1, Math.max(x0, x1)); x++) f(I(x, y), x, y); };
+    const SOLIDS = new Set(["tree", "rock", "pine", "palms", "darktree", "autumntree", "ashrock", "border", "wall"]);
+    const put = (kindName, i) => {
+      if (kindName === "water") { if (keep[i] || built[i]) return; added[i] = 1; kind[i] = "water"; solid[i] = 0; over[i] = null; return; }
+      if (kindName === "ground") { if (water0[i]) return; if (!inside(X(i), Y(i)) && !LATE && base.collision[i]) return; added[i] = 0; kind[i] = "ground"; solid[i] = 0; built[i] = 0; soft[i] = 0; over[i] = null; return; }
+      if (SOLIDS.has(kindName)) { if (keep[i] || water0[i]) return; added[i] = 0; kind[i] = "wall"; wallTile[i] = kindName === "border" || kindName === "wall" ? T.border : kindName; solid[i] = 1; built[i] = 1; soft[i] = 1; return; }
+      if (!A.TILES[tileOf(kindName).tile]) throw new Error(name + ": unknown ground " + kindName);
+      if (water0[i] || kind[i] === "border") { if (kind[i] === "border" && (inside(X(i), Y(i)) || LATE)) { kind[i] = "ground"; solid[i] = 0; } else return; }
+      if (kind[i] === "water") { added[i] = 0; kind[i] = "ground"; } if (kind[i] === "wall") { kind[i] = "ground"; solid[i] = 0; built[i] = 0; soft[i] = 0; }
+      over[i] = kindName;
+    };
+    const P = {
+      W, H, name, warps: base.warps.map((w, k) => ({ k, x: w.x, y: w.y, to: w.map, door: doors.includes(k) })), people: base.people.map((q) => ({ x: q.x, y: q.y, script: q.script })),
+      fill: (kindName, x0, y0, x1, y1) => cells(x0, y0, x1, y1, (i) => put(kindName, i)),
+      disc: (kindName, cx, cy, r, ry = r) => cells(Math.floor(cx - r), Math.floor(cy - ry), Math.ceil(cx + r), Math.ceil(cy + ry), (i, x, y) => { if (((x + 0.5 - cx) / r) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1) put(kindName, i); }),
+      // A street of `width` tiles through the points (tile coordinates), in ground `kindName`.
+      street: (kindName, width, points) => { if (!A.TILES[tileOf(kindName).tile]) throw new Error(name + ": unknown street " + kindName); for (let s = 0; s + 1 < points.length; s++) { const [ax, ay] = points[s], [bx, by] = points[s + 1], n = Math.max(Math.abs(bx - ax), Math.abs(by - ay), 1); for (let t = 0; t <= n; t++) { const x = Math.round(ax + (bx - ax) * t / n), y = Math.round(ay + (by - ay) * t / n); cells(x - ((width - 1) >> 1), y - ((width - 1) >> 1), x + (width >> 1), y + (width >> 1), (i, cx, cy) => { if (built[i] || water0[i] || cx < 1 || cy < 1 || cx >= W - 1 || cy >= H - 1) return; if (kind[i] === "border") { if (!(inside(cx, cy) || LATE)) return; kind[i] = "ground"; solid[i] = 0; } if (kind[i] === "wall") return; if (added[i]) { added[i] = 0; kind[i] = "ground"; plank[i] = 1; } road[i] = 1; roadKind[i] = kindName; over[i] = null; }); } } },
+      // The building to draw on warp k's door (a stamp name from tools/lib/city-stamps.js).
+      // Leave warp k undecorated (no building, arch, cave mouth or arrow): the plan draws its own entrance.
+      bare: (k) => { forced[k] = { bare: true }; },
+      building: (k, stamp, opts = {}) => { if (!A.STAMPS[stamp] || A.STAMPS[stamp][5] == null) throw new Error(name + ": " + stamp + " is not a building with a door"); forced[k] = { stamp, tint: opts.tint }; },
+      // A building or prop with no way in, top-left tile at (x, y). opts.walk leaves it passable.
+      decor: (stamp, x, y, opts = {}) => {
+        const st = A.STAMPS[stamp]; if (!st) throw new Error(name + ": unknown stamp " + stamp);
+        const top = opts.canopy ? Math.max(0, st[4] - (opts.canopy === true ? 2 : opts.canopy)) : 0;
+        for (let j = y + top; j < y + st[4]; j++) for (let i2 = x; i2 < x + st[3]; i2++) { if (!on(i2, j)) throw new Error(name + ": " + stamp + " at " + x + "," + y + " leaves the map"); const i = I(i2, j); if (opts.walk) continue; if (keep[i]) throw new Error(name + ": " + stamp + " at " + x + "," + y + " covers a kept tile " + i2 + "," + j + " (door, person, landing or the tile in front of one)"); if (water0[i]) throw new Error(name + ": " + stamp + " at " + x + "," + y + " stands in water"); built[i] = 1; solid[i] = 1; added[i] = 0; if (kind[i] !== "ground") kind[i] = "ground"; road[i] = 0; }
+        items.push({ z: y + st[4], draw: (c, topc) => { if (top) A.draw(topc, stamp, x, y, { rows: Array.from({ length: top }, (_, r) => r), tint: opts.tint }); A.draw(c, stamp, x, y + top, { rows: Array.from({ length: st[4] - top }, (_, r) => r + top), tint: opts.tint }); } });
+      },
+      // Free drawing: (c, top) are the ground and walk-behind canvases, in pixels. block() makes tiles solid.
+      paint: (z, draw) => items.push({ z, draw }),
+      block: (x0, y0, w, h) => cells(x0, y0, x0 + w - 1, y0 + h - 1, (i, x, y) => { if (keep[i]) throw new Error(name + ": block covers a kept tile " + x + "," + y); if (water0[i]) return; built[i] = 1; solid[i] = 1; added[i] = 0; road[i] = 0; }),
+      canvas, hash, roof: roofTint, trim: A.trim, stamps: A.STAMPS,
+    };
+    PLAN.plan(P);
+  }
   // B. buildings on their doors.
   const rectFree = (x0, y0, w, h, own) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) { if (x < 1 || y < 0 || x >= W - 1 || y >= H) return false; const i = I(x, y); if (i === own) continue; if (built[i] || keep[i] || water0[i] || plank[i]) return false; if (base.people.some((p) => p.x === x && p.y === y) || (base.signs || []).some((s) => s.x === x && s.y === y)) return false; } return true; };
   const pickStamps = (w, k) => {
@@ -236,18 +278,19 @@ function layout(name) {
   const placed = [];
   for (const k of order) {
     const w = base.warps[k], own = I(w.x, w.y);
+    if (forced[k] && forced[k].bare) { solid[own] = 0; continue; }
     let ok = null;
-    for (const stamp of [...pickStamps(w, k), "gable", "pcSmall", "peak", "cabin"]) {
+    for (const stamp of [...(forced[k] ? [forced[k].stamp] : []), ...pickStamps(w, k), "gable", "pcSmall", "peak", "cabin"]) {
       const s = A.STAMPS[stamp]; if (!s || s[5] == null) continue;
       const x0 = w.x - s[5], y0 = w.y - s[4] + 1;
       if (y0 < 0 || !rectFree(x0, y0, s[3], s[4], own)) continue;
       ok = { stamp, x0, y0, w: s[3], h: s[4] }; break;
     }
     if (ok) {
-      const tint = ok.stamp === "gable" || ok.stamp === "peak" ? ROOFS[Math.floor(hash(w.x, w.y, seed + 2) * ROOFS.length)] : T.towers && /tower/.test(ok.stamp) ? A.trim(0.3 + hash(k, 1, seed), 0.4 + hash(k, 2, seed) * 0.5, 1) : null;
+      const tint = forced[k] && forced[k].stamp === ok.stamp ? forced[k].tint : ok.stamp === "gable" || ok.stamp === "peak" ? ROOFS[Math.floor(hash(w.x, w.y, seed + 2) * ROOFS.length)] : T.towers && /tower/.test(ok.stamp) ? A.trim(0.3 + hash(k, 1, seed), 0.4 + hash(k, 2, seed) * 0.5, 1) : null;
       for (let y = ok.y0; y < ok.y0 + ok.h; y++) for (let x = ok.x0; x < ok.x0 + ok.w; x++) { const i = I(x, y); built[i] = 1; solid[i] = 1; if (kind[i] === "border" && inside(x, y)) kind[i] = "ground"; added[i] = 0; if (kind[i] === "water" && !water0[i]) kind[i] = "ground"; }
       items.push({ z: ok.y0 + ok.h, draw: (c) => A.draw(c, ok.stamp, ok.x0, ok.y0, { tint }) });
-      placed.push(ok);
+      placed.push(ok); if (forced[k] && forced[k].stamp !== ok.stamp) report.push(name + ": no room for " + forced[k].stamp + " on warp " + k + ", used " + ok.stamp);
     } else {
       // No room for a house: a porch over the door.
       for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0]]) { const x = w.x + dx, y = w.y + dy; if (!on(x, y)) continue; const i = I(x, y); if (keep[i] || water0[i] || base.people.some((p) => p.x === x && p.y === y)) continue; built[i] = 1; solid[i] = 1; }
@@ -260,6 +303,7 @@ function layout(name) {
   // C. caves, grottoes, gatehouses and road ends.
   const rockKind = T.grove === "ashrock" ? "ashrock" : "rock";
   for (const k of steps) {
+    if (forced[k] && forced[k].bare) continue;
     const w = base.warps[k], t = typeOf(w.map), n = w.map;
     const free = (x, y) => on(x, y) && !keep[I(x, y)] && !built[I(x, y)] && !water0[I(x, y)] && !plank[I(x, y)] && !base.people.some((p) => p.x === x && p.y === y) && !base.warps.some((v) => v.x === x && v.y === y);
     if (/Grotto/.test(n)) {
@@ -278,7 +322,7 @@ function layout(name) {
   }
 
   // Landmarks, where there is room.
-  const openGround = (i) => kind[i] === "ground" && !solid[i] && !clear[i] && !keep[i] && !road[i] && !plank[i];
+  const openGround = (i) => kind[i] === "ground" && !solid[i] && !clear[i] && !keep[i] && !road[i] && !plank[i] && !over[i];
   const freeRect = (w, h, cx, cy) => { let best = null; for (let y = 3; y + h <= H - 3; y++) for (let x = 3; x + w <= W - 3; x++) { let ok = true; for (let j = y - 1; j <= y + h && ok; j++) for (let i = x - 1; i <= x + w; i++) if (!openGround(I(i, j))) { ok = false; break; } if (!ok) continue; const d = Math.hypot(x + w / 2 - cx, y + h / 2 - cy); if (!best || d < best[2]) best = [x, y, d]; } return best; };
   const block = (x, y, w, h, kindName) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) { solid[I(i, j)] = 1; built[I(i, j)] = 1; if (kindName) kind[I(i, j)] = kindName; } };
   const landmark = (w, h, cx, cy, draw, solidRows = h, kindName) => { const at = freeRect(w, h, cx, cy); if (!at) { report.push(name + ": no room for a landmark"); return null; } block(at[0], at[1] + h - solidRows, w, solidRows, kindName); items.push({ z: at[1] + h, draw: (c, top) => draw(c, top, at[0], at[1]) }); return at; };
@@ -294,9 +338,9 @@ function layout(name) {
 
   // D. roads between every door and gate.
   const node = (k) => { const w = base.warps[k]; return doors.includes(k) && on(w.x, w.y + 1) ? I(w.x, w.y + 1) : I(w.x, w.y); };
-  const passable = (i) => { const x = X(i), y = Y(i); return x >= 1 && y >= 1 && x < W - 1 && y < H - 1 && !built[i] && !water0[i] && (kind[i] !== "border" || keep[i]) && kind[i] !== "rail"; };
+  const passable = (i) => { const x = X(i), y = Y(i); return x >= 1 && y >= 1 && x < W - 1 && y < H - 1 && !built[i] && !water0[i] && (kind[i] !== "border" || keep[i]) && kind[i] !== "rail" && kind[i] !== "wall"; };
   const stepCost = (i) => (!passable(i) ? Infinity : road[i] || plank[i] ? 0.35 : 1 + (added[i] ? 5 : 0) + T.wander * 4 * fbm(X(i), Y(i), seed + 7) + (inside(X(i), Y(i)) ? 0 : 4));
-  const pave = (i) => { const x = X(i), y = Y(i), r = T.width; for (let j = 0; j < r; j++) for (let k = 0; k < r; k++) { const a = x + k - (r > 2 ? 1 : 0), b = y + j - (r > 2 ? 1 : 0); if (!on(a, b)) continue; const q = I(a, b); if ((j || k) && (!passable(q) || !inside(a, b))) continue; if (!passable(q)) continue; road[q] = 1; if (added[q]) { added[q] = 0; kind[q] = "ground"; } } };
+  const pave = (i) => { const x = X(i), y = Y(i), r = T.width; for (let j = 0; j < r; j++) for (let k = 0; k < r; k++) { const a = x + k - (r > 2 ? 1 : 0), b = y + j - (r > 2 ? 1 : 0); if (!on(a, b)) continue; const q = I(a, b); if ((j || k) && (!passable(q) || !inside(a, b))) continue; if (!passable(q)) continue; road[q] = 1; if (added[q]) { added[q] = 0; kind[q] = "ground"; plank[q] = 1; } } };
   if (!bridgeMap) {
     const nodes = base.warps.map((_, k) => node(k)).filter((i) => passable(i)), inTree = [nodes[0]], rest = nodes.slice(1);
     if (nodes.length) pave(nodes[0]);
@@ -308,7 +352,7 @@ function layout(name) {
     }
   }
   // Towns get neighbours: houses with no way in, facing the roads.
-  if (T.town && !bridgeMap) {
+  if (T.town && !bridgeMap && T.autoHouses !== false) {
     const wantHouses = Math.max(0, Math.min(7, Math.round(W * H / 230) - placed.length)), pool = T.house.filter((h) => A.STAMPS[h]);
     for (let t = 0, made = 0; t < 500 && made < wantHouses; t++) {
       const stamp = pool[Math.floor(hash(t, 3, seed) * pool.length)], s = A.STAMPS[stamp], x = 3 + Math.floor(hash(t, 5, seed) * (W - 6 - s[3])), y = 3 + Math.floor(hash(t, 7, seed) * (H - 7 - s[4]));
@@ -331,14 +375,14 @@ function layout(name) {
   const encValue = mode(encVals, 1), grassBeh = mode(behVals, 2), everywhere = want > landOpen * 0.6;
   if (want && !everywhere && !bridgeMap) {
     const cand = [];
-    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) { const i = I(x, y); if ((kind[i] !== "ground" && kind[i] !== "beach") || solid[i] || road[i] || plank[i] || base.warps.some((w) => Math.abs(w.x - x) + Math.abs(w.y - y) <= 1)) continue; cand.push([fbm(x * 1.3, y * 1.3, seed + 5) + (base.encounter[i] ? 0.06 : 0), i]); }
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) { const i = I(x, y); if ((kind[i] !== "ground" && kind[i] !== "beach") || solid[i] || road[i] || plank[i] || over[i] || base.warps.some((w) => Math.abs(w.x - x) + Math.abs(w.y - y) <= 1)) continue; cand.push([fbm(x * 1.3, y * 1.3, seed + 5) + (base.encounter[i] ? 0.06 : 0), i]); }
     cand.sort((a, b) => b[0] - a[0]);
     for (const [, i] of cand.slice(0, want)) grass[i] = 1;
     if (cand.length < want) report.push(name + ": only " + cand.length + " of " + want + " grass tiles fit");
   }
 
   // F. groves, trees, rocks and flower beds.
-  const plain = (i) => kind[i] === "ground" && !solid[i] && !clear[i] && !keep[i] && !road[i] && !plank[i] && !grass[i];
+  const plain = (i) => kind[i] === "ground" && !solid[i] && !clear[i] && !keep[i] && !road[i] && !plank[i] && !grass[i] && !over[i];
   if (T.groves && !bridgeMap) for (let y = 2; y < H - 3; y += 2) for (let x = 2; x < W - 3; x += 2) {
     const cells = [I(x, y), I(x + 1, y), I(x, y + 1), I(x + 1, y + 1)];
     if (cells.every(plain) && fbm(x * 1.1, y * 1.1, seed + 9) > 1 - T.groves * 0.9 - 0.25) { const id = obstacles.length; obstacles.push({ cells, grove: true }); for (const i of cells) { solid[i] = 1; owner[i] = id; kind[i] = "grove"; } }
@@ -356,7 +400,7 @@ function layout(name) {
   }
   const bed = new Array(N);
   if (!bridgeMap) for (let i = 0; i < N; i++) {
-    if (kind[i] !== "ground" || solid[i] || road[i] || grass[i] || plank[i]) continue;
+    if (kind[i] !== "ground" || solid[i] || road[i] || grass[i] || plank[i] || over[i]) continue;
     const x = X(i), y = Y(i), f = fbm(x * 1.7, y * 1.7, seed + 17);
     if (T.lawns && f > 0.8 - T.lawns * 0.4) bed[i] = "lawn";
     else if (T.flowers && f < T.flowers * 0.75 + 0.2 && hash(x, y, seed + 19) < 0.8) bed[i] = ["flowersRed", "flowersBlue", "flowersPink"][Math.floor(vnoise(x / 9, y / 9, seed + 21) * 3) % 3];
@@ -370,7 +414,7 @@ function layout(name) {
   const need = []; for (let i = 0; i < N; i++) if (keep[i] && comp[i] >= 0) need.push(i);
   const walk = (i) => !solid[i] && kind[i] !== "water";
   const flood = (start) => { const seen = new Uint8Array(N); seen[start] = 1; const q = [start]; for (let k = 0; k < q.length; k++) for (const d of [1, -1, W, -W]) { const j = q[k] + d; if (j < 0 || j >= N || (Math.abs(d) === 1 && Y(j) !== Y(q[k])) || seen[j] || !walk(j)) continue; seen[j] = 1; q.push(j); } return seen; };
-  const open = (i) => { if (owner[i] >= 0) { const ob = obstacles[owner[i]]; ob.live = false; for (const c of ob.cells) { solid[c] = 0; owner[c] = -1; if (kind[c] === "grove") kind[c] = "ground"; } } if (added[i]) { added[i] = 0; kind[i] = "ground"; } if (kind[i] === "border" && inside(X(i), Y(i))) kind[i] = "ground"; if (soft[i]) { soft[i] = 0; built[i] = 0; if (kind[i] !== "water") kind[i] = "ground"; } if (!built[i]) solid[i] = 0; };
+  const open = (i) => { if (owner[i] >= 0) { const ob = obstacles[owner[i]]; ob.live = false; for (const c of ob.cells) { solid[c] = 0; owner[c] = -1; if (kind[c] === "grove") kind[c] = "ground"; } } if (added[i]) { added[i] = 0; kind[i] = "ground"; } if (kind[i] === "border" && inside(X(i), Y(i))) kind[i] = "ground"; if (soft[i]) { soft[i] = 0; built[i] = 0; if (kind[i] !== "water") kind[i] = "ground"; if (PLAN) report.push(name + ": plan wall opened at " + X(i) + "," + Y(i) + " to reach something"); } if (!built[i]) solid[i] = 0; };
   for (const i of need) if (!walk(i)) { if ((built[i] && !soft[i]) || water0[i]) throw new Error(name + ": kept tile " + X(i) + "," + Y(i) + " is built over"); open(i); }
   const groups = {}; for (const i of need) (groups[comp[i]] = groups[comp[i]] || []).push(i);
   let cleared = 0;
@@ -417,7 +461,7 @@ function layout(name) {
   if (!DRY) {
     const c = canvas(W * 16, H * 16), top = canvas(W * 16, H * 16);
     const groveKind = T.grove || T.border, waterKind = T.water || "water";
-    const shown = (i) => { const k = kind[i]; if (k === "water") return waterKind; if (k === "border") return T.border; if (k === "grove") return groveKind; if (k === "rail") return "rail"; if (k !== "ground") return k; if (plank[i]) return "deck"; if (road[i]) return T.road; if (grass[i]) return T.grass; if (bed[i] && bed[i] !== "puddle" && bed[i] !== "stone") return bed[i]; return T.ground; };
+    const shown = (i) => { const k = kind[i]; if (k === "water") return waterKind; if (k === "border") return T.border; if (k === "grove") return groveKind; if (k === "rail") return "rail"; if (k === "wall") return wallTile[i]; if (k !== "ground") return k; if (plank[i]) return "deck"; if (road[i]) return roadKind[i] || T.road; if (over[i]) return over[i]; if (grass[i]) return T.grass; if (bed[i] && bed[i] !== "puddle" && bed[i] !== "stone") return bed[i]; return T.ground; };
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = I(x, y), k = tileOf(shown(i));
       A.tile(c, k.tile, x, y);
@@ -450,7 +494,7 @@ function layout(name) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const j = I(x + dx, y + dy), px = x * 16 + (dx > 0 ? 14 : 0), py = y * 16 + (dy > 0 ? 14 : 0), w = dx ? 2 : 16, h = dy ? 2 : 16;
         if (wet && kind[j] !== "water") { c.rect(px, py, w, h, [236, 244, 250, 110]); }
-        else if (!wet && road[i] && !plank[i] && !road[j] && kind[j] === "ground" && !plank[j] && !solid[j]) c.rect(px, py, w, h, [60, 50, 30, 40]);
+        else if (!wet && road[i] && !plank[i] && !road[j] && kind[j] === "ground" && !plank[j] && !solid[j] && !over[j]) c.rect(px, py, w, h, [60, 50, 30, 40]);
         else if (plank[i] && kind[j] === "water") c.rect(px, py, w, h, [70, 50, 36]);
       }
     }
@@ -467,7 +511,7 @@ function layout(name) {
 // ---------------------------------------------------------------- every map
 const SKIP = /^UnovaHouse|^BW1House/;
 const rle = (a) => { const o = []; for (let i = 0; i < a.length;) { let j = i; while (j < a.length && a[j] === a[i]) j++; o.push(a[i], j - i); i = j; } return o; };
-const pack = () => { const L = {}; for (const n of Object.keys(layouts)) L[n] = [layouts[n].home, rle(layouts[n].c), rle(layouts[n].b), rle(layouts[n].e)]; return L; };
+const pack = () => { const L = {}; for (const n of Object.keys(layouts)) L[n] = [layouts[n].home, rle(layouts[n].c), rle(layouts[n].b), rle(layouts[n].e), PLANS[n] ? 1 : 0]; return L; };
 const DECODE = "const d=r=>{const a=[];for(let i=0;i<r.length;i+=2)for(let k=0;k<r[i+1];k++)a.push(r[i]);return a;};";
 let built = 0;
 {
@@ -477,7 +521,7 @@ let built = 0;
   if (!ONLY && !DRY) fs.writeFileSync(path.join(root, "data/region-layouts.js"), ["// Generated by tools/build-region-layouts.js. What it does and why: docs/city-layouts.md.",
     "(function(){", "const L=" + JSON.stringify(pack()) + ",B=" + JSON.stringify(aliases) + ";", DECODE,
     "for(const n in B)for(const[home,map]of B[n])if(window[home].maps[map].image===n)window[home].maps[map].image=n+'Classic';",
-    "for(const n in L){const m=window[L[n][0]].maps[n];delete m.anim;m.collision=d(L[n][1]);m.behavior=d(L[n][2]);m.encounter=d(L[n][3]);m.top=true;m.cityLayout=true;m.regionLayout=true;}",
+    "for(const n in L){const m=window[L[n][0]].maps[n];delete m.anim;m.collision=d(L[n][1]);m.behavior=d(L[n][2]);m.encounter=d(L[n][3]);m.top=true;m.cityLayout=true;m.regionLayout=true;if(L[n][4])m.townPlan=true;}",
     "window.REGION_LAYOUTS=Object.keys(L);", "})();", ""].join("\n"));
 }
 // Alola, Galar and Paldea lay their ground out when the game starts (game/*-layouts.js),
@@ -492,7 +536,7 @@ let built = 0;
   for (const home of Object.keys(HOMES)) for (const m of Object.values(HOMES[home])) if (m && ["route", "city", "town"].includes(m.type)) { if (ONLY && !ONLY.test(m.name)) continue; layout(m.name); built++; }
   if (!ONLY && !DRY) fs.writeFileSync(path.join(root, "game/region-layouts-late.js"), ["// Generated by tools/build-region-layouts.js. What it does and why: docs/city-layouts.md.",
     "(function(){", "const L=" + JSON.stringify(pack()) + ";", DECODE,
-    "for(const n in L){const m=window[L[n][0]].maps[n];if(!m)continue;delete m.anim;delete m.image;m.collision=d(L[n][1]);m.behavior=d(L[n][2]);m.encounter=d(L[n][3]);m.top=true;m.cityLayout=true;m.regionLayout=true;}",
+    "for(const n in L){const m=window[L[n][0]].maps[n];if(!m)continue;delete m.anim;delete m.image;m.collision=d(L[n][1]);m.behavior=d(L[n][2]);m.encounter=d(L[n][3]);m.top=true;m.cityLayout=true;m.regionLayout=true;if(L[n][4])m.townPlan=true;}",
     "window.REGION_LAYOUTS=(window.REGION_LAYOUTS||[]).concat(Object.keys(L));", "})();", ""].join("\n"));
 }
 if (report.length) console.log(report.join("\n"));

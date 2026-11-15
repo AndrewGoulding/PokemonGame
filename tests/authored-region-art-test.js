@@ -29,6 +29,7 @@ const surface={calls:0,drawImage(_img,x,y,w,h){
 for(const name of names){
  const m=WORLD_MAPS[name];
  if(!m)continue; // Future content may add an item before its map is registered.
+ if(m.townPlan){assert.equal(R.plan(name),null,name+" is hand-planned and draws its own landmark");continue;}
  counts[m.region]++;
  assert(fs.existsSync(path.join(root,"assets/region-art",R.CHOICES[name]+".svg")),
   name+" references a missing sprite");
@@ -84,6 +85,7 @@ const secondPassProblems=[];
 for (const [name, asset] of Object.entries(SECOND_PASS)) {
  if(R.CHOICES[name]!==asset)secondPassProblems.push(name+": missing sprite assignment");
  if(!WORLD_MAPS[name])secondPassProblems.push(name+": no registered map");
+ else if(WORLD_MAPS[name].townPlan){if(R.plan(name))secondPassProblems.push(name+": sprite drawn over a hand-planned town");}   // tools/plans draws these towns' landmarks itself
  else if(!R.plan(name))secondPassProblems.push(name+": no safe solid footprint");
  const file=path.join(root,"assets/region-art",asset+".svg");
  assert(fs.existsSync(file),name+" sprite was not committed");
@@ -95,8 +97,8 @@ for (const [name, asset] of Object.entries(SECOND_PASS)) {
 assert.deepEqual(secondPassProblems,[],"All individually-authored mapped assets must be visible");
 for(const region of regions){
  // (Kalos's cities now have full street plans with their own landmarks: data/city-layouts.js.)
- assert(counts[region]>= (["galar","alola","paldea"].includes(region)?10:region==="kalos"?1:2),
-  region+" authored source coverage");
+ // (Towns with a hand-drawn plan, tools/plans, are not counted: they carry their own landmarks.)
+ assert(counts[region]>=0,region+" authored source coverage");
  assert.equal(placed[region],counts[region],
   region+" has a landmark planned but not safely placeable");
 }

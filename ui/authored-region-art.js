@@ -106,7 +106,7 @@
   const WORLD = window.WORLD_MAPS;
   function choice(m) {
     // Cities with a full street plan (data/city-layouts.js) carry their own landmarks.
-    if (!m || !REGIONS.has(m.region) || (m.cityLayout && !m.regionLayout)) return null;
+    if (!m || !REGIONS.has(m.region) || (m.cityLayout && !m.regionLayout) || m.townPlan) return null;   // hand-planned towns (tools/plans) draw their own landmarks
     if (CHOICES[m.name]) return CHOICES[m.name];
     // Support new map chapters without borrowing an unrelated region's art.
     // Never put an outdoor building facade inside an interior room.

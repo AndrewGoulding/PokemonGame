@@ -169,6 +169,44 @@ Alola, Galar and Paldea were 3D games with no 2D maps to take, so what is here
 is a generated layout in a matching art style: right kind of place, right
 buildings on the right doors, but not the real town plan.
 
+## Hand-planned towns
+
+![Twenty of the hand-planned towns](town-plans-preview.png)
+
+Every town and city in Kalos, Unova (both campaigns), Alola, Galar and Paldea
+that did not already have a street plan above now has a plan of its own in
+`tools/plans/` (`kalos.js`, `unova.js`, `bw1.js`, `alola.js`, `galar.js`,
+`paldea.js`): 120 maps. A plan is written by hand for one town. It lays down
+that town's streets, water, squares and cliffs, says which building stands on
+each door, places the extra buildings, and draws the town's landmarks in code
+(Geosenge's standing stones, Couriway's waterfalls, Nimbasa's stadiums and
+Ferris wheel, Mistralton's runway, Seafolk Village's houseboats, Motostoke's
+canal and gears, Ballonlea's glowing mushrooms, Mesagoza's plaza and stairway,
+Artazon's sunflowers and windmill, and so on). The builder then finishes the
+map as before and checks that every door, gate and person can still be reached.
+`tools/plans/README.md` describes the plan calls; `tools/plan-preview.js`
+shows a map's fixed points and its built picture.
+
+What a plan cannot change:
+
+- **Doors, gates and people stay on their tiles.** In Alola, Galar and Paldea
+  nearly every town shares one template of fixed points (a north exit, a west
+  door, a door at 27,10, and so on), and the Black/White towns share another.
+  The towns are arranged around those, so compass directions often differ from
+  the games (Driftveil's drawbridge is in the south, Po Town's Shady House in
+  the west) and many towns have the same cross of main streets underneath.
+- **They are drawn from memory**, not traced from the games. Several are
+  impressions rather than street plans, and a few are not real places at all
+  (Alola's postgame port, Paldea's League Club as an ocean platform).
+- Buildings on a north-edge or west-edge entrance have little room, so some
+  Centers and stations there are small hand-drawn fronts.
+- The five Team Star bases share one camp layout with different colours and
+  props.
+- Routes, and the wild areas between towns, are still the generated layouts
+  described above.
+- The older landmark sprites (`ui/authored-region-art.js`) are no longer drawn
+  on planned towns.
+
 ### Regenerating
 
 ```sh
