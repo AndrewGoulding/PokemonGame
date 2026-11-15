@@ -386,7 +386,11 @@
     return old;
   }
 
+  // The Exp. Candies' prices at the battle facilities' Battle Point shops (this game's own: Trainer Tower's, the
+  // Battle Frontiers', Unova's exchange, the Battle Maison's).
+  const BP_CANDIES = [["exp-candy-xs", 1], ["exp-candy-s", 2], ["exp-candy-m", 4], ["exp-candy-l", 8], ["exp-candy-xl", 16]];
   window.Bag = {
+    BP_CANDIES,
     POCKETS, get BATTLE_POCKETS() { return BATTLE_POCKETS(); }, PRICES, name, description, sprite, price, sellPrice, pocket, isBall, isStone, isKeyItem,
     isMachine, machineMove, machines, mintNature, capsuleAbility, patchAbility, trainableStats, lowerableStats, HYPER_TRAINING_LEVEL, zygardeCube,
     martStock, canUseOn, useOn, levelUp, expCandy, give, take, teraShardType, TERA_SHARDS_NEEDED

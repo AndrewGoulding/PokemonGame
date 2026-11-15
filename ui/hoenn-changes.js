@@ -19,6 +19,26 @@
   if (!H || !H.s || !W || !W.LittlerootTown) return;
   const S = H.s;
 
+  // The Battle Frontier's Exchange Service Corner: the vitamin clerk has the Exp. Candies too (Bag.BP_CANDIES),
+  // in her list before Exit and bought as her vitamins are.
+  {
+    const menu = (H.scrollMulti || [])[(H.numConsts || {}).SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR], pre = "BattleFrontier_ExchangeServiceCorner_";
+    const choose = S[pre + "EventScript_ChooseVitamin"], candies = window.Bag.BP_CANDIES.filter(([id]) => window.ITEMS[id]);
+    if (menu && choose && !S[pre + "EventScript_Candy0"]) {
+      const exit = menu.indexOf("Exit"), at = choose.findIndex((c) => c[0] === "case" && c[1] === exit);
+      if (exit >= 0 && at >= 0) {
+        menu.splice(exit, 0, ...candies.map(([id, bp]) => window.Bag.name(id) + "{CLEAR_TO 100}" + bp + "BP"));
+        choose[at][1] = exit + candies.length;
+        choose.splice(at, 0, ...candies.map((c, i) => ["case", exit + i, pre + "EventScript_Candy" + i]));
+        candies.forEach(([id, bp], i) => {
+          H.t[pre + "Text_ConfirmCandy" + i] = ["You've chosen the " + window.Bag.name(id) + ".\nIs that correct?"];
+          S[pre + "EventScript_Candy" + i] = [["msgbox", pre + "Text_ConfirmCandy" + i, "MSGBOX_YESNO"], ["goto_if_eq", "VAR_RESULT", "NO", pre + "EventScript_ChooseVitamin"],
+            ["setvar", "VAR_0x8008", bp], ["setvar", "VAR_0x8009", "ITEM_" + id.toUpperCase().replace(/-/g, "_")], ["goto", pre + "EventScript_TryPurchasePrize"], ["end"]];
+        });
+      }
+    }
+  }
+
   // Off the truck (Emerald's StepOffTruck, its hop and no more): the Moms' and the houses' scenes over, and the
   // rival met.
   for (const [script, flag] of [["LittlerootTown_EventScript_StepOffTruckMale", "FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_BEDROOM"],
