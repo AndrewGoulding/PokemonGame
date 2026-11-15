@@ -273,21 +273,17 @@ module.exports = {
       p.fill("flowersBlue", 20, 6, 25, 7);
     },
   },
-  // Route 6: the straight paved road from the ranch to Royal Avenue, fenced pasture on the west
-  // side and open grass on the east.
+  // Route 6: the straight dirt road from the ranch to Royal Avenue through dark woods, tall grass
+  // in the clearings either side, and just a corner of ranch fence and hay at the ranch end.
   AlolaRoute6: {
-    theme: { ground: "grass", road: "paving", border: "tree", density: 0.05, groves: 0.03, flowers: 0.08, tree: "tree1", turn: 6, wander: 0 },
+    theme: { ground: "grass", road: "dirt", border: "tree", density: 0.14, groves: 0.12, flowers: 0.08, tree: "tree1", turn: 6, wander: 0 },
     plan(p) {
-      p.street("paving", 3, [[17, 1], [17, 30]]); p.street("dirt", 2, [[1, 16], [32, 16]]);
-      for (const [x0, y0, x1, y1] of [[3, 4, 13, 13], [3, 20, 13, 28]]) {
-        p.fill("field", x0 + 1, y0 + 1, x1 - 1, y1 - 1);
-        fence(p, x0, y0, x1, y0); fence(p, x0, y1, x1, y1); fence(p, x0, y0 + 1, x0, y1 - 1); fence(p, x1, y0 + 1, x1, y0 + 3); fence(p, x1, y0 + 5, x1, y1 - 1);
-      }
-      for (const [x, y] of [[5, 6], [9, 8], [7, 11], [11, 6]]) cow(p, x, y, [250, 190, 200], [40, 40, 40]);
-      for (const [x, y] of [[6, 23], [10, 25], [8, 26]]) cow(p, x, y, [150, 100, 60], [90, 60, 40]);
-      fence(p, 20, 3, 20, 13, [236, 232, 220]); fence(p, 20, 19, 20, 29, [236, 232, 220]);
-      for (const y of [6, 12, 21, 27]) post(p, 15, y, [240, 200, 80]);
-      p.decor("honeyTree", 27, 5, { canopy: true }); p.decor("barrels", 4, 5); p.decor("barrels", 4, 21);
+      p.street("dirt", 3, [[17, 1], [17, 30]]); p.street("dirt", 2, [[1, 16], [32, 16]]);
+      p.fill("field", 3, 24, 9, 28); fence(p, 2, 23, 10, 23); fence(p, 10, 24, 10, 28);
+      p.decor("barrels", 4, 25); p.decor("barrels", 7, 26);
+      p.fill("meadow", 9, 6, 14, 10); p.fill("meadow", 21, 9, 26, 14); p.fill("meadow", 21, 21, 25, 26);
+      for (const [x, y] of [[12, 13], [22, 5], [27, 18], [12, 20], [28, 27], [5, 12], [29, 9]]) p.decor("tree1", x, y, { canopy: true });
+      p.decor("boulder", 13, 17); p.decor("boulder", 21, 17);
     },
   },
   // Route 7: the short shore road under Wela Volcano. Black lava rock rises in the north round
@@ -307,19 +303,19 @@ module.exports = {
     },
   },
   // Route 8: the west coast of Akala. Sea and beach along the west side, the Aether Foundation's
-  // trailer in the bend of the road, the fossil restoration centre and the motel to the east,
+  // trailer in the bend of the grey asphalt road, the fossil restoration centre and the motel to the east,
   // Diglett's Tunnel in the cliff and Lush Jungle's trial gate at the north end.
   AlolaRoute8: {
-    theme: { ground: "grass", road: "sand", border: "palms", water: "sea", density: 0.05, groves: 0, flowers: 0.08, tree: "tree1", autoHouses: false, turn: 6, wander: 0 },
+    theme: { ground: "grass", road: "asphalt", border: "palms", water: "sea", density: 0.05, groves: 0, flowers: 0.08, tree: "tree1", autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       p.fill("beach", 1, 1, 9, 32); for (let y = 1; y <= 32; y++) p.fill("water", 1, y, 5 + Math.floor(p.hash(y >> 1, 2, 3) * 2), y);
       p.fill("rock", 28, 6, 38, 10); crag(p, "rock", 33, 11, 38, 13, 4); caveOn(p, 2);
-      p.street("sand", 2, [[20, 32], [20, 25], [13, 25], [13, 17], [20, 17], [20, 9], [25, 9], [25, 4], [20, 4], [20, 1]]);
-      p.street("sand", 2, [[21, 17], [38, 17]]); p.street("sand", 1, [[30, 14], [30, 16]]); p.street("deck", 3, [[1, 17], [8, 17]]); p.street("sand", 2, [[9, 17], [12, 17]]);
+      p.street("asphalt", 2, [[20, 32], [20, 25], [13, 25], [13, 17], [20, 17], [20, 9], [25, 9], [25, 4], [20, 4], [20, 1]]);
+      p.street("asphalt", 2, [[21, 17], [38, 17]]); p.street("sand", 1, [[30, 14], [30, 16]]); p.street("deck", 3, [[1, 17], [8, 17]]); p.street("sand", 2, [[9, 17], [12, 17]]);
       trialGate(p, 1, [90, 190, 90]);
       trailer(p, 15, 21, 4);                                                             // the Aether base
       house(p, 28, 20, 6, 4, { wall: [226, 226, 232], roof: [90, 110, 150], roofH: 18, flat: true, door: 2, sign: [240, 200, 90] });  // fossil restoration centre
-      house(p, 25, 27, 9, 4, { wall: [236, 214, 180], roof: [190, 80, 70], roofH: 18, flat: true, sign: [250, 240, 160] });           // the motel
+      house(p, 25, 27, 9, 4, { wall: [236, 214, 180], roof: [120, 60, 84], roofH: 18, sign: [250, 240, 160] });           // the motel
       p.street("sand", 1, [[30, 24], [30, 25], [22, 25]]);
       for (const [x, y] of [[8, 5], [9, 12], [8, 22], [9, 29], [16, 12], [23, 13], [36, 20], [36, 28], [16, 29], [14, 5]]) palm(p, x, y);
       parasol(p, 7, 9); parasol(p, 8, 26); boat(p, 2, 14, [240, 200, 90], 3);
@@ -343,21 +339,21 @@ module.exports = {
   // Memorial Hill: the graveyard on the hillside above Konikoni. The gravel path winds up between
   // rows of headstones to the cave that leads to the Ruins of Life.
   AlolaMemorialHill: {
-    theme: { ground: "field", road: "gravel", border: "rock", density: 0.06, groves: 0, flowers: 0.1, tree: "tree1", turn: 6, wander: 0 },
+    theme: { ground: "grass", road: "dirt", border: "rock", density: 0.06, groves: 0, flowers: 0.1, tree: "tree1", turn: 6, wander: 0 },
     plan(p) {
-      p.street("gravel", 2, [[15, 22], [15, 17], [8, 17], [8, 12], [22, 12], [22, 6], [15, 6], [15, 1]]); p.street("gravel", 2, [[1, 12], [28, 12]]);
+      p.street("dirt", 2, [[15, 22], [15, 17], [8, 17], [8, 12], [22, 12], [22, 6], [15, 6], [15, 1]]); p.street("dirt", 2, [[1, 12], [28, 12]]);
       for (const y of [4, 9, 15, 20]) for (let x = 3; x <= 26; x += 2) { if ((y === 4 && x >= 13 && x <= 23) || (y === 9 && (x < 11 || x > 20)) || (y === 15 && (x < 11)) || (y === 20 && x >= 13 && x <= 18)) continue; grave(p, x, y, p.hash(x, y, 2) < 0.3 ? [150, 150, 140] : [176, 176, 186]); }
-      fence(p, 10, 10, 20, 10, [120, 120, 130]); fence(p, 11, 16, 26, 16, [120, 120, 130]);
+      fence(p, 10, 10, 20, 10, [40, 130, 80]); fence(p, 11, 16, 26, 16, [40, 130, 80]);                // clipped green hedges between the rows
       p.fill("flowersRed", 3, 5, 8, 5); p.fill("flowersBlue", 20, 21, 26, 21);
     },
   },
   // Route 10: the mountain road out of Malie. It climbs past two rock ledges to the lay-by where
   // the Mount Hokulani bus waits at its stop.
   AlolaRoute10: {
-    theme: { ground: "grass", road: "asphalt", border: "tree", density: 0.08, groves: 0.05, flowers: 0.06, tree: "tree1", turn: 6, wander: 0 },
+    theme: { ground: "grass", road: "dirt", border: "tree", density: 0.08, groves: 0.05, flowers: 0.06, tree: "tree1", turn: 6, wander: 0 },
     plan(p) {
       crag(p, "rock", 13, 18, 32, 19, 3); crag(p, "rock", 1, 10, 21, 11, 5);
-      p.street("asphalt", 3, [[17, 30], [17, 23], [10, 23], [10, 14], [25, 14], [25, 7], [17, 7], [17, 1]]);
+      p.street("dirt", 3, [[17, 30], [17, 23], [10, 23], [10, 14], [25, 14], [25, 7], [17, 7], [17, 1]]);
       p.street("dirt", 2, [[1, 16], [9, 16]]); p.street("dirt", 2, [[26, 16], [32, 16]]);
       p.fill("asphalt", 19, 3, 24, 5);
       // The bus and its stop.
@@ -371,11 +367,12 @@ module.exports = {
   // Mount Hokulani: the switchback road up the bare mountainside to the observatory's white dome
   // on the summit; the road on to Route 11 runs along the foot of the slope.
   AlolaMountHokulani: {
-    theme: { ground: "field", road: "asphalt", border: "rock", density: 0.07, groves: 0, flowers: 0.02, tree: "boulder", autoHouses: false, turn: 6, wander: 0 },
+    theme: { ground: "clay", road: "asphalt", border: "rock", density: 0.07, groves: 0, flowers: 0, tree: "boulder", autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       crag(p, "rock", 3, 12, 28, 13, 3); crag(p, "rock", 10, 8, 35, 9, 5); p.fill("rock", 1, 2, 4, 9); p.fill("rock", 27, 2, 36, 4);
       p.street("asphalt", 3, [[1, 15], [36, 15]]);
       p.street("asphalt", 2, [[30, 14], [30, 10], [6, 10], [6, 6], [20, 6]]); p.street("asphalt", 1, [[20, 5], [20, 6]]); p.street("gravel", 2, [[19, 17], [19, 28]]);
+      blooms(p, "desert", 22, 20, 33, 26, 0.5, 4); blooms(p, "desert", 3, 19, 12, 26, 0.5, 6); blooms(p, "desert", 9, 3, 15, 4, 0.5, 8);   // the patches of yellow mountain grass
       // The observatory: a white drum under a ribbed dome with its shutter open.
       const w = p.warps[1]; p.bare(1); for (const [x, y] of tilesOf(17, 2, 23, 4)) if (x !== w.x || y !== w.y) p.block(x, y, 1, 1);
       p.paint(5, (c, top) => { const px = 17 * 16, py = 2 * 16, cx = px + 56; c.rect(px + 4, py + 46, 106, 4, [0, 0, 0, 60]); c.box(px + 2, py + 14, 108, 34, [236, 236, 240], [70, 76, 96]); c.rect(px + 3, py + 40, 106, 7, [190, 194, 206]); for (let i = px + 8; i < px + 44; i += 12) c.box(i, py + 22, 8, 9, [120, 190, 230], [70, 76, 96]); for (let i = px + 70; i < px + 104; i += 12) c.box(i, py + 22, 8, 9, [120, 190, 230], [70, 76, 96]); c.box(w.x * 16 + 1, py + 30, 14, 18, [80, 90, 120], [50, 54, 70]);
@@ -387,63 +384,64 @@ module.exports = {
       post(p, 30, 18, [226, 70, 60]);
     },
   },
-  // Route 11: a short wooded trail east of Malie Garden, looping round a pond under the trees.
+  // Route 11: a short wooded trail east of Malie Garden, winding between tree clumps and tall grass.
   AlolaRoute11: {
     theme: { ground: "grass", road: "dirt", border: "tree", water: "water", density: 0.3, groves: 0.16, flowers: 0.06, tree: "tree1", turn: 6, wander: 0 },
     plan(p) {
-      p.disc("water", 26, 8, 4, 3);
+      p.disc("meadow", 26, 8, 4, 3);
       p.street("dirt", 2, [[17, 30], [17, 24], [24, 24], [24, 16], [10, 16], [10, 7], [17, 7], [17, 1]]); p.street("dirt", 2, [[1, 16], [32, 16]]);
       fence(p, 19, 22, 22, 22); fence(p, 12, 9, 15, 9); fence(p, 21, 12, 30, 12);
       p.decor("honeyTree", 5, 4, { canopy: true }); p.decor("honeyTree", 28, 26, { canopy: true }); p.decor("bench", 22, 6);
     },
   },
-  // Route 12: the lava-rock badlands. The road dips round black ridges below Blush Mountain,
+  // Route 12: bare red-brown badlands (no lava here). The rocky track dips round ridges below Blush Mountain,
   // whose geothermal power plant stands at the head of the track.
   AlolaRoute12: {
-    theme: { ground: "ash", road: "gravel", border: "ashrock", density: 0.12, groves: 0, flowers: 0, tree: "boulder", autoHouses: false, turn: 6, wander: 0 },
+    theme: { ground: "clay", road: "gravel", border: "rock", density: 0.12, groves: 0, flowers: 0, tree: "boulder", autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
-      p.fill("ashrock", 2, 3, 13, 7); crag(p, "ashrock", 2, 8, 12, 10, 3); p.fill("ashrock", 27, 3, 35, 8); crag(p, "ashrock", 28, 9, 35, 11, 5);
-      p.fill("ashrock", 16, 17, 24, 19); crag(p, "ashrock", 3, 21, 9, 24, 7); crag(p, "ashrock", 30, 22, 35, 25, 9);
+      p.fill("rock", 2, 3, 13, 7); crag(p, "rock", 2, 8, 12, 10, 3); p.fill("rock", 27, 3, 35, 8); crag(p, "rock", 28, 9, 35, 11, 5);
+      p.fill("rock", 16, 17, 24, 19); crag(p, "rock", 3, 21, 9, 24, 7); crag(p, "rock", 30, 22, 35, 25, 9);
       p.street("gravel", 2, [[36, 15], [27, 15], [27, 21], [12, 21], [12, 15], [1, 15]]); p.street("gravel", 2, [[13, 15], [26, 15]]);
       p.street("gravel", 2, [[20, 5], [20, 14]]); p.street("gravel", 2, [[19, 22], [19, 28]]);
       // The geothermal plant: a low grey block with pipes and two steaming stacks.
       houseOn(p, 1, 7, 3, 3, { wall: [176, 180, 190], roof: [96, 104, 124], roofH: 16, flat: true, win: [240, 200, 90], extra: (c, px, py, pw) => { c.rect(px + 4, py + 30, pw - 8, 2, [226, 120, 60]); } });
       p.paint(5, (c, top) => { const px = 17 * 16, py = 2 * 16; for (const dx of [10, 86]) { top.box(px + dx, py - 26, 12, 30, [150, 154, 166], [60, 64, 80]); top.rect(px + dx + 1, py - 20, 10, 3, [226, 90, 60]); top.ellipse(px + dx + 8, py - 32, 8, 5, [240, 240, 244, 200]); top.ellipse(px + dx + 14, py - 40, 10, 6, [240, 240, 244, 150]); } });
-      p.paint(2, (c) => { for (const [x, y, n] of [[4, 5, 6], [29, 5, 5], [17, 18, 6], [4, 22, 4], [31, 23, 3]]) for (let i = 0; i < n; i++) { const px = (x + i) * 16 + Math.floor(p.hash(x, i, 2) * 8), py = y * 16 + Math.floor(p.hash(i, y, 4) * 14); c.line(px, py, px + 12, py + 5 - Math.floor(p.hash(i, x, 6) * 10), [250, 120, 40], 2); c.line(px + 2, py + 1, px + 9, py + 3, [255, 220, 110], 1); } });
-      for (const [x, y] of [[15, 12], [24, 12], [9, 18], [29, 18]]) stone(p, x, y, [70, 60, 60], 6);
+      blooms(p, "gravel", 14, 9, 25, 13, 0.5, 4); blooms(p, "gravel", 3, 16, 10, 19, 0.5, 6); blooms(p, "gravel", 28, 17, 35, 20, 0.5, 8);   // rubble fields
+      for (const [x, y] of [[15, 12], [24, 12], [9, 18], [29, 18]]) stone(p, x, y, [120, 90, 70], 6);
     },
   },
   // Route 13: the dusty flat between the badlands and Tapu Village. The motel and the oasis
   // trailer by its palm-ringed pool stand south of the road; the way north leads to the village.
   AlolaRoute13: {
-    theme: { ground: "desert", road: "gravel", border: "rock", water: "water", density: 0.06, groves: 0, flowers: 0, tree: "boulder", autoHouses: false, turn: 6, wander: 0 },
+    theme: { ground: "desert", road: "dirt", border: "rock", water: "water", density: 0.06, groves: 0, flowers: 0, tree: "boulder", autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       p.fill("rock", 2, 2, 12, 5); crag(p, "rock", 2, 6, 10, 8, 3); p.fill("rock", 27, 2, 35, 6); crag(p, "rock", 29, 7, 35, 9, 5);
-      p.street("gravel", 3, [[36, 15], [27, 15], [27, 12], [12, 12], [12, 15], [1, 15]]); p.street("gravel", 2, [[20, 1], [20, 28]]);
-      house(p, 4, 19, 9, 4, { wall: [236, 214, 180], roof: [190, 80, 70], roofH: 18, flat: true, door: 4, sign: [250, 240, 160] });   // the motel
-      p.street("gravel", 1, [[8, 23], [8, 24], [19, 24]]);
+      p.street("dirt", 3, [[36, 15], [27, 15], [27, 12], [12, 12], [12, 15], [1, 15]]); p.street("dirt", 2, [[20, 1], [20, 28]]);
+      house(p, 4, 19, 9, 4, { wall: [236, 214, 180], roof: [120, 60, 84], roofH: 20, door: 4, sign: [250, 240, 160] });   // the motel (maroon roof)
+      p.street("dirt", 1, [[8, 23], [8, 24], [19, 24]]);
       p.disc("water", 31, 23, 3.4, 2.6); p.disc("grass", 31, 23, 6, 4.6); p.disc("water", 31, 23, 3.4, 2.6);
       trailer(p, 24, 20, 4, [226, 150, 70]);
       for (const [x, y] of [[26, 24], [29, 19], [34, 20], [35, 25], [28, 27], [32, 27]]) palm(p, x, y);
       for (const [x, y] of [[15, 9], [24, 9], [6, 11], [33, 12], [15, 19], [3, 26], [15, 27]]) stone(p, x, y, [176, 150, 110], 5);
     },
   },
-  // Route 14: the black-sand beach south-east of Tapu Village. The sea lies to the east, and the
-  // wrecked Thrifty Megamart with its cracked car park stands abandoned at the north end.
+  // Route 14: the black-sand shore below Tapu Village. The sea lies to the west and south-west,
+  // and the wrecked Thrifty Megamart with its cracked car park stands abandoned at the north end.
   AlolaRoute14: {
     theme: { ground: "ash", road: "gravel", border: "rock", water: "sea", density: 0.05, groves: 0, flowers: 0, tree: "boulder", autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
-      for (let y = 1; y <= 30; y++) p.fill("water", (y < 9 ? 28 : 24) + Math.floor(p.hash(y >> 1, 3, 5) * 3), y, 32, y);
+      for (let y = 1; y <= 30; y++) p.fill("water", 1, y, (y < 9 ? 5 : 9) - Math.floor(p.hash(y >> 1, 3, 5) * 3), y);
+      for (let x = 1; x <= 14; x++) p.fill("water", x, 27 - Math.floor(p.hash(x >> 1, 4, 5) * 2), x, 30);
       p.fill("asphalt", 7, 4, 26, 8);
-      p.street("gravel", 2, [[17, 9], [17, 13], [11, 13], [11, 22], [17, 22], [17, 30]]); p.street("gravel", 3, [[17, 1], [17, 3]]);
-      p.street("gravel", 2, [[1, 16], [22, 16]]); p.street("deck", 3, [[23, 16], [32, 16]]);
+      p.street("gravel", 2, [[17, 9], [17, 13], [22, 13], [22, 22], [17, 22], [17, 30]]); p.street("gravel", 3, [[17, 1], [17, 3]]);
+      p.street("gravel", 2, [[11, 16], [32, 16]]); p.street("deck", 3, [[1, 16], [10, 16]]);
       p.bare(1); ruin(p, 7, 1, 9, 3, 0); ruin(p, 19, 1, 9, 3, 1);
-      p.paint(4, (c, top) => { top.box(15 * 16, 8, 5 * 16, 12, [150, 70, 80], [60, 40, 50]); for (let i = 0; i < 5; i++) top.rect(15 * 16 + 8 + i * 14, 11, 8, 6, i === 3 ? [90, 50, 60] : [226, 210, 190]); c.rect(17 * 16, 3 * 16, 16, 16, [20, 18, 26, 190]); });
+      p.paint(4, (c, top) => { top.box(15 * 16, 8, 5 * 16, 12, [60, 150, 140], [30, 70, 70]); for (let i = 0; i < 5; i++) top.rect(15 * 16 + 8 + i * 14, 11, 8, 6, i === 3 ? [40, 90, 90] : [226, 236, 226]); c.rect(17 * 16, 3 * 16, 16, 16, [20, 18, 26, 190]); });
       // The car park: faded bays, cracks and an abandoned trolley or two.
-      p.paint(1, (c) => { for (let x = 8; x <= 25; x += 2) if (x < 15 || x > 19) { c.rect(x * 16, 5 * 16, 1, 28, [200, 200, 190, 150]); c.rect(x * 16, 7 * 16 + 4, 1, 24, [200, 200, 190, 110]); } for (const [x, y] of [[9, 6], [22, 5], [13, 8], [24, 8]]) { c.line(x * 16, y * 16, x * 16 + 14, y * 16 + 9, [40, 40, 46], 1); c.line(x * 16 + 14, y * 16 + 9, x * 16 + 20, y * 16 + 4, [40, 40, 46], 1); } });
+      p.paint(1, (c) => { for (let x = 8; x <= 25; x += 2) if (x < 15 || x > 19) { c.rect(x * 16, 5 * 16, 1, 28, [200, 200, 190, 150]); c.rect(x * 16, 7 * 16 + 4, 1, 24, [200, 200, 190, 110]); } for (const [x, y] of [[9, 6], [22, 5], [13, 8], [24, 8]]) { c.line(x * 16, y * 16, x * 16 + 14, y * 16 + 9, [40, 40, 46], 1); c.line(x * 16 + 14, y * 16 + 9, x * 16 + 22, y * 16 + 6, [40, 40, 46], 1); } });
       for (const [x, y] of [[10, 6], [23, 7]]) { p.block(x, y, 1, 1); p.paint(y + 1, (c) => { const px = x * 16, py = y * 16; c.box(px + 2, py + 3, 11, 8, [190, 190, 200], [80, 80, 96]); c.rect(px + 3, py + 6, 9, 1, [80, 80, 96]); c.rect(px + 12, py + 1, 3, 2, [200, 60, 60]); c.ellipse(px + 4, py + 13, 2, 2, [40, 40, 46]); c.ellipse(px + 11, py + 13, 2, 2, [40, 40, 46]); }); }
-      for (const [x, y] of [[20, 12], [22, 20], [21, 27], [6, 12], [5, 24]]) stone(p, x, y, [70, 66, 76], 4);
-      boat(p, 27, 20, [150, 110, 90], 3);
+      for (const [x, y] of [[13, 12], [11, 20], [12, 25], [27, 12], [28, 24], [3, 12], [2, 22], [5, 28]]) stone(p, x, y, [70, 66, 76], 4);
+      boat(p, 3, 20, [150, 110, 90], 3);
     },
   },
   // Route 15: the shore below the Aether House. The white house with its fenced yard stands on
@@ -461,19 +459,18 @@ module.exports = {
       parasol(p, 7, 18); parasol(p, 29, 18);
     },
   },
-  // Route 16: the coast road north to Ula'ula Meadow, with the Aether Foundation's trailer base
-  // in the bend and a pier out over the eastern sea.
+  // Route 16: the short grassy road north to Ula'ula Meadow, with the Aether Foundation's trailer
+  // base in the bend and tall grass either side (inland: no beach here).
   AlolaRoute16: {
-    theme: { ground: "grass", road: "sand", border: "tree", water: "sea", density: 0.08, groves: 0.04, flowers: 0.08, tree: "tree1", autoHouses: false, turn: 6, wander: 0 },
+    theme: { ground: "grass", road: "sand", border: "tree", density: 0.08, groves: 0.04, flowers: 0.08, tree: "tree1", autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
-      p.fill("beach", 23, 1, 32, 30); for (let y = 1; y <= 30; y++) p.fill("water", 26 + Math.floor(p.hash(y >> 1, 5, 3) * 2), y, 32, y);
+      p.fill("meadow", 23, 3, 29, 12); p.fill("meadow", 24, 20, 30, 27); p.fill("meadow", 3, 5, 8, 10);
       p.street("sand", 2, [[17, 30], [17, 22], [10, 22], [10, 12], [17, 12], [17, 1]]); p.street("sand", 2, [[1, 16], [10, 16]]);
-      p.street("sand", 2, [[11, 16], [24, 16]]); p.street("deck", 3, [[25, 16], [32, 16]]);
+      p.street("sand", 2, [[11, 16], [32, 16]]);
       trailer(p, 12, 19, 4); trailer(p, 19, 19, 3, [236, 196, 90]);
       p.paint(19, (c, top) => { const px = 16 * 16 + 8, py = 18 * 16; c.rect(px, py + 2, 2, 14, [90, 90, 100]); top.ellipse(px + 1, py - 2, 7, 6, [226, 226, 232]); top.ellipse(px + 2, py - 3, 4, 3, [170, 176, 190]); }); p.block(16, 18, 1, 1);
       fence(p, 19, 8, 22, 8, [236, 232, 220]); fence(p, 19, 24, 22, 24, [236, 232, 220]);
-      for (const [x, y] of [[24, 5], [23, 11], [24, 21], [23, 27]]) palm(p, x, y);
-      parasol(p, 24, 8); boat(p, 28, 12, [240, 240, 244], 3);
+      for (const [x, y] of [[26, 14], [22, 27], [5, 13], [28, 18]]) p.decor("tree1", x, y, { canopy: true });
     },
   },
   // Ula'ula Meadow: a sea of red flowers round two pools, crossed by a zigzag boardwalk.
@@ -487,13 +484,13 @@ module.exports = {
       p.decor("bench", 12, 14); p.decor("bench", 22, 23);
     },
   },
-  // Route 17: the rain-soaked hill below Po Town. The track climbs two ledges to the town's
+  // Route 17: the rain-soaked hill below Po Town. The grey cobbled road climbs two ledges to the town's
   // graffitied wall, with the police station beside the gate.
   AlolaRoute17: {
-    theme: { ground: "shade", road: "dirt", border: "rock", grass: "shadegrass", density: 0.08, groves: 0.04, flowers: 0, puddles: 0.14, tree: "tree1", treeTint: "dark", autoHouses: false, turn: 6, wander: 0 },
+    theme: { ground: "shade", road: "cobble", border: "rock", grass: "shadegrass", density: 0.08, groves: 0.04, flowers: 0, puddles: 0.14, tree: "tree1", treeTint: "dark", autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       crag(p, "rock", 12, 20, 32, 21, 3); crag(p, "rock", 1, 10, 14, 11, 5); crag(p, "rock", 21, 12, 32, 13, 6);
-      p.street("dirt", 2, [[17, 30], [17, 25], [9, 25], [9, 16], [17, 16], [17, 1]]); p.street("dirt", 2, [[1, 16], [32, 16]]);
+      p.street("cobble", 2, [[17, 30], [17, 25], [9, 25], [9, 16], [17, 16], [17, 1]]); p.street("dirt", 2, [[1, 16], [32, 16]]);
       wall(p, 2, 2, 15, 3, true); wall(p, 19, 2, 31, 3, true);
       house(p, 21, 6, 6, 4, { wall: [200, 210, 226], roof: [60, 90, 150], roofH: 18, flat: true, door: 2, sign: [240, 210, 80] });   // the police station
       p.street("dirt", 1, [[23, 10], [23, 11], [19, 11]]);
@@ -542,20 +539,20 @@ module.exports = {
       for (const [x, y] of [[4, 12], [15, 12], [24, 12], [34, 12], [7, 20], [30, 20]]) palm(p, x, y);
     },
   },
-  // Poni Breaker Coast: surf pounding a rocky shore. Cliffs along the north hold the cave to the
+  // Poni Breaker Coast: surf pounding a shore of bare dark rock pitted with round tide pools. Cliffs along the north hold the cave to the
   // Ruins of Hope; the sea wraps the west and south, full of rocks and foam.
   AlolaPoniBreakers: {
-    theme: { ground: "beach", road: "sand", border: "rock", water: "sea", sea: null, density: 0.08, groves: 0, flowers: 0, tree: "boulder", turn: 6, wander: 0 },
+    theme: { ground: "ash", road: "gravel", border: "rock", water: "sea", sea: null, density: 0.08, groves: 0, flowers: 0, tree: "boulder", turn: 6, wander: 0 },
     plan(p) {
       p.fill("rock", 2, 1, 15, 4); crag(p, "rock", 2, 5, 15, 6, 3); p.fill("rock", 23, 1, 36, 4); crag(p, "rock", 23, 5, 36, 6, 5);
       for (let y = 7; y <= 28; y++) p.fill("water", 1, y, 6 + Math.floor(p.hash(y >> 1, 7, 3) * 3), y);
       for (let x = 1; x <= 36; x++) p.fill("water", x, 22 + Math.floor(p.hash(x >> 1, 8, 9) * 2), x, 28);
-      p.fill("beach", 1, 14, 9, 16); p.fill("beach", 18, 22, 21, 28);
-      p.street("sand", 2, [[36, 15], [26, 15], [26, 9], [20, 9], [20, 5]]); p.street("sand", 2, [[26, 15], [10, 15]]); p.street("sand", 2, [[19, 16], [19, 21]]); p.street("sand", 2, [[17, 1], [17, 8], [20, 9]]);
+      p.fill("ash", 1, 14, 9, 16); p.fill("ash", 18, 22, 21, 28); p.disc("water", 31, 10.5, 2, 1.4); p.disc("water", 13, 19.5, 2, 1.4); p.disc("water", 30, 19.5, 1.6, 1.2); p.disc("water", 14, 11, 1.4, 1);
+      p.street("gravel", 2, [[36, 15], [26, 15], [26, 9], [20, 9], [20, 5]]); p.street("gravel", 2, [[26, 15], [10, 15]]); p.street("gravel", 2, [[19, 16], [19, 21]]); p.street("gravel", 2, [[17, 1], [17, 8], [20, 9]]);
       for (const [x, y] of [[3, 9], [5, 11], [2, 19], [4, 22], [8, 25], [12, 26], [15, 24], [25, 26], [29, 24], [33, 26], [35, 23], [3, 26]]) stone(p, x, y, [120, 116, 126], 5);
       // Foam where the breakers hit the rocks.
       p.paint(2, (c) => { for (const [x, y] of [[3, 9], [5, 11], [2, 19], [4, 22], [8, 25], [12, 26], [15, 24], [25, 26], [29, 24], [33, 26], [35, 23], [3, 26]]) { c.ellipse(x * 16 + 8, y * 16 + 15, 12, 4, [250, 250, 250, 170], 2); c.rect(x * 16 - 6, y * 16 + 20, 9, 1, [250, 250, 250, 150]); c.rect(x * 16 + 12, y * 16 + 22, 9, 1, [250, 250, 250, 150]); } });
-      for (const [x, y] of [[12, 12], [23, 12], [32, 12], [30, 19]]) palm(p, x, y);
+      for (const [x, y] of [[11, 13], [23, 12], [33, 13], [28, 17], [10, 18], [23, 19]]) stone(p, x, y, [70, 64, 70], 4);
     },
   },
   // Poni Plains: wide open grassland. Dirt tracks cross it to the meadow, the grove and the
@@ -588,10 +585,10 @@ module.exports = {
       rails(p, 17, 18, 9, 14); rails(p, 17, 18, 19, 23);
     },
   },
-  // Vast Poni Canyon: bare rock cut by a river gorge. Rope bridges cross the water to the trial
+  // Vast Poni Canyon: bare tan rock cut by a gorge (drawn here with water in it). Rope bridges cross the water to the trial
   // gates and the cave that leads on to the altar.
   AlolaVastPoniCanyon: {
-    theme: { ground: "gravel", road: "dirt", border: "rock", water: "water", density: 0.1, groves: 0, flowers: 0, tree: "boulder", autoHouses: false, turn: 6, wander: 0 },
+    theme: { ground: "desert", road: "dirt", border: "rock", water: "water", density: 0.1, groves: 0, flowers: 0, tree: "boulder", autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       p.fill("water", 24, 1, 27, 28); p.fill("water", 1, 8, 23, 10);
       p.fill("rock", 28, 1, 29, 12); p.fill("rock", 28, 18, 29, 28); p.fill("rock", 22, 12, 23, 12); p.fill("rock", 22, 18, 23, 28); p.fill("rock", 23, 1, 23, 6);
@@ -605,27 +602,33 @@ module.exports = {
       for (const [x, y] of [[18, 12], [22, 13], [29, 13], [29, 17], [22, 17]]) stone(p, x, y, [150, 130, 110], 8);
     },
   },
-  // Poni Gauntlet: one long walled track doubling back between rock ridges, lined with the
-  // banners of the trainers who hold it, and a still pool at its foot.
+  // Poni Gauntlet: a chain of grassy, rocky islets strung along the coast and joined by plank
+  // bridges over the sea, palms and tall grass on each, the great Battle Tree beyond the last one.
   AlolaPoniGauntlet: {
-    theme: { ground: "field", road: "gravel", border: "rock", water: "water", density: 0.05, groves: 0, flowers: 0.03, tree: "boulder", turn: 6, wander: 0 },
+    theme: { ground: "field", road: "deck", border: "rock", water: "sea", density: 0.03, groves: 0, flowers: 0.03, tree: "boulder", turn: 6, wander: 0 },
     plan(p) {
-      crag(p, "rock", 1, 21, 26, 23, 3); crag(p, "rock", 7, 11, 32, 13, 5); crag(p, "rock", 1, 5, 25, 6, 7);
-      p.disc("water", 8, 27, 3.4, 2);
-      p.street("gravel", 2, [[17, 30], [17, 26], [29, 26], [29, 17], [4, 17], [4, 8], [28, 8], [28, 2], [17, 2], [17, 1]]); p.street("gravel", 2, [[1, 16], [32, 16]]);
-      const cols = [[226, 70, 60], [70, 110, 226], [240, 200, 70], [90, 190, 110]];
-      [[21, 25], [27, 24], [31, 20], [22, 19], [12, 19], [6, 14], [10, 10], [18, 10], [26, 10], [30, 5], [22, 4]].forEach(([x, y], i) => flag(p, x, y, cols[i % 4]));
-      steps(p, 29, 21, 2); steps(p, 4, 12, 2);
+      p.fill("water", 1, 1, 32, 30);
+      const isles = [[17, 27, 7, 3.6], [15.5, 16, 6.5, 4.2], [3.5, 16, 3.4, 3.4], [29.5, 16, 3.4, 3.6], [17, 5, 8, 4.2], [28, 26, 3.2, 2.4], [5, 6, 3, 2.2]];
+      for (const [x, y, rx, ry] of isles) { p.disc("beach", x, y, rx + 0.8, ry + 0.8); p.disc("field", x, y, rx, ry); }
+      p.fill("field", 16, 28, 18, 30); p.fill("field", 16, 1, 18, 3); p.fill("field", 1, 15, 2, 17); p.fill("field", 31, 15, 32, 17);
+      p.street("dirt", 2, [[17, 30], [17, 25]]); p.street("deck", 2, [[17, 24], [17, 20]]); p.street("dirt", 2, [[17, 19], [17, 13]]); p.street("deck", 2, [[17, 12], [17, 9]]); p.street("dirt", 2, [[17, 8], [17, 1]]);
+      p.street("dirt", 2, [[10, 16], [20, 16]]); p.street("deck", 2, [[6, 16], [9, 16]]); p.street("dirt", 2, [[1, 16], [5, 16]]); p.street("deck", 2, [[21, 16], [26, 16]]); p.street("dirt", 2, [[27, 16], [32, 16]]);
+      rails(p, 17, 18, 20, 24); rails(p, 17, 18, 9, 12); railsEW(p, 6, 9, 16, 17); railsEW(p, 21, 26, 16, 17);
+      p.fill("meadow", 11, 18, 14, 19); p.fill("meadow", 12, 4, 15, 6); p.fill("meadow", 20, 26, 22, 28);
+      for (const [x, y] of [[12, 26], [21, 13], [11, 13], [22, 4], [28, 25], [5, 5], [30, 13], [3, 13]]) palm(p, x, y);
+      for (const [x, y] of [[13, 28], [20, 18], [11, 3], [23, 6]]) p.decor("boulder", x, y);
+      p.decor("honeyTree", 20, 2, { canopy: true });
     },
   },
-  // Mount Lanakila, the slopes: a snowbound mountainside. The trail loops down round an icy
-  // ledge and back, with the cave mouth above and pines in the drifts.
+  // Mount Lanakila, the slopes: bare dark rock between the lift stages, patches of dry yellow
+  // mountain grass, snow lying only in drifts along the upper edges, the cave mouth above.
   AlolaLanakilaSlope: {
-    theme: { ground: "drift", road: "frostpath", border: "pine", grass: "snowgrass", density: 0.12, groves: 0.08, grove: "pine", flowers: 0, tree: "tree1", treeTint: "frost", turn: 6, wander: 0 },
+    theme: { ground: "ash", road: "gravel", border: "rock", density: 0.06, groves: 0, flowers: 0, tree: "boulder", turn: 6, wander: 0 },
     plan(p) {
       crag(p, "rock", 12, 18, 27, 19, 3); crag(p, "rock", 2, 9, 17, 10, 5); crag(p, "rock", 23, 9, 35, 10, 7);
-      p.fill("pine", 2, 2, 8, 6); p.fill("pine", 29, 2, 35, 5); p.fill("pine", 2, 25, 9, 27); p.fill("pine", 30, 25, 35, 27);
-      p.street("frostpath", 2, [[36, 15], [30, 15], [30, 22], [9, 22], [9, 15], [1, 15]]); p.street("frostpath", 2, [[9, 15], [20, 15], [20, 5]]); p.street("frostpath", 2, [[19, 23], [19, 28]]);
+      for (const [x, y, rx, ry] of [[4, 4, 4, 3], [32, 3, 4.5, 2.5], [5, 26, 5, 2.2], [32, 26, 4, 2.2], [13, 3, 3, 1.6], [27, 5, 2.5, 1.5], [35, 13, 1.6, 2.5]]) p.disc("snow", x, y, rx, ry);
+      blooms(p, "desert", 11, 12, 18, 14, 0.7, 4); blooms(p, "desert", 22, 20, 28, 24, 0.7, 6); blooms(p, "desert", 12, 23, 17, 26, 0.6, 8); blooms(p, "desert", 23, 11, 28, 13, 0.6, 9);
+      p.street("gravel", 2, [[36, 15], [30, 15], [30, 22], [9, 22], [9, 15], [1, 15]]); p.street("gravel", 2, [[9, 15], [20, 15], [20, 5]]); p.street("gravel", 2, [[19, 23], [19, 28]]);
       for (const [x, y] of [[14, 13], [24, 13], [27, 17], [6, 19], [33, 19], [15, 25], [24, 25], [17, 7], [23, 7]]) stone(p, x, y, [170, 210, 240], 7);
     },
   },
@@ -636,7 +639,7 @@ module.exports = {
     plan(p) {
       p.fill("rock", 1, 1, 8, 7); crag(p, "rock", 1, 8, 7, 11, 3); p.fill("rock", 30, 1, 36, 7); crag(p, "rock", 31, 8, 36, 11, 5);
       crag(p, "rock", 2, 24, 15, 27, 7); crag(p, "rock", 23, 24, 35, 27, 9);
-      p.street("frostpath", 3, [[36, 15], [1, 15]]); p.disc("paving", 19.5, 15.5, 5, 4); p.street("paving", 3, [[20, 12], [20, 1]]); p.street("frostpath", 2, [[19, 19], [19, 28]]);
+      p.street("dirt", 3, [[36, 15], [1, 15]]); p.disc("paving", 19.5, 15.5, 5, 4); p.street("paving", 3, [[20, 12], [20, 1]]); p.street("dirt", 2, [[19, 19], [19, 28]]);
       for (const y of [6, 8, 10]) steps(p, 19, y, 3, [226, 230, 240]);
       p.bare(1);
       house(p, 10, 1, 8, 4, { wall: [226, 232, 244], roof: [70, 100, 170], roofH: 20, win: [250, 230, 150], band: [236, 196, 90] }); house(p, 22, 1, 8, 4, { wall: [226, 232, 244], roof: [70, 100, 170], roofH: 20, win: [250, 230, 150], band: [236, 196, 90] });

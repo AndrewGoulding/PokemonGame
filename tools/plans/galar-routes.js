@@ -108,6 +108,16 @@ function court(p, x0, y0, x1, y1, kind = "clay") {
   p.fill(kind, x0, y0, x1, y1);
   p.paint(0.6, (c) => { const x = x0 * S, y = y0 * S, w = (x1 - x0 + 1) * S, h = (y1 - y0 + 1) * S, wh = [250, 250, 244]; c.rect(x + 3, y + 3, w - 6, 2, wh); c.rect(x + 3, y + h - 5, w - 6, 2, wh); c.rect(x + 3, y + 3, 2, h - 6, wh); c.rect(x + w - 5, y + 3, 2, h - 6, wh); c.rect(x + w / 2 - 1, y + 3, 2, h - 6, wh); c.ellipse(x + w / 2, y + h / 2, 10, 10, wh, 2); });
 }
+// A blue battle court with the red-and-white ball at its centre (Hop's garden, Professor Magnolia's lawn).
+function blueCourt(p, x0, y0, x1, y1) {
+  p.fill("paving", x0, y0, x1, y1);
+  p.paint(0.6, (c) => { const x = x0 * S, y = y0 * S, w = (x1 - x0 + 1) * S, h = (y1 - y0 + 1) * S, wh = [240, 240, 250]; c.rect(x, y, w, h, [60, 92, 170]); c.rect(x + 2, y + 2, w - 4, h - 4, [78, 112, 190]); c.rect(x + 3, y + 3, w - 6, 1, wh); c.rect(x + 3, y + h - 4, w - 6, 1, wh); c.rect(x + 3, y + 3, 1, h - 6, wh); c.rect(x + w - 4, y + 3, 1, h - 6, wh); c.rect(x + w / 2 - 1, y + 3, 2, h - 6, wh); c.ellipse(x + w / 2, y + h / 2, 11, 11, [214, 70, 70]); c.ellipse(x + w / 2, y + h / 2, 11, 11, wh, 2); c.ellipse(x + w / 2, y + h / 2, 4, 4, wh); });
+}
+// A flat-topped crag six tiles wide standing on rows y, y + 1 (the Giant's Seat, the Giant's Cap).
+function crag(p, x0, y) {
+  blk(p, x0, y, 6, 2); p.paint(y + 2.5, (c, top) => { const x = x0 * S, b = (y + 2) * S, rk = [150, 130, 110], dk = mix(rk, 0.6); c.ellipse(x + 48, b - 2, 50, 6, [0, 0, 0, 60]);
+    for (const g of [c, top]) { g.poly([[x, b], [x + 8, b - 30], [x + 22, b - 44], [x + 70, b - 46], [x + 88, b - 28], [x + 96, b]], dk); g.poly([[x + 3, b - 1], [x + 10, b - 29], [x + 23, b - 41], [x + 69, b - 43], [x + 85, b - 27], [x + 93, b - 1]], rk); g.poly([[x + 14, b - 32], [x + 25, b - 41], [x + 68, b - 43], [x + 80, b - 31]], [120, 160, 96]); for (const i of [20, 40, 62, 78]) g.line(x + i, b - 30, x + i - 4, b - 4, dk); } });
+}
 function statue(p, x, y, draw, col = [176, 174, 168]) {
   blk(p, x, y);
   p.paint(y + 1, (c, top) => { const px = x * S, b = y * S + 15; c.ellipse(px + 8, b, 9, 3, [0, 0, 0, 60]); c.box(px, b - 6, 16, 6, mix(col, 0.85), mix(col, 0.5)); draw(c, top, px, b - 6, col); });
@@ -150,7 +160,7 @@ module.exports = {
       p.street("dirt", 2, [[19, 30], [19, 24], [16, 21], [16, 15], [19, 12], [19, 1]]);
       p.street("dirt", 1, [[11, 8], [11, 9], [14, 9], [14, 14], [16, 15]]);
       house(p, 8, 4, 8, 4, [176, 74, 60], { doorAt: 3, wall: [236, 226, 204] });
-      court(p, 3, 10, 12, 13);
+      blueCourt(p, 3, 10, 12, 13);                                                           // the court is blue in the game
       fence(p, 2, 15, 13, 15, ["2,15"]); fence(p, 2, 8, 2, 14); fence(p, 17, 5, 18, 5); fence(p, 21, 5, 22, 5);
       p.fill("meadow", 25, 8, 34, 13); fence(p, 24, 7, 35, 14);
       for (const [x, y] of [[26, 9], [29, 10], [32, 9], [27, 12], [31, 12], [33, 11]]) wooloo(p, x, y);
@@ -174,42 +184,42 @@ module.exports = {
       fog(p, 46, [226, 236, 240], 3);
     },
   },
-  // Route 1: the lane from Postwick to Wedgehurst, wandering between dry-stone walls and Wooloo
-  // pastures with a patch of tall grass at every bend.
+  // Route 1 (compared with the guidebook map): the lane runs straight up the west side between rail fences,
+  // and a side loop swings out east through the patches of tall grass and back. Wooloo wander the verges.
   GalarRoute1: {
     theme: { ground: "grass", road: "dirt", border: "tree", density: 0.04, groves: 0, flowers: 0.25, turn: 6, wander: 0 },
     plan(p) {
-      p.street("dirt", 2, [[17, 30], [17, 25], [10, 22], [10, 17], [16, 15], [23, 13], [23, 8], [17, 6], [17, 1]]);
-      p.fill("meadow", 3, 5, 12, 11); fence(p, 2, 4, 13, 12);
-      for (const [x, y] of [[4, 6], [7, 7], [10, 6], [5, 10], [9, 9], [11, 10]]) wooloo(p, x, y);
-      p.fill("meadow", 22, 20, 30, 25); fence(p, 21, 19, 31, 26);
-      for (const [x, y] of [[23, 21], [26, 22], [29, 21], [24, 24], [28, 24]]) wooloo(p, x, y);
-      wall(p, 13, 20, 18); wall(p, 26, 31, 10); wall(p, 2, 7, 19);
-      p.fill("flowersPink", 26, 4, 30, 6); p.fill("flowersRed", 3, 26, 7, 27); p.fill("flowersBlue", 13, 9, 15, 10);
-      trees(p, [[4, 1], [10, 1], [21, 2], [30, 13], [13, 27], [5, 22], [27, 28]]);
-      wooloo(p, 19, 22); wooloo(p, 15, 20);
+      p.street("dirt", 2, [[17, 30], [17, 27], [8, 25], [8, 7], [17, 5], [17, 1]]);
+      p.street("dirt", 1, [[9, 23], [19, 23], [25, 19], [25, 11], [19, 8], [9, 8]]);
+      fence(p, 6, 9, 6, 23); fence(p, 11, 10, 11, 21, ["11,15", "11,16"]); fence(p, 28, 10, 28, 20);
+      wall(p, 21, 31, 27); wall(p, 21, 31, 4);
+      p.fill("flowersPink", 13, 11, 16, 12); p.fill("flowersRed", 2, 27, 5, 28); p.fill("flowersBlue", 20, 18, 22, 19);
+      trees(p, [[3, 1], [11, 1], [21, 1], [30, 13], [12, 27], [2, 13], [27, 28], [21, 13]]);
+      wooloo(p, 13, 6); wooloo(p, 4, 20); wooloo(p, 21, 25); wooloo(p, 15, 18);
     },
   },
-  // Route 2: the lake fills the middle of the route, and Professor Magnolia's house stands on its
-  // far shore, reached by the path round the eastern bank or over the little plank bridge.
+  // Route 2 (compared with the guidebook map): the lake with its islet fills the west of the route and drains
+  // away south under the road; Professor Magnolia's house stands above its east shore with a battle court on
+  // the lawn, reached by the path round the eastern bank.
   GalarRoute2: {
     theme: { ground: "grass", road: "dirt", border: "tree", density: 0.04, groves: 0, flowers: 0.2, turn: 6, wander: 0 },
     plan(p) {
-      p.disc("water", 19, 10.5, 9.5, 3.4); p.disc("water", 11, 11, 4, 2.4); p.disc("water", 27, 9.5, 3.5, 2.6);
+      p.disc("water", 11.5, 10, 8.5, 4); p.disc("grass", 9.5, 9.5, 2, 1.1); p.fill("water", 6, 13, 7, 28);
       p.street("dirt", 2, [[36, 16], [27, 16], [23, 15], [10, 15], [7, 16], [1, 16]]);
-      p.street("dirt", 2, [[31, 16], [32, 11], [31, 6], [24, 5], [20, 5]]); p.street("deck", 1, [[20, 5], [20, 15]]);
-      p.fill("lawn", 14, 5, 26, 6);
+      p.street("dirt", 2, [[31, 16], [32, 11], [31, 6], [24, 5], [20, 5]]);
+      p.fill("lawn", 21, 5, 29, 6); p.fill("lawn", 24, 7, 30, 11);
       house(p, 17, 2, 7, 3, [120, 90, 170], { wall: [240, 232, 214], door: [150, 90, 60] }, 1);
-      p.fill("flowersPink", 14, 4, 16, 5); p.fill("flowersBlue", 24, 3, 26, 4); p.fill("flowersRed", 3, 20, 7, 21);
-      p.paint(0.6, (c) => { for (const [x, y] of [[13, 10], [16, 12], [24, 9], [27, 10], [10, 11]]) { c.ellipse(x * S + 8, y * S + 8, 5, 3, [70, 150, 90]); c.ellipse(x * S + 7, y * S + 7, 3, 2, [110, 190, 110]); } });
-      fence(p, 9, 13, 15, 13, [], [200, 200, 204]); fence(p, 23, 13, 28, 13, [], [200, 200, 204]);
-      p.fill("tree", 2, 2, 9, 5); p.fill("tree", 30, 2, 35, 3); p.fill("tree", 2, 24, 8, 27); p.fill("tree", 29, 24, 35, 27);
-      trees(p, [[12, 19], [24, 21], [33, 19], [15, 25], [5, 8]]);
+      blueCourt(p, 25, 8, 29, 10);
+      p.fill("flowersPink", 26, 12, 29, 13); p.fill("flowersBlue", 24, 3, 26, 4); p.fill("flowersRed", 10, 20, 14, 21);
+      p.paint(0.6, (c) => { for (const [x, y] of [[5, 10], [14, 8], [16, 11], [12, 12], [7, 12]]) { c.ellipse(x * S + 8, y * S + 8, 5, 3, [70, 150, 90]); c.ellipse(x * S + 7, y * S + 7, 3, 2, [110, 190, 110]); } });
+      p.decor("tree1", 9, 8, { canopy: true, optional: true });
+      p.fill("tree", 2, 2, 9, 4); p.fill("tree", 30, 2, 35, 3); p.fill("tree", 9, 24, 14, 27); p.fill("tree", 29, 24, 35, 27);
+      trees(p, [[12, 18], [24, 21], [33, 19], [17, 25], [2, 20]]);
     },
   },
   // The Wild Area, south: the Rolling Fields open below Motostoke's brick wall and great stair. Lake
   // Axewell with its island lies to the west and Lake Miloch to the east; the Dappled Grove and the
-  // broken Watchtower stand in the south-west, the Nursery in the south-east, dens glow in the grass.
+  // broken Watchtower stand in the west, the crag of the Giant's Seat in the south-east, dens glow in the grass.
   GalarWildAreaSouth: {
     theme: { ground: "grass", road: "dirt", border: "rock", density: 0.03, groves: 0, flowers: 0.12, turn: 6, wander: 0 },
     plan(p) {
@@ -225,7 +235,7 @@ module.exports = {
       blk(p, 3, 19, 3, 2); p.paint(21.5, (c, top) => { const x = 3 * S, b = 21 * S, st = [160, 154, 146], dk = mix(st, 0.55); c.ellipse(x + 24, b - 2, 26, 5, [0, 0, 0, 60]);
         for (const g of [c, top]) { g.box(x + 4, b - 62, 40, 62, st, dk); g.poly([[x + 4, b - 62], [x + 4, b - 78], [x + 14, b - 70], [x + 20, b - 84], [x + 28, b - 66], [x + 36, b - 74], [x + 44, b - 62]], st); for (let j = b - 56; j < b - 4; j += 8) for (let i = x + 7 + ((j >> 3) % 2) * 6; i < x + 38; i += 12) g.rect(i, j, 7, 1, dk); g.rect(x + 20, b - 46, 8, 12, [40, 36, 44]); }
         c.box(x + 17, b - 18, 14, 18, [40, 36, 44], dk); });
-      house(p, 26, 21, 6, 3, [226, 170, 70], { sign: [226, 120, 150], wall: [244, 236, 220] }); fence(p, 25, 25, 32, 25, ["28,25", "29,25"]);
+      crag(p, 26, 22);                                                                       // the Giant's Seat (the Nursery is in Bridge Field, not here)
       tent(p, 23, 12, [230, 120, 60]);
       for (const [x, y] of [[19, 18], [11, 14], [23, 27], [30, 14], [6, 15]]) den(p, x, y, x !== 6);
       p.fill("flowersPink", 21, 20, 23, 21); p.fill("flowersRed", 9, 19, 11, 19);
@@ -236,21 +246,21 @@ module.exports = {
   // Route 3: the road climbs out of Motostoke in switchbacks past the smoking factory stacks to the
   // mouth of the Galar Mine in the cliff at the top.
   GalarRoute3: {
-    theme: { ground: "grass", road: "gravel", border: "rock", density: 0.03, groves: 0, flowers: 0.05, tree: "boulder", turn: 6, wander: 0 },
+    theme: { ground: "grass", road: "dirt", border: "rock", density: 0.03, groves: 0, flowers: 0.05, tree: "boulder", turn: 6, wander: 0 },
     plan(p) {
-      p.street("gravel", 2, [[17, 30], [17, 26], [25, 23], [25, 19], [22, 15], [11, 15], [11, 9], [17, 7], [17, 4]]);
+      p.street("dirt", 2, [[17, 30], [17, 26], [25, 23], [25, 19], [22, 15], [11, 15], [11, 9], [17, 7], [17, 4]]);
       p.fill("rock", 1, 20, 22, 21); p.fill("rock", 14, 11, 32, 12); p.fill("rock", 10, 2, 15, 3); p.fill("rock", 19, 2, 24, 3);
-      p.decor("works", 2, 3); chimney(p, 3, 11, 64); chimney(p, 6, 12, 50);
+      p.fill("rock", 2, 4, 7, 9);                                                            // crags (the guidebook map shows no works on this side)
       p.decor("brickFlat", 26, 2, { canopy: 5 }); chimney(p, 25, 9, 70); chimney(p, 28, 10, 54); chimney(p, 31, 9, 62);
-      p.fill("gravel", 2, 11, 8, 13); p.fill("gravel", 24, 9, 32, 10);
-      p.decor("barrels", 8, 12); p.decor("barrels", 30, 15); p.decor("barrel", 23, 9);
+      p.fill("gravel", 24, 9, 32, 10);
+      p.decor("boulder", 4, 12); p.decor("barrels", 30, 15); p.decor("barrel", 23, 9);
       p.fill("flowersRed", 28, 22, 31, 23);
       trees(p, [[3, 26], [8, 24], [29, 26], [20, 17]]);
       p.decor("boulder", 14, 17); p.decor("boulder", 5, 16); p.decor("boulder", 20, 23);
     },
   },
   // Route 4: Turffield's farmland. Golden wheat fields and vegetable plots between dry-stone walls,
-  // Milo's barn and a parked tractor, the lane to the town climbing away to the north.
+  // a parked tractor and hay bales, the lane to the town climbing away to the north.
   GalarRoute4: {
     theme: { ground: "grass", road: "dirt", border: "tree", density: 0.03, groves: 0, flowers: 0.15, turn: 6, wander: 0 },
     plan(p) {
@@ -259,8 +269,7 @@ module.exports = {
       wheat(p, 3, 3, 12, 7); wheat(p, 3, 9, 9, 12); wheat(p, 25, 20, 34, 25); wheat(p, 26, 3, 34, 6);
       crops(p, 4, 20, 12, 22); crops(p, 4, 24, 12, 26, [150, 110, 190]);
       wall(p, 2, 13, 8); wall(p, 3, 13, 19); wall(p, 24, 35, 19); wall(p, 25, 35, 7);
-      house(p, 26, 9, 6, 4, [176, 60, 54], { wall: [196, 70, 60], door: [240, 232, 214], chimney: false });   // the barn
-      p.fill("dirt", 26, 13, 31, 13);
+      wheat(p, 25, 9, 34, 12);                                                               // a third field (the guidebook map shows fields here, no barn)
       // The tractor and a few hay bales.
       blk(p, 14, 10, 2, 1); p.paint(11, (c) => { const x = 14 * S, b = 11 * S - 1; c.ellipse(x + 15, b, 16, 3, [0, 0, 0, 60]); c.box(x + 2, b - 14, 20, 10, [60, 150, 90], [30, 70, 44]); c.box(x + 14, b - 24, 12, 14, [70, 170, 100], [30, 70, 44]); c.rect(x + 16, b - 22, 8, 6, [170, 214, 240]); c.ellipse(x + 22, b - 6, 7, 7, [40, 40, 46]); c.ellipse(x + 22, b - 6, 3, 3, [200, 190, 90]); c.ellipse(x + 6, b - 4, 4, 4, [40, 40, 46]); c.rect(x + 3, b - 20, 2, 6, [60, 60, 66]); });
       for (const [x, y] of [[16, 21], [18, 23], [33, 12], [15, 5]]) { blk(p, x, y); p.paint(y + 1, (c) => { const px = x * S + 8, py = y * S + 8; c.ellipse(px, py + 5, 8, 3, [0, 0, 0, 50]); c.ellipse(px, py, 8, 7, [200, 160, 70]); c.ellipse(px, py, 5, 4, [230, 194, 100]); c.ellipse(px, py, 2, 2, [200, 160, 70]); }); }
@@ -269,43 +278,46 @@ module.exports = {
       trees(p, [[2, 1], [15, 1], [35, 9], [22, 2], [15, 26], [35, 26]]);
     },
   },
-  // Route 5: the Pokemon Nursery in its paddock, then the long bridge that strides across the gorge
-  // above the Wild Area on its way down to Hulbury.
+  // Route 5 (compared with the guidebook map): the Pokemon Nursery beside the road, a side loop round a pond
+  // and campsite, then the long stone bridge that strides over the green valley of the Wild Area far below
+  // (there is no water under it) on the way to Hulbury.
   GalarRoute5: {
     theme: { ground: "grass", road: "dirt", border: "tree", density: 0.04, groves: 0, flowers: 0.2, turn: 6, wander: 0, rough: false },
     plan(p) {
-      for (const x of [7, 17]) { p.fill("rock", x, 1, x, 13); p.fill("rock", x, 17, x, 28); } p.fill("water", 8, 1, 16, 28);
-      p.street("dirt", 2, [[36, 16], [30, 16], [26, 15], [18, 15]]); p.street("deck", 3, [[18, 15], [6, 15]]); p.street("dirt", 2, [[6, 15], [4, 16], [1, 16]]);
-      p.street("dirt", 2, [[22, 15], [22, 10], [20, 7], [20, 1]]);
-      // Parapets and piers of the bridge.
-      for (const y of [13, 17]) blk(p, 7, y, 11, 1);
-      p.paint(18, (c, top) => { const st = [186, 178, 164], dk = mix(st, 0.55); for (const [g, y] of [[top, 13 * S + 4], [c, 17 * S]]) { g.rect(7 * S, y, 11 * S, 10, st); g.rect(7 * S, y, 11 * S, 2, mix(st, 1.15)); g.rect(7 * S, y + 9, 11 * S, 2, dk); for (let x = 7 * S; x < 18 * S; x += 32) g.box(x, y - 4, 8, 16, mix(st, 1.1), dk); }
-        for (let x = 9 * S; x < 17 * S; x += 40) { c.rect(x, 17 * S + 11, 12, 30, mix(st, 0.8)); c.rect(x, 17 * S + 11, 3, 30, dk); c.ellipse(x + 6, 17 * S + 42, 9, 3, [236, 244, 250, 150]); } });
-      house(p, 26, 8, 6, 3, [226, 170, 70], { sign: [226, 120, 150], wall: [244, 236, 220] });
-      p.fill("meadow", 27, 4, 34, 6); fence(p, 26, 3, 35, 7, ["30,7", "31,7"], [240, 240, 236]);
-      for (const [x, y] of [[28, 5], [32, 4], [33, 6]]) wooloo(p, x, y);
-      p.fill("flowersPink", 24, 18, 29, 19); p.fill("flowersBlue", 2, 11, 5, 12); p.fill("flowersRed", 19, 22, 22, 23);
-      p.fill("tree", 1, 1, 6, 4); p.fill("tree", 1, 24, 6, 28); p.fill("tree", 30, 24, 36, 28);
-      trees(p, [[24, 2], [33, 19], [24, 25], [3, 20], [34, 11]]);
+      p.fill("meadow", 1, 6, 36, 10);
+      p.street("dirt", 2, [[36, 16], [30, 16], [26, 15], [10, 15], [6, 16], [1, 16]]);
+      p.street("dirt", 2, [[20, 15], [20, 11]]); p.street("cobble", 3, [[20, 11], [20, 5]]); p.street("dirt", 2, [[20, 5], [20, 1]]);
+      for (let x = 1; x <= 36; x++) if (x < 19 || x > 21) blk(p, x, 6, 1, 5);
+      p.paint(0.6, (c) => { const st = [186, 178, 164], dk = mix(st, 0.55), y0 = 6 * S, h = 5 * S;
+        for (const [xa, xb] of [[1, 18], [22, 36]]) { const x = xa * S, w = (xb - xa + 1) * S; c.rect(x, y0, w, h, [74, 132, 96]); c.rect(x, y0, w, 7, [150, 124, 100]); c.rect(x, y0 + 7, w, 3, [104, 84, 70]); c.rect(x, y0 + h - 4, w, 4, [60, 108, 80]);
+          for (let i = 0; i < 26; i++) { const tx = x + 8 + p.hash(i, xa, 3) * (w - 16), ty = y0 + 18 + p.hash(i, xa, 4) * (h - 30); c.ellipse(tx, ty, 6, 4, [52, 104, 76]); c.ellipse(tx - 1, ty - 1, 4, 2, [64, 122, 86]); } }
+        for (const x of [18 * S + 6, 22 * S]) { c.rect(x, y0 - 6, 10, h + 12, st); c.rect(x, y0 - 6, 2, h + 12, mix(st, 1.15)); c.rect(x + 8, y0 - 6, 2, h + 12, dk); for (let y = y0 - 6; y < y0 + h; y += 26) c.box(x - 1, y, 12, 8, mix(st, 1.1), dk); }
+        for (const [x, sx] of [[18 * S - 4, -1], [22 * S + 10, 1]]) for (let y = y0 + 14; y < y0 + h - 8; y += 26) { c.rect(x, y, 10, 12, mix(st, 0.8)); c.rect(x + (sx < 0 ? 0 : 7), y, 3, 12, dk); } });
+      house(p, 24, 11, 6, 3, [226, 170, 70], { sign: [226, 120, 150], wall: [244, 236, 220] });   // the Nursery
+      p.fill("meadow", 32, 11, 34, 13); fence(p, 31, 10, 35, 14, ["31,12"], [240, 240, 236]);
+      for (const [x, y] of [[32, 11], [34, 12], [33, 13]]) wooloo(p, x, y);
+      p.disc("water", 10, 22.5, 2.6, 1.4); p.street("dirt", 1, [[14, 16], [14, 26], [6, 26], [6, 17]]); tent(p, 9, 18, [90, 170, 120]);
+      p.fill("flowersPink", 24, 18, 29, 19); p.fill("flowersBlue", 2, 12, 5, 13); p.fill("flowersRed", 19, 22, 22, 23);
+      p.fill("tree", 1, 1, 6, 4); p.fill("tree", 30, 24, 36, 28); p.fill("tree", 30, 1, 36, 3);
+      trees(p, [[24, 2], [33, 19], [24, 25], [2, 20], [16, 11], [10, 2]]);
     },
   },
-  // Motostoke Outskirts: worked-out mining ground. Ore carts on a spur of rail, pit-head frames over
-  // the old shafts, spoil heaps and crags, and the city's stacks on the skyline.
+  // Motostoke Outskirts (compared with the guidebook map): rough grass and pink-grey crags outside the mine,
+  // a dirt trail through the tall grass, a couple of ore carts at the mine mouth and the city's stacks behind.
   GalarMotostokeOutskirts: {
-    theme: { ground: "gravel", road: "dirt", border: "rock", tree: "boulder", density: 0.04, groves: 0, flowers: 0, turn: 6, wander: 0 },
+    theme: { ground: "grass", road: "dirt", border: "rock", tree: "boulder", density: 0.05, groves: 0, flowers: 0.08, turn: 6, wander: 0 },
     plan(p) {
       p.street("dirt", 2, [[16, 28], [21, 28], [22, 24], [22, 15], [14, 13], [10, 10], [10, 6], [16, 4], [16, 1]]);
       p.fill("rock", 2, 2, 7, 6); p.fill("rock", 2, 7, 4, 9); p.fill("rock", 25, 20, 29, 22); p.fill("rock", 2, 22, 9, 23); p.fill("rock", 13, 8, 19, 9); p.fill("rock", 10, 25, 14, 26); p.fill("rock", 18, 25, 19, 26);
-      rails(p, 2, 29, 18, false, false); rails(p, 5, 5, 19, true, false); rails(p, 5, 5, 20, true, false);
-      minecart(p, 7, 18); minecart(p, 8, 18, [200, 150, 60]); minecart(p, 26, 18, [70, 70, 80]); minecart(p, 5, 21);
-      headframe(p, 4, 12); headframe(p, 26, 24); headframe(p, 12, 20);
+      rails(p, 10, 15, 27, false, false); minecart(p, 11, 27); minecart(p, 12, 27, [200, 150, 60]);   // a spur of rail at the mine mouth; the rest is rough grass and crags, as on the guidebook map
+      trees(p, [[4, 12], [26, 24], [12, 20], [6, 18]]);
       p.decor("brickTall", 25, 1, { canopy: 8 }); chimney(p, 23, 10, 66); chimney(p, 29, 11, 52); p.decor("brickFlat", 20, 3, { canopy: 5 });
       for (const [x, y, col] of [[17, 21, [120, 110, 120]], [8, 26, [200, 150, 60]], [28, 14, [120, 110, 120]], [12, 15, [90, 86, 96]]]) { blk(p, x, y, 2, 1); p.paint(y + 1, (c) => { const px = x * S, b = y * S + 15; c.poly([[px, b], [px + 9, b - 16], [px + 18, b - 12], [px + 26, b - 19], [px + 32, b]], mix(col, 0.65)); c.poly([[px + 2, b - 1], [px + 10, b - 14], [px + 17, b - 9], [px + 25, b - 16], [px + 29, b - 1]], col); c.rect(px + 9, b - 11, 2, 2, mix(col, 1.35)); c.rect(px + 22, b - 9, 2, 2, mix(col, 1.35)); }); }
       p.decor("barrels", 24, 13); p.decor("barrels", 3, 16); p.decor("boulder", 27, 6); p.decor("boulder", 14, 23);
     },
   },
-  // The Wild Area, north: Bridge Field under the great railway viaduct and its river; Giant's Seat in
-  // the west, the sandy Dusty Bowl in the east, the Lake of Outrage with its ring of stones in the
+  // The Wild Area, north: Bridge Field under the great railway viaduct and its river, with the Nursery; the
+  // Giant's Cap in the west, the sandy Dusty Bowl in the east, the Lake of Outrage with its ring of stones in the
   // north-west, and the stair up through Hammerlocke's grey wall.
   GalarWildAreaNorth: {
     theme: { ground: "grass", road: "dirt", border: "rock", density: 0.03, groves: 0, flowers: 0.1, turn: 6, wander: 0 },
@@ -320,14 +332,13 @@ module.exports = {
       p.paint(0.6, (c) => { for (let j = 2 * S; j < 6 * S; j += 4) { c.rect(15 * S, j, 6 * S, 3, [206, 200, 190]); c.rect(15 * S, j + 3, 6 * S, 1, [140, 132, 124]); } });
       wall(p, 2, 14, 2, [166, 160, 150], 24); wall(p, 21, 32, 2, [166, 160, 150], 24); wall(p, 14, 14, 3, [166, 160, 150], 24); wall(p, 21, 21, 3, [166, 160, 150], 24);
       for (const [x, y, h] of [[2, 5, 26], [4, 4, 20], [9, 4, 28], [11, 6, 22], [3, 9, 18], [10, 9, 24]]) pillar(p, x, y, h, [150, 150, 160]);
-      // Giant's Seat: a flat-topped crag.
-      blk(p, 3, 12, 6, 2); p.paint(14.5, (c, top) => { const x = 3 * S, b = 14 * S, rk = [150, 130, 110], dk = mix(rk, 0.6); c.ellipse(x + 48, b - 2, 50, 6, [0, 0, 0, 60]);
-        for (const g of [c, top]) { g.poly([[x, b], [x + 8, b - 30], [x + 22, b - 44], [x + 70, b - 46], [x + 88, b - 28], [x + 96, b]], dk); g.poly([[x + 3, b - 1], [x + 10, b - 29], [x + 23, b - 41], [x + 69, b - 43], [x + 85, b - 27], [x + 93, b - 1]], rk); g.poly([[x + 14, b - 32], [x + 25, b - 41], [x + 68, b - 43], [x + 80, b - 31]], [120, 160, 96]); for (const i of [20, 40, 62, 78]) g.line(x + i, b - 30, x + i - 4, b - 4, dk); } });
+      crag(p, 3, 12);                                                                        // the Giant's Cap
+      house(p, 26, 22, 6, 3, [226, 170, 70], { sign: [226, 120, 150], wall: [244, 236, 220] });   // the Pokemon Nursery, east of Bridge Field
       tent(p, 23, 12, [70, 150, 200]);
       for (const [x, y] of [[19, 18], [27, 9], [10, 15], [30, 28], [6, 28], [24, 5]]) den(p, x, y, x !== 10);
       p.decor("boulder", 23, 7); p.decor("boulder", 30, 11); p.decor("boulder", 31, 5);
       p.fill("tree", 22, 3, 26, 4); p.fill("flowersBlue", 20, 28, 24, 29); p.fill("flowersRed", 8, 22, 11, 23);
-      trees(p, [[29, 3], [12, 11], [2, 17], [25, 27], [10, 27], [31, 21]]);
+      trees(p, [[29, 3], [12, 11], [2, 17], [25, 27], [10, 27]]);
     },
   },
   // Route 6: a sun-baked canyon. The trail climbs three orange ledges by ladder, past a fossil
@@ -384,11 +395,10 @@ module.exports = {
     },
   },
   // Route 7: green downs below Hammerlocke, crossed by the railway on its long row of stone arches
-  // (a train is on it), with a brook and a footbridge on the way to the ruins of Route 8.
+  // (a train is on it), dry-stone walls and berry trees on the way to the ruins of Route 8 (no brook: the guidebook map shows none).
   GalarRoute7: {
     theme: { ground: "grass", road: "dirt", border: "tree", density: 0.03, groves: 0, flowers: 0.15, turn: 6, wander: 0 },
     plan(p) {
-      p.fill("water", 1, 20, 8, 20); p.fill("water", 7, 21, 20, 21); p.fill("water", 19, 22, 32, 22);
       p.street("dirt", 2, [[17, 30], [17, 25], [11, 23], [11, 17], [16, 15], [23, 13], [23, 8], [17, 6], [17, 1]]);
       viaduct(p, 10, 1, 32, [23, 24, 5, 6]);
       // The train.
@@ -530,16 +540,16 @@ module.exports = {
       p.decor("boulder", 14, 27); p.decor("boulder", 20, 26);
     },
   },
-  // The Tunnel to the Top: a frozen passage through the mountain. Blue ice underfoot, spires of ice
-  // against the rock, and the three coloured stones that hum when the titans stir.
+  // The Tunnel to the Top: a passage through the mountain, brown rock and bare earth (as the screenshot shows)
+  // with ice only where it nears the summit, and the three coloured stones that hum when the titans stir.
   GalarTunnelTop: {
-    theme: { ground: "snow", grass: "snow", road: "snow", border: "rock", tree: "boulder", density: 0.02, groves: 0, flowers: 0, turn: 6, wander: 0 },
+    theme: { ground: "dirt", grass: "dirt", road: "dirt", border: "rock", tree: "boulder", density: 0.02, groves: 0, flowers: 0, turn: 6, wander: 0 },   // a brown rock cave with an earth floor (screenshot); ice only towards the top
     plan(p) {
       p.fill("rock", 1, 1, 32, 30);
       carve(p, [[17, 30], [17, 26], [24, 23], [25, 17], [16, 15], [9, 12], [8, 7], [16, 5], [17, 1]], 2.6); carve(p, [[1, 16], [32, 16]], 1.8); carve(p, [[14, 14], [14, 14]], 3); carve(p, [[25, 9], [25, 16]], 2); carve(p, [[7, 20], [8, 17]], 2.4);
-      p.paint(0.4, (c) => c.rect(0, 0, p.W * S, p.H * S, [110, 170, 240, 60]));
-      ice(p, 16.5, 15.5, 4, 1.8); ice(p, 9, 9, 2.4, 1.6); ice(p, 24.5, 21, 2.4, 1.6); ice(p, 25, 11, 1.8, 1.4); ice(p, 7, 19, 2, 1.3);
-      for (const [x, y, h] of [[6, 6, 30], [11, 5, 22], [21, 13, 28], [27, 19, 24], [20, 26, 30], [6, 14, 20], [29, 15, 22], [23, 8, 30], [27, 12, 18], [5, 21, 26], [12, 10, 18]]) crystal(p, x, y, h);
+      p.paint(0.4, (c) => c.rect(0, 0, p.W * S, p.H * S, [70, 40, 20, 46]));
+      ice(p, 9, 9, 2.4, 1.6); ice(p, 25, 11, 1.8, 1.4);
+      for (const [x, y, h] of [[6, 6, 30], [11, 5, 22], [23, 8, 30], [27, 12, 18]]) crystal(p, x, y, h);
       // The three stones.
       [[12, 12, [150, 210, 245]], [14, 11, [190, 130, 90]], [16, 12, [170, 176, 190]]].forEach(([x, y, col]) => { blk(p, x, y); p.paint(y + 1, (c) => { const m = x * S + 8, b = y * S + 15; c.ellipse(m, b - 6, 12, 9, [...col, 50]); c.ellipse(m, b, 7, 2, [0, 0, 0, 70]); c.poly([[m - 6, b], [m - 5, b - 14], [m, b - 19], [m + 5, b - 14], [m + 6, b]], mix(col, 0.6)); c.poly([[m - 4, b - 1], [m - 3, b - 13], [m, b - 17], [m + 3, b - 13], [m + 4, b - 1]], col); for (const [i, j] of [[-2, -12], [1, -12], [-2, -8], [1, -8], [0, -5]]) c.rect(m + i, b + j, 2, 2, [255, 250, 220]); }); });
       p.decor("boulder", 21, 23); p.decor("boulder", 10, 15);

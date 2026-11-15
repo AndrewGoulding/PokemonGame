@@ -27,7 +27,8 @@ const palm = (p, x, y) => prop(p, x, y, 1, 1, (c, px, py, top) => { c.ellipse(px
 const cactus = (p, x, y) => prop(p, x, y, 1, 1, (c, px, py, top) => { const g = [86, 150, 90], d = [54, 108, 66]; c.ellipse(px + 8, py + 14, 6, 2, [0, 0, 0, 50]); for (const t of [c, top]) { t.box(px + 5, py - 8, 6, 23, g, d); t.box(px + 1, py - 1, 3, 8, g, d); t.rect(px + 3, py + 5, 3, 3, g); t.box(px + 12, py - 5, 3, 8, g, d); t.rect(px + 10, py + 1, 3, 3, g); t.rect(px + 7, py - 6, 1, 19, mul(g, 1.25)); } top.rect(px + 6, py - 10, 4, 3, [240, 120, 150]); });
 const crystal = (p, x, y, col) => prop(p, x, y, 1, 1, (c, px, py, top) => { c.ellipse(px + 8, py + 14, 7, 2, [0, 0, 0, 50]); for (const t of [c, top]) { t.poly([[px + 8, py - 12], [px + 14, py + 3], [px + 11, py + 14], [px + 5, py + 14], [px + 2, py + 3]], mul(col, 0.7)); t.poly([[px + 8, py - 10], [px + 12, py + 3], [px + 8, py + 13], [px + 4, py + 3]], col); t.poly([[px + 8, py - 10], [px + 8, py + 13], [px + 4, py + 3]], mul(col, 1.25)); } c.poly([[px + 13, py + 4], [px + 16, py + 10], [px + 13, py + 15], [px + 11, py + 10]], mul(col, 1.1)); });
 const stoneLantern = (p, x, y) => prop(p, x, y, 1, 1, (c, px, py, top) => { c.box(px + 4, py + 10, 8, 6, [150, 150, 146], EDGE); c.rect(px + 6, py + 2, 4, 8, [170, 170, 166]); top.box(px + 3, py - 6, 10, 8, [170, 170, 166], EDGE); top.rect(px + 6, py - 4, 4, 4, [250, 220, 120]); top.poly([[px + 1, py - 6], [px + 8, py - 12], [px + 15, py - 6]], [120, 120, 118]); });
-const tent = (p, x, y, col) => prop(p, x, y, 3, 2, (c, px, py) => { c.poly([[px - 2, py + 31], [px + 24, py - 9], [px + 50, py + 31]], EDGE); c.poly([[px + 1, py + 29], [px + 24, py - 6], [px + 47, py + 29]], col); c.poly([[px + 24, py - 6], [px + 47, py + 29], [px + 31, py + 29]], mul(col, 0.72)); c.poly([[px + 18, py + 29], [px + 24, py + 10], [px + 30, py + 29]], [40, 34, 44]); });
+// Team Star's tents are white tarpaulin boxes sprayed with yellow zigzags; the crew colour is on the star.
+const tent = (p, x, y, col) => prop(p, x, y, 3, 2, (c, px, py) => { const w = [236, 238, 240], ylw = [226, 206, 84]; c.rect(px + 2, py + 29, 46, 4, [0, 0, 0, 50]); c.box(px + 1, py + 2, 46, 29, w, EDGE); c.poly([[px, py + 3], [px + 6, py - 6], [px + 42, py - 6], [px + 48, py + 3]], EDGE); c.poly([[px + 2, py + 2], [px + 7, py - 4], [px + 41, py - 4], [px + 46, py + 2]], [250, 250, 252]); for (let k = 0; k < 7; k++) c.line(px + 3 + k * 6, py + (k % 2 ? 12 : 18), px + 9 + k * 6, py + (k % 2 ? 18 : 12), ylw, 2); c.rect(px + 2, py + 24, 44, 2, [200, 204, 210]); star(c, px + 24, py + 21, 6, col); });
 const flag = (p, x, y, col, mark) => prop(p, x, y, 1, 1, (c, px, py, top) => { c.rect(px + 5, py + 12, 6, 3, [60, 54, 60]); c.rect(px + 7, py, 2, 13, [110, 100, 100]); top.rect(px + 7, py - 28, 2, 28, [110, 100, 100]); top.poly([[px + 9, py - 28], [px + 27, py - 21], [px + 9, py - 13]], col); star(top, px + 14, py - 21, 4, mark || [250, 230, 90]); });
 const lamp = (p, x, y, col) => prop(p, x, y, 1, 1, (c, px, py, top) => { c.rect(px + 5, py + 12, 6, 3, [60, 60, 70]); c.rect(px + 7, py, 2, 13, [80, 80, 92]); top.rect(px + 7, py - 12, 2, 12, [80, 80, 92]); top.ellipse(px + 8, py - 13, 8, 8, [col[0], col[1], col[2], 70]); top.ellipse(px + 8, py - 13, 4, 4, col); top.ellipse(px + 7, py - 14, 2, 2, WHITE); });
 // A Paldean watchtower: a round stone tower with a parapet (2x2 footprint, drawn tall).
@@ -127,23 +128,24 @@ module.exports = {
       for (const [x, y] of [[23, 24], [29, 4]]) p.decor("boulder", x, y, { walk: false });
     },
   },
-  // South Province (Area One): olive hills between Los Platos and Mesagoza's south gate. The river comes down the
-  // west side under a bridge, a watchtower stands on the eastern rise and a Pokémon Center kiosk by the crossroads.
+  // South Province (Area One): the green hills between Los Platos and Mesagoza. The city's lake lies across the
+  // north with the causeway over it to the south gate, a Pokémon Center kiosk stands at the foot of the bridge,
+  // a watchtower on the eastern rise and ponds among the olive trees.
   PaldeaSouthProvince: {
     theme: { ground: "grass", road: "dirt", border: "tree", water: "water", density: 0.05, groves: 0.08, flowers: 0.3 },
     plan(p) {
-      river(p, 3, [[9, 1], [9, 6], [11, 10], [11, 19], [8, 23], [8, 28]]);
-      p.disc("water", 9.5, 25, 3.5, 2.5);
+      p.fill("water", 1, 1, 27, 5); p.fill("rock", 1, 6, 17, 6); p.fill("rock", 23, 6, 27, 6);
+      p.disc("water", 9.5, 24.5, 3.2, 2.2); p.disc("water", 5, 10.5, 2.2, 1.5);
       p.fill("rock", 28, 9, 36, 9); p.fill("rock", 28, 2, 28, 8); p.fill("ground", 31, 9, 32, 9); steps(p, 31, 9, 2, 1);
       p.fill("meadow", 29, 2, 36, 8);
       p.street("dirt", 3, [[1, 15], [36, 15]]);
-      p.street("dirt", 2, [[19, 15], [19, 9], [20, 9], [20, 1]]); p.street("dirt", 2, [[19, 16], [19, 28]]);
+      p.street("dirt", 2, [[19, 15], [19, 9], [20, 9], [20, 6]]); p.street("paving", 3, [[20, 1], [20, 6]]); p.street("dirt", 2, [[19, 16], [19, 28]]);
       p.street("dirt", 1, [[31, 14], [31, 6]]);
       watchtower(p, 33, 4);
       p.decor("pcSmall", 22, 9);
       for (const y of [19, 21, 23, 25, 27]) for (const x of [23, 25, 27, 29, 31, 33]) if ((x + y) % 4) olive(p, x, y, [70, 90, 50]);
-      for (const [x, y] of [[14, 4], [16, 6], [13, 8], [15, 11], [3, 5], [5, 8], [3, 11]]) olive(p, x, y, [70, 90, 50]);
-      fence(p, 22, 18, 34, 18); fence(p, 13, 12, 16, 12);
+      for (const [x, y] of [[14, 8], [16, 10], [13, 12], [9, 8], [3, 8], [8, 12], [3, 13]]) olive(p, x, y, [70, 90, 50]);
+      fence(p, 22, 18, 34, 18);
       p.fill("flowersRed", 2, 19, 5, 20); p.decor("board", 21, 13);
     },
   },
@@ -183,18 +185,19 @@ module.exports = {
       fence(p, 13, 25, 15, 25); p.decor("board", 22, 13);
     },
   },
-  // Stony Cliff: the quarry wall where the Stony Cliff Titan clings. A sheer banded face across the map, the
-  // arena of broken stone at its foot, and the ramp round the east end up to the cave behind.
+  // Stony Cliff: the red badlands wall east of Mesagoza where the Stony Cliff Titan clings. A sheer banded face
+  // across the map, the arena of broken stone at its foot, and the ramp round the east end up to the cave behind.
   PaldeaStonyCliff: {
-    theme: { ground: "gravel", road: "dirt", border: "rock", density: 0.08, groves: 0, flowers: 0 },
+    theme: { ground: "dirt", road: "sand", border: "rock", density: 0.08, groves: 0, flowers: 0 },
     plan(p) {
+      const RED = [200, 112, 78];
       p.fill("rock", 1, 6, 25, 11); p.fill("rock", 1, 1, 13, 5); p.fill("rock", 21, 1, 25, 2); p.fill("rock", 30, 1, 32, 12);
-      p.fill("rock", 1, 20, 6, 22); p.fill("rock", 24, 21, 32, 23); p.fill("field", 7, 24, 15, 29); p.fill("field", 20, 25, 31, 29);
-      p.disc("dirt", 17.5, 14.5, 6, 3);
-      p.street("dirt", 2, [[17, 29], [17, 22], [11, 22], [11, 16], [27, 16], [27, 4], [17, 4]]); p.street("dirt", 2, [[17, 1], [17, 4]]);
-      p.street("dirt", 1, [[1, 16], [11, 16]]); p.street("dirt", 1, [[27, 16], [32, 16]]);
-      face(p, 1, 8, 25, 11, [164, 140, 116]); strata(p, 1, 1, 13, 7);
-      decal(p, (c) => { for (const [x, y, r] of [[9, 12.6, 5], [13, 13.2, 4], [22, 12.7, 5], [24, 14.2, 3], [12, 15.2, 3]]) { c.ellipse(x * T, y * T, r + 1, r, EDGE); c.ellipse(x * T, y * T, r, r - 1, [168, 150, 132]); } }, 0.4);
+      p.fill("rock", 1, 20, 6, 22); p.fill("rock", 24, 21, 32, 23); p.fill("grass", 7, 24, 15, 29); p.fill("grass", 20, 25, 31, 29);
+      p.disc("sand", 17.5, 14.5, 6, 3);
+      p.street("sand", 2, [[17, 29], [17, 22], [11, 22], [11, 16], [27, 16], [27, 4], [17, 4]]); p.street("sand", 2, [[17, 1], [17, 4]]);
+      p.street("sand", 1, [[1, 16], [11, 16]]); p.street("sand", 1, [[27, 16], [32, 16]]);
+      face(p, 1, 6, 25, 11, RED); face(p, 1, 1, 13, 5, mul(RED, 1.08)); face(p, 30, 1, 32, 12, RED); face(p, 1, 20, 6, 22, RED); face(p, 24, 21, 32, 23, RED); strata(p, 1, 1, 13, 5, [140, 70, 50, 170]);
+      decal(p, (c) => { for (const [x, y, r] of [[9, 12.6, 5], [13, 13.2, 4], [22, 12.7, 5], [24, 14.2, 3], [12, 15.2, 3]]) { c.ellipse(x * T, y * T, r + 1, r, EDGE); c.ellipse(x * T, y * T, r, r - 1, [206, 130, 96]); } }, 0.4);
       watchtower(p, 3, 25);
       for (const [x, y] of [[7, 13], [22, 18], [14, 19], [28, 26]]) p.decor("boulder", x, y);
       fence(p, 28, 6, 28, 12, [120, 110, 110]); p.decor("board", 19, 18);
@@ -227,67 +230,69 @@ module.exports = {
       for (const [x, y] of [[13, 9], [22, 10], [11, 13]]) p.decor("boulder", x, y);
     },
   },
-  // Segin Squad road: the lane into the dark woods of the south where the Dark crew camps. Lantern posts,
-  // a scrap barricade and the crew's flags where the trees close in.
+  // Segin Squad road: the lane up the West Province hillside to the Dark crew's camp. Grassy shelves between
+  // brown cliff bands, lantern posts, a scrap barricade and the crew's flags at the top.
   PaldeaSeginRoad: {
-    theme: { ground: "shade", grass: "darkgrass", road: "dirt", border: "darktree", treeTint: "dark", density: 0.35, groves: 0.2, flowers: 0 },
+    theme: { ground: "grass", road: "dirt", border: "rock", density: 0.04, groves: 0.03, flowers: 0.15 },
     plan(p) {
-      const dark = [70, 60, 110];
-      p.fill("darktree", 1, 6, 12, 8); p.fill("darktree", 22, 6, 32, 8); p.fill("darktree", 21, 19, 32, 21); p.fill("darktree", 1, 22, 8, 24);
+      const dark = [70, 60, 110], CLIFF = [164, 128, 100];
+      p.fill("rock", 1, 6, 12, 8); p.fill("rock", 22, 6, 32, 8); p.fill("rock", 21, 19, 32, 21); p.fill("rock", 1, 22, 8, 24); p.fill("rock", 1, 12, 9, 13); p.fill("rock", 24, 12, 32, 13);
+      face(p, 1, 7, 12, 8, CLIFF); face(p, 22, 7, 32, 8, CLIFF); face(p, 21, 20, 32, 21, CLIFF); face(p, 1, 23, 8, 24, CLIFF); face(p, 1, 13, 9, 13, CLIFF); face(p, 24, 13, 32, 13, CLIFF);
       p.street("dirt", 2, [[17, 29], [17, 25], [22, 25], [22, 22], [13, 22], [13, 16], [19, 16], [19, 10], [17, 10], [17, 1]]);
       p.street("dirt", 1, [[1, 16], [13, 16]]); p.street("dirt", 1, [[19, 16], [32, 16]]);
       fence(p, 13, 7, 15, 7, [120, 110, 110]); fence(p, 19, 7, 21, 7, [120, 110, 110]);
       flag(p, 15, 5, dark); flag(p, 19, 5, dark);
       for (const [x, y] of [[15, 24], [15, 18], [21, 12], [15, 9]]) lamp(p, x, y, [200, 160, 250]);
+      for (const [x, y] of [[5, 18], [27, 24], [9, 27], [28, 15]]) p.decor("tree1", x, y, { canopy: true });
       tent(p, 21, 2, dark); p.decor("barrels", 14, 2); p.decor("board", 19, 26);
     },
   },
-  // Schedar Squad road: scorched badlands on the way to the Fire crew. Ash underfoot, pools of glowing lava,
-  // charred ridges and torches lighting the picket.
+  // Schedar Squad road: the green East Province hills on the way to the Fire crew. Grass slopes cut by bare
+  // brown banks, a few trees, and torches lighting the picket.
   PaldeaSchedarRoad: {
-    theme: { ground: "ash", road: "clay", border: "ashrock", tree: "boulder", density: 0.05, groves: 0, flowers: 0 },
+    theme: { ground: "grass", road: "dirt", border: "rock", density: 0.04, groves: 0.04, flowers: 0.2 },
     plan(p) {
-      const fire = [226, 80, 50];
-      p.fill("ashrock", 1, 10, 9, 13); p.fill("ashrock", 24, 4, 32, 6); p.fill("ashrock", 25, 26, 32, 30); p.fill("ashrock", 1, 27, 6, 30);
-      p.street("clay", 2, [[17, 29], [17, 25], [10, 25], [10, 20], [21, 20], [21, 16], [14, 16], [14, 9], [17, 9], [17, 1]]);
-      p.street("clay", 2, [[21, 16], [32, 16]]); p.street("clay", 1, [[1, 16], [14, 16]]);
-      pool(p, 3, 3, 6, 3); pool(p, 24, 21, 6, 3); pool(p, 3, 21, 4, 2); pool(p, 25, 9, 5, 3); pool(p, 14, 27, 2, 1);
-      decal(p, (c) => { for (const [x, y, n] of [[10, 4, 5], [22, 13, 4], [5, 18, 5], [28, 18, 4], [20, 24, 5], [12, 12, 3]]) for (let k = 0; k < n; k++) { const ax = x * T + k * 9, ay = y * T + ((k * 5) % 9); c.line(ax, ay, ax + 9, y * T + (((k + 1) * 5) % 9), [200, 80, 30], 2); c.line(ax, ay, ax + 9, y * T + (((k + 1) * 5) % 9), [255, 190, 80], 1); } }, 0.3);
+      const fire = [226, 80, 50], BANK = [170, 124, 92];
+      p.fill("rock", 1, 10, 9, 13); p.fill("rock", 24, 4, 32, 6); p.fill("rock", 25, 26, 32, 30); p.fill("rock", 1, 27, 6, 30); p.fill("rock", 24, 21, 30, 22); p.fill("rock", 3, 3, 8, 4);
+      face(p, 1, 11, 9, 13, BANK); face(p, 24, 5, 32, 6, BANK); face(p, 24, 22, 30, 22, BANK); face(p, 3, 4, 8, 4, BANK);
+      p.fill("dirt", 3, 21, 7, 22); p.fill("dirt", 25, 9, 30, 11);
+      p.street("dirt", 2, [[17, 29], [17, 25], [10, 25], [10, 20], [21, 20], [21, 16], [14, 16], [14, 9], [17, 9], [17, 1]]);
+      p.street("dirt", 2, [[21, 16], [32, 16]]); p.street("dirt", 1, [[1, 16], [14, 16]]);
       picket(p, 17, 7, fire);
       for (const [x, y] of [[15, 12], [19, 22], [12, 23], [23, 14]]) lamp(p, x, y, [255, 170, 70]);
+      for (const [x, y] of [[5, 6], [27, 13], [5, 17], [28, 18], [22, 26]]) p.decor("tree1", x, y, { canopy: true });
       tent(p, 20, 2, fire); p.decor("barrels", 13, 3); p.decor("board", 19, 26);
     },
   },
-  // Navi Squad road: Tagtree Thicket. A poison bog under the trees, plank walks laid over the mire, and
-  // trunks daubed with the Poison crew's paint.
+  // Navi Squad road: Tagtree Thicket. Still ponds under the trees with boggy margins, the path winding between
+  // them, and trunks wrapped in the Poison crew's bright paint.
   PaldeaNaviRoad: {
-    theme: { ground: "shade", grass: "shadegrass", road: "dirt", border: "tree", water: "bog", density: 0.2, groves: 0.2, flowers: 0 },
+    theme: { ground: "shade", grass: "shadegrass", road: "dirt", border: "tree", water: "water", density: 0.2, groves: 0.2, flowers: 0 },
     plan(p) {
       const poison = [150, 80, 190];
-      p.disc("marsh", 8, 22.5, 7, 5.5); p.disc("marsh", 25.5, 10, 6.5, 6); p.disc("marsh", 26, 24.5, 5.5, 4.5);
-      p.disc("water", 8, 22.5, 5.5, 4); p.disc("water", 25.5, 10, 5, 4.5); p.disc("water", 26, 24.5, 4, 3); p.disc("water", 5, 6, 3, 2);
+      p.disc("marsh", 8, 22.5, 6, 4.5); p.disc("marsh", 25.5, 10, 5.5, 5); p.disc("marsh", 26, 24.5, 4.5, 3.5);
+      p.disc("water", 8, 22.5, 4.5, 3); p.disc("water", 25.5, 10, 4, 3.5); p.disc("water", 26, 24.5, 3, 2); p.disc("water", 5, 6, 3, 2);
       p.street("dirt", 2, [[17, 29], [17, 24], [6, 24], [6, 16], [26, 16], [26, 6], [17, 6], [17, 1]]);
       p.street("dirt", 1, [[1, 16], [6, 16]]); p.street("dirt", 1, [[27, 16], [32, 16]]);
-      const tag = (x, y, col) => { olive(p, x, y, null, [70, 120, 80]); p.paint(y + 1.2, (c, top) => { top.rect(x * T + 2, y * T - 4, 6, 3, col); top.rect(x * T + 9, y * T, 4, 2, [240, 220, 80]); c.rect(x * T + 6, y * T + 8, 4, 2, col); }); };
+      const tag = (x, y, col) => { olive(p, x, y, null, [70, 120, 80]); p.paint(y + 1.2, (c, top) => { top.rect(x * T + 2, y * T - 4, 6, 3, col); top.rect(x * T + 9, y * T, 4, 2, [240, 220, 80]); c.rect(x * T + 6, y * T + 6, 4, 2, col); c.rect(x * T + 6, y * T + 9, 4, 2, [70, 110, 220]); c.rect(x * T + 6, y * T + 12, 4, 2, [240, 220, 80]); }); };
       for (const [x, y] of [[10, 13], [13, 18], [21, 19], [15, 9], [20, 13], [11, 27], [21, 27], [3, 13]]) tag(x, y, (x + y) % 2 ? poison : [230, 90, 160]);
-      decal(p, (c) => { for (const [x, y, rx, ry] of [[8, 22.5, 5.5, 4], [25.5, 10, 5, 4.5], [26, 24.5, 4, 3], [5, 6, 3, 2]]) { c.ellipse(x * T, y * T, rx * T - 10, ry * T - 10, [150, 70, 190, 90]); for (let k = 0; k < 7; k++) { const bx = x * T + Math.cos(k * 2.4) * (rx * T - 26) * 0.8, by = y * T + Math.sin(k * 2.4) * (ry * T - 22) * 0.8; c.ellipse(bx, by, 3, 2, [214, 150, 240, 200]); c.rect(bx - 1, by - 1, 1, 1, WHITE); } } }, 0.6);
       picket(p, 17, 4, poison, 2, 2);
       for (const [x, y] of [[4, 23], [28, 12]]) lamp(p, x, y, [200, 120, 250]);
       p.decor("board", 19, 26);
     },
   },
-  // Ruchbah Squad road: the high northern plateau in bloom. Pink flower fields and blossom trees on stepped
-  // tablelands, with the Fairy crew's flags at the top of the climb.
+  // Ruchbah Squad road: the flower-covered headland of North Province (Area Three). Pink, violet and yellow
+  // flower fields on stepped ground, dark pines, the sea beyond the northern cliff and the Fairy crew's flags.
   PaldeaRuchbahRoad: {
-    theme: { ground: "meadow", road: "sand", border: "rock", density: 0.03, groves: 0, flowers: 0.5 },
+    theme: { ground: "meadow", road: "gravel", border: "rock", water: "sea", density: 0.03, groves: 0, flowers: 0.5 },
     plan(p) {
-      const fairy = [240, 150, 200], blossom = [244, 176, 208];
+      const fairy = [240, 150, 200];
       ledge(p, "rock", 1, 32, 21, 1, [23], 2); ledge(p, "rock", 1, 32, 10, 1, [11], 2);
-      p.fill("rock", 1, 1, 5, 4); p.fill("rock", 27, 1, 32, 5);
-      p.fill("flowersPink", 3, 12, 9, 14); p.fill("flowersPink", 26, 18, 31, 20); p.fill("flowersPink", 3, 23, 12, 25); p.fill("flowersPink", 20, 5, 25, 8); p.fill("flowersPink", 27, 11, 31, 13);
-      p.street("sand", 2, [[17, 29], [17, 23], [23, 23], [23, 16], [11, 16], [11, 7], [17, 7], [17, 1]]);
-      p.street("sand", 2, [[23, 16], [32, 16]]); p.street("sand", 1, [[1, 16], [11, 16]]);
-      for (const [x, y] of [[14, 12], [20, 12], [14, 19], [20, 19], [7, 18], [28, 24], [25, 27], [9, 27], [7, 7], [14, 4], [21, 3], [29, 8], [5, 28]]) olive(p, x, y, [255, 230, 240], blossom);
+      p.fill("water", 1, 1, 9, 3); p.fill("water", 25, 1, 32, 3); p.fill("rock", 1, 4, 9, 4); p.fill("rock", 25, 4, 32, 4);
+      p.fill("flowersPink", 3, 12, 9, 14); p.fill("flowersBlue", 26, 18, 31, 20); p.fill("flowersPink", 3, 23, 12, 25); p.fill("flowersRed", 20, 5, 24, 8); p.fill("flowersBlue", 27, 11, 31, 13); p.fill("flowersPink", 25, 26, 31, 28); p.fill("flowersBlue", 3, 6, 8, 8);
+      p.street("gravel", 2, [[17, 29], [17, 23], [23, 23], [23, 16], [11, 16], [11, 7], [17, 7], [17, 1]]);
+      p.street("gravel", 2, [[23, 16], [32, 16]]); p.street("gravel", 1, [[1, 16], [11, 16]]);
+      for (const [x, y] of [[14, 12], [20, 12], [14, 19], [20, 19], [7, 18], [28, 24], [9, 27], [14, 4], [21, 3], [29, 8], [5, 28]]) olive(p, x, y, null, [50, 96, 70]);
       picket(p, 17, 5, fairy, 2, 2);
       p.decor("bench", 19, 13); p.decor("board", 19, 26);
     },
@@ -327,19 +332,21 @@ module.exports = {
       fence(p, 3, 19, 9, 19); p.decor("bench", 19, 22); p.decor("board", 19, 27);
     },
   },
-  // The road to Medali: farm country. Fenced plots in rows either side of the lane, a windmill, hay drying
-  // in the sun and olive trees along the verge.
+  // The road to Medali: the rolling green country of West Province (Area Three). Grassy shelves between brown
+  // banks, a pond, scattered trees and the lane switching back up toward the town.
   PaldeaMedaliRoad: {
-    theme: { ground: "meadow", road: "dirt", border: "tree", density: 0.04, groves: 0.04, flowers: 0.3 },
+    theme: { ground: "grass", road: "dirt", border: "tree", water: "water", density: 0.05, groves: 0.06, flowers: 0.3 },
     plan(p) {
-      crops(p, 2, 3, 8, 7); crops(p, 2, 19, 7, 22, [200, 180, 80]); crops(p, 25, 3, 31, 6, [200, 180, 80]); crops(p, 26, 19, 31, 23); crops(p, 20, 26, 31, 29, [150, 190, 90]);
+      const BANK = [170, 130, 100];
+      p.fill("rock", 2, 8, 8, 9); p.fill("rock", 25, 7, 31, 8); p.fill("rock", 2, 19, 7, 20); p.fill("rock", 26, 19, 31, 20); p.fill("rock", 20, 25, 31, 26);
+      face(p, 2, 9, 8, 9, BANK); face(p, 25, 8, 31, 8, BANK); face(p, 2, 20, 7, 20, BANK); face(p, 26, 20, 31, 20, BANK); face(p, 20, 26, 31, 26, BANK);
+      p.fill("meadow", 2, 3, 8, 7); p.fill("meadow", 25, 3, 31, 6); p.fill("meadow", 20, 27, 31, 29);
+      p.disc("water", 27.5, 12.5, 3, 2);
       p.street("dirt", 2, [[17, 29], [17, 23], [10, 23], [10, 16], [23, 16], [23, 9], [17, 9], [17, 1]]);
       p.street("dirt", 1, [[1, 16], [10, 16]]); p.street("dirt", 1, [[23, 16], [32, 16]]);
-      fence(p, 2, 8, 8, 8); fence(p, 2, 18, 7, 18); fence(p, 25, 7, 31, 7); fence(p, 26, 18, 31, 18); fence(p, 20, 25, 31, 25);
-      windmill(p, 5, 11); p.decor("cabin", 26, 9);
-      for (const [x, y] of [[13, 26], [14, 27], [13, 28], [3, 25], [21, 4], [22, 5]]) bale(p, x, y);
-      for (const x of [12, 14, 16, 18, 20]) olive(p, x, 13, [70, 90, 50]);
-      for (const y of [3, 5, 7]) olive(p, 14, y, [70, 90, 50]);
+      for (const [x, y] of [[5, 11], [13, 26], [3, 25], [21, 4], [28, 22], [13, 12], [20, 19], [5, 4], [28, 4]]) p.decor("tree1", x, y, { canopy: true });
+      for (const [x, y] of [[14, 6], [7, 14], [24, 22]]) p.decor("boulder", x, y);
+      p.fill("flowersBlue", 12, 18, 15, 19); p.fill("flowersRed", 25, 27, 28, 28);
       p.decor("board", 19, 26);
     },
   },
@@ -359,17 +366,17 @@ module.exports = {
       p.decor("cabin", 20, 21); p.decor("board", 19, 27);
     },
   },
-  // The climb to Alfornada: bare cliffs riddled with caves. The trail doubles back along three shelves, a
-  // dark mouth or two in every wall.
+  // The climb to Alfornada: the dry plateau of South Province (Area Six). Yellowed grass on shelves between
+  // bare brown cliffs, the trail doubling back up them and the mouths of Alfornada Cavern in the lowest wall.
   PaldeaAlfornadaRoad: {
-    theme: { ground: "gravel", road: "dirt", border: "rock", tree: "boulder", density: 0.07, groves: 0, flowers: 0 },
+    theme: { ground: "field", road: "dirt", border: "rock", tree: "boulder", density: 0.05, groves: 0, flowers: 0.05 },
     plan(p) {
       p.fill("rock", 1, 19, 22, 23); p.fill("rock", 12, 9, 32, 13); p.fill("rock", 1, 3, 13, 6); p.fill("rock", 21, 1, 32, 5);
-      p.fill("field", 3, 25, 12, 29); p.fill("field", 24, 19, 31, 22);
+      p.fill("meadow", 3, 25, 12, 29); p.fill("meadow", 24, 19, 31, 22); p.fill("meadow", 2, 8, 6, 14); p.fill("meadow", 20, 6, 31, 8);
       p.street("dirt", 2, [[17, 29], [17, 25], [25, 25], [25, 16], [8, 16], [8, 8], [17, 8], [17, 1]]);
       p.street("dirt", 1, [[1, 16], [8, 16]]); p.street("dirt", 1, [[26, 16], [32, 16]]);
       face(p, 1, 21, 22, 23, [158, 132, 108]); face(p, 12, 11, 32, 13, [158, 132, 108]); face(p, 1, 5, 13, 6, [158, 132, 108]); face(p, 21, 4, 32, 5, [158, 132, 108]);
-      for (const [x, y] of [[3, 21], [9, 21], [16, 21], [14, 11], [20, 11], [27, 11], [3, 4], [9, 4], [24, 3], [29, 3]]) cave(p, x, y, 2, 3);
+      for (const [x, y] of [[3, 21], [9, 21]]) cave(p, x, y, 2, 3);
       steps(p, 25, 19, 2, 5, [196, 180, 160]); steps(p, 8, 9, 2, 5, [196, 180, 160]);
       for (const [x, y] of [[4, 10], [28, 26], [20, 26]]) p.decor("boulder", x, y);
       p.decor("barrels", 5, 14); p.decor("board", 19, 27);
@@ -392,25 +399,23 @@ module.exports = {
       p.decor("board", 19, 27);
     },
   },
-  // The League road: the formal way up from Mesagoza. Cobbles, clipped hedges, banners and lamps, climbing
-  // by two broad flights of steps to the forecourt under the League building.
+  // The League road: the path up from Mesagoza's west gate. A dirt track climbing two shelves of brown cliff
+  // by rough steps to the grassy shelf under the League building.
   PaldeaLeagueRoad: {
-    theme: { ground: "grass", road: "cobble", border: "tree", tree: "tree1", density: 0.04, groves: 0.05, flowers: 0.25 },
+    theme: { ground: "grass", road: "dirt", border: "rock", tree: "tree1", density: 0.04, groves: 0.05, flowers: 0.25 },
     plan(p) {
-      const gold = [226, 190, 90], blue = [60, 90, 180];
-      p.fill("rock", 1, 21, 32, 22); p.fill("rock", 1, 10, 32, 11);
-      p.fill("ground", 16, 21, 18, 22); p.fill("ground", 9, 10, 11, 11);
-      p.disc("ornate", 17.5, 6, 6, 3.5);
-      p.street("cobble", 3, [[17, 29], [17, 19], [10, 19]]); p.street("cobble", 3, [[10, 19], [10, 16], [10, 8], [17, 8]]); p.street("cobble", 3, [[17, 8], [17, 1]]);
-      p.street("cobble", 1, [[1, 16], [10, 16]]); p.street("cobble", 1, [[11, 16], [32, 16]]);
-      steps(p, 16, 21, 3, 2); steps(p, 9, 10, 3, 2);
-      face(p, 1, 22, 15, 22, [176, 170, 160]); face(p, 19, 22, 32, 22, [176, 170, 160]); face(p, 1, 11, 8, 11, [176, 170, 160]); face(p, 12, 11, 32, 11, [176, 170, 160]);
-      for (const y of [24, 26, 28]) { p.decor("hedge", 15, y); p.decor("hedge", 19, y); }
-      for (const x of [12, 14, 20, 22, 24]) p.decor("hedge", x, 13);
-      flag(p, 15, 23, blue, gold); flag(p, 19, 23, blue, gold); flag(p, 8, 12, blue, gold); flag(p, 12, 12, blue, gold); flag(p, 14, 3, blue, gold); flag(p, 20, 3, blue, gold);
+      const CLIFF = [166, 130, 102];
+      p.fill("rock", 1, 20, 32, 22); p.fill("rock", 1, 9, 32, 11); p.fill("rock", 1, 1, 8, 5); p.fill("rock", 26, 1, 32, 6);
+      p.fill("ground", 16, 20, 18, 22); p.fill("ground", 9, 9, 11, 11);
+      p.street("dirt", 3, [[17, 29], [17, 19], [10, 19]]); p.street("dirt", 3, [[10, 19], [10, 16], [10, 8], [17, 8]]); p.street("dirt", 3, [[17, 8], [17, 1]]);
+      p.street("dirt", 1, [[1, 16], [10, 16]]); p.street("dirt", 1, [[11, 16], [32, 16]]);
+      steps(p, 16, 20, 3, 3, [196, 176, 150]); steps(p, 9, 9, 3, 3, [196, 176, 150]);
+      face(p, 1, 21, 15, 22, CLIFF); face(p, 19, 21, 32, 22, CLIFF); face(p, 1, 10, 8, 11, CLIFF); face(p, 12, 10, 32, 11, CLIFF);
       for (const [x, y] of [[14, 20], [8, 20], [13, 6], [21, 6]]) lamp(p, x, y, [255, 236, 170]);
-      p.decor("fountain", 23, 5); p.fill("flowersBlue", 3, 24, 8, 25); p.fill("flowersRed", 24, 24, 29, 25);
-      p.decor("bench", 12, 5); p.decor("board", 19, 27);
+      for (const [x, y] of [[23, 13], [5, 25], [26, 26], [22, 3]]) p.decor("tree1", x, y, { canopy: true });
+      for (const [x, y] of [[4, 13], [28, 17], [12, 26]]) p.decor("boulder", x, y);
+      p.fill("flowersBlue", 3, 24, 8, 25); p.fill("flowersRed", 24, 24, 29, 25);
+      p.decor("board", 19, 27);
     },
   },
   // Lurking Steel trail: mine country in the east. Rails run out of the adits to a spoil yard, and the
@@ -614,20 +619,19 @@ module.exports = {
       p.decor("board", 20, 27);
     },
   },
-  // Crystal Pool: the still water in the crown of Oni Mountain. Crystals stand out of the shallows, a plank
-  // walk crosses to the far bank, and the path to the Dreaded Den goes on behind.
+  // Crystal Pool: the still turquoise water in the bare white crown of Oni Mountain. Crystals stand out of
+  // the shallows, a plank walk crosses to the far bank, and the path to the Dreaded Den goes on behind.
   PaldeaCrystalPool: {
-    theme: { ground: "field", road: "gravel", border: "rock", water: "water", tree: "tree1", density: 0.04, groves: 0.06, flowers: 0.15 },
+    theme: { ground: "gravel", road: "sand", border: "rock", water: "water", tree: "boulder", density: 0.04, groves: 0, flowers: 0 },
     plan(p) {
       p.fill("rock", 1, 1, 6, 4); p.fill("rock", 27, 1, 32, 4); p.fill("rock", 1, 26, 6, 30); p.fill("rock", 27, 26, 32, 30);
-      p.disc("beach", 17, 10.5, 12.5, 6.8); p.disc("water", 17, 10.5, 11.5, 5.8);
+      p.disc("beach", 17, 10.5, 14, 8.2); p.disc("water", 17, 10.5, 11.5, 5.8);
       p.disc("beach", 17.5, 14.5, 3.5, 2.4);
-      p.street("gravel", 2, [[17, 29], [17, 23], [11, 23], [11, 19], [17, 19], [17, 16]]); p.street("gravel", 2, [[17, 16], [17, 1]]);
-      p.street("gravel", 1, [[1, 16], [3, 16], [3, 19], [11, 19]]); p.street("gravel", 1, [[32, 16], [30, 16], [30, 19], [18, 19]]);
-      decal(p, (c) => { c.ellipse(17 * T, 10.5 * T, 11 * T, 5.2 * T, [170, 236, 240, 70]); for (const [x, y] of [[9, 9], [24, 12], [13, 13], [22, 7]]) { c.ellipse(x * T, y * T, 10, 4, [236, 250, 252, 170], 1); c.ellipse(x * T, y * T, 5, 2, [236, 250, 252, 170], 1); } }, 0.6);
+      p.street("sand", 2, [[17, 29], [17, 23], [11, 23], [11, 19], [17, 19], [17, 16]]); p.street("sand", 2, [[17, 16], [17, 1]]);
+      p.street("sand", 1, [[1, 16], [3, 16], [3, 19], [11, 19]]); p.street("sand", 1, [[32, 16], [30, 16], [30, 19], [18, 19]]);
+      decal(p, (c) => { c.ellipse(17 * T, 10.5 * T, 11 * T, 5.2 * T, [120, 230, 220, 110]); for (const [x, y] of [[9, 9], [24, 12], [13, 13], [22, 7]]) { c.ellipse(x * T, y * T, 10, 4, [236, 250, 252, 170], 1); c.ellipse(x * T, y * T, 5, 2, [236, 250, 252, 170], 1); } }, 0.6);
       [[10, 10], [12, 7], [14, 11], [21, 9], [23, 11], [25, 9], [20, 13], [8, 12], [13, 9], [22, 6], [26, 12]].forEach(([x, y], k) => crystal(p, x, y, k % 3 ? [150, 230, 240] : [214, 244, 250]));
-      for (const [x, y] of [[14, 17], [20, 17], [8, 20], [26, 20]]) stoneLantern(p, x, y);
-      for (const [x, y] of [[5, 22], [24, 24]]) p.decor("boulder", x, y);
+      for (const [x, y] of [[5, 22], [24, 24], [8, 26], [27, 21], [21, 26]]) p.decor("boulder", x, y);
       p.decor("board", 19, 27);
     },
   },

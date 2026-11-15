@@ -64,11 +64,14 @@ const C = WORLD_MAPS.UnovaCasteliaCity;
 assert.deepEqual(UNOVA_DATA.chapter.arrival, { map: "UnovaCasteliaCity", x: 28, y: 49, facing: "up" });
 const door = (m, to) => m.warps.find((w) => w.map === to);
 assert.equal(door(C, "UnovaRoute4Gate").y, 3, "Route 4 leaves from the north");
-assert(door(C, "UnovaCasteliaCity_PokemonCenter_1F").y > 30 && door(C, "UnovaCasteliaCity_PokemonCenter_1F").x > 40, "the Pokémon Center is on the waterfront's east end");
+{ const pc = door(C, "UnovaCasteliaCity_PokemonCenter_1F"); assert(pc.y > 30 && pc.x > 33 && pc.x < 43, "the Pokémon Center is on the waterfront between Mode Street and Castelia Street"); }
+// West to east, as in the games: Liberty Pier, Unity Pier, Prime Pier, the Cruise Dock, then the Thumb Pier and its sewer hatch.
+{ const xs = ["UnovaLibertyGarden", "UnovaHouseCasteliaCity9", "UnovaCasteliaFerryCabin", "UnovaRoyalUnovaDock", "UnovaCasteliaSewers"].map((n) => door(C, n).x); assert.deepEqual(xs, [...xs].sort((a, b) => a - b), "pier order"); }
+assert(door(C, "UnovaGameFreakOffice").x > 44 && door(C, "UnovaBattleCompany").y > 30 && door(C, "UnovaCasteliaGym").x < 22, "GAME FREAK east, Battle Company on the waterfront, the Gym west");
 assert.equal(new Set(["UnovaLibertyGarden", "UnovaCasteliaSewers", "UnovaCasteliaFerryCabin", "UnovaRoyalUnovaDock", "UnovaHouseCasteliaCity9"].map((n) => Math.round(door(C, n).x / 10))).size, 5, "five piers, one destination each");
 const N = WORLD_MAPS.KalosLumioseNorth, S = WORLD_MAPS.KalosLumioseSouth;
 assert.deepEqual([door(S, "KalosLumioseNorth").x, door(N, "KalosLumioseSouth").x], [24, 24], "Vernal Avenue joins the two halves");
-assert(door(N, "KalosRoute13").x < 5 && door(N, "KalosRoute16").x > 42 && door(N, "KalosRoute14Entrance").y < 5 && door(S, "KalosRoute5").x < 5 && door(S, "KalosRoute4Entrance").y > 30, "the five route gates sit on the ring");
+assert(door(N, "KalosRoute13").x < 5 && door(N, "KalosRoute16").x > 42 && door(N, "KalosRoute14Entrance").y < 5 && door(S, "KalosRoute5").x < 12 && door(S, "KalosRoute5").y > 30 && door(S, "KalosRoute4Entrance").x > 35 && door(S, "KalosRoute4Entrance").y > 30, "the five route gates sit on the ring: Route 5 south-west, Route 4 south-east");
 const tower = door(N, "KalosPrismLobby");
 assert(Math.abs(tower.x - 24) <= 1 && tower.y > 20, "Prism Tower stands on Centrico Plaza");
 

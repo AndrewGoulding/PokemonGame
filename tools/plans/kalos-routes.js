@@ -124,28 +124,26 @@ function alleyBlocks(p, rects, wallCol = [214, 196, 168], roofCol = [92, 98, 122
 }
 
 module.exports = {
-  // Route 1, Vaniville Pathway: a short brick lane between hedges, flower beds and lamp posts.
+  // Route 1, Vaniville Pathway: nothing but a short grey cobbled lane straight through the trees (reference).
   KalosRoute1: {
-    theme: { ground: "grass", road: "brick", density: 0.1, groves: 0, flowers: 0.1 },
+    theme: { ground: "grass", road: "gravel", density: 0.1, groves: 0, flowers: 0.03 },
     plan(p) {
-      p.fill("tree", 2, 2, 5, 19); p.fill("tree", 18, 2, 21, 19);                         // woods either side
-      p.fill("grass", 6, 2, 17, 19);
-      p.street("brick", 3, [[12, 19], [12, 2]]); p.disc("brick", 12.5, 11, 3.2);           // the lane and its round rest
-      p.fill("flowersRed", 9, 4, 10, 7); p.fill("flowersBlue", 14, 4, 15, 7); p.fill("flowersPink", 9, 14, 10, 17); p.fill("flowersRed", 14, 14, 15, 17);
-      hedgeRow(p, 8, 3, 1, 6); hedgeRow(p, 16, 3, 1, 6); hedgeRow(p, 8, 13, 1, 6); hedgeRow(p, 16, 13, 1, 6);
-      lamp(p, 9, 9); lamp(p, 15, 9); lamp(p, 9, 12); lamp(p, 15, 12);
-      p.decor("bench", 7, 10); p.decor("bench", 17, 10);
+      p.fill("tree", 2, 2, 7, 19); p.fill("tree", 17, 2, 21, 19);                         // woods either side
+      p.fill("grass", 8, 2, 16, 19);
+      p.street("gravel", 3, [[12, 19], [12, 2]]);                                          // the lane
+      treeRow(p, 8, 4, 4, 0, 4); treeRow(p, 15, 6, 3, 0, 4);
     },
   },
-  // Route 2, Avance Trail: the trail zigzags between two tall-grass fields and a ledge.
+  // Route 2, Avance Trail: a straight dirt trail north through bands of tall grass, the river and its bank down the
+  // west side, woods to the east (reference).
   KalosRoute2: {
-    theme: { ground: "grass", road: "dirt", density: 0.25, groves: 0.1, flowers: 0.15 },
+    theme: { ground: "grass", road: "dirt", density: 0.2, groves: 0.1, flowers: 0.06 },
     plan(p) {
-      p.street("dirt", 2, [[16, 27], [16, 20], [11, 20], [11, 13], [20, 13], [20, 7], [16, 7], [16, 2]]);
-      p.fill("grass", 13, 15, 18, 18); p.fill("grass", 13, 9, 18, 11); p.fill("grass", 22, 9, 24, 12);   // open lawn in the bends
-      p.fill("rock", 3, 18, 6, 18); p.fill("rock", 22, 14, 28, 14);                                    // ledges
-      p.fill("tree", 2, 23, 9, 27); p.fill("tree", 23, 24, 29, 27); p.fill("tree", 2, 2, 8, 5);         // the wood closing in
-      p.fill("flowersRed", 13, 23, 14, 25); p.fill("flowersPink", 19, 22, 20, 24);
+      p.fill("water", 5, 2, 6, 9); p.fill("water", 6, 9, 8, 10); p.fill("water", 8, 10, 9, 16); p.fill("water", 6, 16, 9, 17); p.fill("water", 5, 17, 6, 27);   // the river
+      p.fill("rock", 10, 9, 10, 15); p.fill("rock", 7, 3, 7, 7);                            // its bank
+      p.fill("tree", 2, 2, 3, 27); p.fill("tree", 24, 8, 29, 27);                           // the woods
+      p.street("dirt", 2, [[16, 27], [16, 2]]);
+      p.fill("grass", 13, 18, 20, 20); p.fill("grass", 13, 12, 20, 14); p.fill("grass", 13, 6, 20, 8);   // mown clearings between the grass bands
     },
   },
   // Santalune Forest: the looping trail under the canopy, with a tall-grass glade in the middle and side glades.
@@ -160,16 +158,17 @@ module.exports = {
       p.disc("meadow", 7.5, 17, 2.4); p.disc("meadow", 35.5, 22.5, 2.4); p.fill("flowersBlue", 35, 21, 36, 22); p.fill("flowersPink", 6, 15, 7, 16);
     },
   },
-  // Route 3, Ouvert Way: the path steps down past ledges and round a pond.
+  // Route 3, Ouvert Way: the trail runs almost straight north on the east side under a rock scarp; a winding ledge and
+  // the pond lie west of it (reference).
   KalosRoute3: {
-    theme: { ground: "grass", road: "dirt", density: 0.25, groves: 0.1, flowers: 0.15 },
+    theme: { ground: "grass", road: "dirt", density: 0.2, groves: 0.08, flowers: 0.06 },
     plan(p) {
-      p.disc("water", 26, 23.5, 4.2, 2.8);                                                  // the pond
-      p.street("dirt", 2, [[17, 29], [17, 22], [9, 22], [9, 13], [20, 13], [20, 6], [17, 6], [17, 2]]);
-      p.fill("rock", 12, 18, 21, 18); p.fill("rock", 3, 11, 7, 11); p.fill("rock", 23, 13, 27, 13);   // ledges
-      p.fill("grass", 11, 15, 15, 17); p.fill("grass", 19, 20, 21, 26); p.fill("grass", 11, 24, 15, 27);
-      p.fill("flowersRed", 3, 3, 6, 5); p.fill("flowersPink", 27, 3, 30, 5); p.fill("flowersBlue", 28, 27, 30, 28);
-      p.fill("tree", 2, 27, 4, 29); p.fill("tree", 30, 14, 31, 19);
+      p.disc("water", 9, 21.5, 3.2, 2);                                                     // the pond, south-west of the trail
+      p.street("dirt", 2, [[17, 29], [17, 22], [19, 22], [19, 9], [17, 9], [17, 2]]);
+      p.fill("rock", 27, 5, 31, 22);                                                        // the scarp along the east side
+      p.fill("rock", 4, 13, 13, 13); p.fill("rock", 14, 13, 14, 18); p.fill("rock", 10, 18, 13, 18);   // the winding ledge
+      p.fill("grass", 20, 11, 22, 20); p.fill("grass", 13, 24, 15, 27);
+      p.fill("tree", 2, 27, 4, 29); p.fill("tree", 2, 2, 4, 6);
     },
   },
   // Route 22, Detourner Way: hedged lanes and two ponds between Santalune and the Victory Road gate.
@@ -185,37 +184,40 @@ module.exports = {
       p.fill("rock", 26, 5, 27, 8); p.fill("rock", 31, 6, 33, 8);                          // the crag round the cave mouth
     },
   },
-  // Route 4, Parterre Way: the formal garden - a cobbled avenue, clipped hedges, flower parterres and the Perle fountain.
+  // Route 4, Parterre Way: the formal garden - a sand avenue between clipped hedge mazes, with the round Perle
+  // fountain on its stone plaza in the middle (reference).
   KalosRoute4Entrance: {
-    theme: { ground: "lawn", road: "cobble", density: 0, groves: 0, flowers: 0.1 },
+    theme: { ground: "lawn", road: "sand", density: 0, groves: 0, flowers: 0.03 },
     plan(p) {
-      p.street("cobble", 3, [[15, 21], [15, 2]]); p.disc("ornate", 15.5, 9.5, 4.2);
-      p.decor("fountain", 14, 7);                                                           // the Perle fountain
-      hedgeRow(p, 12, 3, 1, 4); hedgeRow(p, 18, 3, 1, 4); hedgeRow(p, 12, 17, 1, 4); hedgeRow(p, 18, 17, 1, 4);
-      p.fill("flowersRed", 9, 3, 11, 6); p.fill("flowersBlue", 19, 3, 20, 6); p.fill("flowersPink", 9, 17, 11, 20); p.fill("flowersRed", 19, 17, 20, 20);
-      p.fill("flowersBlue", 3, 8, 5, 10); p.fill("flowersPink", 3, 12, 5, 15); p.fill("flowersPink", 24, 8, 26, 10); p.fill("flowersBlue", 24, 12, 26, 15);
-      hedgeRow(p, 3, 7, 3, 1); hedgeRow(p, 3, 16, 3, 1); hedgeRow(p, 24, 7, 3, 1); hedgeRow(p, 24, 16, 3, 1);
-      statue(p, 11, 8); statue(p, 19, 8); statue(p, 11, 12); statue(p, 19, 12);
+      p.street("sand", 3, [[15, 21], [15, 2]]);
+      p.street("sand", 1, [[7, 3], [7, 21]]); p.street("sand", 1, [[21, 3], [21, 21]]);     // the walks through the mazes
+      p.street("sand", 1, [[7, 7], [21, 7]]); p.street("sand", 1, [[7, 16], [21, 16]]);
+      p.disc("ornate", 15.5, 11.5, 4.2); p.disc("water", 15.5, 11.5, 2.2);
+      p.decor("fountain", 14, 10);                                                          // the Perle fountain
+      for (const y of [3, 18]) { hedgeRow(p, 9, y, 4, 3); hedgeRow(p, 18, y, 2, 3); hedgeRow(p, 3, y, 3, 3); hedgeRow(p, 23, y, 4, 3); }
+      for (const y of [9, 13]) { hedgeRow(p, 3, y, 3, 2); hedgeRow(p, 23, y, 4, 2); hedgeRow(p, 9, y, 1, 2); hedgeRow(p, 19 + 1, y, 1, 2); }
+      p.fill("flowersRed", 9, 6, 12, 6); p.fill("flowersRed", 18, 6, 19, 6); p.fill("flowersPink", 9, 17, 12, 17); p.fill("flowersPink", 18, 17, 19, 17);
     },
   },
-  // Route 5, Versant Road: the hillside road down to Camphrier, with the skate park's rails on a paved terrace.
+  // Route 5, Versant Road: the skate park sits at the top by the Lumiose gate; from it the road winds down the hillside
+  // south-west to Camphrier past ledges and tall grass (reference).
   KalosRoute5: {
-    theme: { ground: "grass", road: "sand", density: 0.2, groves: 0.08, flowers: 0.12 },
+    theme: { ground: "grass", road: "sand", density: 0.2, groves: 0.08, flowers: 0.06 },
     plan(p) {
-      p.street("sand", 3, [[23, 3], [23, 12], [33, 12], [33, 19], [13, 19], [13, 26], [22, 26], [22, 33], [3, 33]]);
-      p.fill("paving", 27, 23, 41, 33); p.street("paving", 2, [[23, 29], [27, 29]]);        // the skate park
-      rail(p, 29, 25, 6, 1); rail(p, 37, 25, 1, 6, [70, 120, 200]); rail(p, 29, 31, 5, 1, [240, 200, 80]); rail(p, 31, 28, 4, 1, [70, 120, 200]); rail(p, 39, 24, 1, 3);
-      hedgeRow(p, 27, 22, 15, 1); hedgeRow(p, 26, 23, 1, 5); hedgeRow(p, 26, 31, 1, 3);
-      p.decor("bench", 28, 23); p.decor("bench", 35, 23); lamp(p, 27, 34); lamp(p, 41, 34);
-      p.fill("rock", 3, 13, 10, 13); p.fill("rock", 36, 14, 42, 14); p.fill("rock", 3, 28, 9, 28); p.fill("rock", 15, 22, 20, 22);   // the slope's ledges
-      p.fill("flowersRed", 25, 5, 27, 7); p.fill("flowersPink", 19, 5, 21, 7); p.fill("flowersBlue", 15, 28, 18, 30);
+      p.street("sand", 3, [[23, 3], [23, 14], [33, 14], [33, 19], [13, 19], [13, 26], [22, 26], [22, 33], [3, 33]]);
+      p.fill("paving", 30, 4, 41, 12); p.fill("sand", 32, 6, 39, 10); p.street("paving", 2, [[24, 8], [30, 8]]);   // the skate park: a tan court in a paved surround
+      rail(p, 32, 5, 6, 1); rail(p, 40, 5, 1, 6, [70, 120, 200]); rail(p, 32, 11, 5, 1, [240, 200, 80]); rail(p, 34, 8, 4, 1, [70, 120, 200]);
+      hedgeRow(p, 30, 3, 12, 1); hedgeRow(p, 29, 4, 1, 3); hedgeRow(p, 29, 10, 1, 3); hedgeRow(p, 36, 13, 6, 1);
+      p.decor("bench", 31, 4); lamp(p, 29, 7); lamp(p, 29, 9);
+      p.fill("rock", 3, 13, 10, 13); p.fill("rock", 36, 22, 42, 22); p.fill("rock", 3, 28, 9, 28); p.fill("rock", 15, 22, 20, 22); p.fill("rock", 26, 29, 34, 29);   // the slope's ledges
+      p.fill("flowersPink", 19, 5, 21, 7); p.fill("flowersBlue", 15, 28, 18, 30);
     },
   },
   // Route 7 east, Riviere Walk: the stone bridge the Snorlax sleeps on, berry fields on the Camphrier bank.
   KalosRoute7East: {
-    theme: { ground: "meadow", road: "cobble", density: 0.15, groves: 0.05, flowers: 0.25 },
+    theme: { ground: "meadow", road: "dirt", density: 0.15, groves: 0.05, flowers: 0.12 },
     plan(p) {
-      p.street("cobble", 3, [[2, 16], [35, 16]]); p.street("cobble", 2, [[20, 3], [20, 15]]);
+      p.street("dirt", 3, [[2, 16], [35, 16]]); p.street("dirt", 2, [[20, 3], [20, 15]]);
       stoneBridge(p, 14, 14, 5, 5, false);
       plot(p, 24, 20, 4, 2); plot(p, 30, 20, 4, 2, [90, 110, 220]); plot(p, 24, 24, 4, 2, [240, 200, 80]); plot(p, 30, 24, 4, 2);
       fence(p, 22, 19, 13, 1); fence(p, 22, 20, 1, 7); fence(p, 35, 20, 1, 7);
@@ -223,15 +225,15 @@ module.exports = {
       hedgeRow(p, 3, 13, 9, 1); hedgeRow(p, 24, 13, 9, 1); lamp(p, 12, 13); lamp(p, 20, 13); lamp(p, 12, 19); lamp(p, 20, 19);
     },
   },
-  // Route 6, Palais Lane: the straight avenue to the palace between two lines of trees, tall grass beyond them.
+  // Route 6, Palais Lane: a narrow dark earth avenue under two close lines of trees, with wide tall-grass fields and
+  // their footpaths on either side (reference).
   KalosRoute6: {
-    theme: { ground: "meadow", road: "sand", density: 0.12, groves: 0.05, flowers: 0.1 },
+    theme: { ground: "meadow", road: "dirt", density: 0.06, groves: 0.03, flowers: 0.03 },
     plan(p) {
-      p.street("sand", 3, [[21, 37], [21, 2]]);
-      p.fill("grass", 18, 2, 19, 37); p.fill("grass", 23, 2, 24, 37);                       // mown verges
-      treeRow(p, 16, 4, 8, 0, 4); treeRow(p, 25, 4, 8, 0, 4);                               // the two tree lines
-      hedgeRow(p, 3, 34, 12, 1); hedgeRow(p, 28, 34, 11, 1); hedgeRow(p, 3, 3, 12, 1); hedgeRow(p, 28, 3, 11, 1);
-      p.fill("flowersRed", 30, 30, 34, 32); p.fill("flowersPink", 4, 30, 6, 32);
+      p.street("dirt", 2, [[21, 37], [21, 2]]);
+      p.fill("shade", 19, 2, 20, 37); p.fill("shade", 23, 2, 24, 37);                       // the shade under the trees
+      treeRow(p, 16, 3, 11, 0, 3); treeRow(p, 25, 3, 11, 0, 3);                             // the two tree lines
+      p.street("dirt", 1, [[8, 5], [8, 30]]); p.street("dirt", 1, [[28, 5], [28, 24]]); p.street("dirt", 1, [[8, 5], [13, 5]]); p.street("dirt", 1, [[28, 5], [33, 5]]);   // footpaths through the grass
     },
   },
   // Parfum Palace forecourt: the gilded fence and gate, the cobbled court with its fountains and parterres, the palace front.
@@ -249,42 +251,43 @@ module.exports = {
       lamp(p, 16, 23); lamp(p, 20, 23); lamp(p, 16, 26); lamp(p, 20, 26);
     },
   },
-  // Route 7 west, Riviere Walk: the riverside promenade, the day care and its paddock, the berry fields and the Battle Chateau.
+  // Route 7 west, Riviere Walk: the broad river lies north of the walk and the Battle Chateau stands beyond it at the end
+  // of its own bridge; south of the walk run flower strips and a long hedge, with the berry plots and day care behind (reference).
   KalosRoute7West: {
-    theme: { ground: "meadow", road: "sand", density: 0.12, groves: 0.05, flowers: 0.2, autoHouses: false },
+    theme: { ground: "meadow", road: "dirt", density: 0.1, groves: 0.04, flowers: 0.1, autoHouses: false },
     plan(p) {
-      p.fill("water", 2, 23, 41, 26);                                                       // the river
-      p.street("sand", 3, [[41, 18], [26, 18], [26, 19], [12, 19], [12, 18], [2, 18]]);
-      p.street("sand", 2, [[33, 9], [33, 17]]); p.street("sand", 2, [[37, 19], [37, 29]]);   // to the Chateau; the footbridge
+      p.fill("water", 2, 10, 41, 14);                                                       // the river
+      p.street("dirt", 3, [[41, 18], [2, 18]]);
+      p.street("paving", 2, [[33, 9], [33, 17]]);                                           // the Chateau's bridge
       p.building(2, "church");
-      p.decor("logHouse", 11, 10); fence(p, 3, 11, 7, 1); fence(p, 3, 12, 1, 4); fence(p, 9, 12, 1, 2); fence(p, 3, 16, 7, 1);   // the day care and its paddock
-      p.fill("grass", 4, 12, 8, 15);
-      plot(p, 20, 12, 3, 2); plot(p, 24, 12, 3, 2, [90, 110, 220]); plot(p, 20, 15, 3, 2, [240, 200, 80]); plot(p, 24, 15, 3, 2);   // the berry fields
-      p.fill("flowersRed", 4, 28, 9, 31); p.fill("flowersBlue", 26, 29, 31, 31);
-      hedgeRow(p, 3, 21, 32, 1); lamp(p, 14, 21); lamp(p, 28, 21);
+      p.fill("flowersBlue", 5, 20, 12, 20); p.fill("flowersPink", 15, 20, 20, 20); p.fill("flowersBlue", 24, 20, 30, 20);   // the flower strips
+      hedgeRow(p, 3, 21, 30, 1);
+      plot(p, 8, 24, 3, 2); plot(p, 12, 24, 3, 2, [90, 110, 220]); plot(p, 16, 24, 3, 2, [240, 200, 80]); plot(p, 8, 27, 3, 2); plot(p, 12, 27, 3, 2, [240, 200, 80]); plot(p, 16, 27, 3, 2, [90, 110, 220]);   // the berry fields
+      p.decor("logHouse", 24, 23); fence(p, 31, 23, 6, 1); fence(p, 31, 27, 6, 1); fence(p, 36, 24, 1, 3); p.fill("grass", 31, 24, 35, 26);   // the day care and its paddock
+      lamp(p, 31, 16); lamp(p, 35, 16);
     },
   },
   // Route 8 upper, Muraille Coast: the cliff-top path zigzags down the ledges above the sea.
   KalosRoute8Upper: {
-    theme: { ground: "field", road: "gravel", border: "rock", water: "sea", density: 0.2, groves: 0.05, flowers: 0.03 },
+    theme: { ground: "grass", road: "dirt", border: "rock", water: "sea", density: 0.2, groves: 0.05, flowers: 0.03 },
     plan(p) {
       p.fill("water", 2, 2, 4, 35); p.fill("rock", 5, 2, 6, 35);                            // the sea below the cliff edge
-      p.street("gravel", 2, [[19, 5], [19, 11], [28, 11], [28, 18], [11, 18], [11, 26], [19, 26], [19, 33]]);
+      p.street("dirt", 2, [[19, 5], [19, 11], [28, 11], [28, 18], [11, 18], [11, 26], [19, 26], [19, 33]]);
       p.fill("rock", 7, 14, 25, 15); p.fill("rock", 14, 21, 35, 23); p.fill("rock", 22, 28, 29, 29);   // the ledges the path winds round
       p.fill("rock", 31, 12, 35, 14);
     },
   },
-  // Route 9, Spikes Passage: the Rhyhorn trail - a narrow gravel defile between rock spikes, with the two breakable rocks in its chokepoints.
+  // Route 9, Spikes Passage: the Rhyhorn trail - a rubble track along terraces of brown rock, grey boulders beside it.
   KalosRoute9: {
-    theme: { ground: "gravel", road: "dirt", border: "rock", density: 0.08, groves: 0, flowers: 0 },
+    theme: { ground: "dirt", road: "gravel", border: "rock", density: 0.04, groves: 0, flowers: 0 },
     plan(p) {
-      p.fill("rock", 2, 2, 37, 33);
+      p.fill("rock", 2, 2, 37, 33); p.fill("tree", 15, 27, 37, 33); p.fill("tree", 2, 32, 14, 33); p.fill("darktree", 2, 2, 16, 9);   // brown crags; woods below and above (reference)
       for (const [x0, y0, x1, y1] of [[3, 25, 13, 30], [9, 20, 12, 25], [9, 20, 22, 23], [19, 19, 22, 21], [20, 17, 20, 19], [18, 12, 27, 16], [24, 16, 27, 22], [25, 8, 25, 11], [23, 4, 36, 7]]) p.fill("ground", x0, y0, x1, y1);
-      p.street("dirt", 1, [[3, 28], [10, 28], [10, 21], [20, 21], [20, 14], [25, 14], [25, 6], [34, 6]]);
-      for (const [x, y, t] of [[4, 25, 24], [8, 26, 18], [12, 27, 26], [13, 30, 20], [3, 30, 18], [12, 23, 22], [14, 20, 26], [17, 23, 18], [22, 20, 24], [18, 12, 26], [22, 16, 20], [27, 13, 24], [24, 20, 18], [27, 19, 26], [26, 22, 20], [23, 4, 22], [28, 7, 26], [31, 4, 18], [36, 7, 24]]) spike(p, x, y, t);
+      p.street("gravel", 1, [[3, 28], [10, 28], [10, 21], [20, 21], [20, 14], [25, 14], [25, 6], [34, 6]]);        // the rubble the Rhyhorn crosses
+      for (const [x, y, t] of [[4, 25, 24], [8, 26, 18], [12, 27, 26], [13, 30, 20], [3, 30, 18], [12, 23, 22], [14, 20, 26], [17, 23, 18], [22, 20, 24], [18, 12, 26], [22, 16, 20], [27, 13, 24], [24, 20, 18], [27, 19, 26], [26, 22, 20], [23, 4, 22], [28, 7, 26], [31, 4, 18], [36, 7, 24]]) menhir(p, x, y, 10 + (t >> 2), [150, 150, 158]);   // round grey boulders
     },
   },
-  // Route 8 coast, Muraille Coast: the beach under the cliff - a sandy path between the surf, tide pools, palms and parasols.
+  // Route 8 coast, Muraille Coast: the bare beach under the cliff - pale sand between the surf and the rock, coves and tide pools.
   KalosRoute8Coast: {
     theme: { ground: "beach", road: "sand", border: "rock", water: "sea", density: 0.06, groves: 0, flowers: 0 },
     plan(p) {
@@ -292,27 +295,27 @@ module.exports = {
       p.disc("water", 6, 30, 5.2, 4); p.disc("water", 6, 19, 3.4, 2.4);                                  // coves
       p.disc("water", 25.5, 27.5, 1.6); p.disc("water", 24, 14.5, 1.4, 1);                               // tide pools
       p.street("sand", 2, [[19, 34], [19, 28], [14, 28], [14, 20], [22, 20], [22, 12], [19, 12], [19, 5]]);
-      p.fill("palms", 26, 31, 29, 34); p.fill("palms", 26, 3, 29, 5); p.fill("palms", 9, 3, 12, 4);
-      parasol(p, 11, 24, [214, 70, 70]); parasol(p, 16, 32, [70, 120, 200]); parasol(p, 25, 17, [240, 200, 80]); parasol(p, 11, 12, [70, 170, 120]); parasol(p, 26, 22, [214, 70, 70]);
+      p.fill("rock", 26, 31, 29, 34); p.fill("rock", 26, 3, 29, 5);                                       // spurs of the cliff (the reference has no palms or parasols)
+      for (const [x, y] of [[11, 24], [16, 32], [25, 17], [11, 12], [26, 22], [9, 4]]) menhir(p, x, y, 12, [150, 132, 110]);   // rocks on the sand
     },
   },
   // Route 10, Menhir Trail: straight rows of standing stones across the grass either side of the trail.
   KalosRoute10Entrance: {
-    theme: { ground: "grass", road: "gravel", border: "rock", density: 0, groves: 0, flowers: 0.04 },
+    theme: { ground: "grass", road: "dirt", border: "tree", density: 0, groves: 0, flowers: 0.04 },
     plan(p) {
-      p.street("gravel", 2, [[15, 21], [15, 15], [14, 15], [14, 8], [15, 8], [15, 2]]);
+      p.street("dirt", 2, [[15, 21], [15, 15], [14, 15], [14, 8], [15, 8], [15, 2]]);
       for (const y of [5, 9, 13, 17]) for (let k = 0; k < 5; k++) { menhir(p, 3 + k * 2, y, 24 + ((k + y) % 3) * 4); menhir(p, 19 + k * 2, y, 24 + ((k * 2 + y) % 3) * 4); }
       menhir(p, 12, 20, 34); menhir(p, 18, 20, 34); menhir(p, 12, 3, 34); menhir(p, 18, 3, 34);
     },
   },
-  // Route 11, Miroir Way: the path climbs in steps past ledges and a wood to the Reflection Cave crag.
+  // Route 11, Miroir Way: a dirt path over the grass in the west, climbing past ledges into the brown mountain that fills the east.
   KalosRoute11: {
-    theme: { ground: "grass", road: "gravel", border: "rock", tree: "tree1", density: 0.15, groves: 0.05, flowers: 0.12 },
+    theme: { ground: "grass", road: "dirt", border: "rock", tree: "tree1", density: 0.15, groves: 0.05, flowers: 0.06 },
     plan(p) {
-      p.street("gravel", 2, [[3, 26], [12, 26], [12, 19], [24, 19], [24, 12], [34, 12], [34, 6]]);
-      p.fill("rock", 3, 22, 9, 22); p.fill("rock", 14, 15, 21, 16); p.fill("rock", 27, 15, 37, 16); p.fill("rock", 15, 22, 26, 22);   // ledges
-      p.fill("rock", 36, 2, 37, 12); p.fill("rock", 28, 2, 31, 3);                          // the cave crag
-      p.fill("tree", 2, 29, 16, 31); p.fill("tree", 27, 24, 37, 31); p.fill("tree", 2, 2, 5, 5);
+      p.fill("rock", 30, 2, 37, 31); carve(p, [[30, 11, 35, 13], [33, 4, 35, 11]], "dirt");   // the brown mountain filling the east, and the cut up to the cave (reference)
+      p.street("dirt", 2, [[3, 26], [12, 26], [12, 19], [24, 19], [24, 12], [34, 12], [34, 6]]);
+      p.fill("rock", 3, 22, 9, 22); p.fill("rock", 14, 15, 21, 16); p.fill("rock", 15, 22, 26, 22);   // ledges
+      p.fill("tree", 2, 29, 16, 31); p.fill("tree", 2, 2, 5, 5);
       p.fill("flowersBlue", 18, 25, 22, 27); p.fill("flowersRed", 4, 14, 7, 16); p.fill("flowersPink", 28, 19, 31, 21);
     },
   },
@@ -335,7 +338,7 @@ module.exports = {
     plan(p) {
       p.fill("water", 33, 2, 35, 27);
       p.street("sand", 2, [[3, 24], [30, 24], [30, 8], [22, 8]]); p.street("sand", 2, [[12, 24], [12, 20]]);
-      p.fill("meadow", 7, 10, 26, 19);                                                      // the paddock
+      p.fill("dirt", 7, 10, 26, 19);                                                        // the bare earth paddock (reference)
       fence(p, 6, 9, 22, 1); fence(p, 6, 10, 1, 10); fence(p, 27, 10, 1, 10); fence(p, 6, 20, 5, 1); fence(p, 14, 20, 14, 1);
       p.fill("rock", 9, 12, 13, 12); p.fill("rock", 20, 12, 24, 12); p.fill("rock", 10, 17, 15, 17); p.fill("rock", 21, 16, 25, 16);   // ledges the Skiddo jump
       p.decor("logHouse", 20, 2); p.decor("cabin", 9, 3);                                   // the farmhouse and the barn
@@ -352,15 +355,16 @@ module.exports = {
       p.fill("rock", 19, 3, 19, 4); p.fill("rock", 23, 3, 23, 4);                            // the den's crag
     },
   },
-  // Route 13, Lumiose Badlands: a windswept desert track past the power plant, its pipelines and the wind turbines.
+  // Route 13, Lumiose Badlands: an open waste of red clay between red rock scarps, crossed by grind rails; only a faint
+  // paler track marks the way (reference - it shows no wind turbines).
   KalosRoute13: {
-    theme: { ground: "desert", road: "clay", border: "rock", tree: "boulder", density: 0.12, groves: 0, flowers: 0, autoHouses: false },
+    theme: { ground: "clay", road: "dirt", border: "ashrock", tree: "boulder", density: 0.05, groves: 0, flowers: 0, autoHouses: false },
     plan(p) {
-      p.street("clay", 3, [[23, 5], [23, 10], [32, 10], [32, 18], [20, 18], [20, 26], [27, 26], [27, 31], [23, 31], [23, 34]]);
-      p.street("clay", 2, [[20, 26], [9, 26], [9, 25]]);                                    // the plant's side road
-      pipe(p, 13, 20, 6, 1); pipe(p, 23, 20, 8, 1); pipe(p, 30, 21, 1, 9); pipe(p, 3, 12, 15, 1); pipe(p, 3, 13, 1, 5);   // pipelines
-      p.fill("rock", 26, 13, 29, 15); p.fill("rock", 36, 22, 42, 25); p.fill("rock", 4, 30, 9, 32); p.fill("rock", 37, 4, 42, 6); p.fill("rock", 12, 5, 16, 7);   // mesas
-      [[6, 8], [10, 9], [28, 6], [38, 11], [41, 17], [36, 30], [40, 34], [14, 33], [5, 36], [17, 14]].forEach(([x, y], k) => turbine(p, x, y, k * 0.7));
+      p.street("dirt", 1, [[23, 5], [23, 10], [32, 10], [32, 18], [20, 18], [20, 26], [27, 26], [27, 31], [23, 31], [23, 34]]);
+      p.street("dirt", 1, [[20, 26], [9, 26], [9, 25]]);                                    // the plant's side track
+      pipe(p, 13, 20, 6, 1); pipe(p, 23, 20, 8, 1); pipe(p, 30, 21, 1, 9); pipe(p, 3, 12, 15, 1); pipe(p, 3, 13, 1, 5);   // grind rails
+      p.fill("ashrock", 26, 13, 29, 15); p.fill("ashrock", 36, 22, 42, 25); p.fill("ashrock", 4, 30, 9, 32); p.fill("ashrock", 37, 4, 42, 6); p.fill("ashrock", 12, 5, 16, 7);   // scarps
+      p.fill("ashrock", 3, 3, 8, 8); p.fill("ashrock", 36, 30, 42, 36); p.fill("ashrock", 3, 20, 5, 28); p.fill("ashrock", 38, 10, 42, 17);
     },
   },
   // Route 14 (Lumiose end), Laverre Nature Trail: a boardwalk out of the city past the old playground and the first bog pools.

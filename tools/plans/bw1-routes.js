@@ -176,15 +176,15 @@ module.exports = {
   } },
   // Route 2: an easy lane to Striaton between flower banks, stepping round the ledges.
   BW1Route2: { theme: { density: 0.3, groves: 0.12, flowers: 0.2 }, plan(p) {
-    p.street("dirt", 2, [[24, 36], [24, 31], [28, 31], [28, 23], [20, 23], [20, 15], [24, 15], [24, 4]]);
+    p.street("sand", 2, [[24, 36], [24, 31], [28, 31], [28, 23], [20, 23], [20, 15], [24, 15], [24, 4]]);
     cliff(p, 4, 23, 12, 1); cliff(p, 30, 16, 12, 1); cliff(p, 8, 31, 10, 1);
-    p.fill("tree", 2, 2, 12, 5); p.fill("tree", 38, 30, 45, 37); p.disc("flowersRed", 34, 26, 3, 1.5); p.disc("flowersPink", 14, 8, 3, 1.5);
+    p.fill("tree", 2, 2, 12, 5); p.fill("tree", 38, 30, 45, 37);
   } },
   // Route 3: the Day-Care with its fenced playground, the brook under the footbridge and the lane to Wellspring Cave.
   BW1Route3: { theme: { density: 0.35, groves: 0.15, flowers: 0.12 }, plan(p) {
-    p.fill("water", 40, 12, 41, 30); p.disc("water", 40.5, 31, 3, 2);
-    p.street("dirt", 2, [[24, 36], [24, 30], [27, 30], [27, 22], [24, 22], [24, 14], [21, 14], [21, 7], [24, 7], [24, 4]]); p.street("dirt", 2, [[27, 22], [44, 22], [44, 20]]);
-    p.decor("logHouse", 13, 20); p.street("dirt", 1, [[14, 26], [14, 28], [24, 28]]);
+    p.disc("water", 35, 28, 5.5, 3.4); p.disc("water", 31, 27, 3, 2.4);                    // the big pond
+    p.street("dirt", 2, [[24, 36], [24, 30], [27, 30], [27, 22], [24, 22], [24, 14], [21, 14], [21, 7], [24, 7], [24, 4]]); p.street("dirt", 2, [[27, 22], [44, 22], [44, 20]]); p.street("deck", 2, [[27, 30], [42, 30], [42, 23]]);   // the plank bridge over the pond
+    p.decor("gable", 13, 20, { tint: p.roof(1.9, 0.5, 0.45) }); p.street("dirt", 1, [[14, 26], [14, 28], [24, 28]]);
     p.fill("lawn", 14, 15, 18, 16); fence(p, 13, 14, 7, 1, [236, 236, 240]); fence(p, 13, 17, 3, 1, [236, 236, 240]); fence(p, 17, 17, 3, 1, [236, 236, 240]); fence(p, 13, 15, 1, 2, [236, 236, 240]); fence(p, 19, 15, 1, 2, [236, 236, 240]);
     p.paint(0, (c) => { c.box(14 * U + 2, 15 * U + 4, 24, 22, [236, 214, 160], [150, 120, 90]); c.box(16 * U + 6, 15 * U + 8, 34, 9, [226, 90, 80], [90, 40, 40]); c.rect(16 * U + 6, 16 * U + 1, 4, 12, [120, 130, 150]); });
   } },
@@ -197,8 +197,8 @@ module.exports = {
     wall(p, 38, 15, 6, 1, [196, 176, 132]); pillar(p, 40, 23); pillar(p, 43, 23); pillar(p, 5, 30); wall(p, 4, 6, 1, 5, [196, 176, 132]);
   } },
   // Route 5: the performers' paved road and its little square, with the caravan parked beside it.
-  BW1Route5: { theme: { road: "cobble", density: 0.3, groves: 0.12, flowers: 0.12 }, plan(p) {
-    p.street("cobble", 3, [[24, 36], [24, 27], [25, 27], [25, 13], [24, 13], [24, 4]]); p.fill("cobble", 19, 17, 31, 23);
+  BW1Route5: { theme: { road: "asphalt", density: 0.3, groves: 0.12, flowers: 0.12 }, plan(p) {
+    p.street("asphalt", 3, [[24, 36], [24, 27], [25, 27], [25, 13], [24, 13], [24, 4]]); p.fill("asphalt", 19, 17, 31, 23);
     trailer(p, 33, 18, 5); p.decor("bench", 18, 18); p.decor("bench", 18, 21); p.decor("bench", 32, 21);
     fence(p, 21, 28, 1, 7, [200, 204, 214]); fence(p, 27, 28, 1, 7, [200, 204, 214]); fence(p, 21, 5, 1, 7, [200, 204, 214]); fence(p, 28, 13, 1, 3, [200, 204, 214]);
     p.fill("tree", 2, 2, 5, 37); p.fill("tree", 42, 13, 45, 37); p.fill("flowersRed", 19, 24, 22, 25); p.fill("flowersBlue", 28, 24, 31, 25);
@@ -214,10 +214,11 @@ module.exports = {
   BW1Route7: { theme: { ground: "grass", road: "dirt", border: "tree", tree: "tree1", density: 0.2, groves: 0.1, flowers: 0.05 }, plan(p) {
     p.street("dirt", 2, [[24, 36], [24, 30], [28, 30], [28, 22], [24, 22], [24, 12], [22, 12], [22, 6], [24, 6], [24, 4]]); p.street("dirt", 2, [[28, 22], [38, 22], [38, 20], [44, 20]]);
     p.street("deck", 1, [[23, 33], [10, 33], [10, 24], [20, 24]]); p.street("deck", 1, [[10, 24], [10, 14], [21, 14]]); p.street("deck", 1, [[15, 24], [15, 29], [23, 29]]); p.street("deck", 1, [[29, 27], [40, 27], [40, 33], [29, 33], [29, 30]]);
-    p.decor("towerSlim", 42, 4, { canopy: true }); p.fill("rock", 14, 2, 31, 2); p.fill("rock", 14, 3, 21, 3); p.fill("rock", 27, 3, 31, 4);
+    p.block(42, 15, 3, 3); p.paint(18, (c, top) => { const cx = 43.5 * U, by = 18 * U; c.ellipse(cx + 2, by - 4, 28, 8, [0, 0, 0, 60]); for (let k = 0; k < 7; k++) { const r = 26 - k * 3, y = by - 10 - k * 13, cv = k < 2 ? c : top; cv.ellipse(cx, y, r, 9, [96, 120, 110]); cv.rect(cx - r, y - 12, r * 2, 12, [150, 176, 160]); cv.rect(cx - r, y - 12, 5, 12, [200, 220, 206]); cv.rect(cx + r - 6, y - 12, 6, 12, [110, 136, 124]); cv.ellipse(cx, y - 12, r, 8, [214, 230, 216]); for (let i = -r + 6; i < r - 4; i += 9) cv.rect(cx + i, y - 7, 3, 5, [70, 90, 96]); } top.ellipse(cx, by - 104, 6, 6, [236, 244, 236]); c.box(cx - 6, by - 14, 12, 14, [50, 60, 70], [30, 36, 44]); });   // Celestial Tower: a round, tiered, pale tower
+    p.decor("gable", 6, 16, { tint: p.roof(1.9, 0.45, 0.5) }); p.fill("rock", 14, 2, 31, 2); p.fill("rock", 14, 3, 21, 3); p.fill("rock", 27, 3, 31, 4);
   } },
   // Route 8: the wet road out of Icirrus, puddles standing across it, the moor off to the east.
-  BW1Route8: { theme: MARSH, plan(p) {
+  BW1Route8: { theme: { ground: "grass", grass: "grass", water: "water", road: "dirt", density: 0.25, groves: 0.12, flowers: 0.05, puddles: 0.1 }, plan(p) {
     p.street("dirt", 2, [[24, 36], [24, 28], [20, 28], [20, 20], [24, 20], [24, 12], [26, 12], [26, 6], [24, 6], [24, 4]]); p.street("dirt", 2, [[24, 20], [44, 20]]);
     p.disc("water", 10, 26, 4, 2.5); p.disc("water", 36, 30, 4, 2.5);
     puddle(p, 22, 24, 2.4, 1.3); puddle(p, 32, 20.5, 2.2, 1.1); puddle(p, 12, 17, 3, 1.8); puddle(p, 34, 15, 3, 1.6); puddle(p, 14, 33, 3, 1.5); puddle(p, 25, 9, 1.6, 1); puddle(p, 40, 24, 2, 1.4); puddle(p, 7, 8, 2.4, 1.4);
@@ -232,16 +233,16 @@ module.exports = {
   // Route 10: the climb to Victory Road through the badge gates, cliffs closing in on both sides.
   BW1Route10: { theme: { ...MOUNTAIN, ground: "grass", tree: "tree1", density: 0.3 }, plan(p) {
     p.street("gravel", 2, [[24, 36], [24, 30], [27, 30], [27, 22], [24, 22], [24, 4]]);
-    cliff(p, 4, 15, 17, 1, GREY, GREYLIP); cliff(p, 28, 15, 16, 1, GREY, GREYLIP); cliff(p, 4, 23, 17, 1, GREY, GREYLIP); cliff(p, 30, 23, 14, 1, GREY, GREYLIP);
-    gate(p, 24, 16); gate(p, 24, 8); gate(p, 27, 26);
+    cliff(p, 4, 15, 17, 1); cliff(p, 28, 15, 16, 1); cliff(p, 4, 23, 17, 1); cliff(p, 30, 23, 14, 1);
+    gate(p, 24, 8);
     p.fill("rock", 2, 2, 20, 3); p.fill("rock", 28, 2, 31, 4); p.fill("rock", 42, 2, 45, 12);
   } },
   // Route 11: the waterfall and its stream under the footbridge, and the traveller's caravan.
   BW1Route11: { theme: { density: 0.35, groves: 0.15, flowers: 0.08 }, plan(p) {
     p.fill("water", 18, 13, 20, 37); p.fill("water", 16, 13, 22, 15); p.fill("water", 18, 2, 20, 8);
-    steps(p, 8, 9, 2, 4); cliff(p, 2, 9, 16, 4, GREY, GREYLIP); cliff(p, 21, 9, 10, 4, GREY, GREYLIP); falls(p, 18, 9, 3, 4);
-    p.street("dirt", 2, [[4, 20], [12, 20], [12, 22], [30, 22], [30, 20], [44, 20]]);
-    trailer(p, 25, 17, 5, [232, 226, 206], [70, 130, 190]); p.fill("tree", 2, 32, 14, 37);
+    steps(p, 8, 9, 2, 4); cliff(p, 2, 9, 16, 4); cliff(p, 21, 9, 10, 4); falls(p, 18, 9, 3, 4);
+    p.street("asphalt", 3, [[4, 20], [44, 20]]);
+    trailer(p, 25, 15, 5, [232, 226, 206], [70, 130, 190]); p.fill("tree", 2, 32, 14, 37);
   } },
   // Route 12: rolling grassy hills between Village Bridge and Lacunosa.
   BW1Route12: { theme: { ground: "meadow", density: 0.15, groves: 0.06, flowers: 0.25 }, plan(p) {
@@ -259,20 +260,20 @@ module.exports = {
   // Route 14: the river and its waterfall between the cliffs; the roads to the shrine, Black City and White Forest part beyond the bridge.
   BW1Route14: { theme: { density: 0.3, groves: 0.15, flowers: 0.05, shore: 1 }, plan(p) {
     p.fill("water", 38, 12, 40, 37);
-    steps(p, 12, 24, 2, 2); cliff(p, 2, 24, 36, 2, GREY, GREYLIP); falls(p, 38, 24, 3, 2); cliff(p, 41, 24, 5, 2, GREY, GREYLIP);
+    steps(p, 12, 24, 2, 2); cliff(p, 2, 24, 36, 2); falls(p, 38, 24, 3, 2); cliff(p, 41, 24, 5, 2);
     p.street("dirt", 2, [[4, 20], [14, 20], [14, 17], [28, 17], [28, 20], [44, 20]]); p.street("dirt", 2, [[42, 18], [42, 22]]); p.street("dirt", 1, [[42, 18], [44, 18]]); p.street("dirt", 1, [[42, 22], [44, 22]]);
     p.street("dirt", 1, [[12, 21], [12, 30], [36, 30]]); rapids(p, 38, 26, 40, 32, 0, 1);
     p.fill("tree", 2, 2, 14, 5);
   } },
   // Route 15: the rocky shelf with the Poke Transfer Lab on top, stairs down to the road and the lower ledge.
   BW1Route15: { theme: { ...MOUNTAIN, density: 0.3 }, plan(p) {
-    steps(p, 20, 14, 2, 2); steps(p, 34, 28, 2, 1); cliff(p, 2, 14, 29, 2, GREY, GREYLIP); cliff(p, 42, 14, 4, 2, GREY, GREYLIP); cliff(p, 2, 28, 44, 1, GREY, GREYLIP);
+    steps(p, 20, 14, 2, 2); steps(p, 34, 28, 2, 1); cliff(p, 2, 14, 29, 2); cliff(p, 42, 14, 4, 2); cliff(p, 2, 28, 44, 1);
     p.street("gravel", 2, [[4, 20], [12, 20], [12, 22], [28, 22], [28, 20], [44, 20]]); p.street("gravel", 1, [[4, 22], [12, 22]]); p.street("gravel", 2, [[20, 21], [20, 13]]);
     p.decor("lab", 17, 7); p.fill("rock", 2, 2, 14, 4); p.fill("rock", 26, 2, 30, 3);
   } },
   // Route 16: the straight paved road east of Nimbasa, railed off from the woods, with Lostlorn Forest at its end.
-  BW1Route16: { theme: { road: "cobble", density: 0.4, groves: 0.2, flowers: 0.05 }, plan(p) {
-    p.street("cobble", 3, [[4, 20], [14, 20], [14, 21], [32, 21], [32, 20], [44, 20]]); p.street("cobble", 1, [[4, 22], [8, 22]]);
+  BW1Route16: { theme: { road: "asphalt", density: 0.4, groves: 0.2, flowers: 0.05 }, plan(p) {
+    p.street("asphalt", 3, [[4, 20], [14, 20], [14, 21], [32, 21], [32, 20], [44, 20]]); p.street("asphalt", 1, [[4, 22], [8, 22]]);
     fence(p, 6, 18, 8, 1, [200, 204, 214]); fence(p, 16, 19, 15, 1, [200, 204, 214]); fence(p, 10, 23, 30, 1, [200, 204, 214]); fence(p, 34, 18, 8, 1, [200, 204, 214]);
     p.fill("tree", 2, 2, 28, 4); p.fill("tree", 2, 34, 45, 37);
   } },
@@ -286,29 +287,29 @@ module.exports = {
   // Route 18: a rocky island of ledges and sand above the surf, the waterfall pool and the lone house.
   BW1Route18: { theme: { ...COAST, shore: 2, density: 0.25 }, plan(p) {
     p.fill("water", 2, 33, 30, 37); p.fill("water", 2, 2, 7, 8); p.fill("water", 13, 8, 17, 9);
-    cliff(p, 9, 4, 22, 3, GREY, GREYLIP); falls(p, 14, 4, 2, 3); cliff(p, 4, 15, 14, 1); cliff(p, 28, 27, 12, 1);
+    cliff(p, 9, 4, 22, 3); cliff(p, 4, 15, 14, 1); cliff(p, 28, 27, 12, 1);
     p.street("sand", 2, [[4, 20], [14, 20], [14, 23], [28, 23], [28, 20], [44, 20]]); p.street("sand", 1, [[20, 23], [20, 30]]);
-    p.decor("cabin", 30, 13); p.street("sand", 1, [[31, 18], [31, 20]]);
+    p.decor("cabin", 30, 13); p.street("deck", 1, [[20, 7], [20, 12]]); p.street("sand", 1, [[31, 18], [31, 20]]);
   } },
-  // Dreamyard: the roofless shell of the old works - broken walls round weed-grown rooms.
-  BW1Dreamyard: { theme: { ground: "field", road: "dirt", border: "rock", tree: "tree1", density: 0.2, groves: 0.1, grove: "tree", flowers: 0.03 }, plan(p) {
+  // Dreamyard: the roofless shell of the old works - broken walls round weed-grown rooms, deep in the woods.
+  BW1Dreamyard: { theme: { ground: "grass", road: "dirt", border: "tree", tree: "tree1", density: 0.2, groves: 0.1, grove: "tree", flowers: 0.03 }, plan(p) {
     const C = [168, 160, 150];
     wall(p, 14, 14, 9, 1, C); wall(p, 27, 14, 14, 1, C); wall(p, 14, 15, 1, 4, C); wall(p, 14, 22, 1, 13, C); wall(p, 40, 15, 1, 8, C); wall(p, 40, 27, 1, 8, C);
     wall(p, 15, 34, 10, 1, C); wall(p, 30, 34, 10, 1, C); wall(p, 18, 24, 13, 1, C); wall(p, 28, 15, 1, 6, C); wall(p, 22, 28, 1, 6, C);
     p.street("dirt", 2, [[4, 20], [16, 20]]); p.street("dirt", 1, [[16, 20], [24, 20], [24, 15], [25, 13], [32, 13]]);
     for (const [x, y] of [[17, 17], [21, 17], [32, 17], [36, 17], [17, 31], [26, 31], [32, 27], [36, 27]]) pillar(p, x, y, [176, 170, 160], 8);
-    p.fill("rock", 2, 2, 8, 3); p.fill("rock", 2, 30, 8, 37);
+    p.fill("tree", 2, 2, 8, 3); p.fill("tree", 2, 30, 8, 37);
   } },
   // Pinwheel Forest's outside: the lane from Nacrene, a side track through the trees and a brook under a footbridge.
-  BW1PinwheelForest: { theme: { road: "cobble", density: 0.45, groves: 0.2, flowers: 0.08 }, plan(p) {
+  BW1PinwheelForest: { theme: { road: "asphalt", density: 0.45, groves: 0.2, flowers: 0.08 }, plan(p) {
     p.fill("water", 38, 12, 39, 37);
-    p.street("cobble", 2, [[24, 36], [24, 26], [26, 26], [26, 14], [24, 14], [24, 4]]);
+    p.street("asphalt", 2, [[24, 36], [24, 26], [26, 26], [26, 14], [24, 14], [24, 4]]);
     p.street("dirt", 1, [[23, 31], [14, 31], [14, 15], [23, 15]]); p.street("dirt", 1, [[27, 23], [43, 23], [43, 31]]);
     fence(p, 28, 15, 1, 6); fence(p, 22, 17, 1, 8); p.fill("tree", 2, 2, 8, 37);
   } },
   // Inside Pinwheel Forest: the straight paved road, railed off, and the track winding through the deep wood on either side.
-  BW1PinwheelInner: { theme: { ...FOREST, road: "cobble", density: 0.55 }, plan(p) {
-    p.street("cobble", 3, [[24, 36], [24, 4]]);
+  BW1PinwheelInner: { theme: { ...FOREST, road: "asphalt", density: 0.55 }, plan(p) {
+    p.street("asphalt", 3, [[24, 36], [24, 4]]);
     p.street("dirt", 2, [[22, 32], [14, 32], [14, 23], [6, 23], [6, 14], [14, 14], [14, 7], [22, 7]]);
     p.street("dirt", 2, [[26, 31], [30, 31], [30, 23], [42, 23], [42, 15], [30, 15], [30, 13], [26, 13]]); p.street("dirt", 1, [[36, 15], [36, 13]]);
     fence(p, 21, 9, 1, 22, [200, 204, 214]); fence(p, 27, 15, 1, 15, [200, 204, 214]); fence(p, 27, 5, 1, 7, [200, 204, 214]); fence(p, 21, 34, 1, 3, [200, 204, 214]); fence(p, 27, 33, 1, 4, [200, 204, 214]);
@@ -321,12 +322,11 @@ module.exports = {
     cables(V, 2, 37, tw, 19 * U + 8, 150, -1); cables(V, 2, 37, tw, 27 * U + 8, 150, 1);
     for (const y of [11, 28]) { V.paint(2, (c) => { c.box(y * U, 9 * U, 10, 10 * U + 8, St, sh(St, 0.45)); c.box(y * U, 27 * U + 8, 10, 10 * U + 8, St, sh(St, 0.45)); }); gantry(V, y * U, 19 * U + 4, 27 * U + 12, St); }
   } },
-  // Desert Resort: the avenue of guardian statues across the sand to the Relic Castle, an oasis to the north.
+  // Desert Resort: bare dunes between rock walls, a few guardian statues and broken walls before the Relic Castle.
   BW1DesertResort: { theme: { ...DESERT, density: 0.3 }, plan(p) {
     p.street("beach", 3, [[4, 20], [18, 20], [18, 21], [30, 21], [30, 20], [44, 20]]);
-    for (const x of [10, 15, 21, 27, 33, 38]) { statue(p, x, 17); statue(p, x, 24); }
+    for (const x of [33, 38]) { statue(p, x, 17); statue(p, x, 24); }
     wall(p, 41, 13, 5, 5, [196, 176, 132]); wall(p, 41, 23, 5, 5, [196, 176, 132]); wall(p, 40, 13, 1, 3, [176, 156, 116]); wall(p, 40, 25, 1, 3, [176, 156, 116]);
-    p.fill("palms", 30, 5, 31, 11); p.fill("palms", 42, 5, 43, 11); p.fill("palms", 32, 3, 41, 4);
     for (const [x, y] of [[8, 8], [14, 12], [22, 8], [8, 30], [16, 33], [26, 29], [34, 32], [26, 13]]) pillar(p, x, y);
     wall(p, 4, 12, 6, 1, [196, 176, 132]); wall(p, 18, 28, 6, 1, [196, 176, 132]); wall(p, 30, 34, 8, 1, [196, 176, 132]);
   } },
@@ -347,16 +347,15 @@ module.exports = {
     V.paint(0, (c) => { const y = 20 * U; for (let j = 20 * U; j < 27 * U; j += 8) c.rect(y - 2 + (j % 16 ? 3 : 0), j, 3, 8, [40, 40, 46]); for (let i = 3 * U; i < 37 * U; i += 24) if (Math.abs(i - y) > 20) c.rect(i, 23 * U + 7, 12, 2, [244, 240, 210]); c.rect(2 * U, 20 * U + 2, 36 * U, 1, [244, 240, 210]); c.rect(2 * U, 27 * U - 3, 36 * U, 1, [244, 240, 210]); });
     for (const y of [11, 28]) V.paint(0, (c) => { c.box(y * U - 4, 27 * U + 8, 18, 22, [150, 150, 160], [70, 70, 80]); c.box(y * U - 4, 17 * U, 18, 2 * U + 8, [150, 150, 160], [70, 70, 80]); c.box(y * U - 1, 14 * U + 8, 12, 3 * U, R, sh(R, 0.45)); c.box(y * U - 1, 29 * U + 8, 12, 3 * U, R, sh(R, 0.45)); });
   } },
-  // Cold Storage: the refrigerated warehouses and container stacks in the snow at the edge of Driftveil.
-  BW1ColdStorage: { theme: { ground: "drift", road: "frostpath", border: "pine", grass: "snowgrass", tree: "tree1", treeTint: "frost", grove: "pine", density: 0.2, groves: 0.1, flowers: 0, factory: false }, plan(p) {
-    p.street("frostpath", 3, [[4, 20], [44, 20]]); p.street("frostpath", 2, [[16, 20], [16, 30], [34, 30], [34, 20]]);
-    const Wr = { style: "ware", roof: [96, 130, 170], wall: [206, 216, 226], up: 1 };
+  // Cold Storage (after the game's map): blue-roofed refrigerated warehouses and green container stacks on a grey quay yard.
+  BW1ColdStorage: { theme: { ground: "gravel", road: "asphalt", border: "rock", grass: "grass", tree: "barrels", density: 0.02, groves: 0, flowers: 0, water: "sea", factory: false }, plan(p) {
+    p.street("asphalt", 3, [[4, 20], [44, 20]]); p.street("asphalt", 2, [[16, 20], [16, 30], [34, 30], [34, 20]]);
+    const Wr = { style: "ware", roof: [96, 130, 170], wall: [176, 176, 180], up: 1 };
     bld(p, 12, 13, 9, 4, { ...Wr, door: 4 }); bld(p, 25, 13, 9, 4, { ...Wr, door: 4 }); bld(p, 19, 23, 12, 5, { ...Wr, door: 5 }); bld(p, 36, 23, 8, 5, { ...Wr, door: 3 });
-    crate(p, 6, 24, 4, [70, 120, 180]); crate(p, 6, 26, 4, [190, 80, 60]); crate(p, 11, 24, 3, [90, 150, 96]); crate(p, 6, 33, 4, [220, 170, 60]); crate(p, 22, 33, 4, [70, 120, 180]); crate(p, 27, 33, 3, [190, 80, 60]); crate(p, 39, 15, 3, [90, 150, 96]);
-    shoal(p, 37, 8.5, 5.4, 3.6, [226, 242, 252, 190]); shoal(p, 35, 7.5, 2, 0.8, [255, 255, 255, 200]);
+    crate(p, 6, 24, 4, [70, 150, 110]); crate(p, 6, 26, 4, [60, 136, 100]); crate(p, 11, 24, 3, [90, 150, 96]); crate(p, 6, 33, 4, [84, 160, 120]); crate(p, 22, 33, 4, [70, 150, 110]); crate(p, 27, 33, 3, [60, 136, 100]); crate(p, 39, 15, 3, [90, 150, 96]);
   } },
-  // Moor of Icirrus: a causeway into the fen, wide shallow pools on every side.
-  BW1MoorOfIcirrus: { theme: MARSH, plan(p) {
+  // Moor of Icirrus: a path through green fen, wide shallow pools on every side.
+  BW1MoorOfIcirrus: { theme: { ground: "grass", grass: "grass", water: "water", road: "dirt", density: 0.3, groves: 0.15, flowers: 0.04, puddles: 0.1 }, plan(p) {
     p.street("dirt", 2, [[4, 20], [14, 20], [14, 26], [26, 26], [26, 16], [34, 16], [34, 24], [42, 24]]);
     p.disc("water", 10, 31, 4.5, 2.6); p.disc("water", 38, 31, 4, 2.5); p.disc("water", 18, 6, 4, 2.2);
     puddle(p, 20, 21, 3.5, 2); puddle(p, 30, 21, 2, 2.6); puddle(p, 8, 15, 3, 1.6); puddle(p, 22, 31, 4, 1.8); puddle(p, 40, 17, 3, 1.8); puddle(p, 29, 9, 2, 1.2); puddle(p, 30, 33, 2.4, 1.4); puddle(p, 6, 6, 2.5, 1.5);
@@ -370,12 +369,12 @@ module.exports = {
     for (let y = 6; y <= 34; y += 7) gantry(V, y * U - 4, 18 * U + 12, 28 * U + 4, St, 8);
     V.paint(0, (c) => { for (let i = 2 * U; i < 38 * U; i += 16) { c.rect(i, 20 * U, 1, 7 * U, [70, 80, 100]); c.rect(i + 7, 23 * U + 7, 3, 2, [200, 204, 214]); } });
   } },
-  // Village Bridge: the old stone bridge on its arches, cottages built along its parapet and a fishing jetty.
+  // Village Bridge: the old stone bridge on its arches, brown-roofed cottages built along its parapet at both ends, and a fishing jetty.
   BW1VillageBridge: { theme: { bridge: true, road: "deck", ground: "deck", border: "sea", water: "sea", density: 0, groves: 0, flowers: 0, rough: false }, plan(p) {
     p.fill("water", 20, 24, 26, 37); p.fill("water", 20, 2, 26, 8); p.fill("water", 20, 9, 21, 16); p.fill("water", 25, 9, 26, 16);
     p.fill("cobble", 3, 17, 44, 23);
     const Sn = [170, 164, 156];
-    for (const [x, roof] of [[14, [170, 80, 64]], [30, [84, 120, 170]], [37, [110, 150, 96]]]) bld(p, x, 17, 4, 2, { up: 2, roof, wall: [226, 214, 190] });
+    for (const x of [4, 12, 17, 28, 33, 38]) bld(p, x, 17, 4, 2, { up: 2, roof: [150, 96, 56], wall: [226, 214, 190] });   // the cottages on the bridge, three at each end
     p.paint(1, (c) => { for (let x = 3; x <= 44; x++) { c.rect(x * U, 24 * U, U, 12, Sn); c.rect(x * U, 24 * U, U, 2, sh(Sn, 1.2)); c.rect(x * U, 24 * U + 12, U, 2, sh(Sn, 0.5)); if (x < 20 || x > 26) { c.rect(x * U, 16 * U + 6, U, 10, Sn); c.rect(x * U, 16 * U + 6, U, 2, sh(Sn, 1.2)); } } for (let x = 4; x <= 42; x += 5) { c.box(x * U, 24 * U + 12, 14, 26, Sn, sh(Sn, 0.5)); c.ellipse(x * U + 47, 24 * U + 30, 26, 16, [30, 50, 100, 150]); c.rect(x * U - 2, 24 * U + 36, 18, 3, [236, 244, 250, 150]); } });
   } },
   // Marvelous Bridge: the white, ringed span with its blue light strips.

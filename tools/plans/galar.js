@@ -78,6 +78,16 @@ function ruin(p, x0, y0, w, h, o = {}) {
     (o.doors || [[W / 2, [230, 120, 60]]]).forEach(([mx, dots]) => { const m = x + mx; c.box(m - 10, b - 31, 20, 31, mix(st, 0.42), mix(st, 0.3)); c.rect(m - 12, b - 33, 24, 3, mix(st, 1.1)); for (const [ax, ay] of [[-5, -25], [3, -25], [-5, -19], [-1, -19], [3, -19], [-5, -13], [3, -13]]) c.rect(m + ax, b + ay, 3, 3, dots); });
   });
 }
+// A hand-drawn building with no way in (same draw functions as `built`); dcol is its door column.
+function prop(p, x0, y0, w, h, draw, dcol = Math.floor(w / 2)) { blk(p, x0, y0, w, h); p.paint(y0 + h + 0.5, (c, top) => draw(c, top, x0 * S, y0 * S, w * S, h * S, (x0 + dcol) * S)); }
+// Bare ploughed earth with furrows (the red-brown fields of Postwick and Turffield).
+function ploughed(p, x0, y0, x1, y1) {
+  p.fill("clay", x0, y0, x1, y1);
+  p.paint(0.6, (c) => { for (let y = y0; y <= y1; y++) for (const j of [3, 9, 14]) c.rect(x0 * S, y * S + j, (x1 - x0 + 1) * S, 1, [150, 92, 62]); });
+}
+function boat(p, x, y, hull) {
+  p.paint(y + 3, (c) => { const px = x * 16, py = y * 16; c.poly([[px, py + 6], [px + 40, py + 6], [px + 34, py + 22], [px + 6, py + 22]], [60, 50, 50]); c.poly([[px + 2, py + 7], [px + 38, py + 7], [px + 33, py + 20], [px + 7, py + 20]], hull); c.box(px + 12, py - 2, 14, 10, [236, 236, 240], [80, 80, 96]); c.rect(px + 15, py + 1, 8, 3, [120, 180, 230]); });
+}
 function fenceTile(p, x, y, vert, col) {
   blk(p, x, y);
   p.paint(y + 1, (c) => { const px = x * S, py = y * S, dk = mix(col, 0.6);
@@ -181,73 +191,90 @@ function glowshroom(p, x, y, r, col) {
     g.ellipse(cx - r * 0.35, b - hgt - ry * 0.4, r * 0.28, ry * 0.25, [255, 255, 255]); g.rect(cx + r * 0.3, b - hgt - 2, 2, 2, [255, 255, 255]); g.rect(cx - r * 0.7, b - hgt - 1, 2, 2, [255, 255, 255]); g.rect(cx + r * 0.6, b - hgt - 1, 2, 2, [255, 255, 255]); });
 }
 module.exports = {
-  // Hulbury: the harbour town. Route 5 comes in from the north, the main street runs down to the
-  // quay, the seafood market stands on the square, the Stadium by the water to the east and the
-  // lighthouse at the end of the long pier.
+  // Hulbury: the harbour town (compared with the guidebook map, see docs/map-references/galar.md). The harbour
+  // fills the east: the Stadium stands out over the water at the head of its causeway, the long quay runs east to
+  // the lighthouse on its headland, boats lie along the south quay. The red-roofed terrace and the Center are on
+  // the west side, the seafood restaurant by the main street and the market on its earth square in the south-west.
   GalarHulbury: {
-    theme: { town: true, ground: "paving", road: "cobble", border: "tree", water: "sea", density: 0.05, groves: 0, flowers: 0, tree: "barrels", autoHouses: false, turn: 6, wander: 0, house: ["flat", "gable"] },
+    theme: { town: true, ground: "paving", road: "cobble", border: "tree", water: "sea", density: 0.03, groves: 0, flowers: 0, tree: "barrels", autoHouses: false, turn: 6, wander: 0, house: ["flat", "gable"] },
     plan(p) {
-      p.fill("water", 1, 22, 36, 30); p.fill("water", 30, 12, 36, 21);                 // the harbour, south and east
-      p.street("cobble", 3, [[19, 1], [19, 20]]);                                       // main street from Route 5
-      p.street("cobble", 2, [[1, 16], [28, 16]]);                                       // the cross street past the Center
-      p.street("brick", 2, [[2, 20], [29, 20]]);                                        // the quay
-      p.street("deck", 2, [[19, 21], [19, 30]]); p.street("deck", 2, [[8, 21], [8, 27]]);   // piers
-      p.street("deck", 2, [[28, 20], [34, 20]]); p.street("deck", 2, [[33, 20], [33, 27]]); // the long pier
-      p.decor("lighthouse", 32, 21, { canopy: 3 });
-      p.building(2, "whiteHall");                                                       // Hulbury Stadium
+      p.fill("water", 22, 1, 36, 13); p.fill("water", 24, 14, 36, 30);                 // the harbour, north-east and east
+      p.fill("grass", 32, 13, 36, 19);                                                  // the lighthouse headland
+      p.fill("paving", 23, 3, 36, 10);                                                  // the Stadium's platform out in the water
+      p.street("cobble", 3, [[19, 1], [19, 30]]);                                       // main street from Route 5
+      p.street("cobble", 2, [[1, 16], [23, 16]]);                                       // the cross street past the Center
+      p.street("brick", 2, [[23, 16], [33, 16]]);                                       // the long quay out to the lighthouse
+      p.street("brick", 3, [[27, 11], [27, 15]]);                                       // the causeway to the Stadium
+      p.street("brick", 2, [[22, 14], [22, 30]]);                                       // the south quay
+      p.street("deck", 1, [[24, 22], [28, 22]]); p.street("deck", 1, [[24, 27], [28, 27]]);   // jetties
+      p.decor("lighthouse", 33, 9, { canopy: 3 });
+      p.building(2, "whiteHall", { tint: ([r, g, b]) => (r > 190 && g > 190 && b > 190 ? [r * 0.78, g * 0.82, b] : [r, g, b]) });   // Hulbury Stadium, blue-lilac as in the game
       p.building(1, "pcSmall");
-      p.disc("ornate", 12.5, 11, 4.2);                                                  // market square
-      for (const [x, y] of [[10, 9], [14, 9], [10, 12], [14, 12]]) p.paint(y + 1, (c) => { const px = x * 16, py = y * 16; c.box(px, py + 4, 16, 12, [196, 150, 96], [90, 60, 40]); c.poly([[px - 3, py + 5], [px + 8, py - 6], [px + 19, py + 5]], [[214, 70, 70], [70, 120, 200], [240, 200, 80], [90, 170, 110]][(x + y) % 4]); c.rect(px + 3, py + 8, 10, 3, [240, 236, 220]); });
-      for (const [x, y] of [[10, 9], [14, 9], [10, 12], [14, 12]]) p.block(x, y, 1, 1);
-      p.decor("flat", 3, 4); p.decor("gable", 10, 2, { tint: p.roof(0.8, 1, 1.6) }); p.decor("gable", 23, 12, { tint: p.roof(1.5, 0.8, 0.8) }); p.decor("gable", 13, 2);
-      for (const x of [3, 5, 12, 14, 24, 26]) p.decor("barrels", x, 18);
-      // Boats at the piers.
-      for (const [x, y, hull] of [[11, 24, [200, 60, 60]], [22, 25, [60, 110, 190]], [4, 25, [240, 240, 244]]]) p.paint(y + 3, (c) => { const px = x * 16, py = y * 16; c.poly([[px, py + 6], [px + 40, py + 6], [px + 34, py + 22], [px + 6, py + 22]], [60, 50, 50]); c.poly([[px + 2, py + 7], [px + 38, py + 7], [px + 33, py + 20], [px + 7, py + 20]], hull); c.box(px + 12, py - 2, 14, 10, [236, 236, 240], [80, 80, 96]); c.rect(px + 15, py + 1, 8, 3, [120, 180, 230]); });
+      p.disc("clay", 10, 23.5, 5.2, 3.6);                                               // the market square
+      for (const [x, y, col] of [[7, 22, [214, 70, 70]], [9, 22, [90, 170, 110]], [12, 22, [240, 200, 80]], [8, 25, [70, 120, 200]]]) stall(p, x, y, col);
+      for (const x of [2, 6, 10]) p.decor("gable", x, 4, { tint: p.roof(1.7, 0.75, 0.6) });   // the terrace
+      p.decor("flat", 11, 10);                                                          // the restaurant
+      for (const [x, y] of [[12, 25], [13, 25], [21, 19]]) p.decor("barrels", x, y);
+      boat(p, 25, 19, [240, 240, 244]); boat(p, 30, 23, [200, 60, 60]); boat(p, 25, 24, [240, 240, 244]); boat(p, 30, 28, [60, 110, 190]);
     },
   },
-  // Postwick: a farming hamlet. Your house at the top of the lane, Hop's down by the west road, Wooloo
-  // pastures behind rail fences, crop fields, the fenced-off Slumbering Weald and the gate out to Route 1.
+  // Postwick: a farming hamlet (compared with the guidebook map). Your house and the Slumbering Weald lie on the
+  // far side of the walled stream with its stone bridge; this side are the patchwork fields (pasture with Wooloo,
+  // ploughed earth, grain), Hop's big red-roofed farmhouse with its battle court, and the lane out to Route 1.
   GalarPostwick: {
     theme: { town: true, ground: "grass", road: "dirt", border: "tree", density: 0.03, groves: 0, flowers: 0.25, autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
-      p.fill("darktree", 1, 1, 7, 10); fence(p, 1, 11, 8, 11); for (let y = 1; y <= 10; y++) fenceTile(p, 8, y, true, [182, 140, 90]);   // the Slumbering Weald
+      p.fill("darktree", 1, 1, 7, 5); fence(p, 1, 6, 8, 6); for (let y = 1; y <= 5; y++) fenceTile(p, 8, y, true, [182, 140, 90]);   // the Slumbering Weald
+      p.fill("water", 1, 8, 24, 9); p.fill("water", 23, 1, 24, 7);                           // the stream
       p.street("dirt", 2, [[19, 5], [19, 30]]); p.street("dirt", 2, [[1, 16], [36, 16]]); p.street("dirt", 2, [[27, 11], [27, 13], [20, 13]]);
+      p.fill("cobble", 18, 8, 20, 9);                                                        // the stone bridge
       built(p, 0, 16, 1, 7, 4, cottage([196, 86, 70]), 1);                                  // home
-      houseOn(p, 1, "logHouse");                                                         // Hop's house
-      p.fill("flowersRed", 23, 2, 25, 4); p.fill("flowersBlue", 12, 2, 15, 4);
-      p.fill("meadow", 22, 1, 36, 9); stoneWall(p, 22, 24, 10); stoneWall(p, 30, 36, 10); built(p, 2, 25, 8, 5, 3, gateway({ roof: [120, 84, 60] }));   // the wall and gate to Route 1
-      p.fill("meadow", 10, 6, 15, 10); fence(p, 9, 5, 16, 11); for (const [x, y] of [[11, 7], [14, 6], [12, 9], [15, 9]]) wooloo(p, x, y);
+      built(p, 1, 1, 13, 8, 5, cottage([172, 60, 58], { wall: [236, 214, 150] }), 1);       // Hop's house
+      p.fill("flowersRed", 10, 2, 11, 5); p.fill("flowersBlue", 12, 2, 15, 4);
+      p.fill("meadow", 25, 1, 36, 9); stoneWall(p, 22, 24, 10); stoneWall(p, 30, 36, 10); built(p, 2, 25, 8, 5, 3, gateway({ roof: [120, 84, 60] }));   // the wall and gate to Route 1
+      p.fill("meadow", 11, 11, 16, 14); fence(p, 10, 10, 17, 15); for (const [x, y] of [[12, 12], [15, 11], [13, 13], [15, 14]]) wooloo(p, x, y);
+      ploughed(p, 2, 10, 8, 11);
       p.fill("meadow", 24, 20, 34, 25); fence(p, 23, 19, 35, 26); for (const [x, y] of [[25, 21], [28, 23], [31, 21], [33, 24], [26, 24], [30, 24]]) wooloo(p, x, y);
-      crops(p, 3, 21, 15, 23); crops(p, 3, 26, 15, 28, [200, 170, 70]);
-      p.paint(26, (c) => { const px = 9 * S, b = 25 * S; c.rect(px + 7, b - 22, 2, 22, [120, 84, 60]); c.rect(px, b - 16, 16, 2, [120, 84, 60]); c.box(px + 3, b - 18, 10, 9, [196, 86, 70], [90, 40, 40]); c.ellipse(px + 8, b - 23, 4, 4, [236, 210, 150]); c.poly([[px + 1, b - 25], [px + 8, b - 32], [px + 15, b - 25]], [200, 170, 90]); }); blk(p, 9, 24);   // scarecrow
-      for (const [x, y] of [[4, 20], [14, 20]]) p.decor("barrels", x, y);
+      ploughed(p, 3, 23, 15, 25); crops(p, 3, 27, 15, 29, [200, 170, 70]);
+      p.fill("paving", 9, 19, 14, 21);                                                       // the battle court beside Hop's house
+      p.paint(0.6, (c) => { const x = 9 * S, y = 19 * S, w = 6 * S, h = 3 * S; c.rect(x, y, w, h, [60, 92, 170]); c.rect(x + 2, y + 2, w - 4, h - 4, [78, 112, 190]); c.rect(x + w / 2 - 1, y + 2, 2, h - 4, [240, 240, 250]); c.ellipse(x + w / 2, y + h / 2, 12, 12, [214, 70, 70]); c.ellipse(x + w / 2, y + h / 2, 12, 12, [240, 240, 250], 2); c.ellipse(x + w / 2, y + h / 2, 4, 4, [240, 240, 250]); });
+      p.paint(27, (c) => { const px = 9 * S, b = 26 * S; c.rect(px + 7, b - 22, 2, 22, [120, 84, 60]); c.rect(px, b - 16, 16, 2, [120, 84, 60]); c.box(px + 3, b - 18, 10, 9, [196, 86, 70], [90, 40, 40]); c.ellipse(px + 8, b - 23, 4, 4, [236, 210, 150]); c.poly([[px + 1, b - 25], [px + 8, b - 32], [px + 15, b - 25]], [200, 170, 90]); }); blk(p, 9, 25);   // scarecrow
+      for (const [x, y] of [[4, 22], [14, 22]]) p.decor("barrels", x, y);
     },
   },
-  // Wedgehurst: the railway town. The line and station along the north side, the brick high street over
-  // the stream, the Pokemon research lab on the west road, the Center and berry stalls by the crossroads.
+  // Wedgehurst: the railway town (compared with the guidebook map). The river runs round two sides of it and both
+  // roads out cross it; the station with its yard and line fills the south-west corner; the purple-roofed
+  // research lab, the Center, the berry stalls and red-brick houses stand along the pink cobbled lanes.
   GalarWedgehurst: {
     theme: { town: true, ground: "grass", road: "brick", border: "tree", density: 0.03, groves: 0, flowers: 0.15, autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
-      p.fill("water", 1, 22, 36, 23);
+      const red = p.roof(1.7, 0.75, 0.6);
+      p.fill("water", 1, 1, 36, 2); p.fill("water", 34, 1, 36, 30);                          // the river
       p.street("brick", 3, [[19, 1], [19, 30]]); p.street("brick", 3, [[1, 16], [36, 16]]); p.street("brick", 2, [[27, 11], [27, 15]]);
-      tracks(p, 1, 36, 1, [18, 20]); train(p, 24, 1, 3, [70, 150, 110]);
-      p.building(2, "hall"); built(p, 1, 2, 14, 7, 4, cottage([150, 110, 200], { sign: [150, 110, 200], wall: [236, 236, 240] }));   // the station; the research lab
+      p.fill("meadow", 21, 3, 33, 9); stoneWall(p, 21, 24, 10); stoneWall(p, 30, 33, 10);
+      built(p, 2, 25, 8, 5, 3, gateway({ wall: [170, 166, 160], roof: [120, 84, 60] }));       // the gate to Route 2
+      built(p, 1, 2, 14, 7, 4, cottage([150, 110, 200], { sign: [150, 110, 200], wall: [236, 236, 240] }));   // the research lab
+      p.fill("brick", 3, 26, 17, 26); p.fill("brick", 12, 21, 17, 26);                        // the station yard and platform
+      prop(p, 3, 21, 9, 5, cottage([156, 74, 58], { wall: [200, 124, 98], sign: [60, 90, 150] }), 4);   // Wedgehurst Station
+      tracks(p, 1, 16, 27); train(p, 2, 27, 3, [70, 150, 110]);
       p.decor("pcSmall", 10, 9);
-      p.decor("gable", 3, 6, { tint: p.roof(1.5, 0.8, 0.8) }); p.decor("gable", 13, 3, { tint: p.roof(0.8, 1, 1.6) }); p.decor("gable", 33, 8);
-      p.decor("gable", 4, 24); p.decor("gable", 10, 25, { tint: p.roof(1.9, 1.5, 0.6) }); p.decor("gable", 24, 24, { tint: p.roof(0.7, 1.4, 0.8) }); p.decor("gable", 30, 25, { tint: p.roof(1.5, 0.8, 0.8) });
+      p.decor("gable", 3, 6, { tint: red }); p.decor("gable", 13, 3, { tint: red }); p.decor("gable", 23, 21, { tint: red }); p.decor("gable", 29, 22, { tint: red });
       for (const [x, y, col] of [[22, 13, [214, 70, 70]], [24, 13, [90, 170, 110]], [15, 19, [70, 120, 200]]]) stall(p, x, y, col);
-      p.fill("flowersPink", 22, 19, 26, 20); p.fill("flowersBlue", 10, 19, 13, 20); p.fill("flowersRed", 31, 19, 35, 20);
-      for (const [x, y] of [[16, 26], [34, 26], [7, 2]]) p.decor("tree1", x, y, { canopy: true });
+      p.fill("flowersPink", 22, 19, 26, 20); p.fill("flowersBlue", 9, 19, 13, 20); p.fill("flowersRed", 28, 19, 32, 20);
+      for (const [x, y] of [[31, 27], [8, 4], [30, 11]]) p.decor("tree1", x, y, { canopy: true });
     },
   },
-  // Turffield: green farmland. The Stadium at the top of the town, the standing stones on the north-west
-  // rise, the great chalk geoglyph on the south-west hill, and flower and crop fields along the lane.
+  // Turffield: green farmland (compared with the guidebook map). The Stadium at the head of the town with
+  // ploughed red-earth fields beside it, standing stones scattered along the lanes, the chalk geoglyph on the
+  // south-west hill, and the river down the east side with the bridge towards Route 5.
   GalarTurffield: {
     theme: { town: true, ground: "grass", road: "cobble", border: "tree", density: 0.03, groves: 0, flowers: 0.3, autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
+      p.fill("water", 33, 12, 35, 30);                                                       // the river
       p.street("cobble", 2, [[19, 5], [19, 30]]); p.street("cobble", 2, [[1, 16], [36, 16]]); p.street("cobble", 2, [[27, 11], [27, 16]]);
       p.building(2, "whiteHall"); p.building(1, "pcSmall");
-      p.disc("lawn", 10.5, 8.5, 4.6); for (const [x, y] of [[14, 8], [12, 11], [8, 11], [6, 8], [8, 5], [12, 5]]) menhir(p, x, y, 22 + (x % 3) * 3); menhir(p, 10, 8, 14);
+      ploughed(p, 4, 4, 12, 7); ploughed(p, 4, 9, 12, 12); fence(p, 3, 3, 13, 13, ["8,13", "13,8"]);
+      for (const [x, y] of [[2, 2], [16, 3], [22, 13], [15, 14], [24, 18], [8, 14], [21, 6], [30, 13]]) menhir(p, x, y, 20 + (x % 3) * 3);
       // The geoglyph: a chalk giant on the hillside.
       p.disc("meadow", 9.5, 24.5, 7.6, 5.4);
       for (let y = 19; y <= 30; y++) for (let x = 1; x <= 17; x++) if (((x + 0.5 - 9.5) / 7) ** 2 + ((y + 0.5 - 24.5) / 4.8) ** 2 <= 1) blk(p, x, y);
@@ -258,9 +285,9 @@ module.exports = {
         c.line(cx - 28, cy - 8, cx - 62, cy - 30, w, 3); c.line(cx - 62, cy - 30, cx - 70, cy - 50, w, 3); c.line(cx + 28, cy - 8, cx + 62, cy - 30, w, 3); c.line(cx + 62, cy - 30, cx + 70, cy - 50, w, 3);
         c.line(cx - 16, cy + 36, cx - 26, cy + 64, w, 3); c.line(cx + 16, cy + 36, cx + 26, cy + 64, w, 3); c.line(cx - 26, cy + 64, cx - 38, cy + 64, w, 3); c.line(cx + 26, cy + 64, cx + 38, cy + 64, w, 3);
         for (const sx of [-1, 1]) { c.ellipse(cx + sx * 88, cy + 10, 9, 9, w, 2); c.line(cx + sx * 88, cy + 19, cx + sx * 88, cy + 40, w, 2); c.line(cx + sx * 78, cy + 28, cx + sx * 98, cy + 28, w, 2); c.line(cx + sx * 50, cy + 30, cx + sx * 58, cy + 22, w, 2); c.line(cx + sx * 58, cy + 22, cx + sx * 64, cy + 32, w, 2); c.line(cx + sx * 64, cy + 32, cx + sx * 72, cy + 22, w, 2); } });
-      crops(p, 26, 20, 35, 21); p.fill("flowersRed", 26, 22, 35, 22); crops(p, 26, 23, 35, 24, [200, 170, 70]); p.fill("flowersPink", 26, 25, 35, 25); crops(p, 26, 26, 35, 27); p.fill("flowersBlue", 26, 28, 35, 28); fence(p, 25, 19, 36, 29);
-      p.decor("gable", 14, 6, { tint: p.roof(0.7, 1.4, 0.8) }); p.decor("gable", 21, 20); p.decor("gable", 31, 11, { tint: p.roof(1.9, 1.5, 0.6) });
-      for (const [x, y] of [[2, 2], [15, 12], [22, 12]]) p.decor("tree1", x, y, { canopy: true });
+      ploughed(p, 23, 21, 30, 23); crops(p, 23, 25, 30, 27, [200, 170, 70]); fence(p, 22, 20, 31, 28, ["22,24"]);
+      p.decor("gable", 14, 7, { tint: p.roof(1.7, 0.75, 0.6) });
+      for (const [x, y] of [[15, 2], [22, 9]]) p.decor("tree1", x, y, { canopy: true });
     },
   },
   // Hammerlocke's south gate: the castle wall with its towers and banners across the north, the
@@ -332,20 +359,22 @@ module.exports = {
       for (const [x, y] of [[9, 22], [10, 22], [9, 24], [10, 24], [24, 13], [23, 13]]) p.decor("barrel", x, y);
     },
   },
-  // Armor Station: the little station on the Isle of Armor's shore. Its line and train behind it, the
-  // flying-taxi stand, a boardwalk across the sand and the sea to the east and south.
+  // Armor Station (compared with a screenshot): the red-brick station with its clock tower on the grass under
+  // the cliffs, the flying-taxi stand, sandy paths and the beach and sea to the east and south.
   GalarArmorStation: {
-    theme: { town: true, ground: "sand", road: "deck", border: "palms", water: "sea", density: 0, groves: 0, flowers: 0, autoHouses: false, turn: 6, wander: 0 },
+    theme: { town: true, ground: "grass", road: "sand", border: "palms", water: "sea", density: 0.02, groves: 0, flowers: 0.1, autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       p.fill("water", 27, 1, 36, 12); p.fill("water", 27, 20, 36, 30); p.fill("water", 1, 24, 36, 30);
-      p.fill("beach", 1, 21, 26, 23); p.fill("beach", 24, 1, 26, 20); p.fill("beach", 27, 13, 36, 19);
-      p.fill("grass", 1, 1, 23, 3);
-      p.street("deck", 2, [[19, 1], [19, 30]]); p.street("deck", 2, [[1, 18], [19, 18]]); p.street("deck", 2, [[20, 16], [36, 16]]);
-      built(p, 1, 2, 14, 7, 4, cottage([70, 130, 180], { sign: [70, 130, 180], wall: [244, 244, 240] }));
-      tracks(p, 1, 14, 12); train(p, 3, 12, 3, [240, 240, 244]); blk(p, 15, 12); p.paint(13, (c) => { c.box(15 * S, 12 * S + 2, 6, 12, [214, 60, 60], [90, 30, 30]); c.rect(15 * S, 12 * S + 6, 6, 2, [250, 250, 250]); });
+      p.fill("beach", 1, 21, 26, 23); p.fill("beach", 24, 1, 26, 20); p.fill("beach", 27, 13, 36, 19); p.fill("sand", 20, 14, 23, 20);
+      p.fill("rock", 1, 1, 12, 3); p.fill("rock", 1, 4, 5, 8);                               // the cliffs behind the station
+      p.street("sand", 2, [[19, 1], [19, 23]]); p.street("deck", 2, [[19, 24], [19, 30]]); p.street("sand", 2, [[1, 18], [19, 18]]); p.street("sand", 2, [[20, 16], [36, 16]]);
+      built(p, 1, 2, 14, 7, 4, (c, top, x, y, w, h, dx) => { const m = x + w / 2, br = [196, 120, 94], rf = [206, 100, 62];
+        cottage(rf, { wall: br, sign: [60, 90, 150] })(c, top, x, y, w, h, dx);
+        top.box(m - 8, y - 22, 16, 30, br, [80, 50, 44]); top.poly([[m - 11, y - 21], [m, y - 37], [m + 11, y - 21]], [70, 50, 44]); top.poly([[m - 9, y - 22], [m, y - 35], [m + 9, y - 22]], rf); top.ellipse(m, y - 11, 5, 5, [70, 50, 44]); top.ellipse(m, y - 11, 4, 4, [250, 246, 230]); top.rect(m, y - 14, 1, 4, [40, 40, 50]); top.rect(m, y - 11, 3, 1, [40, 40, 50]); });
       blk(p, 22, 7, 2, 2); p.paint(9, (c) => { const x = 22 * S, y = 7 * S; c.ellipse(x + 16, y + 30, 16, 3, [0, 0, 0, 50]); c.box(x + 2, y + 8, 28, 20, [60, 90, 170], [30, 40, 80]); c.rect(x + 5, y + 11, 22, 8, [170, 214, 240]); c.rect(x + 15, y + 11, 2, 8, [30, 40, 80]); c.rect(x + 2, y + 22, 28, 2, [250, 220, 90]); c.rect(x + 8, y + 2, 16, 6, [40, 44, 60]); c.line(x + 4, y + 2, x + 28, y + 2, [40, 44, 60], 2); });   // the flying taxi
-      p.fill("palms", 9, 5, 12, 8); p.fill("palms", 2, 5, 4, 9); p.fill("palms", 14, 5, 16, 6);
-      umbrella(p, 7, 21, [214, 70, 70]); umbrella(p, 12, 22, [70, 130, 210]); umbrella(p, 23, 21, [240, 200, 80]); umbrella(p, 30, 14, [90, 180, 120]);
+      p.fill("palms", 9, 5, 12, 8); p.fill("palms", 14, 5, 16, 6);
+      for (const [x, y] of [[14, 10], [10, 21], [3, 10]]) p.decor("tree1", x, y, { canopy: true });
+      umbrella(p, 7, 22, [214, 70, 70]); umbrella(p, 23, 22, [240, 200, 80]); umbrella(p, 30, 14, [90, 180, 120]);
       for (const [x, y] of [[22, 19], [23, 19]]) p.decor("barrel", x, y);
     },
   },
@@ -383,9 +412,10 @@ module.exports = {
   // The Soothing Wetlands: marsh pools with lily pads, plank walks between them, clumps of Max
   // Mushrooms, and the great hollow tree that opens into the Forest of Focus.
   GalarSoothingWetlands: {
-    theme: { ground: "marsh", road: "deck", border: "tree", water: "bog", density: 0.06, groves: 0, flowers: 0, autoHouses: false, turn: 6, wander: 0 },
+    theme: { ground: "grass", road: "deck", border: "tree", water: "bog", density: 0.04, groves: 0, flowers: 0.25, autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       const pools = [[9, 8, 4.5, 3], [30, 23, 4.6, 3.4], [8, 25, 5, 3], [12, 20, 2.4, 1.6], [31, 13, 3, 1.6], [25, 27, 2.5, 1.6]];
+      for (const [x, y, rx, ry] of pools) p.disc("marsh", x, y, rx + 1.6, ry + 1.4);          // bright green wetland: reedy margins round each pool
       for (const [x, y, rx, ry] of pools) p.disc("water", x, y, rx, ry);
       p.street("deck", 2, [[19, 1], [19, 30]]); p.street("deck", 2, [[1, 16], [36, 16]]); p.street("deck", 2, [[27, 11], [27, 16]]); p.street("deck", 1, [[9, 4], [9, 15]]); p.street("deck", 1, [[30, 18], [30, 28]]);
       p.fill("tree", 22, 3, 32, 9);
@@ -437,8 +467,9 @@ module.exports = {
       p.street("frostpath", 2, [[19, 1], [19, 30]]); p.street("frostpath", 2, [[1, 16], [36, 16]]); p.street("frostpath", 2, [[27, 11], [27, 16]]);
       p.disc("gravel", 21.5, 13, 3.6, 2.8);
       built(p, 0, 16, 1, 7, 4, cottage([150, 96, 70], { snow: true, sign: [70, 110, 170], wall: [214, 190, 160] }), 1);   // Crown Tundra station
-      p.building(2, "cabin");
-      for (const [x, y] of [[8, 8], [2, 8], [9, 18], [23, 19], [30, 20], [31, 5]]) p.decor("cabin", x, y);
+      const tudor = (c, top, x, y, w, h, dx) => { cottage([150, 96, 70], { snow: true, wall: [232, 196, 132] })(c, top, x, y, w, h, dx); const b = y + h, beam = [104, 70, 50]; c.rect(x + 4, b - 28, w - 8, 2, beam); for (let i = x + 4; i < x + w - 5; i += 12) if (i < dx - 2 || i > dx + 16) c.rect(i, b - 27, 2, 26, beam); };   // half-timbered, as the village is
+      built(p, 2, 25, 7, 5, 4, tudor, 1);
+      for (const [x, y] of [[8, 9], [2, 9], [9, 19], [23, 20], [30, 21], [31, 6]]) prop(p, x, y, 5, 4, tudor);
       blk(p, 22, 12, 2, 1);
       p.paint(13, (c, top) => { const x = 22 * S, b = 13 * S - 1, st = [170, 172, 180], dk = mix(st, 0.55); c.ellipse(x + 16, b, 17, 3, [0, 0, 0, 50]); c.box(x + 2, b - 10, 28, 10, st, dk); c.box(x + 5, b - 14, 22, 5, mix(st, 1.1), dk);
         for (const g of [c, top]) { g.poly([[x + 8, b - 14], [x + 8, b - 24], [x + 24, b - 24], [x + 24, b - 14]], st); g.rect(x + 8, b - 20, 3, 6, dk); g.rect(x + 21, b - 20, 3, 6, dk); g.box(x + 19, b - 34, 8, 12, st, dk); g.ellipse(x + 23, b - 38, 6, 6, dk); g.ellipse(x + 23, b - 38, 5, 5, mix(st, 1.1)); g.rect(x + 20, b - 46, 2, 5, dk); g.rect(x + 23, b - 48, 2, 6, dk); g.rect(x + 26, b - 46, 2, 5, dk); g.rect(x + 9, b - 26, 14, 3, [244, 248, 255]); g.rect(x + 19, b - 44, 8, 2, [244, 248, 255]); } });
@@ -470,7 +501,7 @@ module.exports = {
   // Giant's Bed: the green heart of the Crown Tundra. The river, the Old Cemetery behind its wall, a
   // sealed ruin, the snow line and pass up to Snowslide Slope, and the red Dyna Tree on its hill.
   GalarGiantBed: {
-    theme: { ground: "grass", road: "dirt", border: "tree", water: "water", density: 0.05, groves: 0, flowers: 0.15, autoHouses: false, turn: 6, wander: 0 },
+    theme: { ground: "grass", road: "dirt", border: "pine", water: "water", density: 0.05, groves: 0, flowers: 0.15, autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       p.fill("frost", 21, 13, 36, 14); p.disc("frost", 21, 6, 2.5, 7); p.fill("snow", 21, 1, 36, 12);
       p.fill("water", 1, 22, 36, 23); p.fill("water", 9, 20, 11, 22); p.fill("water", 1, 20, 9, 21);
@@ -482,7 +513,8 @@ module.exports = {
       ruin(p, 12, 10, 5, 3, { doors: [[40, [120, 200, 240]]] });
       p.disc("flowersPink", 29, 27.5, 6, 2.6); bigTree(p, 28, 27, [226, 66, 110], { h: 58, r: 48, dots: [255, 226, 240], bark: [110, 70, 80] });
       den(p, 19, 18);
-      for (const [x, y] of [[3, 3], [8, 4], [12, 26], [5, 26], [33, 18], [14, 18], [23, 18]]) p.decor("tree1", x, y, { canopy: true });
+      for (const [x, y] of [[12, 26], [33, 18], [23, 18]]) p.decor("tree1", x, y, { canopy: true });
+      p.fill("pine", 2, 2, 5, 5); p.fill("pine", 8, 3, 10, 5); p.fill("pine", 4, 26, 6, 28); p.fill("pine", 13, 18, 14, 19);   // the tundra's firs
       p.decor("boulder", 34, 13); p.fill("pine", 33, 2, 36, 5);
     },
   },
@@ -527,13 +559,13 @@ module.exports = {
     theme: { town: true, ground: "brick", road: "cobble", border: "rock", density: 0, groves: 0, flowers: 0, autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       const brick = ([r, g, b]) => (Math.abs(r - g) < 22 && Math.abs(g - b) < 26 && r > 60 ? [Math.min(255, r * 1.12), g * 0.7, b * 0.6] : [r, g, b]);
-      p.fill("water", 1, 10, 36, 11);
+      p.fill("water", 1, 10, 36, 11); p.fill("water", 1, 12, 2, 23);                         // the canal, and the dock down the west side
       p.street("cobble", 3, [[19, 4], [19, 30]]); p.street("cobble", 2, [[1, 16], [36, 16]]); p.street("cobble", 2, [[30, 25], [30, 27], [10, 27], [10, 26]]); p.street("cobble", 2, [[14, 1], [24, 1]]);
       built(p, 1, 17, 1, 5, 3, cottage([220, 70, 60], { wall: [244, 244, 240], sign: [220, 70, 60] }), 1);   // the Center
       p.building(2, "hall", { tint: brick });
       stoneWall(p, 5, 7, 25, [176, 100, 80]); stoneWall(p, 13, 15, 25, [176, 100, 80]); built(p, 3, 8, 23, 5, 3, gateway({ wall: [176, 100, 80], roof: [80, 70, 76], post: [70, 60, 60] }));
-      for (const x of [3, 9, 24, 30]) p.decor("brickFlat", x, 2); p.decor("brickFlat", 2, 18);
-      p.decor("apartment", 21, 18);
+      for (const x of [3, 9, 24, 30]) p.decor("brickFlat", x, 2, { tint: brick }); p.decor("brickFlat", 4, 18, { tint: brick });   // red-brick mills
+      p.decor("apartment", 21, 18, { tint: brick });
       for (const [x, y] of [[8, 4], [15, 6], [29, 5], [35, 13]]) chimney(p, x, y);
       // The lift: a steel platform slung between two gears.
       p.fill("steel", 12, 19, 16, 23); blk(p, 12, 19, 5, 1); gear(p, 11.5, 20.5, 26, [176, 150, 90]); gear(p, 17.4, 20.2, 20, [150, 154, 170]);
@@ -554,20 +586,20 @@ module.exports = {
       built(p, 2, 24, 21, 13, 4, stadium([236, 236, 242], [214, 170, 80]));                                    // Wyndon Stadium
       p.decor("towerSlim", 24, 1, { canopy: 3, tint: p.trim(0.3, 0.6, 1) }); p.decor("towerSlim", 32, 1, { canopy: 3 }); p.decor("towerShort", 28, 4, { canopy: 3, tint: p.trim(0.4, 1, 0.7) });
       p.decor("towerShort", 2, 3, { canopy: 3 }); p.decor("towerShort", 7, 1, { canopy: 3, tint: p.trim(0.3, 0.6, 1) }); p.decor("towerShort", 12, 1, { canopy: 3, tint: p.trim(1, 0.8, 0.3) });
-      p.fill("lawn", 22, 4, 23, 13); p.fill("lawn", 6, 28, 16, 30); p.fill("lawn", 22, 29, 36, 30);
-      p.decor("fountain", 21, 19);
+      p.fill("lawn", 22, 4, 23, 13); p.fill("lawn", 6, 28, 16, 30); p.fill("lawn", 22, 29, 36, 30); p.fill("lawn", 22, 18, 36, 19); p.fill("lawn", 1, 18, 2, 26);
+      p.disc("brick", 19.5, 22, 4.4, 3.6); p.decor("fountain", 18, 20);                                         // the round red plaza inside the south entrance
       // The monorail along the north side of the high street.
       for (const x of [16, 22, 27, 31, 35]) blk(p, x, 14);
       p.paint(15.5, (c, top) => { const y = 13 * S + 2; for (const x of [16, 22, 27, 31, 35]) { c.box(x * S + 4, y + 6, 8, 23, [176, 180, 192], [90, 94, 110]); c.rect(x * S + 2, 15 * S - 4, 12, 4, [120, 124, 140]); } top.rect(15 * S, y + 12, 22 * S, 3, [0, 0, 0, 40]); top.box(15 * S, y, 22 * S, 9, [200, 204, 214], [90, 94, 110]); top.rect(15 * S, y + 2, 22 * S, 2, [236, 238, 244]);
         for (let i = 0; i < 3; i++) { const x = 23 * S + i * 36; top.box(x, y - 13, 34, 15, [240, 240, 244], [70, 70, 90]); top.rect(x + 3, y - 10, 28, 5, [90, 150, 210]); top.rect(x + 1, y - 3, 32, 2, [214, 60, 70]); } });
       for (const [x, y] of [[22, 5], [22, 9], [7, 28], [14, 28], [23, 28], [34, 28]]) p.decor("tree1", x, y, { canopy: true });
-      for (const x of [16, 17, 21, 22]) p.decor("bench", x, 23); for (const x of [26, 28, 30, 32]) p.decor("hedge", x, 20);
+      for (const x of [15, 24]) p.decor("bench", x, 21); for (const x of [26, 28, 30, 32]) p.decor("hedge", x, 20);
     },
   },
   // Hammerlocke: the castle city. Curtain walls and turrets, the Stadium keep behind its own moat and
   // drawbridge, the vault with its tapestries on the west side, a stone square and the south gate.
   GalarHammerlocke: {
-    theme: { town: true, ground: "paving", road: "cobble", border: "rock", density: 0, groves: 0, flowers: 0, autoHouses: false, turn: 6, wander: 0 },
+    theme: { town: true, ground: "gravel", road: "cobble", border: "rock", density: 0, groves: 0, flowers: 0, autoHouses: false, turn: 6, wander: 0 },
     plan(p) {
       p.fill("water", 23, 25, 36, 26);
       p.street("cobble", 3, [[19, 1], [19, 30]]); p.street("cobble", 3, [[1, 16], [36, 16]]); p.street("cobble", 2, [[30, 25], [30, 27], [10, 27], [10, 26]]);
@@ -606,7 +638,8 @@ module.exports = {
         for (const mx of [16, w - 16]) { const m = x + mx, b = y + h - 8; c.poly([[m - 9, b], [m - 9, b - 14], [m - 4, b - 22], [m + 2, b - 16], [m + 9, b - 16], [m + 9, b]], o); c.rect(m - 7, b - 26, 3, 6, o); c.rect(m - 2, b - 24, 3, 5, o); } });
       p.paint(0.6, (c) => { for (let y = 8 * S + 4; y < 16 * S; y += 6) c.rect(6 * S, y, 4 * S, 2, [150, 130, 110]); });
       for (const [x, y, col] of [[11, 13, [214, 70, 70]], [13, 13, [70, 120, 200]], [15, 13, [240, 200, 80]], [11, 19, [90, 170, 110]], [13, 19, [214, 70, 70]], [15, 19, [200, 110, 200]], [22, 13, [70, 120, 200]], [24, 13, [240, 200, 80]], [22, 19, [214, 70, 70]]]) stall(p, x, y, col);
-      p.decor("flat", 25, 5); p.decor("flat", 31, 5); p.decor("flat", 2, 19);
+      const adobe = ([r, g, b]) => (g > r * 1.05 && g >= b ? [Math.min(255, g * 1.2), g * 0.78, b * 0.62] : sandstone([r, g, b]));   // sandstone houses with terracotta roofs
+      p.decor("flat", 25, 5, { tint: adobe }); p.decor("flat", 31, 5, { tint: adobe }); p.decor("flat", 2, 19, { tint: adobe });
       for (const [x, y] of [[26, 13], [3, 13], [34, 13], [16, 22]]) p.decor("barrels", x, y); for (const [x, y] of [[33, 13], [2, 27], [35, 28], [22, 22]]) p.decor("boulder", x, y);
     },
   },
@@ -633,17 +666,18 @@ module.exports = {
   GalarCirchester: {
     theme: { town: true, ground: "snow", road: "frostpath", border: "pine", density: 0, groves: 0, flowers: 0, autoHouses: false, turn: 6, wander: 0, treeTint: "frost" },
     plan(p) {
-      p.street("gravel", 3, [[19, 4], [19, 30]]); p.street("gravel", 3, [[1, 16], [36, 16]]); p.street("gravel", 2, [[30, 25], [30, 27], [10, 27], [10, 26]]); p.street("gravel", 2, [[14, 1], [24, 1]]);
+      p.street("brick", 3, [[19, 4], [19, 30]]); p.street("brick", 3, [[1, 16], [36, 16]]); p.street("brick", 2, [[30, 25], [30, 27], [10, 27], [10, 26]]); p.street("brick", 2, [[14, 1], [24, 1]]);   // red-brown brick paving under the snow
+      p.disc("gravel", 19.5, 22, 4.4, 3.4); p.decor("fountain", 18, 20);                     // the round plaza inside the south gates
       built(p, 1, 17, 1, 5, 3, cottage([220, 70, 60], { wall: [244, 244, 240], sign: [220, 70, 60], snow: true }), 1);
       p.building(2, "hall");
       rampart(p, 5, 7, 25, [186, 186, 196]); rampart(p, 13, 15, 25, [186, 186, 196]); built(p, 3, 8, 23, 5, 3, gateway({ wall: [186, 186, 196], roof: [100, 110, 140], post: [70, 70, 84], snow: true }));
-      // The Hero's Bath.
-      p.disc("gravel", 9, 10.5, 7.4, 4.4);
-      for (let y = 7; y <= 13; y++) for (let x = 3; x <= 14; x++) if (((x + 0.5 - 9) / 5.2) ** 2 + ((y + 0.5 - 10.5) / 2.9) ** 2 <= 1) blk(p, x, y);
-      p.paint(14, (c, top) => { const cx = 9 * S, cy = 10.5 * S, st = [190, 190, 198]; c.ellipse(cx, cy + 3, 84, 46, mix(st, 0.5)); c.ellipse(cx, cy, 84, 46, st); c.ellipse(cx, cy, 78, 40, mix(st, 0.7)); c.ellipse(cx, cy + 1, 75, 37, [70, 170, 180]); c.ellipse(cx, cy, 72, 34, [120, 214, 214]); c.ellipse(cx - 10, cy - 6, 44, 16, [170, 236, 232]);
-        for (const [ax, ay] of [[-30, 8], [20, -10], [36, 12], [-8, 16]]) c.ellipse(cx + ax, cy + ay, 10, 3, [220, 250, 248, 180]);
-        for (let a = 0; a < 10; a++) { const px = cx + Math.cos(a * 0.628 + 0.3) * 84, b = cy + Math.sin(a * 0.628 + 0.3) * 46 + 4, g = Math.sin(a * 0.628 + 0.3) > 0 ? top : c; g.box(px - 4, b - 30, 8, 30, [226, 226, 232], [110, 110, 124]); g.box(px - 6, b - 33, 12, 4, [240, 244, 250], [110, 110, 124]); g.rect(px - 6, b - 35, 12, 2, [250, 252, 255]); g.box(px - 6, b - 3, 12, 4, [200, 200, 208], [110, 110, 124]); }
-        for (const [ax, ay, r] of [[-34, -22, 9], [-22, -36, 11], [6, -26, 9], [20, -40, 12], [40, -24, 8], [-4, -50, 9]]) top.ellipse(cx + ax, cy + ay, r, r * 0.7, [250, 252, 255, 120]); });
+      // The Hero's Bath: a long rectangular pool inside its colonnade, on a brick terrace.
+      p.fill("brick", 2, 6, 15, 14); blk(p, 4, 8, 10, 5);
+      p.paint(13.5, (c, top) => { const x = 4 * S, y = 8 * S, w = 10 * S, h = 5 * S, st = [190, 190, 198], dk = mix(st, 0.5);
+        c.box(x - 2, y - 4, w + 4, h + 4, st, dk); c.rect(x + 5, y + 3, w - 10, h - 12, mix(st, 0.7)); c.rect(x + 7, y + 5, w - 14, h - 16, [70, 170, 180]); c.rect(x + 9, y + 7, w - 18, h - 20, [120, 214, 214]); c.rect(x + 16, y + 11, w - 70, 8, [170, 236, 232]);
+        for (const [ax, ay] of [[30, 30], [84, 22], [120, 40], [60, 46]]) c.ellipse(x + ax, y + ay, 10, 3, [220, 250, 248, 180]);
+        for (let i = 0; i < 6; i++) for (const [g, b] of [[top, y + 2], [c, y + h]]) { const px = x + 8 + i * (w - 16) / 5; g.box(px - 4, b - 30, 8, 30, [226, 226, 232], [110, 110, 124]); g.box(px - 6, b - 33, 12, 4, [240, 244, 250], [110, 110, 124]); g.rect(px - 6, b - 35, 12, 2, [250, 252, 255]); g.box(px - 6, b - 3, 12, 4, [200, 200, 208], [110, 110, 124]); }
+        for (const [ax, ay, r] of [[30, 6, 9], [50, -10, 11], [84, 2, 9], [100, -14, 12], [124, 6, 8], [70, -22, 9]]) top.ellipse(x + ax, y + ay, r, r * 0.7, [250, 252, 255, 120]); });
       p.decor("brickTall", 26, 3, { canopy: 3 }); p.decor("brickFlat", 31, 6);
       p.decor("brickFlat", 2, 18); p.decor("apartment", 13, 19);
       for (const [x, y] of [[16, 13], [22, 13], [16, 19], [22, 19], [8, 28], [12, 28]]) lantern(p, x, y);

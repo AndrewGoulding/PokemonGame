@@ -10,9 +10,9 @@ houses. They now have street plans of their own.
 
 | Map | Plan |
 |---|---|
-| `UnovaCasteliaCity` | Five piers on the southern seawall, the waterfront promenade, four streets running north between tower blocks, a back alley across them, and the round Central Plaza with its fountain below the Route 4 gate. The Pokémon Center is on the waterfront's east end by the Skyarrow Bridge gate. |
-| `KalosLumioseSouth` | The lower arc of the ring boulevard, from the Route 5 gate round to the Route 4 gate, with Vernal Avenue up the middle, Sycamore's lab, the Pokémon Center, and Vert and Bleu Plazas. |
-| `KalosLumioseNorth` | The upper arc, from Route 13 over Route 14 to Route 16, with Prism Tower on Centrico Plaza where the avenues meet, the station, museum, hotel and cafés, and Jaune, Rouge and Magenta Plazas. |
+| `UnovaCasteliaCity` | Five piers on the southern seawall — west to east Liberty Pier, Unity Pier, Prime Pier (the Virbank ferry), the Cruise Dock and the short Thumb Pier with the sewer hatch — the waterfront promenade, and four streets running north between tower blocks (Gym Street, Narrow Street, Mode Street, Castelia Street) to the round Central Plaza with its fountain below the Route 4 gate. The Gym is between Gym Street and Narrow Street with the Medal Office across Gym Street; Passerby Analytics HQ, the Battle Company and the Pokémon Center face the waterfront; GAME FREAK is on Castelia Street's east side; the Skyarrow Bridge gate is at the promenade's east end. |
+| `KalosLumioseSouth` | The lower arc of the ring boulevard, from the Route 5 gate in the south-west to the Route 4 gate in the south-east, with Vernal Avenue up the middle, the Pokémon Center and Sycamore's lab on South Boulevard at the avenue's foot, Bleu Plaza to the west and Vert Plaza to the east. |
+| `KalosLumioseNorth` | The upper arc, from Route 13 in the west over Route 14 to Route 16 in the east, with Prism Tower on Centrico Plaza, Rouge Plaza north of it, Magenta Plaza west and Jaune Plaza east; the station and the Pokémon Center on North Boulevard by the Route 14 gate, the museum across from the Center, the Looker Bureau between the boulevard and Rouge Plaza, Lysandre Café beside Magenta Plaza. |
 
 ### The other Kalos cities
 
@@ -20,18 +20,19 @@ houses. They now have street plans of their own.
 
 | Map | Plan |
 |---|---|
-| `KalosSantaluneCity` | Avenues crossing at the fountain plaza, the Gym to the north-east, flower beds. |
-| `KalosCyllageCity` | Sea and beach to the west (still fishable), the town on its shelf, the Gym under the cliffs. |
-| `KalosShalourCity` | The Tower of Mastery on an islet in the bay, reached over the sand. |
-| `KalosCoumarineLower` | The harbour front with jetties and the Seaside Station. |
-| `KalosCoumarineUpper` | The clifftop quarter: Hillcrest Station, and the Gym in its great tree. |
-| `KalosLaverreCity` | Meadow paths through flower fields, the Gym in the old tree, the Poké Ball Factory to the north. |
-| `KalosAnistarCity` | The town above the eastern sea with its crystal sundial. |
-| `KalosSnowbelleCity` | Log cabins in the snow, ringed by frosted pines. |
-| `KalosKiloudeCity` | The resort town around the Battle Maison, the station to the south. |
+| `KalosSantaluneCity` | Avenues crossing at the fountain plaza, the Trainers' School north of it, the Gym in the north-east corner, the Pokémon Center and boutique to the south-east. |
+| `KalosCyllageCity` | Sea and beach to the west (still fishable), the town on its shelf with the Center in the middle, cliffs to the east and the Gym in them at the south-east. |
+| `KalosShalourCity` | The Tower of Mastery on an islet in the bay to the north, reached over the sand; the Gym on the west side, the Center south of the causeway. |
+| `KalosCoumarineLower` | The seaside half: sea to the north and west, harbour jetties, the hotel on its headland, the Seaside Station to the east, Route 12 in from the west. |
+| `KalosCoumarineUpper` | The clifftop half above the eastern sea: the Gym in its great tree at the head of the path, Hillcrest Station and the Center side by side to the east. |
+| `KalosLaverreCity` | Meadow paths through flower fields, the Gym in the old tree at the centre, the Center south-east, the boutique south-west, the Poké Ball Factory to the north. |
+| `KalosAnistarCity` | The town above the sea with its crystal sundial on a terrace to the north-west, the Gym north-east, Route 17 to the west and Route 18 to the south-east. |
+| `KalosSnowbelleCity` | Log cabins in the snow, ringed by frosted pines: the Gym in the middle, the Center to the east, the Route 19 bridge west, the Winding Woods south-west, Route 21 east. |
+| `KalosKiloudeCity` | The resort town around the Battle Maison, the station and its track on the west side, the Center to the south, the Friend Safari north-east. |
 
-In seven of these nine every door, gate and person stands exactly where it did;
-only Santalune's and Cyllage's doors moved. Alola's Hau'oli and Konikoni were
+All twelve were compared with reference pictures of the games and corrected
+(`docs/map-references/cities.md`), so doors, several gates and a few people
+moved; warp indices, actor IDs and map sizes did not. Alola's Hau'oli and Konikoni were
 drawn over Santalune's and Laverre's old pictures, which are kept for them as
 `KalosSantaluneCityClassic*` and `KalosLaverreCityClassic*`.
 
@@ -45,17 +46,35 @@ lamps, Anistar's sundial and the tree Gyms' crowns are drawn by the generator.
 
 ## Honest limits
 
-- **Drawn from memory.** No reference site could be reached while this was
-  built, so the plans follow the games' well-known shape, not a traced map.
-  The order of Castelia's piers and streets, and which Lumiose plaza sits on
-  which side, are best recollection and should be checked against a reference.
-- **Castelia is a grid, not a fan.** The real streets curve in towards the
-  plaza; here they run straight north and join it by a cross street.
+- **Checked against references, not traced.** Each plan was compared with a
+  picture of the game's town (pokewiki.de's city maps and overview pictures;
+  the log is `docs/map-references/cities.md`) and the things that stood on the
+  wrong side were moved: Castelia's pier order and which building is on which
+  street, Lumiose's plazas and gates, and the Gym, Center, landmark and sea of
+  the smaller cities. What is verified is *which side of town* each thing is
+  on and the order of things along a street, not tile-accurate distances.
+- **Castelia is a grid, not a fan.** The real streets radiate from the plaza
+  to the piers; here they run straight north and join it by a cross street, and
+  the plaza sits further north than it should. Mode Street's ice-cream stand,
+  Studio Castelia and the Name Rater's avenue are not drawn. The Badge Office,
+  Fennel's Dream Lab and the "street" rooms are this game's own additions and
+  have no place in the real city.
+- **Lumiose is still two maps and a rounded rectangle, not a circle.** They
+  meet only along Vernal Avenue; the boulevard does not carry on from one map
+  into the other. Only Vernal Avenue is drawn: Estival, Autumnal and Hibernal
+  Avenues and the canal streets are missing. Doors can only face south, so the
+  lab and the Center stand side by side at Vernal Avenue's foot (in the game
+  they face each other across South Boulevard), and the station and North
+  Center are cut-off fronts on the boulevard's outer edge. Which side of the
+  Route 14 gate the station is on, and where Hotel Richissime stands, could
+  not be confirmed from the references.
 - **The smaller Kalos cities are sketches of the real ones.** Each has its
-  signature feature and the right kind of ground, but the street-by-street
-  arrangement is simple and mostly keeps the old door positions.
-- **Lumiose is still two maps.** They meet only along Vernal Avenue; the
-  boulevard does not carry on from one map into the other.
+  landmarks on the right side, but the street-by-street arrangement is simple.
+  Their height differences (Cyllage's cliff road, Coumarine's terraces,
+  Anistar's and Snowbelle's steps) are flat here, some gates are a compass
+  point off (Santalune's Route 4 and Route 3 exits are on the centre line,
+  Cyllage's Route 8 leaves due south, Shalour's cave is due south), and the
+  extra houses are placed by eye.
 - Interiors, the Castelia street rooms and `BW1CasteliaCity` (the Black/White
   campaign's copy) are unchanged.
 
@@ -64,9 +83,9 @@ lamps, Anistar's sundial and the tree Gyms' crowns are drawn by the generator.
 - Map names, sizes, warp indices, actor IDs and scripts are unchanged; doors
   and people moved. `tools/build-city-layouts.js` refuses to write a plan in
   which any warp or person is walled in or a door opens onto a wall.
-- Stored landing points that aimed at a moved door (Fly, interior returns) are
-  rewritten by the overlay. The Virbank ferry arrival, the Liberty Garden
-  return, the Route 4 gate and both Lumiose Fly points did not move.
+- Stored landing points that aimed at a moved door or gate (Fly, interior
+  returns) are rewritten by the overlay. The Virbank ferry arrival, the
+  Liberty Garden return and Castelia's Route 4 gate did not move.
 - A save left on a tile that is now a wall is moved to the nearest open tile by
   the regions' existing `recover` step; nothing else in the save changes.
 - These maps opt out of the older decorative overlays (`ui/civic-map-art.js`,
