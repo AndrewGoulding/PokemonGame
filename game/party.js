@@ -312,7 +312,13 @@
   function canLearnMachine(record, move) {
     const learnset = window.LEARNSETS_GEN6[record.species];
     if (learnset && (learnset.tm || []).includes(move)) return true;
-    return ((window.MACHINE_LEARNERS || {})[move] || []).includes(record.species);
+    if (((window.MACHINE_LEARNERS || {})[move] || []).includes(record.species)) return true;
+    // (This game's own: whatever a move tutor can teach it, a machine of that move can too: Gen 6's tutors,
+    // FireRed's (window.TUTOR_LEARNERS) and Pokémon XD's purification moves, as ui/game.js's tutors offer them.)
+    const tutored = learnset || window.LEARNSETS_GEN6[String(record.species).split("-")[0]];
+    if (tutored && (tutored.tutor || []).includes(move)) return true;
+    if (((window.TUTOR_LEARNERS || {})[move] || []).includes(record.species)) return true;
+    return (((window.XD_PURIFICATION_MOVES || {})[speciesName(record.species)]) || []).includes(move);
   }
   const knowsMove = (record, move) => record.moves.some((m) => m.name === move);
 

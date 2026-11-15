@@ -1,7 +1,7 @@
 // Digging in a cave wall: Diamond and Pearl's Underground mining game.
 //
-// The wall is 13 x 10 tiles of rock, each 1-6 layers deep. Two to four
-// treasures are buried in it (Diamond and Pearl's bedrock, which can't be
+// The wall is 13 x 10 tiles of rock, each 1-6 layers deep. Two to eight
+// treasures are buried in it, more the higher your mining level (Diamond and Pearl's bedrock, which can't be
 // dug, is left out here). Each hit
 // takes layers off: the pickaxe 2 from the tile hit and 1 from the four
 // beside it; the hammer (from mining level 5) 2 from the tile and 1 from all
@@ -140,6 +140,9 @@
     return null;
   }
 
+  // How many treasures a wall holds: 2 up to mining level 10, 3 up to 20, 4 up to 39, then one more at each
+  // of levels 40, 60, 80 and 100 (8 at the top).
+  const maxTreasures = (lv) => { lv = lv || 1; return lv <= 10 ? 2 : lv <= 20 ? 3 : lv < 40 ? 4 : Math.min(8, 3 + Math.floor(lv / 20)); };
   // A wall to dig at mining level `lv` (1 if left out), in map `map`.
   function create(rng, lv, map, opts) {
     opts = opts || {};
@@ -155,7 +158,7 @@
     }
     const taken = [];
     const treasures = [];
-    const count = opts.count != null ? opts.count : (lv || 1) <= 10 ? 2 : (lv || 1) <= 20 ? 3 : 4;   // more to find as you level up
+    const count = opts.count != null ? opts.count : maxTreasures(lv);   // more to find as you level up
     for (let i = 0; i < count; i++) {
       const [item, , shape] = pickTreasure(rng, lv, map, opts.pool);
       const at = place(shape, taken, rng);
@@ -219,5 +222,5 @@
   const found = (dig) => dig.treasures.filter((t) => t.found).map((t) => t.item);
 
   window.Mining = { WIDTH, HEIGHT, ENERGY_COST, TOOLS, XP_PER_HIT, XP_PER_TREASURE, TREASURES, LEVELS, MAX_LEVEL, FOSSIL_CAVES,
-    maxEnergy, level, toNext, progress, available, create, hit, survey, tools, found };
+    maxEnergy, maxTreasures, level, toNext, progress, available, create, hit, survey, tools, found };
 })();

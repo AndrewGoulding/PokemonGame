@@ -4010,11 +4010,21 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   for (let n = 0; n < 100; n++) {
     for (const t of Mining.create(low, 1).treasures) assert(Mining.available(1).some((a) => a[0] === t.item), t.item + " at level 1");
   }
+  // A machine teaches whatever a move tutor could: Gen 6's tutors (Abra's Knock Off) and FireRed's (Absol's Counter).
+  {
+    const tmOf = (move) => Object.keys(window.ITEMS).some((id) => /^(tm|hm)\d+$/.test(id) && window.ITEMS[id].effect.startsWith("Teaches " + move + " to a compatible"));
+    for (const [species, move] of [["Abra", "Knock Off"], ["Absol", "Counter"]]) {
+      assert(tmOf(move) && !(window.LEARNSETS_GEN6[species].tm || []).includes(move), move + " is a machine, not in " + species + "'s own list");
+      assert(Party.canLearnMachine(Party.create(species, 20), move), species + " learns " + move + " from its machine");
+    }
+    assert(!Party.canLearnMachine(Party.create("Magikarp", 20), "Knock Off"));
+  }
   const r = mulberry32(7);
   for (let n = 0; n < 50; n++) {
     const dig = Mining.create(r, 1 + (n % Mining.MAX_LEVEL));
     const lvl = 1 + (n % Mining.MAX_LEVEL);
-    assert(dig.treasures.length >= 1 && dig.treasures.length <= (lvl <= 10 ? 2 : lvl <= 20 ? 3 : 4));
+    assert(dig.treasures.length >= 1 && dig.treasures.length <= Mining.maxTreasures(lvl));
+    assert.deepStrictEqual([1, 10, 11, 20, 21, 39, 40, 59, 60, 79, 80, 99, 100].map(Mining.maxTreasures), [2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8]);
     assert(dig.rock.every((l) => l >= 2 && l <= 6));
     // Treasures and bedrock never overlap.
     const seen = new Set();

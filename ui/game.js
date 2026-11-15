@@ -2158,6 +2158,7 @@
     await MiningScreen.message("Gained " + dig.xp + " mining XP.");
     const after = Mining.level(f.miningXp);
     if (after > before) await MiningScreen.message("Your mining level rose to " + after + "! You have more energy, and rarer treasures may turn up now.");
+    if (Mining.maxTreasures(after) > Mining.maxTreasures(before)) await MiningScreen.message("Walls can hold up to " + Mining.maxTreasures(after) + " treasures now!");
     // (A new tool: the Hammer at 5, the Bomb at 10, the Survey Kit at 20.)
     for (const t of Mining.TOOLS) if (t.level > before && t.level <= after) await MiningScreen.message("You can use the " + t.name + " now! SELECT changes tools.");
     MiningScreen.clear();
@@ -11627,6 +11628,18 @@
         text: null, localId: "LOCALID_PEWTER_FOSSIL_SCIENTIST", sprite: "scientist", width: 16, height: 32, frames: 10 });
     }
     SPECIAL.add(PEWTER_FOSSIL_SCIENTIST);
+  }
+
+  // (This game's own: a second clerk behind the counter of Saffron City's Poké Mart, who sells the special
+  // Poké Balls.)
+  const SAFFRON_BALL_STOCK = ["ultra-ball", "timer-ball", "quick-ball", "dusk-ball", "repeat-ball", "net-ball", "nest-ball", "dive-ball",
+    "heal-ball", "luxury-ball", "premier-ball"];
+  {
+    const m = window.WORLD_MAPS.SaffronCity_Mart;
+    if (m && !m.people.some((p) => p.localId === "LOCALID_SAFFRON_BALL_CLERK")) {
+      m.people.push({ id: 953, x: 2, y: 2, movement: "face_right", rangeX: 0, rangeY: 0, script: "SaffronCity_Mart_EventScript_Clerk", flag: null,
+        text: ["Hi, there!\nMay I help you?"], mart: SAFFRON_BALL_STOCK, localId: "LOCALID_SAFFRON_BALL_CLERK", sprite: "clerk", width: 16, height: 32, frames: 9 });
+    }
   }
 
   // ---------- The Safari Game ----------

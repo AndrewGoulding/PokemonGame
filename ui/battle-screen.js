@@ -1063,7 +1063,8 @@
   function expansionAnim(side, name, data, aims, setUp) {
     const BA = window.BattleAnim;
     if (!BA || !BA.has(name)) return Promise.resolve(false);
-    const target = aims.find((a) => a !== side) || aims[0];
+    // (A move used on itself, Roost's feathers: the GBA's target is then the user, not the Pokémon opposite.)
+    const target = data.cat === "Status" && data.target === "self" ? side : aims.find((a) => a !== side) || aims[0];
     // (A Shadow move: first the user's dark aura flares, as in Pokémon XD.)
     if (data.type === "Shadow") return shadowAura(side).then(() => playAnim(Object.assign(animOpts(side, target), {
       move: name, type: data.type, category: data.cat, turn: 0, power: data.power || 0, damage: 40, itemPicture: null })));
