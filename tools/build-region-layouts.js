@@ -292,7 +292,7 @@ function room(name) {
     if (exit) { put("rStatue", exit.x - 3, B - 3); put("rStatue", exit.x + 2, B - 3); }
   }
   // Pillars for halls and shrines.
-  if (kindName === "hall" || kindName === "shrine") for (const x of [L + 2, R - 2]) for (let y = T0 + 2; y <= B - 2; y += 4) if (free(x, y)) { solid[I(x, y)] = 1; const f = { cells: [I(x, y)], live: true }; furniture.push(f); items.push({ z: y + 1, draw: (c, top) => { if (!f.live) return; const px = x * 16, py = y * 16; c.ellipse(px + 8, py + 13, 8, 4, [0, 0, 0, 70]); c.box(px + 2, py - 12, 12, 26, [176, 172, 180], [70, 70, 86]); c.rect(px + 4, py - 10, 3, 22, [222, 220, 228]); c.box(px, py - 16, 16, 6, [200, 198, 206], [70, 70, 86]); c.box(px, py + 10, 16, 5, [150, 148, 158], [70, 70, 86]); } }); }
+  if ((kindName === "hall" || kindName === "shrine") && !PLAN && !RESKIN) for (const x of [L + 2, R - 2]) for (let y = T0 + 2; y <= B - 2; y += 4) if (free(x, y)) { solid[I(x, y)] = 1; const f = { cells: [I(x, y)], live: true }; furniture.push(f); items.push({ z: y + 1, draw: (c, top) => { if (!f.live) return; const px = x * 16, py = y * 16; c.ellipse(px + 8, py + 13, 8, 4, [0, 0, 0, 70]); c.box(px + 2, py - 12, 12, 26, [176, 172, 180], [70, 70, 86]); c.rect(px + 4, py - 10, 3, 22, [222, 220, 228]); c.box(px, py - 16, 16, 6, [200, 198, 206], [70, 70, 86]); c.box(px, py + 10, 16, 5, [150, 148, 158], [70, 70, 86]); } }); }
   // Everything that must be reached can be; furniture in the way goes.
   const start = exit ? I(exit.x, exit.y) : keep.indexOf(1);
   for (let guard = 0; guard < 60; guard++) {

@@ -212,9 +212,24 @@ The same builder now redraws the 561 interiors and caves of Kalos and Unova
 - **Left alone:** Pokémon Centers, which already looked the part; Reversal
   Mountain, whose lava differs by version; and the underwater ruins.
 
-These have no hand-written plans: they are the builder's default for each kind
-of room, so every house of a kind is furnished alike and no Gym challenge is
-drawn. Paths are now checked without walking through people, on every map.
+On top of that default, 371 of them have hand-written plans (`kalos-rooms.js`,
+`kalos-caves.js`, `unova-rooms.js`, `unova-caves-a.js`, `unova-caves-b.js`,
+`bw1-rooms.js`): every Gym room in both regions drawn as its own challenge
+(Santalune's web, Shalour's rink, Laverre's dollhouse rooms, Anistar's
+starfield; Virbank's club, Nimbasa's catwalk, Humilau's lily pads; the
+Black/White Gyms), the League rooms, N's Castle, the Plasma Frigate, the story
+buildings, and every cave and dungeon floor (Glittering Cave, Reflection Cave,
+Frost Cavern, Terminus Cave; the Castelia Sewers, Relic Castle, Chargestone
+Cave, Twist Mountain, Dragonspiral Tower, the Regi chambers, the Hidden
+Grottoes). Ordinary houses, shops and gatehouses keep the default.
+
+A room plan in these two regions can only redraw: it re-tiles the floor and
+paints the set-piece, and never changes where you can walk, so a Gym's puzzle
+paths are exactly the game's. Where this game's Gym was an empty hall (most of
+Unova's), the challenge is scenery, and some plans stand props on the open
+floor. Belts, ice, quicksand, rails and catwalks are drawn, not mechanics.
+In the planned caves the wild encounters are on the drawn floor, unseen.
+Paths are checked without walking through people, on every map.
 
 ## Hand-planned towns
 
