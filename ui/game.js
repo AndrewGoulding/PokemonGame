@@ -5296,7 +5296,8 @@
   // (This game's own.) Once you're Champion (flags.gameClear), the Dojo has
   // trained hard: each of its Black Belts and the Karate Master battles you
   // once more, their Pokémon fully evolved (FireRed's teams' species lines:
-  // Machop and Machoke are Machamps now, Mankey and Primeape Annihilapes) at levels 48-52.
+  // Machop and Machoke are Machamps now, Mankey and Primeape Annihilapes) at levels 48-52;
+  // the Karate Master adds a Hitmontop to his Hitmonlee and Hitmonchan.
   // Beat the Karate Master again and he gives you the Hitmon you didn't
   // take the first time, at Lv. 50. Each battles you again only once
   // (flags.dojoRematch[trainer id]: won).
@@ -5328,7 +5329,7 @@
       after: ["I'm still a small fry next to our\nMaster. Next time, I'll be bigger!"]
     },
     [DOJO_MASTER]: {
-      team: [["Hitmonlee", 52], ["Hitmonchan", 52]],
+      team: [["Hitmonlee", 52], ["Hitmonchan", 52], ["Hitmontop", 52]],
       intro: ["Grunt!", "The Champion of the Pokémon League\nreturns to my Dojo!", "Since the day you beat us, we have\ntrained from dawn till dusk!",
         "Show me the fighting spirit of a\nChampion! I hold nothing back!", "Fwaaa!"],
       defeat: ["Hwa!\nArrgh! Beaten once more!"],

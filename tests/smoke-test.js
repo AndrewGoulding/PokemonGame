@@ -3997,9 +3997,12 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   assert.deepStrictEqual(Mining.available(1).map((t) => t[0]).sort(),
     ["blue-shard", "green-shard", "heart-scale", "red-shard", "yellow-shard"]);
   assert.deepStrictEqual(["everstone", "hard-stone"].map((i) => Mining.TREASURES.find((t) => t[0] === i)[3]), [5, 5]);
-  // Vitamins from level 15, Bottle Caps from 40 and Gold Bottle Caps from 80.
-  assert.deepStrictEqual(["hp-up", "protein", "iron", "calcium", "zinc", "carbos", "bottle-cap", "gold-bottle-cap"].map(unlock),
-    [15, 15, 15, 15, 15, 15, 40, 80]);
+  // Vitamins from level 15, PP Ups from 30, Bottle Caps from 40, Ability Capsules from 55, Ability Patches from 70
+  // and Gold Bottle Caps only at the top level.
+  assert.deepStrictEqual(["hp-up", "protein", "iron", "calcium", "zinc", "carbos", "pp-up", "bottle-cap", "ability-capsule", "ability-patch", "gold-bottle-cap"].map(unlock),
+    [15, 15, 15, 15, 15, 15, 30, 40, 55, 70, 100]);
+  assert(!Mining.available(99).some((t) => t[0] === "gold-bottle-cap") && Mining.available(100).some((t) => t[0] === "gold-bottle-cap"));
+  for (const id of ["pp-up", "ability-capsule", "ability-patch", "gold-bottle-cap"]) assert(ITEMS[id] && ITEM_SPRITES[id], id + " is a real item with a picture");
   // At the top level everything turns up, but fossils only in their own caves.
   assert.strictEqual(Mining.available(Mining.MAX_LEVEL, "MtMoon_1F").length, Mining.TREASURES.length - 4, "all but Sinnoh's fossils in Mt. Moon");
   for (let lv = 1; lv <= Mining.MAX_LEVEL; lv++) assert(Mining.available(lv).length > 0);
@@ -6828,6 +6831,10 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   // The Dojo: every trainer of FireRed's Dojo, fully evolved, levels 48-52,
   // FireRed's species lines.
   const dojo = /const DOJO_REMATCH = \{([\s\S]*?)\n  \};/.exec(gameJs)[1];
+  // The Karate Master brings all three Hitmons to the rematch.
+  assert(/\[DOJO_MASTER\]: \{\s*team: \[\["Hitmonlee", 52\], \["Hitmonchan", 52\], \["Hitmontop", 52\]\],/.test(dojo));
+  // Mt. Moon: once you are Champion, Miguel hands over the fossil he took, once.
+  { const ev = fs.readFileSync(path.join(__dirname, "../ui/story-events.js"), "utf8"); assert(/f\.mtMoonFossil && f\.gameClear && !f\.mtMoonSecondFossil/.test(ev) && /f\.mtMoonSecondFossil = true;/.test(ev)); }
   const ids = WORLD_MAPS.SaffronCity_Dojo.people.filter((p) => p.trainer).map((p) => p.trainer.id);
   assert.strictEqual(ids.length, 5);
   for (const id of ids) {

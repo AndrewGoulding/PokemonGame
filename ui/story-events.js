@@ -2039,7 +2039,15 @@
           await env.miguelBattle();
           return;
         case "MtMoon_B2F_EventScript_Miguel":
-          if (f.mtMoonFossil) await env.say(env.T("MtMoon_B2F_Text_LabOnCinnabarRegeneratesFossils"));
+          // (This game's own: once you're Champion, he lets you have the fossil he took.)
+          if (f.mtMoonFossil && f.gameClear && !f.mtMoonSecondFossil) {
+            const other = f.mtMoonFossil === "dome-fossil" ? "helix-fossil" : "dome-fossil", name = other === "dome-fossil" ? "Dome" : "Helix";
+            await env.say(["Hey, it's you! The Champion!", "I never did get this fossil\nregenerated. It's just been sitting\nin my bag all this time.", "You'll put it to better use than me.\nGo on, take it!"]);
+            Player.addItem(env.player, other);
+            f.mtMoonSecondFossil = true;
+            await env.say(env.T("MtMoon_B2F_Text_Obtained" + name + "Fossil"));
+          }
+          else if (f.mtMoonFossil) await env.say(env.T("MtMoon_B2F_Text_LabOnCinnabarRegeneratesFossils"));
           else if (f.TRAINER_SUPER_NERD_MIGUEL) await env.say(env.T("MtMoon_B2F_Text_WellEachTakeAFossil"));
           else await env.miguelBattle();
           return;
