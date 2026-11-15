@@ -248,13 +248,15 @@ function room(name) {
     // The room's own plan (tools/plans): see README.md, "Rooms".
     const cells = (x0, y0, x1, y1, f) => { for (let y = Math.max(1, Math.min(y0, y1)); y <= Math.min(H - 2, Math.max(y0, y1)); y++) for (let x = Math.max(1, Math.min(x0, x1)); x <= Math.min(W - 2, Math.max(x0, x1)); x++) f(I(x, y), x, y); };
     const set = (kind, i) => {
+      // (A Kalos or Unova room keeps its own walkable shape: fill only re-tiles what is there.)
+      if (FROM) { const wetF = kind === "water" || kind === "sea" || kind === "bog"; if (kind === "void" || kind === "wall" || wetF) { if (!floor[i]) tileAt[i] = kind; return; } if (!A.TILES[tileOf(kind).tile]) throw new Error(name + ": unknown floor " + kind); if (floor[i]) tileAt[i] = kind; return; }
       if (kind === "void" || kind === "wall") { if (keep[i]) return; floor[i] = 0; solid[i] = 1; tileAt[i] = kind; return; }
       if (!A.TILES[tileOf(kind).tile]) throw new Error(name + ": unknown floor " + kind);
       const wet = kind === "water" || kind === "sea" || kind === "bog"; if (wet && keep[i]) return;
       floor[i] = 1; solid[i] = wet ? 1 : 0; tileAt[i] = kind;
     };
     PLAN.plan({
-      W, H, name, room: true, top: T0, bottom: B, left: L, right: R, kind: kindName, hue: ARENA_HUES[seed % ARENA_HUES.length],
+      W, H, name, room: true, fixedShape: FROM, irregular: RESKIN, isFloor: (x, y) => on(x, y) && !!floor[I(x, y)], top: T0, bottom: B, left: L, right: R, kind: kindName, hue: ARENA_HUES[seed % ARENA_HUES.length],
       warps: base.warps.map((w, k) => ({ k, x: w.x, y: w.y, to: w.map, exit: w === exit })), people: base.people.map((q) => ({ x: q.x, y: q.y, script: q.script })),
       fill: (kind, x0, y0, x1, y1) => cells(x0, y0, x1, y1, (i) => set(kind, i)),
       disc: (kind, cx, cy, r, ry = r) => cells(Math.floor(cx - r), Math.floor(cy - ry), Math.ceil(cx + r), Math.ceil(cy + ry), (i, x, y) => { if (((x + 0.5 - cx) / r) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1) set(kind, i); }),

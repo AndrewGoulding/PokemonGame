@@ -69,6 +69,13 @@ Indoor maps of Alola, Galar and Paldea are built as a walled room: floor from ro
 - `p.paint(z, (c, top) => ...)`, `p.block(x, y, w, h)`, `p.bare(k)` (no doormat/doorway drawn on warp `k`), `p.hue`
   (a colour picked for this room), `p.warps` (`exit: true` on the way out), `p.people`.
 
+**Kalos and Unova rooms keep their shape** (`p.fixedShape` is `true`). Their walkable tiles, counters, PCs and
+fixtures are the game's own, and a Gym's paths are its puzzle (`p.irregular` is `true` for those). So there:
+`p.fill`/`p.disc` only re-tile (a walkable kind recolours existing floor; `"void"`, `"wall"` and `"water"` only
+restyle tiles that are already solid) and never change where you can walk; `p.isFloor(x, y)` tells you which
+is which; `p.decor` and `p.block` may still stand things on free floor, and the builder removes any that cut
+someone off. Draw the set-piece with `p.paint` over the solid parts and around the paths.
+
 Caves and trial sites (rock caverns) are outdoor-style maps: plan them with the town calls above; their theme is
 `cavern` (ground `caveFloor`, walls `caveVoid`).
 
