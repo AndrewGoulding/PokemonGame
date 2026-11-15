@@ -43,6 +43,8 @@
       if (person.flag && env.tempFlags.has((map || env.player.location.map) + ":" + person.flag)) return false;   // (a tree you've cut)
       const spot = person.trainer && f.trainerSpots && f.trainerSpots[person.trainer.id];
       if (spot) return { x: spot.x, y: spot.y, movement: "face_" + spot.facing };
+      // (Prof. Birch waits in Slateport's ferry terminal only when you first land in Hoenn: ui/game.js's birchWelcome.)
+      if (person.localId === "LOCALID_SLATEPORT_HARBOR_BIRCH") return !!f.hoennArriving;
       // Miguel stays by the fossil he took (FireRed's copyobjectxytoperm).
       if (person.script === "MtMoon_B2F_EventScript_Miguel" && f.mtMoonFossil) return { x: f.mtMoonFossil === "dome-fossil" ? 14 : 13, y: 8, movement: "face_up" };
       // Daisy sits at the table, before and after giving you the Town Map.

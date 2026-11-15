@@ -5976,16 +5976,34 @@
 
   // ---------- Hoenn: by Seagallop from Vermilion (this game's own) ----------
   //
-  // The first time, the Seagallop takes you, and a moving truck, to Hoenn: the truck's inside, as Emerald
-  // begins (data/emerald-maps.js; ui/hoenn-script.js plays Emerald's scripts from there). After that, the
-  // Seagallop lands at Slateport's harbor, whose sailor sails you back to Vermilion.
+  // The Seagallop lands at Slateport's harbor, whose sailor sails you back to Vermilion. The first time, Prof.
+  // Birch is waiting in the terminal: he knows Johto's Champion on sight, and has a moving truck ready to take
+  // you to Littleroot Town, where Emerald begins (the truck's inside: data/emerald-maps.js; ui/hoenn-script.js
+  // plays Emerald's scripts from there). flags.hoennArriving: he is in the terminal (ui/story-events.js).
   const hoennStarted = () => hoenn.getVar("VAR_LITTLEROOT_INTRO_STATE") > 0;
   async function sailToHoenn(aqua) {
     const ship = aqua ? "the S.S. Aqua" : "SEAGALLOP HI-SPEED 9";
-    await say(hoennStarted() ? ["All aboard " + ship + "!", "Next stop, Slateport City in Hoenn!"]
-      : ["All aboard " + ship + "!", "It's a long way to Hoenn. You can\nride in the moving truck we're taking."]);
-    if (hoennStarted()) await ferry({ map: "SlateportCity_Harbor", x: 6, y: 11, facing: "down" }, false);
-    else await ferry({ map: "InsideOfTruck", x: 2, y: 2, facing: "right" }, false);
+    await say(["All aboard " + ship + "!", "Next stop, Slateport City in Hoenn!"]);
+    if (hoennStarted()) { await ferry({ map: "SlateportCity_Harbor", x: 6, y: 11, facing: "down" }, false); return; }
+    player.flags.hoennArriving = true;
+    await ferry({ map: "SlateportCity_Harbor", x: 6, y: 11, facing: "down" }, false);
+    await birchWelcome();
+  }
+  // Prof. Birch in Slateport's ferry terminal, the first time you land in Hoenn.
+  async function birchWelcome() {
+    const BIRCH = "LOCALID_SLATEPORT_HARBOR_BIRCH";
+    await Overworld.act([{ who: BIRCH, moves: ["emote_exclamation_mark", "delay_16", "delay_16", "walk_left", "walk_left", "walk_left", "walk_in_place_faster_up"] }]);
+    await say([fill("Prof. Birch: Oh! Hello there!\nYou must be {PLAYER}!"), "Welcome to Hoenn! I'm Birch.\nI'm the Pokémon Professor here.",
+      "I'd know you anywhere. You're the\nChampion of Johto!", "I watched your battles at the Pokémon\nLeague. What a Trainer!",
+      "When I heard you were sailing here,\nI came down to meet your ship.", "I've arranged a moving truck to take\nyou to Littleroot Town.",
+      "My Pokémon Lab is there. It's the\nperfect place to start a journey\nacross Hoenn!", "The truck's waiting outside.\nHop in the back, and I'll see you in\nLittleroot Town!"]);
+    Screen.say("");
+    await sleep(333);
+    await Overworld.fadeToBlack();
+    delete player.flags.hoennArriving;
+    await Overworld.teleport({ map: "InsideOfTruck", x: 2, y: 2, facing: "right" });
+    music((window.WORLD_MAPS.InsideOfTruck || {}).music);
+    await persist();
   }
   async function slateportSailor() {
     // (Olivine too, by the S.S. Aqua, once you've beaten Johto's League.)
@@ -13708,7 +13726,7 @@
   }
 
 
-  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, runHoenn: (label) => runHoenn(label),
+  window.Game = { get player() { return player; }, get pokegear() { return gear; }, get hoenn() { return hoenn; }, runHoenn: (label) => runHoenn(label), sailToHoenn: (aqua) => sailToHoenn(aqua),
     // (for the browser tests: a wild battle with this species, then back to the map)
     // (opts.terrain: a backdrop, assets/battle/<terrain>.png.)
     wildBattle: async (species, level, opts) => { await battle("wild", { terrain: opts && opts.terrain, foe: { name: "Wild", team: [wildMon(Party.create(species, level))] } }); show("world"); await Overworld.resume(); },

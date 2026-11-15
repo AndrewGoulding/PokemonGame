@@ -1,7 +1,8 @@
 // This game's own changes to Hoenn's story (Emerald's scripts and maps, data/emerald-maps.js), made as the page
 // loads, before ui/game.js sets Emerald's scripts going (HoennScript.create):
-//   - you come to Hoenn as Johto's Champion, in the moving truck (by the S.S. Aqua or the Seagallop), and hop
-//     down from it: no Mom to take you in (she's Brendan's, or May's; nor later, with Running Shoes), no May (or
+//   - you come to Hoenn as Johto's Champion (by the S.S. Aqua or the Seagallop) and land at Slateport's ferry
+//     terminal, where Prof. Birch is waiting (ui/game.js's birchWelcome): he has a moving truck take you to
+//     Littleroot Town, and you hop down from it: no Mom to take you in (she's Brendan's, or May's; nor later, with Running Shoes), no May (or
 //     Brendan) at home to meet, and Littleroot's twin isn't there to stop you going north without a Pokémon: it's
 //     straight up to Route 101, where Prof. Birch is being chased by a Zigzagoon and calls for help;
 //   - Birch knows you, Johto's Champion, and gives you the Pokémon you saved him with: the one you chose from
@@ -39,10 +40,21 @@
   town.people = town.people.filter((p) => p.localId !== "LOCALID_LITTLEROOT_TWIN");
   town.triggers = town.triggers.filter((t) => !/_EventScript_(NeedPokemonTrigger|GoSaveBirchTrigger)/.test(t.script || ""));
 
+  // Route 101: the rescue starts as you step onto the route, as in Emerald. (Its frame script, which arms the
+  // step triggers on the route's first tiles, runs after you are already standing on one; so it starts the
+  // rescue itself when you came in from Littleroot.)
+  if (S.Route101_EventScript_HideMapNamePopup && S.Route101_EventScript_StartBirchRescue)
+    S.Route101_EventScript_HideMapNamePopup = [["setflag", "FLAG_HIDE_MAP_NAME_POPUP"], ["setvar", "VAR_ROUTE101_STATE", 1],
+      ["getplayerxy", "VAR_TEMP_0", "VAR_TEMP_1"], ["goto_if_ge", "VAR_TEMP_1", 18, "Route101_EventScript_StartBirchRescue"], ["end"]];
+  // Prof. Birch in Slateport's ferry terminal (shown only as you first land: ui/story-events.js).
+  if (W.SlateportCity_Harbor && !W.SlateportCity_Harbor.people.some((p) => p.localId === "LOCALID_SLATEPORT_HARBOR_BIRCH"))
+    W.SlateportCity_Harbor.people.push({ id: 90, x: 9, y: 12, movement: "face_left", rangeX: 0, rangeY: 0, script: "0x0", flag: null, text: null,
+      localId: "LOCALID_SLATEPORT_HARBOR_BIRCH", sprite: "em_prof_birch", width: 16, height: 32, frames: 9 });
+
   // Birch: the Champion of Johto, and the Pokémon you chose.
   Object.assign(H.t, {
     Route101_Text_YouSavedMe: ["Prof. Birch: Whew…", "I was in the tall grass studying wild\nPokémon when I was jumped.", "You saved me.\nThanks a lot!", "Oh?",
-      "Wait… Aren't you {PLAYER}?\nThe Champion of Johto!", "This is not the place to chat, so come\nby my Pokémon Lab later, okay?"],
+      "Why, it's you, {PLAYER}!\nSaved by the Champion of Johto!", "This is not the place to chat, so come\nby my Pokémon Lab later, okay?"],
     LittlerootTown_ProfessorBirchsLab_Text_LikeYouToHavePokemon: ["Prof. Birch: So, {PLAYER}.", "The Champion of Johto, right here\nin Littleroot Town!",
       "I watched your battles at the Pokémon\nLeague. What a Trainer!", "Hoenn has Pokémon you won't find\nin Johto or Kanto.",
       "And the way you battled earlier,\nyou pulled it off with aplomb!", "As thanks for rescuing me, I'd like\nyou to have the Pokémon you used\nearlier.",
