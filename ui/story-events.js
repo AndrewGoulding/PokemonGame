@@ -339,7 +339,8 @@
       // Johto's scripts (ui/johto-script.js), and its Apricorn trees.
       if (/^(enter|arrive):/.test(script)) { const due = env.johto.frameScript(script.replace(/^\w+:/, "")); if (due) { await env.outOfDoorway(); await env.runJohto(due, null); return; } }
       // (Ilex Forest's shrine, with the GS Ball: Crystal's Celebi.)
-      if (script === "hgss:D36R0101:scr_seq_D36R0101_012" && Player.itemCount(env.player, "gs-ball") > 0 && !env.player.flags.gsBallCelebi) { await env.ilexShrineCelebi(); return; }
+      // (A GS Ball from an older save does nothing here before Johto's League.)
+      if (script === "hgss:D36R0101:scr_seq_D36R0101_012" && Player.itemCount(env.player, "gs-ball") > 0 && env.player.flags.johtoLeagueClear && !env.player.flags.gsBallCelebi) { await env.ilexShrineCelebi(); return; }
       // (Ilex Forest's Headbutt tutor: ui/johto-field.js.)
       if (script === "hgss:D36R0101:scr_seq_D36R0101_002") { await env.johtoField.headbuttTutor(); return; }
       { const js = env.johto.scriptOf(ev.person || ev.sign || ev.trigger); if (js) { await env.runJohto(js, ev.person); return; } }
@@ -578,8 +579,10 @@
 
         case "PalletTown_ProfessorOaksLab_EventScript_ProfOak":
           if (!f.starter) await env.say(ev.person.text);
-          else if (f.orreStory >= 1) await env.oakOrre();
+          // (The GS Ball first, once Johto's League is beaten and not before: his call about Orre comes on your
+          // very next step outdoors, and would otherwise always be what he talks about.)
           else if (f.johtoLeagueClear && !f.gotGsBall) await env.oakGsBall();
+          else if (f.orreStory >= 1) await env.oakOrre();
           else if (f.oaksParcel && !f.parcelDelivered) await env.pokedexScene();
           else if (f.parcelDelivered) await env.say(env.T("PalletTown_ProfessorOaksLab_Text_OakMonsAroundWorldWait"));
           else if (!f.rivalLabBattle) await env.say(env.T("PalletTown_ProfessorOaksLab_Text_OakCanReachNextTownWithMon"));

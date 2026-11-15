@@ -6833,6 +6833,14 @@ for (const p of WORLD_MAPS.Route21_North.people.filter((q) => /_(Lil|Ian)$/.test
   const dojo = /const DOJO_REMATCH = \{([\s\S]*?)\n  \};/.exec(gameJs)[1];
   // The Karate Master brings all three Hitmons to the rematch.
   assert(/\[DOJO_MASTER\]: \{\s*team: \[\["Hitmonlee", 52\], \["Hitmonchan", 52\], \["Hitmontop", 52\]\],/.test(dojo));
+  // The GS Ball: only from Oak, only once Johto's League is beaten, and ahead of his talk about Orre; the shrine
+  // ignores one before then.
+  { const ev = fs.readFileSync(path.join(__dirname, "../ui/story-events.js"), "utf8");
+    const gs = ev.indexOf("else if (f.johtoLeagueClear && !f.gotGsBall) await env.oakGsBall();"), orre = ev.indexOf("else if (f.orreStory >= 1) await env.oakOrre();");
+    assert(gs > 0 && orre > gs, "Oak offers the GS Ball before talking about Orre");
+    assert(/itemCount\(env\.player, "gs-ball"\) > 0 && env\.player\.flags\.johtoLeagueClear/.test(ev));
+    assert(/async function oakGsBall\(\) \{\s*const f = player\.flags;\s*if \(!f\.johtoLeagueClear \|\| f\.gotGsBall\) return;/.test(gameJs));
+    assert.equal((gameJs.match(/addItem\(player, "gs-ball"\)/g) || []).length, 1, "one place gives the GS Ball"); }
   // Mt. Moon: once you are Champion, Miguel hands over the fossil he took, once.
   { const ev = fs.readFileSync(path.join(__dirname, "../ui/story-events.js"), "utf8"); assert(/f\.mtMoonFossil && f\.gameClear && !f\.mtMoonSecondFossil/.test(ev) && /f\.mtMoonSecondFossil = true;/.test(ev)); }
   const ids = WORLD_MAPS.SaffronCity_Dojo.people.filter((p) => p.trainer).map((p) => p.trainer.id);

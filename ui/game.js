@@ -5761,6 +5761,7 @@
   // run, or knock it out, and the Ball is still yours to try again.
   async function oakGsBall() {
     const f = player.flags;
+    if (!f.johtoLeagueClear || f.gotGsBall) return;   // (never before Johto's League, and only once)
     await say(["Oak: Ah, {PLAYER}! Our new\nChampion! Ho ho!", "I have something for you.",
       "A friend sent me this mysterious\nPoké Ball. It's called the GS Ball.", "I've studied it for months, but I\ncan't make heads or tails of it!",
       "Kurt, the Ball maker in Johto's\nAzalea Town, says there's a shrine\nin Ilex Forest…", "Perhaps the GS Ball has something\nto do with it. Will you take it\nthere for me?"]);
