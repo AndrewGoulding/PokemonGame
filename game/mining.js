@@ -75,7 +75,7 @@
     ["claw-fossil", 1, ["xxxxx", "xxxxx", "xxxxx", "xxxx."], 30],
     ["skull-fossil", 1, ["xxxx", "xxxx", "xxxx", "xxxx"], 30],
     ["armor-fossil", 1, ["xxxxx", "xxxxx", "xxxxx", "xxxxx"], 30],
-    ["bottle-cap", 2, ["xxx", "xxx", "xxx"], 40],
+    ["bottle-cap", 2, ["xxx", "xxx", "xxx"], 60],
     ["gold-bottle-cap", 0.5, ["xxx", "xxx", "xxx"], 100],
     ["pp-up", 2, ["xx", "xx", "xx"], 30],
     ["ability-capsule", 1, ["xxxx", "xxxx"], 55],

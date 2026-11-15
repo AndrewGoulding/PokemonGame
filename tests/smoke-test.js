@@ -3997,10 +3997,10 @@ for (const m of Object.values(window.WORLD_MAPS)) for (const p of m.people) {
   assert.deepStrictEqual(Mining.available(1).map((t) => t[0]).sort(),
     ["blue-shard", "green-shard", "heart-scale", "red-shard", "yellow-shard"]);
   assert.deepStrictEqual(["everstone", "hard-stone"].map((i) => Mining.TREASURES.find((t) => t[0] === i)[3]), [5, 5]);
-  // Vitamins from level 15, PP Ups from 30, Bottle Caps from 40, Ability Capsules from 55, Ability Patches from 70
+  // Vitamins from level 15, PP Ups from 30, Ability Capsules from 55, Bottle Caps from 60, Ability Patches from 70
   // and Gold Bottle Caps only at the top level.
-  assert.deepStrictEqual(["hp-up", "protein", "iron", "calcium", "zinc", "carbos", "pp-up", "bottle-cap", "ability-capsule", "ability-patch", "gold-bottle-cap"].map(unlock),
-    [15, 15, 15, 15, 15, 15, 30, 40, 55, 70, 100]);
+  assert.deepStrictEqual(["hp-up", "protein", "iron", "calcium", "zinc", "carbos", "pp-up", "ability-capsule", "bottle-cap", "ability-patch", "gold-bottle-cap"].map(unlock),
+    [15, 15, 15, 15, 15, 15, 30, 55, 60, 70, 100]);
   assert(!Mining.available(99).some((t) => t[0] === "gold-bottle-cap") && Mining.available(100).some((t) => t[0] === "gold-bottle-cap"));
   for (const id of ["pp-up", "ability-capsule", "ability-patch", "gold-bottle-cap"]) assert(ITEMS[id] && ITEM_SPRITES[id], id + " is a real item with a picture");
   // At the top level everything turns up, but fossils only in their own caves.
