@@ -3926,9 +3926,9 @@ node tools/build-sinnoh.js <path to the Essentials project>
   Metal Coats, King's Rocks and Ice Stones at 25 (the Ice Stone at 20),
   Revives, Star Pieces and Oval Stones at 10, the vitamins (HP Up, Protein,
   Iron, Calcium, Zinc, Carbos) at 15, the evolution stones at 20,
-  every fossil at 30, some held items at 38 and 51, Bottle Caps at 40, Max
-  Revives and Rare Bones at 63, the Ability Patch at 70, Gold Bottle Caps at
-  80 and the plates at 100. Each fossil is only found in its own caves:
+  every fossil and PP Ups at 30, some held items at 38 and 51, the Ability
+  Capsule at 55, Bottle Caps at 60, Max Revives and Rare Bones at 63, the
+  Ability Patch at 70, and Gold Bottle Caps and the plates at 100. Each fossil is only found in its own caves:
   Kanto's (Helix, Dome, Old Amber) in Mt. Moon; later regions' fossils will
   Tools (SELECT, or B, changes tool): the Pickaxe; the Hammer from mining
   level 5 (the eight tiles round it too, 2 energy); the Bomb from level 10
