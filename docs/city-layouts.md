@@ -160,14 +160,37 @@ made by the same builder with the same Sinnoh artwork.
   entered by stepping onto a tile get a building over that tile where one fits.
 - None of these maps had water. Seaside places (Hulbury, Cabo Poco, Levincia,
   the Alola beaches and so on) get a sea along one edge.
-- The run-time block art no longer draws on these maps. It still draws the
-  three regions' interiors, Gyms and caves, which are **not** rebuilt.
+- The run-time block art no longer draws on these maps, nor on the regions'
+  interiors (see [Rooms, Gyms and caves](#rooms-gyms-and-caves)).
 
 **These are not at the level of Kanto, Johto and Hoenn, and cannot be made so
 by this route.** Those three regions are the original games' own 2D maps. Kalos,
 Alola, Galar and Paldea were 3D games with no 2D maps to take, so what is here
 is a generated layout in a matching art style: right kind of place, right
 buildings on the right doors, but not the real town plan.
+
+## Rooms, Gyms and caves
+
+![Rooms, a Gym court, halls and caves](room-layouts-preview.png)
+
+The 130 interiors of Alola, Galar and Paldea were abstract tile patterns with
+teal blocks for furniture. They are rebuilt by the same builder:
+
+- **Rooms** (Pokémon Centers, shops, labs, houses) are a walled room sized to
+  the map's exit and people, with a floor, wall and furniture cut from the Johto
+  interiors already in the repo: the healing desk behind the nurse, PCs,
+  bookshelves, plants and seats in a Center; fridges and shelves in a shop;
+  machines and benches in a lab; kitchen, TV and table in a house.
+- **Gyms and stadiums** are a lined court with a Poké Ball at its centre and
+  statues by the door; League rooms and lobbies are pillared stone halls; small
+  ruins and chambers are stone rooms with a dais under whoever waits there.
+- **Caves and trial sites** are rock-walled caverns with winding passages, from
+  the Oreburgh Gate cave artwork. Their wild encounters are kept.
+
+Exits and people keep their tiles, and anything that blocks the way to one is
+removed. These are generic rooms of the right kind, not each building's real
+interior: every Gym is the same court in a different colour, and no Gym puzzle
+is drawn. The open tiles the old rooms had on their rims are walled off.
 
 ## Hand-planned towns
 

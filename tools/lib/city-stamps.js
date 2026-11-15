@@ -26,6 +26,7 @@ module.exports = function (root) {
     SandgemTown: [[24, 0], [26, 18], [4, 14], [4, 12]], TwinleafTown: [[14, 0], [12, 14], [16, 2]], SolaceonTown: [[18, 0], [4, 0], [16, 0]],
     OreburghCity: [[26, 14], [8, 14], [48, 12]], SunyshoreCity: [[46, 6], [8, 6], [8, 4]], ValleyWindworks: [[26, 10], [2, 22], [6, 8]],
     FuegoIronworks: [[20, 12], [28, 12], [16, 12], [22, 12]],
+    CherrygroveCity_PokemonCenter_1F: [[2, 6], [4, 6], [2, 4]], VioletCity_Mart: [[6, 6], [10, 6]], NewBarkTown_PlayerHouse_1F: [[2, 6], [10, 6]], NewBarkTown_ElmsLab: [[4, 10], [6, 6]], VioletCity_Gym: [[8, 6], [8, 4]],
   };
   // [source, x, y, w, h, door column (or null)] in 16px tiles.
   const STAMPS = {
@@ -76,6 +77,26 @@ module.exports = function (root) {
     honeyTree: ["ValleyWindworks", 21, 14, 2, 3, null],
     boulder: ["SolaceonTown", 9, 21, 2, 3, null],
     barrels: ["CanalaveCity", 19, 11, 1, 2, null],
+    // Rooms (tools/build-region-layouts.js): furniture cut from the Johto interiors.
+    rDesk: ["CherrygroveCity_PokemonCenter_1F", 4, 0, 7, 4, 3],
+    rPC: ["CherrygroveCity_PokemonCenter_1F", 12, 0, 1, 2, null],
+    rBooks: ["CherrygroveCity_PokemonCenter_1F", 1, 0, 2, 2, null],
+    rPlant: ["CherrygroveCity_PokemonCenter_1F", 0, 3, 1, 2, null],
+    rSeats: ["CherrygroveCity_PokemonCenter_1F", 11, 5, 3, 3, null],
+    rFridge: ["VioletCity_Mart", 1, 0, 2, 2, null],
+    rGoods: ["VioletCity_Mart", 8, 0, 2, 2, null],
+    rAisle: ["VioletCity_Mart", 7, 3, 2, 2, null],
+    rKitchen: ["NewBarkTown_PlayerHouse_1F", 1, 0, 3, 3, null],
+    rTV: ["NewBarkTown_PlayerHouse_1F", 5, 1, 2, 2, null],
+    rTable: ["NewBarkTown_PlayerHouse_1F", 5, 3, 5, 4, null],
+    rPot: ["NewBarkTown_PlayerHouse_1F", 1, 4, 1, 2, null],
+    rWindow: ["NewBarkTown_PlayerHouse_1F", 8, 0, 2, 2, null],
+    rMachine: ["NewBarkTown_ElmsLab", 1, 0, 3, 4, null],
+    rShelf: ["NewBarkTown_ElmsLab", 8, 0, 2, 3, null],
+    rBench: ["NewBarkTown_ElmsLab", 1, 4, 4, 2, null],
+    rLabTable: ["NewBarkTown_ElmsLab", 8, 4, 4, 2, null],
+    rStack: ["NewBarkTown_ElmsLab", 1, 7, 2, 3, null],
+    rStatue: ["VioletCity_Gym", 6, 16, 2, 3, null],
   };
   const TILES = {
     paving: ["JubilifeCity", 30, 8], asphalt: ["JubilifeCity", 12, 20],
@@ -88,7 +109,12 @@ module.exports = function (root) {
     tallgrass: ["Route201", 42, 6, 1], snowgrass: ["Route217", 31, 2, 1], marshgrass: ["GreatMarsh", 18, 6, 1],
     desert: ["Route228", 8, 6], palms: ["Route228", 2, 0], marsh: ["GreatMarsh", 20, 10], beach: ["Route213", 28, 20], sea: ["Route213", 88, 4],
     gravel: ["OreburghCity", 26, 14], clay: ["SunyshoreCity", 46, 6], planks: ["SunyshoreCity", 30, 12],
-    dirt: ["TwinleafTown", 18, 7, 1], drift: ["Route216", 20, 0], field: ["Route201", 56, 6],
+    dirt: ["TwinleafTown", 18, 7, 1],
+    rCenter: ["CherrygroveCity_PokemonCenter_1F", 2, 6], rMart: ["VioletCity_Mart", 6, 6], rHouse: ["NewBarkTown_PlayerHouse_1F", 2, 6], rLab: ["NewBarkTown_ElmsLab", 4, 10], rGym: ["VioletCity_Gym", 8, 6],
+    wCenter0: ["CherrygroveCity_PokemonCenter_1F", 3, 0, 1], wCenter1: ["CherrygroveCity_PokemonCenter_1F", 3, 1, 1], wMart0: ["VioletCity_Mart", 5, 0, 1], wMart1: ["VioletCity_Mart", 5, 1, 1],
+    wHouse0: ["NewBarkTown_PlayerHouse_1F", 7, 0, 1], wHouse1: ["NewBarkTown_PlayerHouse_1F", 7, 1, 1], wLab0: ["NewBarkTown_ElmsLab", 4, 0, 1], wLab1: ["NewBarkTown_ElmsLab", 4, 1, 1],
+    wGym0: ["VioletCity_Gym", 2, 1, 2, 1], wGym1: ["VioletCity_Gym", 2, 2, 2, 1],
+    caveFloor: ["Oreburgh_Gate", 16, 2], caveFace: ["Oreburgh_Gate", 16, 0], caveVoid: ["Oreburgh_Gate", 0, 0], hallFloor: ["SinnohLeague_Lobby", 2, 2], ruinFloor: ["PlatinumRuins0", 2, 2], drift: ["Route216", 20, 0], field: ["Route201", 56, 6],
   };
   // Neighbouring trees, hedges and fences that fall inside a stamp's rectangle.
   const green = ([r, g, b]) => g > r * 1.15 && g > b * 1.15;
@@ -136,8 +162,8 @@ module.exports = function (root) {
     return { x: tx, y: ty, w: s.w, h: rows.length, door: s.door == null ? null : { x: tx + s.door, y: ty + rows.length - 1 } };
   }
   function tile(c, kind, x, y) {
-    const [src, sx, sy, period = 2] = TILES[kind], p = picture(src);
-    const ox = (sx + x % period) * 16, oy = (sy + y % period) * 16;
+    const [src, sx, sy, period = 2, py = period] = TILES[kind], p = picture(src);
+    const ox = (sx + x % period) * 16, oy = (sy + y % py) * 16;
     for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) { const k = ((oy + j) * p.width + ox + i) * 4; c.p(x * 16 + i, y * 16 + j, [p.rgba[k], p.rgba[k + 1], p.rgba[k + 2]]); }
   }
   // Red trim -> another hue, keeping its shading.

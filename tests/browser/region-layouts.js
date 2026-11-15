@@ -4,7 +4,7 @@
 // Run: node tests/browser/region-layouts.js
 'use strict';
 const assert=require('node:assert/strict'),T=require('./lib'),fixture=require('./kalos-post-fixture');
-const CITIES=['KalosVanivilleTown','KalosCamphrierTown','KalosRoute5','KalosRoute14','KalosDendemilleTown','UnovaAspertiaCity','UnovaNimbasaCity','UnovaRoute6','UnovaHumilauCity','UnovaIcirrusCity','UnovaRoute4','UnovaSkyarrowBridge','BW1NuvemaTown','BW1Route1','AlolaHauoliCity','AlolaSeafolkVillage','GalarWedgehurst','GalarHulbury','GalarSpikemuth','PaldeaMesagoza','PaldeaLevincia','KalosCouriwayTown','UnovaVillageBridge','BW1CasteliaCity'];
+const CITIES=['KalosVanivilleTown','KalosCamphrierTown','KalosRoute5','KalosRoute14','KalosDendemilleTown','UnovaAspertiaCity','UnovaNimbasaCity','UnovaRoute6','UnovaHumilauCity','UnovaIcirrusCity','UnovaRoute4','UnovaSkyarrowBridge','BW1NuvemaTown','BW1Route1','AlolaHauoliCity','AlolaSeafolkVillage','GalarWedgehurst','GalarHulbury','GalarSpikemuth','PaldeaMesagoza','PaldeaLevincia','KalosCouriwayTown','UnovaVillageBridge','BW1CasteliaCity','GalarHulburyCenter','PaldeaHome','AlolaVerdantCavern','GalarMotostokeStadium'];
 (async()=>{
  const s=await T.start(p=>{fixture(p);p.repelSteps=100000;p.party.forEach(m=>{m.level=75;Party.heal(m);});
    Object.assign(Kalos.state(p),{champion:true,azEnded:true,tmvPass:true,kiloudeRival:true,megaUpgraded:true,lookerMalva:true,lookerChapter:5});p.flags.kalosLeagueClear=true;for(const id of Object.keys(Kalos.data().trainers))p.flags[id]=true;

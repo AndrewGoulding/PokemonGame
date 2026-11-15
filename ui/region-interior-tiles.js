@@ -6,7 +6,7 @@
  const T=16, ASSETS="assets/region-art/", sheets=new Map(), cache=new Map();
  const REGIONS=new Set(["galar","alola","paldea"]);
  function isInterior(m) {
-  if(!m||!REGIONS.has(m.region))return false;
+  if(!m||!REGIONS.has(m.region)||m.regionLayout)return false; // rebuilt maps have their own pictures
   return !!(m.galarCustomLayout?.interior ||
     m.alolaCustomLayout?.interior || m.paldeaLayout?.interior ||
     /Home|House|Center|Hotel|Shop|Lab|Academy|Stadium|Gym|Dojo|Tower|Lobby|Arena|Room|Hall|Station/.test(m.name));
