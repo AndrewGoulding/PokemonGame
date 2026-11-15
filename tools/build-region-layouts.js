@@ -364,7 +364,7 @@ function room(name) {
 const layouts = {}, report = [];
 function layout(name, thin = 1) {
   const home = homeOf(name), base = HOMES[home][name], W = base.width, H = base.height, N = W * H, PLAN = PLANS[name] ? (typeof PLANS[name] === "function" ? { plan: PLANS[name] } : PLANS[name]) : null, T = { ...themeFor(name), ...(PLAN ? { fountain: false, factory: false, clock: false, lookout: false, wheel: false, runway: false, turntable: false, walls: false, sea: null, lawns: 0 } : {}), ...((PLAN && PLAN.theme) || {}) };
-  if (T.cave && N < 1400) { T.groves = 0.25; T.density = 0.12; }
+  if (T.cave && N < 1400 && !(PLAN && PLAN.theme && ("groves" in PLAN.theme || "density" in PLAN.theme))) { T.groves = 0.25; T.density = 0.12; }   // (a plan's own choice stands)
   if (T.cave) { T.groves *= thin; T.density *= thin; }   // small caves stay roomy
   const seed = [...name].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 9973, 7);
   const X = (i) => i % W, Y = (i) => (i / W) | 0, I = (x, y) => y * W + x, inside = (x, y) => x >= 2 && y >= 2 && x < W - 2 && y < H - 2, on = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
