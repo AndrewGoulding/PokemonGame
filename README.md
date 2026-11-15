@@ -3914,7 +3914,7 @@ node tools/build-sinnoh.js <path to the Essentials project>
   tiles (the D-pad and A, or tap / click them; B or tapping the tool switches
   it) with the Pickaxe (1 energy) or the wider Hammer (2 energy) to clear
   the rock (1-6 layers; no bedrock here: every tile can be dug) and uncover buried
-  treasures (2 up to mining level 10, 3 up to 20, then 4). The dig ends when every treasure is out (they go in your bag) or
+  treasures (2 up to mining level 10, 3 up to 20, 4 up to 39, then one more at each of levels 40, 60, 80 and 100: 8 at the top). The dig ends when every treasure is out (they go in your bag) or
   your energy runs out (40 at mining level 1, and 2 more each level: 238 at
   level 100). What a hit dug up is told under the board until the next hit.
   Every hit earns 1 mining XP and every treasure 10 more; the top of the
