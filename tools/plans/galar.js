@@ -708,15 +708,42 @@ module.exports = {
       for (const [x, y] of [[5, 27], [15, 27], [24, 27], [33, 27]]) p.decor("barrel", x, y);
     },
   },
-  // Hulbury Stadium: Nessa's water Gym. A pool court with a walkway round it and across it.
+  // Hulbury Stadium: Nessa's Water Gym mission (compared with Pokéarth's Gym picture). Blue rubber walkways on steel
+  // trusses over a bright pool under a glass dome; water pours from the pipes overhead and bars the way until the
+  // coloured valves (red, yellow, blue) are turned.
   GalarHulburyStadium: {
-    theme: { room: "arena", floor: "rGym" },
+    theme: { room: "arena", floor: "steel", wall: null, top: 7 },
     plan(p) {
-      p.fill("steel", p.left, p.top, p.right, p.bottom);
-      p.fill("water", p.left + 2, p.top + 2, p.right - 2, p.bottom - 4);
-      p.fill("deck", p.left + 2, 11, p.right - 2, 12); p.fill("deck", 11, p.top + 2, 12, p.bottom - 4);
-      p.paint(1, (c) => { for (let k = 0; k < 6; k++) c.rect((p.left + 3 + k * 3) * 16, (p.top + 2) * 16 + 2, 20, 3, [250, 220, 90]); c.ellipse(12 * 16, 11.5 * 16 + 8, 22, 22, [244, 244, 250, 220], 3); c.ellipse(12 * 16, 11.5 * 16 + 8, 6, 6, [70, 130, 220]); });
-      p.decor("rStatue", 8, p.bottom - 3, { optional: true }); p.decor("rStatue", 14, p.bottom - 3, { optional: true });
+      const T = 16, INK = [40, 38, 52], WHITE = [244, 244, 250];
+      const walks = [[9, 18, 15, 19], [11, 15, 13, 17], [3, 13, 20, 14], [3, 10, 4, 12], [19, 10, 20, 12], [3, 8, 20, 9], [11, 10, 13, 11]];
+      const walk = new Set(); for (const [x0, y0, x1, y1] of walks) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) walk.add(x + "," + y);
+      p.fill("water", 1, 7, 22, 19);
+      for (const [x0, y0, x1, y1] of walks) p.fill("steel", x0, y0, x1, y1);
+      const valves = [[13, 10, [250, 210, 60]], [20, 10, [226, 60, 60]], [3, 11, [70, 120, 230]]], falls = [[8, 13, 2, 2, 1], [15, 10, 2, 2, 0], [6, 10, 2, 2, 2]];
+      for (const [x, y] of valves) p.block(x, y, 1, 1);
+      p.block(8, 13, 2, 2);                                          // the fall across the middle walk
+      const BLUE = [72, 84, 210], BLUE2 = [104, 92, 214], RAIL = [44, 50, 80], FOAM = [236, 248, 255];
+      const fall = (c, X, Y0, Y1, w) => { c.rect(X, Y0, w, Y1 - Y0, [150, 214, 250]); for (let x = X + 2; x < X + w - 1; x += 5) c.rect(x, Y0, 2, Y1 - Y0, [214, 240, 255]); c.rect(X, Y0, 1, Y1 - Y0, [96, 170, 230]); c.rect(X + w - 1, Y0, 1, Y1 - Y0, [96, 170, 230]); };
+      const splash = (c, X, Y, w) => { for (let x = X - 4; x < X + w + 4; x += 6) c.ellipse(x + 3, Y - 2 - ((x / 6) & 1) * 2, 5, 4, FOAM); c.ellipse(X + w / 2, Y + 2, w / 2 + 8, 4, [236, 248, 255, 120]); };
+      p.paint(0, (c) => {
+        // The dome: glass triangles, the pipes under it and the falls coming down the back.
+        c.rect(T, T, 22 * T, 6 * T, [40, 140, 220]);
+        for (let r = 0; r < 4; r++) for (let x = T - 16 + (r & 1) * 16; x < 23 * T; x += 32) { const y = T + r * 24, a = [Math.max(T, x), y + 24], b = [Math.min(23 * T, x + 32), y + 24], m = [Math.min(23 * T, Math.max(T, x + 16)), y]; c.poly([a, b, m], r & 1 ? [70, 170, 236] : [56, 156, 228]); c.line(a[0], a[1], m[0], m[1], [120, 200, 244], 1); c.line(m[0], m[1], b[0], b[1], [120, 200, 244], 1); }
+        for (let r = 1; r < 4; r++) c.rect(T, T + r * 24, 22 * T, 1, [120, 200, 244]);
+        c.rect(T, T + 6, 22 * T, 10, [110, 120, 150]); c.rect(T, T + 7, 22 * T, 2, [176, 186, 210]); c.rect(T, T + 15, 22 * T, 1, INK);
+        for (const [x, w] of [[5, 22], [11.3, 38], [17.6, 22]]) { c.box(x * T - 3, T + 2, w + 6, 22, [124, 134, 164], INK); c.rect(x * T - 1, T + 4, 4, 18, [190, 200, 220]); fall(c, x * T, T + 24, 7 * T + 6, w); splash(c, x * T, 7 * T + 8, w); }
+        c.ellipse(12.5 * T, T + 12, 9, 9, [200, 206, 226]); c.ellipse(12.5 * T, T + 12, 9, 9, INK, 1); c.ellipse(12.5 * T, T + 12, 3, 3, [110, 120, 150]);
+        // The pool, brighter than open water.
+        for (let y = 7; y <= 19; y++) for (let x = 1; x <= 22; x++) if (!walk.has(x + "," + y)) { c.rect(x * T, y * T, T, T, [70, 214, 244, 110]); if (p.hash(x, y, 3) > 0.6) c.rect(x * T + 3, y * T + 5 + (x & 1) * 5, 8, 1, [220, 250, 255, 170]); }
+        // Trusses under the walkways, then the walkways themselves.
+        for (const k of walk) { const [x, y] = k.split(",").map(Number); if (walk.has(x + "," + (y + 1)) || y >= 19) continue; const X = x * T, Y = (y + 1) * T; c.rect(X, Y, T, 9, [30, 60, 110, 150]); c.rect(X, Y, T, 2, RAIL); c.line(X, Y + 2, X + 8, Y + 8, RAIL, 1); c.line(X + 8, Y + 8, X + 16, Y + 2, RAIL, 1); c.rect(X + 7, Y + 2, 2, 7, RAIL); }
+        for (const k of walk) { const [x, y] = k.split(",").map(Number), X = x * T, Y = y * T; if (y === 19 && x >= 11 && x <= 13) { if (x === 11) c.rect(X, Y, 8, T, BLUE); if (x === 13) c.rect(X + 8, Y, 8, T, BLUE); continue; } c.rect(X, Y, T, T, BLUE); c.poly([[X, Y + 10], [X + 10, Y], [X + 16, Y], [X + 16, Y + 2], [X + 2, Y + 16], [X, Y + 16]], ((x + y) % 3) ? BLUE : BLUE2); }
+        for (const k of walk) { const [x, y] = k.split(",").map(Number), X = x * T, Y = y * T; if (!walk.has(x + "," + (y - 1))) { c.rect(X, Y, T, 2, [150, 160, 230]); } if (!walk.has((x - 1) + "," + y)) c.rect(X, Y, 2, T, RAIL); if (!walk.has((x + 1) + "," + y)) c.rect(X + T - 2, Y, 2, T, RAIL); if (!walk.has(x + "," + (y + 1)) && y < 19) c.rect(X, Y + T - 2, T, 2, RAIL); }
+      });
+      // The falls: one across the middle walk, two into the pool.
+      for (const [x, y, w, h, k] of falls) p.paint(y + h, (c, top) => { const X = x * T + 4, W = w * T - 8; fall(top, X, T + 16, (y + h) * T - 8, W); top.box(X - 3, T + 2, W + 6, 16, [124, 134, 164], INK); top.rect(X - 1, T + 4, 4, 12, [190, 200, 220]); splash(top, X, (y + h) * T - 6, W); });
+      // The valves.
+      for (const [x, y, col] of valves) p.paint(y + 1, (c, top) => { const X = x * T + 8, Y = y * T; c.ellipse(X, Y + 13, 7, 3, [0, 0, 0, 70]); c.box(X - 3, Y + 2, 6, 12, [150, 156, 176], INK); c.box(X - 5, Y + 10, 10, 4, [110, 116, 140], INK); top.ellipse(X, Y, 7, 5, INK); top.ellipse(X, Y, 6, 4, col); top.ellipse(X, Y, 3, 2, [44, 50, 80]); top.ellipse(X - 2, Y - 2, 2, 1, WHITE); });
     },
   },
 };
