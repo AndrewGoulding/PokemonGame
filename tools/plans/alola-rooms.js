@@ -212,10 +212,39 @@ function ruins(p, col, kind) {
   torch(p, 8, 6, col); torch(p, 13, 6, col);
   for (const [x, y] of [[1, 6], [20, 6], [2, 14], [19, 15], [5, 15]]) rock(p, x, y, [140, 136, 150]);
 }
-// An Elite Four chamber: type emblem on a round field in the middle, a runner from the door to the way on.
-function elite(p, kind, col, field) {
+// A chamber of the Pokemon League inside Mount Lanakila: dark rock, a steel walkway from the door to an oval field
+// glowing in the member's colour, the round dais at its head and crystals of that colour behind it.
+function league(p, col, o = {}) {
+  const cx = 12.5, cy = o.cy || 12.5, rx = o.rx || 9.4, ry = o.ry || 4.6, dy = o.dais || 7.2, wy = Math.floor(cy + ry) - 1;
+  const plat = inDisc(cx, cy, rx, ry), dais = inDisc(cx, dy, 2, 1.9), pad = o.pad ? inDisc(cx, p.bottom - 0.3, 2.7, 1.7) : () => false;
+  const floor = (x, y) => plat(x, y) || dais(x, y) || pad(x, y) || (x >= 11 && x <= 13 && y >= wy && y <= p.bottom);
+  for (let y = p.top; y <= p.bottom; y++) for (let x = p.left; x <= p.right; x++) p.fill(floor(x, y) ? "steel" : "void", x, y, x, y);
   arch(p, 1, col);
-  p.paint(0.2, (c) => { const cx = 12 * T, cy = 12 * T + 8; c.ellipse(cx, cy, 84, 66, [field[0], field[1], field[2], 110]); c.ellipse(cx, cy, 84, 66, sh(col, 0.6), 3); c.ellipse(cx, cy, 76, 59, sh(col, 1.4), 1); emblem(c, cx, cy, 30, kind); });
+  const S = [176, 182, 194], SD = [92, 98, 112], W = [250, 252, 255];
+  p.paint(0, (c) => {
+    const x0 = 0, y0 = (p.top - 2) * T, w = p.W * T, h = (p.bottom - p.top + 4) * T, pcx = cx * T, pcy = cy * T, prx = rx * T, pry = ry * T;
+    c.rect(x0, y0, w, h, [46, 42, 48]);
+    for (let i = 0; i < 150; i++) { const x = x0 + p.hash(i, 1, 31) * w, y = y0 + p.hash(i, 2, 31) * h, k = p.hash(i, 3, 31); c.ellipse(x, y, 5 + k * 9, 3 + k * 5, k > 0.5 ? [58, 54, 60] : [34, 31, 38]); }
+    c.rect(x0, y0, w, 3, [26, 24, 30]);
+    // the crystals behind the field
+    for (const [bx, d] of [[5.2 * T, 1], [19.8 * T, -1]]) {
+      const by = (p.top + 1) * T + 6; c.ellipse(bx, by - 8, 44, 22, [col[0], col[1], col[2], 46]);
+      for (const [dx, hh, ww] of [[-22, 16, 9], [-6, 30, 12], [14, 22, 10], [28, 12, 7]]) { const x = bx + dx * d; c.poly([[x - ww, by], [x + ww, by], [x + ww, by - hh * 0.6], [x + d * 3, by - hh], [x - ww, by - hh * 0.7]], sh(col, 0.6)); c.poly([[x - ww + 2, by - 1], [x, by - 1], [x + d * 3, by - hh + 2], [x - ww + 2, by - hh * 0.7 + 1]], sh(col, 1.25)); c.poly([[x, by - 1], [x + ww - 2, by - 1], [x + ww - 2, by - hh * 0.6 + 1], [x + d * 3, by - hh + 2]], col); }
+    }
+    // the walkway
+    const wx = 11 * T, ww = 3 * T, wt = wy * T, wb = (p.bottom + 1) * T;
+    if (o.pad) { const py = (p.bottom - 0.3) * T; c.ellipse(pcx, py + 4, 2.7 * T + 4, 1.7 * T + 3, SD); c.ellipse(pcx, py, 2.7 * T + 4, 1.7 * T + 3, S); c.ellipse(pcx, py, 2.7 * T - 6, 1.7 * T - 4, sh(S, 0.8)); c.ellipse(pcx, py, 2.7 * T - 12, 1.7 * T - 8, S); }
+    c.rect(wx - 3, wt, ww + 6, wb - wt, SD); c.rect(wx, wt, ww, wb - wt, S);
+    for (let y = wt + 2; y < wb; y += 6) c.rect(wx, y, ww, 1, sh(S, 0.72));
+    for (let y = wt + 8; y < wb - 4; y += 12) c.rect(pcx - 3, y, 6, 3, sh(col, 1.2));
+    // the field in its steel rim
+    c.ellipse(pcx, pcy + 7, prx + 6, pry + 6, [28, 26, 34]); c.ellipse(pcx, pcy + 4, prx + 6, pry + 6, SD); c.ellipse(pcx, pcy, prx + 6, pry + 6, S); c.ellipse(pcx, pcy, prx + 2, pry + 2, sh(S, 0.7));
+    c.ellipse(pcx, pcy, prx, pry, sh(col, 0.8)); c.ellipse(pcx, pcy, prx - 6, pry - 5, col); c.ellipse(pcx, pcy + 4, prx * 0.62, pry * 0.6, sh(col, 1.12).concat(150));
+    c.rect(pcx - prx + 10, pcy - 1, prx * 2 - 20, 2, W.concat(210)); c.ellipse(pcx, pcy, 38, 25, col); c.ellipse(pcx, pcy, 38, 25, W.concat(230), 2); c.ellipse(pcx, pcy, 13, 9, W.concat(230), 2);
+    for (const [ax, ay] of [[-0.74, 0.74], [0.74, 0.74], [-1, 0], [1, 0], [-0.5, -0.9], [0.5, -0.9]]) { const x = pcx + ax * (prx + 5), y = pcy + ay * (pry + 5); c.poly([[x - 5, y + 6], [x + 5, y + 6], [x, y - 13]], SD); c.poly([[x - 3, y + 5], [x + 1, y + 5], [x, y - 10]], [226, 230, 238]); }
+    // the dais at its head
+    const ddy = dy * T; c.ellipse(pcx, ddy + 5, 38, 30, SD); c.ellipse(pcx, ddy, 38, 30, S); c.ellipse(pcx, ddy, 30, 23, [208, 214, 224]); c.ellipse(pcx, ddy, 30, 23, SD, 1); c.ellipse(pcx, ddy, 13, 10, sh(col, 1.1).concat(170));
+  });
 }
 
 function bed(p, x, y, col) {
@@ -249,6 +278,19 @@ function rrMark(c, x, y) {
   for (let i = 0; i < 6; i++) { const col = R[i], yy = y + i * 4; c.rect(x, yy, 5, 4, col); if (i < 3) { c.rect(x + 5, yy, i === 0 || i === 2 ? 9 : 0, 4, col); c.rect(x + 13, yy, 5, 4, col); } else c.rect(x + 6 + (i - 3) * 4, yy, 6, 4, col); }
   c.rect(x + 5, y + 4, 8, 4, [40, 36, 50]);
 }
+// Rainbow Rocket's castle floor: black glass tiles with glowing red seams.
+function rrFloor(p) {
+  p.paint(0, (c) => {
+    const x0 = p.left * T, y0 = p.top * T, w = (p.right - p.left + 1) * T, h = (p.bottom - p.top + 1) * T;
+    c.rect(x0, y0, w, h, [20, 18, 26]);
+    for (let y = y0; y < y0 + h; y += T) for (let x = x0; x < x0 + w; x += T) { c.rect(x + 2, y + 2, 12, 12, [30, 27, 38]); c.rect(x + 3, y + 3, 5, 1, [64, 58, 76]); }
+    for (let x = x0; x <= x0 + w; x += T) c.rect(x - (x > x0 ? 1 : 0), y0, 2, h, [200, 36, 50]);
+    for (let y = y0; y <= y0 + h; y += T) c.rect(x0, y - (y > y0 ? 1 : 0), w, 2, [200, 36, 50]);
+    c.rect(x0, y0, w, 12, [226, 40, 50, 46]); c.rect(x0, y0 + h - 8, w, 8, [226, 40, 50, 30]);
+  });
+}
+// One of the castle's warp panels: a green-lit square in the floor (walkable), tile (x, y).
+function rrPanel(c, x, y) { const px = x * T, py = y * T, g = [70, 230, 160]; c.box(px + 1, py + 1, 14, 14, [16, 40, 36], g); c.box(px + 4, py + 4, 8, 8, [30, 80, 66], g); c.rect(px + 7, py + 7, 2, 2, [200, 255, 230]); }
 // A Pokemon Center: the healing desk round the nurse, and the cafe counter on the right.
 function center(p) {
   const nurse = p.people.find((q) => /heal/.test(q.script)), others = p.people.filter((q) => q !== nurse), free = (x, y, w, h) => !others.some((q) => q.x >= x - 0 && q.x < x + w && q.y + 1 >= y && q.y < y + h);
@@ -267,42 +309,71 @@ function center(p) {
 }
 const CENTER = { theme: { room: "center" }, plan: center };
 
+// The gloom of a mossy cave over the walkable tiles ok() picks, with glowing moss where the daylight falls (px ellipses).
+function gloom(p, ok, glows, tint = [34, 46, 24, 118]) {
+  p.paint(0, (c) => {
+    for (let y = 0; y < p.H; y++) for (let x = 0; x < p.W; x++) if (ok(x, y)) c.rect(x * T, y * T, T, T, tint);
+    for (const [x, y, rx, ry] of glows) { c.ellipse(x, y, rx, ry, [150, 226, 96, 60]); c.ellipse(x, y, rx * 0.6, ry * 0.6, [196, 246, 130, 80]); }
+  });
+}
+// A chasm in a cave floor (tile rect): the tiles are solid; the rock drops away under its north rim.
+function chasm(p, x0, y0, x1, y1, col) {
+  p.fill("border", x0, y0, x1, y1);
+  p.paint(0, (c) => { const px = x0 * T, py = y0 * T, w = (x1 - x0 + 1) * T, h = (y1 - y0 + 1) * T; c.rect(px, py, w, h, [12, 12, 16]); c.rect(px, py, w, 9, sh(col, 0.55)); c.rect(px, py + 9, w, 5, sh(col, 0.28)); for (let x = px + 3; x < px + w - 2; x += 6) c.rect(x, py + 1, 1, 9, sh(col, 0.36)); c.rect(px, py, 3, h, sh(col, 0.3)); c.rect(px + w - 3, py, 3, h, sh(col, 0.3)); c.rect(px, py + h - 2, w, 2, sh(col, 1.1)); });
+}
+// The pale and rose bands of Poni's canyon walls over a px rect.
+function strataBand(c, x, y, w, h) {
+  const B = [[226, 196, 150], [200, 150, 120], [232, 208, 168], [176, 124, 104], [214, 176, 132]];
+  for (let i = 0, yy = y; yy < y + h; i++, yy += 3) c.rect(x, yy, w, Math.min(3, y + h - yy), B[i % 5]);
+  c.rect(x, y + h - 2, w, 2, [110, 78, 64]);
+}
+function strata(p, x, y, w, h) { p.paint(0, (c) => { strataBand(c, x, y, w, h); for (let i = x + 9; i < x + w; i += 23) c.rect(i, y + 2, 1, h - 4, [150, 108, 90, 150]); }); }
 // Cave shapes: a tile is floor if it lies in one of the discs or near one of the passages.
 const nearSeg = (ax, ay, bx, by, w) => (x, y) => { const dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))); return Math.hypot(x - ax - t * dx, y - ay - t * dy) <= w; };
 const anyOf = (fs) => (x, y) => fs.some((f) => f(x, y));
 
 module.exports = {
   // ------------------------------------------------------------ trial sites
-  // Verdant Cavern's forecourt: a mossy cave mouth behind the captain's gate.
+  // Verdant Cavern's forecourt: a dim, mossy cave mouth behind the captain's gate.
   AlolaVerdantEntrance: {
     theme: { room: "arena", floor: "caveFloor", wall: null, top: 6 },
     plan(p) {
-      rockWall(p, [124, 104, 88]);
+      rockWall(p, [88, 84, 64]);
       p.disc("grass", 6, 12, 4, 3.5); p.disc("grass", 18.5, 14, 4, 3.5); p.fill("grass", 9, 17, 16, 19); p.fill("grass", 10, 6, 14, 7);
-      for (const [x, y] of [[1, 6], [2, 6], [1, 7], [22, 6], [21, 6], [22, 7], [1, 19], [22, 19]]) p.fill("void", x, y, x, y);
+      const dark = [[1, 6], [2, 6], [1, 7], [22, 6], [21, 6], [22, 7], [1, 19], [22, 19]];
+      for (const [x, y] of dark) p.fill("void", x, y, x, y);
+      gloom(p, (x, y) => x >= p.left && x <= p.right && y >= p.top && y <= p.bottom && !dark.some(([a, b]) => a === x && b === y), [[6 * T, 12 * T, 44, 30], [18.5 * T, 14 * T, 40, 28], [12.5 * T, 18 * T, 40, 14]]);
       p.decor("boulder", 3, 6, { optional: true }); p.decor("boulder", 19, 6, { optional: true }); p.decor("boulder", 2, 15, { optional: true }); p.decor("boulder", 20, 9, { optional: true });
-      for (const [x, y] of [[5, 10], [8, 13], [16, 12], [20, 15], [7, 18], [17, 18], [9, 7], [15, 7]]) fern(p, x, y);
-      rock(p, 5, 17, [140, 126, 112]); rock(p, 16, 9, [140, 126, 112]);
+      for (const [x, y] of [[5, 10], [8, 13], [16, 12], [20, 15], [7, 18], [17, 18], [9, 7], [15, 7]]) fern(p, x, y, [44, 122, 58]);
+      rock(p, 5, 17, [112, 106, 84]); rock(p, 16, 9, [112, 106, 84]);
       gate(p, 1, [90, 190, 110]);
       p.paint(0.5, (c) => { c.poly([[150, 96], [182, 96], [230, 250], [170, 250]], [255, 250, 200, 40]); c.poly([[236, 96], [252, 96], [330, 220], [296, 220]], [255, 250, 200, 32]); });
     },
   },
-  // Verdant Cavern: a mossy cave, three dens in rock outcrops, the Totem's ring by the way in, the pedestal at the back.
+  // Verdant Cavern: a dim mossy cave. Two chasms split the floor (a log bridges the first), the dens open in the outcrops,
+  // and the Totem waits before its pedestal in the bowl by the way in.
   AlolaVerdantCavern: {
     theme: { density: 0, groves: 0 },
     plan(p) {
-      cave(p, (x, y) => x < 2 || y < 2 || x > 33 || y > 31 || ((x - 17.5) / 15.5) ** 2 + ((y - 17) / 15.5) ** 2 + (p.hash(x >> 1, y >> 1, 3) - 0.5) * 0.12 > 1, [112, 96, 84]);
-      for (const [x, y, r] of [[9, 12, 5], [26, 12, 5], [16, 22, 4.5], [27, 24, 4], [8, 25, 3.5], [18, 28, 3.5], [18, 6, 3]]) p.disc("grass", x, y, r, r * 0.8);
+      const R = [104, 98, 76], wall = (x, y) => x < 2 || y < 2 || x > 33 || y > 31 || ((x - 17.5) / 15.5) ** 2 + ((y - 17) / 15.5) ** 2 + (p.hash(x >> 1, y >> 1, 3) - 0.5) * 0.12 > 1;
+      const pit = (x, y) => (x >= 15 && x <= 19 && y >= 9 && y <= 15 && y !== 12) || (x >= 21 && x <= 26 && y >= 21 && y <= 25);
+      for (const [x, y, r] of [[9, 12, 5], [26, 12, 5], [16, 22, 4.5], [29, 26, 3], [8, 25, 3.5], [18, 28, 4], [18, 6, 3]]) p.disc("grass", x, y, r, r * 0.8);
+      cave(p, wall, sh(R, 0.85));
+      gloom(p, (x, y) => !wall(x, y) && !pit(x, y), [[9 * T, 13 * T, 50, 30], [27 * T, 13 * T, 46, 28], [15 * T, 23 * T, 40, 26], [8 * T, 25 * T, 34, 22], [18.5 * T, 6 * T, 36, 20], [29 * T, 26 * T, 30, 20]]);
+      chasm(p, 15, 9, 19, 11, R); chasm(p, 15, 13, 19, 15, R); chasm(p, 21, 21, 26, 25, R);
+      // the log across the first chasm
+      p.paint(0.1, (c) => { const px = 15 * T - 5, py = 12 * T + 1, w = 5 * T + 10; c.rect(px, py + 12, w, 3, [10, 10, 14]); c.rect(px, py, w, 13, [86, 62, 40]); c.rect(px, py + 1, w, 3, [132, 100, 64]); c.rect(px, py + 10, w, 3, [58, 40, 28]); for (let x = px + 9; x < px + w - 4; x += 13) c.rect(x, py + 4, 4, 1, [58, 40, 28]); c.ellipse(px + 16, py + 3, 7, 2, [70, 150, 80]); c.ellipse(px + 60, py + 2, 6, 2, [70, 150, 80]); });
       mouth(p, 0, false);
-      const R = [128, 112, 98];
       for (const q of p.people.slice(0, 3)) { mound(p, q.x - 2, q.y - 3, q.x === 16 ? 4 : 5, 3, R); den(p, q.x, q.y - 1); }
-      mound(p, 22, 19, 7, 2, R); mound(p, 4, 17, 5, 2, R); mound(p, 10, 28, 3, 2, R); mound(p, 24, 28, 3, 2, R);
-      p.paint(0, (c) => ring(c, 18 * T + 8, 28 * T + 8, 42, 28, [150, 150, 140]));
-      pedestal(p, 18, 4, [200, 200, 210]); torch(p, 16, 5); torch(p, 20, 5);
-      for (const [x, y] of [[6, 13], [29, 14], [21, 22], [10, 22], [27, 8], [8, 7], [13, 15], [24, 16], [30, 21], [5, 21]]) fern(p, x, y);
-      for (const [x, y] of [[14, 8], [21, 7], [12, 25], [25, 22], [31, 17]]) rock(p, x, y, R);
-      spire(p, 15, 13, R); spire(p, 20, 15, R, 28); spire(p, 7, 28, R, 26); spire(p, 29, 27, R, 30);
-      p.paint(0.5, (c) => { c.poly([[250, 40], [300, 40], [360, 330], [270, 330]], [255, 250, 200, 34]); c.poly([[90, 60], [120, 60], [200, 260], [150, 260]], [255, 250, 200, 28]); });
+      mound(p, 4, 17, 5, 2, R); mound(p, 10, 29, 3, 2, R); mound(p, 24, 28, 3, 2, R); mound(p, 21, 19, 6, 2, R);
+      // the Totem's bowl: the pedestal at its middle, the Totem before it
+      p.paint(0.05, (c) => ring(c, 18 * T + 8, 27 * T + 8, 46, 34, [150, 150, 120]));
+      pedestal(p, 18, 26, [200, 200, 210]);
+      for (const [x, y] of [[22, 27], [21, 29], [14, 29]]) rock(p, x, y, [150, 112, 84]);
+      for (const [x, y] of [[6, 13], [29, 14], [10, 22], [27, 8], [8, 7], [13, 15], [24, 16], [30, 21], [5, 21], [16, 5], [20, 5]]) fern(p, x, y, [44, 122, 58]);
+      for (const [x, y] of [[14, 8], [21, 7], [12, 25], [31, 17]]) rock(p, x, y, R);
+      spire(p, 21, 15, R, 28); spire(p, 7, 28, R, 26); spire(p, 29, 28, R, 30);
+      p.paint(0.5, (c) => { c.poly([[250, 40], [300, 40], [360, 330], [270, 330]], [255, 250, 200, 34]); c.poly([[90, 60], [120, 60], [200, 260], [150, 260]], [255, 250, 200, 28]); c.poly([[280, 60], [304, 60], [320, 150], [276, 150]], [255, 250, 200, 30]); });
     },
   },
   // Brooklet Hill's gate: a boardwalk between two ponds under a dripping cliff.
@@ -362,73 +433,90 @@ module.exports = {
       gate(p, 1, [230, 80, 50]);
     },
   },
-  // Wela Volcano Park: lava down both flanks, a stair up to the summit dance floor under the crater.
+  // Wela Volcano Park's summit: the oval stone dance stage in the glowing crater, steps and torches at both ends,
+  // the path up from the two marker posts, lava in the cracks all round.
   AlolaWelaVolcano: {
     theme: { density: 0, groves: 0 },
     plan(p) {
       const wall = (x, y) => x < 2 || y < 2 || x > 33 || y > 31 || ((x - 17.5) / 15.5) ** 2 + ((y - 17) / 15.5) ** 2 + (p.hash(x >> 1, y >> 1, 3) - 0.5) * 0.1 > 1;
       p.fill("ash", 2, 2, 33, 33); cave(p, wall, [104, 64, 58]);
       mouth(p, 0, false, [255, 200, 150]);
-      p.fill("clay", 7, 9, 27, 15); p.street("clay", 3, [[18, 30], [18, 16]]);
-      lava(p, 11, 3, 24, 6, (x, y) => !wall(x, y) && inDisc(18, 5, 6, 2)(x, y));
-      lava(p, 1, 6, 6, 30, (x, y) => !wall(x, y) && (x === 3 + Math.round(Math.sin(y / 2.5)) || x === 4 + Math.round(Math.sin(y / 2.5))));
-      lava(p, 29, 6, 34, 30, (x, y) => !wall(x, y) && (x === 31 + Math.round(Math.sin(y / 2.5 + 1)) || x === 32 + Math.round(Math.sin(y / 2.5 + 1))));
-      lava(p, 6, 21, 12, 27, inDisc(9.5, 24.5, 2.6, 2.3)); lava(p, 24, 20, 30, 26, inDisc(27.5, 23.5, 2.6, 2.3));
-      const A = [124, 84, 74];
-      mound(p, 7, 17, 9, 2, A); mound(p, 21, 17, 8, 2, A); steps(p, 16, 17, 5, 2, [150, 110, 96]);
+      const SX = 17.5, SY = 12.5, RX = 9.4, RY = 4.6;
+      p.disc("paving", SX, SY, RX, RY); p.fill("paving", 17, 6, 19, 8); p.street("clay", 3, [[18, 30], [18, 18]]);
+      lava(p, 1, 3, 34, 30, (x, y) => !wall(x, y) && (wall(x - 1, y) || wall(x + 1, y) || wall(x, y - 1)) && p.hash(x, y, 9) < 0.7 && Math.abs(x - 18) > 2);
+      lava(p, 6, 21, 13, 27, inDisc(10.5, 24.5, 2.8, 2.5)); lava(p, 23, 20, 30, 26, inDisc(26.5, 23.5, 2.8, 2.5)); lava(p, 4, 4, 12, 8, inDisc(9, 6, 2.6, 1.5)); lava(p, 24, 4, 30, 8, inDisc(27, 6, 2.6, 1.5));
+      const A = [124, 84, 74], ST = [204, 198, 184];
       p.paint(0, (c) => {
-        const x0 = 7 * T, y0 = 9 * T, w = 21 * T, h = 7 * T, cx = 18 * T, cy = 12 * T + 8;
-        c.rect(x0, y0, w, 3, [236, 190, 120]); c.rect(x0, y0 + h - 3, w, 3, [120, 70, 56]); c.rect(x0, y0, 3, h, [236, 190, 120]); c.rect(x0 + w - 3, y0, 3, h, [120, 70, 56]);
-        c.ellipse(cx, cy, 46, 40, [230, 110, 60, 110]); c.ellipse(cx, cy, 46, 40, [250, 210, 120], 3); c.ellipse(cx, cy, 30, 26, [250, 210, 120], 2); c.ellipse(cx, cy, 12, 10, [236, 80, 40]);
-        for (let a = 0; a < 8; a++) c.line(cx + Math.cos(a * Math.PI / 4) * 31, cy + Math.sin(a * Math.PI / 4) * 27, cx + Math.cos(a * Math.PI / 4) * 43, cy + Math.sin(a * Math.PI / 4) * 37, [250, 210, 120], 2);
+        const cx = SX * T, cy = SY * T, rx = RX * T, ry = RY * T;
+        c.ellipse(cx, cy + 4, rx + 46, ry + 38, [214, 70, 30, 46]); c.ellipse(cx, cy + 4, rx + 26, ry + 22, [226, 84, 36, 60]);
+        c.rect(17 * T - 2, 6 * T, 3 * T + 4, 3 * T, sh(ST, 0.5)); c.rect(17 * T, 6 * T, 3 * T, 3 * T, ST);
+        c.rect(17 * T - 2, 17 * T, 3 * T + 4, T + 4, sh(ST, 0.5));
+        c.ellipse(cx, cy + 6, rx + 4, ry + 4, [70, 44, 40]); c.ellipse(cx, cy + 3, rx + 4, ry + 4, sh(ST, 0.62)); c.ellipse(cx, cy, rx + 4, ry + 4, ST); c.ellipse(cx, cy, rx - 2, ry - 2, sh(ST, 0.93));
+        for (let i = 0; i < 46; i++) { const a = p.hash(i, 1, 17) * 6.283, r = Math.sqrt(p.hash(i, 2, 17)) * 0.9, x = cx + Math.cos(a) * r * rx, y = cy + Math.sin(a) * r * ry; c.rect(x, y, 7, 1, sh(ST, 0.8)); c.rect(x + 2, y + 1, 4, 1, sh(ST, 1.08)); }
         ring(c, 18 * T + 8, 25 * T + 8, 40, 28, [230, 140, 90]);
       });
-      for (const [x, y] of [[7, 9], [27, 9], [7, 15], [27, 15], [16, 20], [20, 20]]) torch(p, x, y, [255, 120, 40]);
-      for (const [x, y] of [[13, 21], [23, 28], [12, 29], [23, 20], [9, 7], [26, 7], [14, 26], [22, 24]]) rock(p, x, y, A);
-      spire(p, 15, 29, A, 28); spire(p, 21, 29, A, 28);
+      steps(p, 17, 17, 3, 1, sh(ST, 0.9)); steps(p, 17, 8, 3, 1, sh(ST, 0.9));
+      for (const [x, y] of [[16, 7], [20, 7], [16, 18], [20, 18]]) torch(p, x, y, [255, 120, 40]);
+      for (const [x, y] of [[13, 21], [23, 28], [12, 29], [22, 19], [8, 16], [27, 16], [14, 27], [5, 13], [30, 12]]) rock(p, x, y, A);
+      // the two marker posts where the path begins
+      for (const x of [16, 20]) { p.block(x, 29, 1, 1); p.paint(30, (c, top) => { const px = x * T, py = 29 * T; c.ellipse(px + 8, py + 13, 9, 3, [0, 0, 0, 70]); c.poly([[px - 1, py + 14], [px + 17, py + 14], [px + 8, py + 2]], x === 16 ? [226, 196, 70] : [120, 100, 200]); c.box(px + 5, py - 4, 6, 18, [176, 150, 110], [80, 60, 44]); top.box(px + 5, py - 20, 6, 16, [176, 150, 110], [80, 60, 44]); top.box(px + 3, py - 16, 10, 4, [214, 80, 50], [80, 60, 44]); top.box(px + 3, py - 8, 10, 3, [240, 200, 90], [80, 60, 44]); }); }
     },
   },
-  // Lush Jungle's gate: a clearing walled in by trees and flowers.
+  // Lush Jungle's gate: dirt trails through dense dark jungle, tall grass and ferns either side.
   AlolaLushEntrance: {
     theme: { room: "arena", floor: "shade", wall: null, top: 6 },
     plan(p) {
-      leafWall(p, [44, 130, 70]);
-      p.fill("grass", 9, 6, 15, 19); p.disc("flowersRed", 5, 15, 3, 2.2); p.disc("flowersPink", 19, 11, 3, 2.2); p.disc("flowersBlue", 18, 17, 2.4, 1.8);
-      for (const [x, y] of [[1, 4], [4, 5], [7, 4], [16, 4], [19, 5], [21, 4], [1, 9], [21, 13], [2, 16], [20, 6]]) p.decor("tree1", x, y, { optional: true });
-      for (const [x, y] of [[5, 10], [8, 12], [16, 9], [15, 14], [7, 18], [16, 19], [3, 13], [22, 17], [8, 8], [10, 6], [14, 6]]) fern(p, x, y, [40, 150, 80]);
+      leafWall(p, [36, 112, 58]);
+      for (const [x0, y0, x1, y1] of [[11, 6, 13, 19], [5, 14, 11, 15], [3, 15, 5, 17], [13, 9, 19, 10], [19, 10, 21, 12]]) p.fill("dirt", x0, y0, x1, y1);
+      for (const [x0, y0, x1, y1] of [[2, 9, 6, 11], [16, 12, 19, 15], [15, 17, 20, 18], [3, 18, 8, 19]]) p.fill("meadow", x0, y0, x1, y1);
+      p.paint(0.05, (c) => { for (const [x0, y0, x1, y1] of [[2, 9, 6, 11], [16, 12, 19, 15], [15, 17, 20, 18], [3, 18, 8, 19]]) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const px = x * T, py = y * T; c.rect(px, py, T, T, [30, 104, 52, 150]); for (let i = 0; i < 4; i++) { const bx = px + 1 + i * 4; c.line(bx, py + 14, bx + 1, py + 5 + (i % 2) * 3, [70, 170, 80], 2); c.line(bx + 2, py + 15, bx + 2, py + 8, [24, 84, 44], 1); } } });
+      for (const [x, y] of [[1, 4], [4, 5], [7, 4], [16, 4], [19, 5], [21, 4], [1, 12], [21, 14], [8, 16], [15, 6]]) p.decor("tree1", x, y, { optional: true });
+      for (const [x, y] of [[8, 12], [9, 8], [15, 11], [14, 16], [10, 18], [22, 17], [8, 7], [10, 6], [14, 7], [1, 16], [20, 19], [22, 8]]) fern(p, x, y, [40, 150, 80]);
       // the cooking pot Mallow tends
-      p.block(6, 11, 1, 1); p.paint(12, (c, top) => { const px = 6 * T, py = 11 * T; c.ellipse(px + 8, py + 13, 10, 4, [0, 0, 0, 70]); c.rect(px - 1, py + 10, 3, 5, [110, 70, 40]); c.rect(px + 14, py + 10, 3, 5, [110, 70, 40]); c.ellipse(px + 8, py + 6, 10, 8, [50, 50, 60]); c.ellipse(px + 8, py + 1, 9, 4, [90, 90, 104]); c.ellipse(px + 8, py + 1, 7, 3, [190, 150, 70]); top.ellipse(px + 5, py - 8, 3, 4, [240, 240, 240, 150]); top.ellipse(px + 11, py - 13, 3, 4, [240, 240, 240, 110]); });
+      p.block(6, 12, 1, 1); p.paint(13, (c, top) => { const px = 6 * T, py = 12 * T; c.ellipse(px + 8, py + 13, 10, 4, [0, 0, 0, 70]); c.rect(px - 1, py + 10, 3, 5, [110, 70, 40]); c.rect(px + 14, py + 10, 3, 5, [110, 70, 40]); c.ellipse(px + 8, py + 6, 10, 8, [50, 50, 60]); c.ellipse(px + 8, py + 1, 9, 4, [90, 90, 104]); c.ellipse(px + 8, py + 1, 7, 3, [190, 150, 70]); top.ellipse(px + 5, py - 8, 3, 4, [240, 240, 240, 150]); top.ellipse(px + 11, py - 13, 3, 4, [240, 240, 240, 110]); });
       gate(p, 1, [90, 190, 90]);
     },
   },
-  // Vast Poni Canyon's gate: red canyon walls and scree before the last trial.
+  // Vast Poni Canyon's gate: banded canyon walls, a sandy floor with thin grass, scree before the last trial.
   AlolaVastPoniEntrance: {
-    theme: { room: "arena", floor: "gravel", wall: null, top: 6 },
+    theme: { room: "arena", floor: "sand", wall: null, top: 6 },
     plan(p) {
-      const C = [184, 134, 92]; rockWall(p, C);
-      p.fill("dirt", 11, 6, 13, 19);
-      mound(p, 1, 6, 4, 4, C); mound(p, 19, 6, 4, 3, C); mound(p, 1, 14, 3, 4, C); mound(p, 18, 13, 5, 3, C); mound(p, 6, 8, 2, 2, C);
-      for (const [x, y] of [[6, 13], [16, 10], [8, 17], [16, 18], [5, 19], [20, 18], [15, 15]]) rock(p, x, y, C);
-      spire(p, 9, 7, C, 30); spire(p, 15, 7, C, 30); spire(p, 7, 15, C, 26); spire(p, 16, 12, C, 26);
+      const C = [186, 150, 110]; rockWall(p, C); strata(p, p.left * T, (p.top - 2) * T, (p.right - p.left + 1) * T, 32);
+      p.fill("dirt", 11, 6, 13, 19); p.disc("grass", 6, 12, 2.6, 2); p.disc("grass", 17, 16.5, 3, 1.8); p.disc("grass", 9, 18, 2, 1.4);
+      mound(p, 1, 6, 4, 4, C); mound(p, 19, 6, 4, 3, C); mound(p, 1, 14, 3, 4, C); mound(p, 18, 12, 5, 3, C); mound(p, 6, 8, 2, 2, C);
+      for (const [x, y] of [[7, 14], [16, 10], [8, 17], [15, 18], [5, 19], [20, 18]]) rock(p, x, y, C);
+      spire(p, 9, 7, C, 30); spire(p, 15, 7, C, 30); spire(p, 4, 12, C, 26);
+      // the dead tree by the trail
+      p.block(15, 13, 1, 1); p.paint(14, (c, top) => { const px = 15 * T + 8, py = 13 * T + 14, B = [84, 62, 50]; c.ellipse(px, py, 8, 3, [0, 0, 0, 60]); c.line(px, py, px, py - 12, B, 4); top.line(px, py - 12, px - 1, py - 26, B, 3); top.line(px, py - 16, px - 10, py - 26, B, 2); top.line(px - 1, py - 20, px + 9, py - 30, B, 2); top.line(px - 10, py - 26, px - 14, py - 24, B, 1); top.line(px + 9, py - 30, px + 14, py - 28, B, 1); top.line(px - 1, py - 26, px - 4, py - 34, B, 1); });
       gate(p, 1, [120, 100, 220]);
     },
   },
-  // The Dragon trial: a walled canyon climbing past two ambush nooks to the pedestal; the Totem's ring of stones below.
+  // The Dragon trial: a narrow canyon winding from the Totem's round arena past two ambush nooks to the pedestal at its head.
   AlolaDragonTrial: {
     theme: { density: 0, groves: 0 },
     plan(p) {
-      const C = [180, 138, 98];
-      p.fill("gravel", 2, 2, 33, 33);
-      cave(p, (x, y) => x < 3 || y < 2 || x > 32 || y > 31 || ((x === 3 || x === 32 || y === 2) && p.hash(x, y, 4) < 0.5), sh(C, 0.8));
+      const C = [186, 150, 110];
+      const open = anyOf([inDisc(18.5, 24.5, 6.2), inDisc(18.5, 15.5, 3.6, 3), inDisc(11.5, 12.5, 3.4, 2.8), inDisc(18.5, 5.5, 4.8, 3.3),
+        nearSeg(18, 31, 18, 24, 1.5), nearSeg(18, 24, 18, 15, 1.6), nearSeg(18, 15, 11, 12, 1.5), nearSeg(11, 12, 13, 8, 1.5), nearSeg(13, 8, 18, 6, 1.5)]);
+      const wall = (x, y) => x < 2 || y < 2 || x > 33 || y > 31 || !open(x, y);
+      p.fill("sand", 2, 2, 33, 33);
+      for (const [x, y, r] of [[18.5, 24.5, 4.2], [18.5, 15.5, 2.4], [11.5, 12.5, 2.2], [18.5, 5.5, 3]]) p.disc("grass", x, y, r, r * 0.8);
+      p.fill("cobble", 16, 3, 20, 5); p.street("dirt", 1, [[18, 30], [18, 18]]);
+      // the canyon's rim, seen from above, and its banded cliffs
+      p.paint(0, (c) => {
+        for (let y = 0; y < p.H; y++) for (let x = 0; x < p.W; x++) if (wall(x, y)) {
+          const px = x * T, py = y * T; c.rect(px, py, T, T, sh(C, 0.84));
+          for (let i = 0; i < 2; i++) { const k = p.hash(x, y, 40 + i); c.rect(px + Math.floor(k * 8), py + 3 + i * 7, 6 + Math.floor(p.hash(y, x, 50 + i) * 3), 2, k > 0.5 ? sh(C, 0.95) : sh(C, 0.72)); }
+          if (!wall(x, y - 1)) c.rect(px, py, T, 3, sh(C, 1.08));
+        }
+      });
+      cave(p, wall, sh(C, 0.8));
+      p.paint(0, (c) => { for (let y = 0; y < p.H - 1; y++) for (let x = 0; x < p.W; x++) if (wall(x, y) && !wall(x, y + 1)) strataBand(c, x * T, y * T, T, T); });
       mouth(p, 0, false);
-      p.disc("cobble", 18.5, 24.5, 5.4); p.fill("cobble", 15, 3, 21, 6); p.street("dirt", 3, [[18, 30], [18, 8]]); p.street("dirt", 2, [[18, 12], [11, 12]]);
-      mound(p, 3, 17, 12, 2, C); mound(p, 22, 17, 11, 2, C); mound(p, 22, 8, 10, 6, C); mound(p, 3, 21, 3, 7, C); mound(p, 30, 21, 3, 7, C); mound(p, 3, 3, 5, 4, C); mound(p, 26, 3, 6, 3, C); mound(p, 5, 9, 3, 2, C);
-      steps(p, 16, 7, 5, 1, [170, 160, 150]);
-      pedestal(p, 18, 4, [110, 100, 230]); torch(p, 15, 6, [150, 130, 255]); torch(p, 21, 6, [150, 130, 255]);
+      pedestal(p, 18, 4, [110, 100, 230]); torch(p, 16, 5, [150, 130, 255]); torch(p, 20, 5, [150, 130, 255]);
       p.paint(0, (c) => { const cx = 18 * T + 8, cy = 24 * T + 8; c.ellipse(cx, cy, 84, 84, [120, 100, 90, 255], 3); c.ellipse(cx, cy, 62, 62, [96, 90, 200, 70]); c.ellipse(cx, cy, 62, 62, [96, 90, 200], 2); c.ellipse(cx, cy, 40, 40, [226, 220, 250, 190], 2); for (let a = 0; a < 6; a++) c.line(cx + Math.cos(a * Math.PI / 3) * 41, cy + Math.sin(a * Math.PI / 3) * 41, cx + Math.cos(a * Math.PI / 3) * 60, cy + Math.sin(a * Math.PI / 3) * 60, [226, 220, 250, 190], 2); });
-      for (const [x, y] of [[13, 21], [24, 21], [13, 28], [24, 28], [12, 24], [25, 25]]) spire(p, x, y, sh(C, 0.9), 26);
-      for (const [x, y] of [[9, 14], [14, 9], [8, 22], [27, 22], [10, 29], [27, 30], [20, 10], [10, 6], [24, 15]]) rock(p, x, y, C);
-      spire(p, 15, 14, C, 36); spire(p, 21, 15, C, 30); spire(p, 9, 10, C, 30);
+      for (const [x, y] of [[14, 21], [23, 21], [14, 28], [23, 28], [13, 24], [24, 25]]) spire(p, x, y, sh(C, 0.9), 26);
+      for (const [x, y] of [[20, 17], [9, 13], [16, 21], [21, 27], [15, 6], [16, 13]]) rock(p, x, y, C);
     },
   },
   // The Altar of the Sunne and Moone: a great stair between two flute pools up to the emblem platform; the wormhole hangs behind it.
@@ -485,80 +573,21 @@ module.exports = {
   },
 
   // ------------------------------------------------------------ the Pokemon League
-  // Molayne: a steel chamber of plates, pylons and gears.
-  AlolaEliteMolayne: {
+  // The four chambers are alike in the games: a glowing oval field in the dark rock, told apart by colour alone.
+  // Molayne (steel): pale steel blue.
+  AlolaEliteMolayne: { theme: { room: "arena", floor: "steel", wall: null, top: 6 }, plan(p) { league(p, [156, 184, 214]); } },
+  // Olivia (rock): orange.
+  AlolaEliteOlivia: { theme: { room: "arena", floor: "steel", wall: null, top: 6 }, plan(p) { league(p, [240, 172, 104]); } },
+  // Acerola (ghost): violet.
+  AlolaEliteAcerola: { theme: { room: "arena", floor: "steel", wall: null, top: 6 }, plan(p) { league(p, [160, 140, 226]); } },
+  // Kahili (flying): green.
+  AlolaEliteKahili: { theme: { room: "arena", floor: "steel", wall: null, top: 6 }, plan(p) { league(p, [112, 222, 140]); } },
+  // The Champion's chamber: a long walkway from a round pad to the cyan field, the throne on the dais at its head.
+  AlolaChampionRoom: {
     theme: { room: "arena", floor: "steel", wall: null, top: 6 },
     plan(p) {
-      const S = [150, 160, 180];
-      wallPanel(p, [116, 126, 148], (c, x0, y0, w) => { for (let x = x0 + 6; x < x0 + w; x += 16) { c.rect(x, y0 + 6, 2, 2, [200, 210, 226]); c.rect(x, y0 + 22, 2, 2, [200, 210, 226]); } c.rect(x0, y0 + 13, w, 3, [110, 220, 240]); });
-      p.paint(0.1, (c) => {
-        for (let y = 6; y <= 19; y += 2) c.rect(T, y * T, 22 * T, 1, [70, 80, 100, 120]); for (let x = 1; x <= 22; x += 2) c.rect(x * T, 6 * T, 1, 14 * T, [70, 80, 100, 120]);
-        for (const [gx, gy, r] of [[3 * T, 16 * T, 22], [21 * T, 16 * T + 8, 22], [5 * T, 9 * T, 14], [19 * T, 9 * T, 14]]) { for (let a = 0; a < 8; a++) c.rect(gx + Math.cos(a * Math.PI / 4) * r - 3, gy + Math.sin(a * Math.PI / 4) * r - 3, 7, 7, [96, 106, 126]); c.ellipse(gx, gy, r, r, [96, 106, 126]); c.ellipse(gx, gy, r - 4, r - 4, [140, 150, 170]); c.ellipse(gx, gy, r / 3, r / 3, [70, 80, 100]); }
-        c.rect(11 * T, 7 * T, 3 * T, 12 * T, [90, 100, 124, 120]); for (let y = 7 * T + 4; y < 19 * T; y += 8) { c.rect(11 * T + 2, y, 4, 2, [240, 200, 70]); c.rect(14 * T - 6, y, 4, 2, [240, 200, 70]); }
-      });
-      elite(p, "steel", S, [110, 126, 150]);
-      for (const [x, y] of [[3, 7], [20, 7], [8, 7], [15, 7], [1, 12], [22, 12]]) column(p, x, y, S);
-      crate(p, 6, 18, S); crate(p, 7, 18, sh(S, 0.8)); crate(p, 17, 18, S); crate(p, 2, 9, sh(S, 0.8)); crate(p, 21, 10, S);
-    },
-  },
-  // Olivia: a rock garden of outcrops, boulders and rose crystals.
-  AlolaEliteOlivia: {
-    theme: { room: "arena", floor: "caveFloor", wall: null, top: 6 },
-    plan(p) {
-      const C = [158, 126, 104], PINK = [240, 130, 170];
-      rockWall(p, C); p.disc("gravel", 12, 13, 6.5, 5.2); p.fill("gravel", 11, 6, 13, 19);
-      elite(p, "rock", C, [190, 160, 120]);
-      mound(p, 1, 6, 4, 3, C); mound(p, 19, 6, 4, 3, C); mound(p, 1, 16, 3, 3, C); mound(p, 20, 17, 3, 3, C); mound(p, 6, 7, 2, 2, C);
-      for (const [x, y] of [[8, 6], [16, 6], [5, 11], [20, 12], [7, 18], [18, 18], [2, 13]]) crystal(p, x, y, PINK);
-      for (const [x, y] of [[5, 15], [19, 14], [9, 9], [16, 9], [4, 18], [17, 16]]) rock(p, x, y, C);
-      spire(p, 10, 6, C, 26); spire(p, 14, 6, C, 26);
-    },
-  },
-  // Acerola: a gloomy nursery of graves, toy blocks and ghost-fire.
-  AlolaEliteAcerola: {
-    theme: { room: "arena", floor: "darkpave", wall: null, top: 6 },
-    plan(p) {
-      const V = [120, 90, 180];
-      wallPanel(p, [58, 44, 92], (c, x0, y0, w) => { for (let x = x0 + 20; x < x0 + w - 8; x += 48) { if (Math.abs(x - 12 * T) < 30) continue; c.box(x, y0 + 5, 18, 20, [30, 26, 50], [100, 80, 150]); c.rect(x + 8, y0 + 6, 2, 18, [100, 80, 150]); c.rect(x + 1, y0 + 14, 16, 2, [100, 80, 150]); c.ellipse(x + 5, y0 + 10, 2, 2, [220, 220, 160]); } c.line(x0, y0 + 2, x0 + 22, y0 + 20, [200, 200, 220, 120], 1); c.line(x0, y0 + 14, x0 + 12, y0 + 2, [200, 200, 220, 120], 1); c.line(x0 + w, y0 + 2, x0 + w - 22, y0 + 20, [200, 200, 220, 120], 1); });
-      carpet(p, 11, 7, 3, 12, [84, 54, 130]);
-      elite(p, "ghost", V, [70, 50, 120]);
-      for (const [x, y, f] of [[3, 8, [220, 120, 200]], [6, 8, null], [17, 8, null], [20, 8, [200, 200, 250]], [3, 16, null], [6, 17, [220, 120, 200]], [20, 17, null], [18, 18, null]]) grave(p, x, y, f);
-      for (const [x, y] of [[9, 7], [15, 7], [1, 12], [22, 12], [9, 18], [15, 18]]) torch(p, x, y, [170, 110, 250]);
-      crate(p, 2, 10, [230, 110, 160]); crate(p, 3, 10, [110, 190, 230]); crate(p, 21, 14, [240, 200, 90]); crate(p, 20, 14, [130, 210, 130]); crate(p, 4, 13, [240, 200, 90]);
-      p.paint(0.3, (c) => { for (const [x, y, rx] of [[70, 150, 40], [300, 230, 50], [320, 130, 34], [90, 290, 44]]) { c.ellipse(x, y, rx, 9, [190, 170, 240, 40]); c.ellipse(x + 14, y + 5, rx * 0.7, 6, [190, 170, 240, 40]); } });
-    },
-  },
-  // Kahili: a golf green under open sky, bunkers, a pond and the flag.
-  AlolaEliteKahili: {
-    theme: { room: "arena", floor: "lawn", wall: null, top: 6 },
-    plan(p) {
-      const B = [130, 180, 236];
-      wallPanel(p, [126, 196, 244], (c, x0, y0, w) => { c.rect(x0, y0 + 3, w, 24, [126, 196, 244]); for (const x of [20, 86, 150, 250, 310]) { c.ellipse(x0 + x, y0 + 14, 14, 6, [250, 252, 255]); c.ellipse(x0 + x + 9, y0 + 10, 9, 6, [250, 252, 255]); c.ellipse(x0 + x - 8, y0 + 16, 8, 4, [226, 240, 252]); } c.rect(x0, y0 + 26, w, 6, [60, 150, 80]); });
-      p.disc("grass", 12, 13, 8, 6); p.disc("sand", 5, 15.5, 2.6, 1.9); p.disc("sand", 19, 9, 2.6, 1.9); p.disc("water", 4.5, 9.5, 2.5, 2); p.fill("grass", 11, 6, 13, 19);
-      elite(p, "flying", B, [150, 220, 150]);
-      // the hole and its flag
-      p.block(19, 17, 1, 1); p.paint(18, (c, top) => { const px = 19 * T, py = 17 * T; c.ellipse(px + 8, py + 11, 6, 3, [30, 60, 40]); c.rect(px + 7, py - 4, 2, 15, [240, 240, 240]); top.rect(px + 7, py - 22, 2, 18, [240, 240, 240]); top.poly([[px + 9, py - 22], [px + 20, py - 18], [px + 9, py - 13]], [230, 60, 60]); });
-      p.paint(0.3, (c) => { c.ellipse(19 * T + 8, 17 * T + 10, 24, 14, [150, 220, 150, 120]); for (const [x, y] of [[9, 17], [15, 17]]) { c.ellipse(x * T + 8, y * T + 8, 3, 3, [250, 250, 250]); c.ellipse(x * T + 8, y * T + 10, 4, 2, [0, 0, 0, 50]); } });
-      for (const [x, y] of [[1, 4], [20, 12], [1, 17], [7, 4], [15, 4], [21, 4]]) p.decor("tree1", x, y, { optional: true });
-      for (const [x, y] of [[3, 12], [8, 8], [16, 14], [8, 19], [16, 19]]) fern(p, x, y, [70, 170, 90]);
-    },
-  },
-  // The Champion's chamber: a glass hall on the peak, the throne before the Hall of Fame, a lit battle field.
-  AlolaChampionRoom: {
-    theme: { room: "arena", floor: "hallFloor", wall: null, top: 6 },
-    plan(p) {
-      wallPanel(p, [40, 60, 120], (c, x0, y0, w) => { for (let i = 0; i < 60; i++) c.rect(x0 + Math.floor(p.hash(i, 1, 3) * w), y0 + 3 + Math.floor(p.hash(i, 2, 3) * 14), 1, 1, [240, 240, 255]); for (let x = x0 - 10; x < x0 + w; x += 44) { c.poly([[x, y0 + 27], [x + 22, y0 + 10], [x + 44, y0 + 27]], [150, 170, 210]); c.poly([[x + 15, y0 + 15], [x + 22, y0 + 10], [x + 29, y0 + 15], [x + 22, y0 + 18]], [244, 248, 255]); } for (let x = x0; x < x0 + w; x += 32) c.rect(x, y0, 2, 32, [190, 200, 220]); c.rect(x0, y0 + 27, w, 5, [190, 200, 220]); });
-      arch(p, 1, [230, 190, 80]);
-      p.paint(0.2, (c) => {
-        const cx = 12 * T + 8, cy = 13 * T + 8;
-        c.rect(8 * T, 6 * T, 9 * T, 3 * T, [200, 210, 240, 110]); c.rect(8 * T, 9 * T - 4, 9 * T, 4, [110, 120, 160]); c.rect(8 * T, 9 * T - 6, 9 * T, 2, [240, 244, 255]);
-        c.ellipse(cx, cy, 100, 72, [70, 130, 230, 90]); c.ellipse(cx, cy, 100, 72, [240, 244, 255], 3); c.ellipse(cx, cy, 90, 64, [110, 190, 255], 2); c.ellipse(cx, cy, 56, 40, [240, 244, 255, 200], 1);
-        for (let a = 0; a < 12; a++) { const an = a * Math.PI / 6; c.line(cx + Math.cos(an) * 58, cy + Math.sin(an) * 41, cx + Math.cos(an) * 88, cy + Math.sin(an) * 62, [240, 244, 255, 150], 1); }
-        emblem(c, cx, cy, 24, "ball");
-      });
-      throne(p, 12, 8, [200, 60, 60]);
-      for (const [x, y] of [[2, 7], [21, 7], [2, 13], [21, 13], [6, 6], [18, 6]]) column(p, x, y, [210, 216, 236]);
-      for (const [x, y] of [[9, 7], [15, 7], [4, 18], [19, 18]]) torch(p, x, y, [120, 190, 255]);
+      league(p, [112, 226, 222], { cy: 12, rx: 8, ry: 4.3, dais: 7, pad: true });
+      throne(p, 12, 7, [200, 60, 60]);
     },
   },
   // The Hall of Fame: a red runner up to the registration machine and its six lit Ball cradles.
@@ -781,30 +810,42 @@ module.exports = {
       for (const [x, y] of [[3, 5], [14, 5], [1, 8], [16, 8], [4, 12], [13, 12], [5, 4], [12, 4]]) fern(p, x, y, [60, 150, 80]);
     },
   },
-  // Team Rainbow Rocket's castle hall: the red runner between Archie's flooded half and Maxie's molten one.
+  // Team Rainbow Rocket's castle hall: black glass and red light, the red runner, Archie's sea painting and Maxie's volcano on the wall.
   AlolaRRBase: {
     theme: { room: "arena", floor: "darkpave", wall: null, top: 6 },
     plan(p) {
-      wallPanel(p, [52, 46, 64], (c, x0, y0, w) => { const R = [[226, 60, 60], [240, 150, 50], [240, 220, 70], [90, 190, 90], [70, 130, 230], [150, 90, 210]]; R.forEach((col, i) => c.rect(x0, y0 + 24 + i, w, 1, col)); rrMark(c, x0 + 5 * T, y0 + 1); rrMark(c, x0 + 16 * T - 4, y0 + 1); });
+      rrFloor(p);
+      wallPanel(p, [44, 26, 36], (c, x0, y0, w) => {
+        for (let y = y0 + 6; y < y0 + 26; y += 6) c.rect(x0, y, w, 1, [30, 16, 24]);
+        const R = [[226, 60, 60], [240, 150, 50], [240, 220, 70], [90, 190, 90], [70, 130, 230], [150, 90, 210]]; R.forEach((col, i) => c.rect(x0, y0 + 26 + i, w, 1, col));
+        const G = [230, 190, 80], sea = x0 + 3 * T, vol = x0 + 15 * T + 8;
+        c.box(sea, y0 + 3, 56, 21, [90, 170, 230], G); c.rect(sea + 1, y0 + 13, 54, 10, [34, 90, 180]); c.ellipse(sea + 16, y0 + 13, 11, 4, [236, 246, 255]); c.ellipse(sea + 40, y0 + 16, 10, 3, [236, 246, 255]); c.rect(sea + 6, y0 + 19, 14, 1, [120, 180, 240]);
+        c.box(vol, y0 + 3, 56, 21, [70, 30, 34], G); c.poly([[vol + 6, y0 + 23], [vol + 24, y0 + 9], [vol + 33, y0 + 9], [vol + 51, y0 + 23]], [120, 66, 54]); c.poly([[vol + 23, y0 + 10], [vol + 28, y0 + 5], [vol + 34, y0 + 10]], [255, 190, 70]); c.rect(vol + 27, y0 + 10, 3, 11, [250, 120, 40]); c.rect(vol + 22, y0 + 15, 2, 7, [250, 120, 40]);
+        for (const d of [-1, 1]) { const x = 12 * T + 8 + d * 28; c.poly([[x - 8, y0 + 2], [x + 8, y0 + 2], [x + 5 + d * 4, y0 + 26], [x - 5 + d * 4, y0 + 26]], [176, 30, 46]); c.rect(x - 1, y0 + 2, 2, 24, [110, 16, 28]); c.rect(x - 8, y0 + 2, 16, 2, G); }
+        rrMark(c, x0 + 1 * T, y0 + 1); rrMark(c, x0 + 20 * T - 4, y0 + 1);
+      });
       arch(p, 1, [200, 44, 54]);
-      carpet(p, 11, 7, 3, 11, [170, 36, 46]);
-      p.fill("water", 2, 8, 7, 12); lava(p, 16, 8, 21, 12);
-      p.paint(0.2, (c) => { c.rect(2 * T - 3, 8 * T - 3, 6 * T + 6, 3, [70, 130, 230]); c.rect(2 * T - 3, 13 * T, 6 * T + 6, 3, [70, 130, 230]); c.rect(16 * T - 3, 8 * T - 3, 6 * T + 6, 3, [226, 60, 60]); c.rect(16 * T - 3, 13 * T, 6 * T + 6, 3, [226, 60, 60]); });
-      for (const [x, y] of [[9, 7], [15, 7], [9, 16], [15, 16], [1, 7], [22, 7]]) column(p, x, y, [96, 90, 116]);
-      p.decor("rStatue", 3, 15, { optional: true }); p.decor("rStatue", 19, 16, { optional: true });
-      for (const [x, y] of [[9, 11], [15, 12], [5, 18], [18, 6 + 12]]) torch(p, x, y, [226, 60, 60]);
+      carpet(p, 11, 7, 3, 11, [170, 36, 46], 0.1);
+      p.paint(0.2, (c) => { for (const [x, y] of [[4, 9], [19, 9], [4, 16], [19, 17], [7, 12]]) rrPanel(c, x, y); });
+      for (const [x, y] of [[9, 7], [15, 7], [9, 16], [15, 16], [1, 7], [22, 7]]) column(p, x, y, [70, 64, 86]);
     },
   },
-  // Rainbow Rocket's laboratory: machines, capsules and the warp panels of the castle maze.
+  // Deeper in the castle (the game's "laboratory"): the same black-and-red hall, its warp panels and the bosses' desks.
   AlolaRRLab: {
-    theme: { room: "arena", floor: "steel", wall: null, top: 6 },
+    theme: { room: "arena", floor: "darkpave", wall: null, top: 6 },
     plan(p) {
-      wallPanel(p, [70, 74, 96], (c, x0, y0, w) => { for (const x of [7, 9.5, 14.5, 20]) { const mx = x * T; c.box(mx, y0 + 5, 30, 18, [30, 70, 90], [20, 24, 40]); c.rect(mx + 3, y0 + 8, 14, 1, [150, 250, 220]); c.rect(mx + 3, y0 + 12, 22, 1, [150, 250, 220]); c.rect(mx + 3, y0 + 16, 9, 1, [250, 150, 150]); } });
+      rrFloor(p);
+      wallPanel(p, [38, 30, 44], (c, x0, y0, w) => {
+        for (let y = y0 + 6; y < y0 + 26; y += 6) c.rect(x0, y, w, 1, [26, 20, 32]);
+        for (const x of [4, 7.5, 15.5, 19]) { const mx = x * T; c.box(mx, y0 + 5, 30, 18, [14, 30, 34], [70, 230, 160]); c.rect(mx + 3, y0 + 8, 14, 1, [150, 250, 220]); c.rect(mx + 3, y0 + 12, 22, 1, [150, 250, 220]); c.rect(mx + 3, y0 + 16, 9, 1, [250, 110, 110]); }
+        c.rect(x0, y0 + 27, w, 2, [214, 40, 52]); rrMark(c, x0 + 1 * T, y0 + 1); rrMark(c, x0 + 20 * T - 4, y0 + 1);
+      });
       arch(p, 1, [200, 44, 54]);
-      p.decor("rMachine", 2, 4); p.decor("rMachine", 17, 4); p.decor("rLabTable", 3, 11); p.decor("rBench", 14, 10, { optional: true }); p.decor("rStack", 1, 15, { optional: true }); p.decor("rStack", 1 + 5, 16, { optional: true });
-      [[7, 6, [240, 150, 170]], [9, 6, [120, 180, 240]], [14, 6, [240, 210, 110]], [15, 6, [150, 210, 140]]].forEach(([x, y, col]) => tank(p, x, y, col));
-      p.paint(0.2, (c) => { [[5, 14, [226, 60, 60]], [9, 16, [70, 130, 230]], [15, 16, [90, 190, 90]], [17, 13, [240, 210, 70]], [8, 9, [150, 90, 210]], [16, 8 + 1, [240, 150, 50]]].forEach(([x, y, col]) => { c.box(x * T + 1, y * T + 1, 14, 14, sh(col, 0.5), [40, 44, 60]); pad(c, x, y, col); }); c.rect(11 * T, 7 * T, 3 * T, 12 * T, [60, 64, 90, 110]); for (let y = 7 * T + 4; y < 19 * T; y += 8) { c.rect(11 * T + 2, y, 4, 2, [226, 60, 60]); c.rect(14 * T - 6, y, 4, 2, [226, 60, 60]); } });
-      crate(p, 21, 8, [150, 156, 170]); crate(p, 22, 8, [150, 156, 170]); crate(p, 22, 9, [170, 130, 80]);
+      carpet(p, 11, 7, 3, 12, [56, 48, 70], 0.1);
+      p.paint(0.2, (c) => { for (const [x, y] of [[5, 14], [9, 16], [15, 16], [17, 13], [8, 9], [16, 9], [3, 18], [20, 8]]) rrPanel(c, x, y); });
+      counter(p, 3, 10, 3, 1, [64, 56, 78]); counter(p, 18, 11, 3, 1, [64, 56, 78]);
+      p.paint(11.1, (c) => { c.box(4 * T, 10 * T - 9, 12, 8, [20, 60, 60], [70, 230, 160]); c.box(19 * T, 11 * T - 9, 12, 8, [20, 60, 60], [70, 230, 160]); });
+      for (const [x, y] of [[1, 7], [22, 7], [9, 7], [15, 7]]) column(p, x, y, [70, 64, 86]);
     },
   },
   // Giovanni's office: his desk and chair under the rainbow R, Persian statues either side.
