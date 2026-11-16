@@ -337,7 +337,12 @@ as far as the fixed doors and gates allow; many corrected maps still have a
 landmark on the wrong side for that reason, and the log says so map by map.
 For the 3D games a route's reference is usually one screenshot, so a route
 "matches" on terrain, colours and its main feature, not its exact course.
-Gyms, rooms and caves have not been compared with references.
+The Gyms, trial sites, Stadiums and League rooms (the 98 maps of type `gym`) were compared the same way afterwards;
+each region's log has a section for them at its end. 92 were corrected, 3 match and 3 differ (Driftveil's mine rooms in
+Black 2/White 2: the real Gym is separate platforms in the dark, which one open floor cannot show). The references
+for these rooms are angled 3D screenshots, one or two a room, not overhead maps: the set-piece, colours and
+furniture were matched, not exact floor plans, and where a Gym is split over several maps here one picture often
+served all of them. The Unova League rooms, ordinary rooms and caves have not been compared with references.
 
 ### Regenerating
 
