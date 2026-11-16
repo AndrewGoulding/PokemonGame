@@ -7,6 +7,8 @@ const root = path.join(__dirname, "..");
 global.window = global;
 global.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 const scripts = [...fs.readFileSync(path.join(root, "index.html"), "utf8").matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]).filter((f) => !f.startsWith("ui/"));
+// (game/unova.js makes these five maps' first gate, a plain floor tile in the data, one you walk onto.)
+const BRIDGE_GATES = ["UnovaSkyarrowBridge", "UnovaTubelineBridge", "UnovaMarvelousBridge", "UnovaVillageBridge", "UnovaPinwheelForest"];
 // The maps as they were before the overlay, to compare against.
 const before = {}; { const c = {}; c.window = c; vm.createContext(c); for (const f of scripts) if (f.startsWith("data/") && f !== "data/region-layouts.js") vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), c, { filename: f }); for (const k of ["KALOS_DATA", "UNOVA_DATA", "UNOVA_BW_DATA"]) Object.assign(before, c[k].maps); }
 // Alola, Galar and Paldea lay themselves out as the game scripts run: their "before" is everything but the last overlay.
@@ -30,7 +32,7 @@ for (const name of names) {
   assert.equal(JSON.stringify(m.warps.map((w) => [w.x, w.y, w.map, w.warp]).slice(0, b.warps.length)), JSON.stringify(b.warps.map((w) => [w.x, w.y, w.map, w.warp])), name + " warps moved");
   const here = new Set(m.people.map((p) => p.x + "," + p.y)); for (const p of b.people) assert(here.has(p.x + "," + p.y) || m.people.length !== b.people.length, name + " people moved");
   const open = (i) => !m.collision[i] && !water(m.behavior[i]), wasOpen = (i) => !b.collision[i] && !water(b.behavior[i]);
-  m.warps.forEach((w, k) => { const i = w.y * W + w.x; assert(!m.collision[i], name + " warp " + k); assert.equal(m.behavior[i], b.behavior[i], name + " warp " + k + " kind"); if (LATE.test(name)) return; if (m.behavior[i] === 0x69 && wasOpen(i + W)) assert(open(i + W), name + " door " + k + " has ground in front"); });
+  m.warps.forEach((w, k) => { const i = w.y * W + w.x; assert(!m.collision[i], name + " warp " + k); assert.equal(m.behavior[i], BRIDGE_GATES.includes(name) && k === 0 ? 0x61 : b.behavior[i], name + " warp " + k + " kind"); if (LATE.test(name)) return; if (m.behavior[i] === 0x69 && wasOpen(i + W)) assert(open(i + W), name + " door " + k + " has ground in front"); });
   for (const p of m.people) if (wasOpen(p.y * W + p.x)) assert(open(p.y * W + p.x), name + ": " + p.script + " stands on open ground");
   for (const s of m.signs || []) if (wasOpen((s.y + 1) * W + s.x)) assert(open((s.y + 1) * W + s.x), name + " sign can be read");
   // All the old water is still water, so Surf and fishing spots are where they were.
