@@ -2,7 +2,12 @@
  'use strict';
  const D=window.UNOVA_DATA;if(!D)return;
  window.REGIONAL_CRIES=Object.assign(window.REGIONAL_CRIES||{},D.cries||{});Object.assign(DEX,D.forms||{});for(const name of Object.keys(D.forms||{}))if(window.LEARNSETS_GEN6)LEARNSETS_GEN6[name]={...LEARNSETS_GEN6[name.startsWith('Kyurem-')?'Kyurem':'Basculin'],levelup:D.learnsets[name]};
- Object.assign(WORLD_MAPS,JSON.parse(JSON.stringify(D.maps)));for(const map of Object.values(D.centers))Player.CENTERS[map]={map,x:7,y:4,facing:'up'};Object.assign(WORLD_TRAINERS,D.trainers);
+ Object.assign(WORLD_MAPS,JSON.parse(JSON.stringify(D.maps)));
+ // The five bridge gates whose way in was a plain floor tile (so nothing happened on it): Skyarrow's, Tubeline's,
+ // Marvelous's and Village Bridge's gatehouse and Pinwheel Forest's way to Skyarrow Bridge are walked onto, as the
+ // gate at each one's other end is.
+ for(const[name,k]of[['UnovaSkyarrowBridge',0],['UnovaTubelineBridge',0],['UnovaMarvelousBridge',0],['UnovaVillageBridge',0],['UnovaPinwheelForest',0]]){const m=WORLD_MAPS[name],w=m&&m.warps[k];if(w&&m.behavior[w.y*m.width+w.x]===0)m.behavior[w.y*m.width+w.x]=0x61;}
+for(const map of Object.values(D.centers))Player.CENTERS[map]={map,x:7,y:4,facing:'up'};Object.assign(WORLD_TRAINERS,D.trainers);
  // Register names before any UI initializes: Trainer Memos and area searches
  // share these sections with the visual Town Map.
  const regionMap=D.townMap;
