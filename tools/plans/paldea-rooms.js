@@ -34,6 +34,32 @@ function court(p, x0, y0, x1, y1, col, o = {}) {
     if (o.emblem) o.emblem(c, cx, cy); else { c.ellipse(cx, cy, 8, 8, ln); c.rect(cx - 8, cy - 1, 16, 2, INK); c.ellipse(cx, cy, 3, 3, o.dot || [220, 70, 70]); }
   });
 }
+// The Poké Ball emblem of a Paldean court, cut in facets like a Tera jewel: `a` above the band, `b` below.
+function ball(c, cx, cy, r, a, b, band) {
+  for (let k = 0; k < 12; k++) { const a0 = k * Math.PI / 6, a1 = a0 + Math.PI / 6, col = k < 6 ? b : a; c.poly([[cx, cy], [cx + Math.cos(a0) * r, cy + Math.sin(a0) * r], [cx + Math.cos(a1) * r, cy + Math.sin(a1) * r]], k % 3 === 0 ? lite(col, 0.3) : k % 3 === 1 ? col : mix(col, 0.86)); }
+  c.ellipse(cx, cy, r, r, lite(a, 0.5), 2); c.rect(cx - r, cy - 2, r * 2, 4, band); c.ellipse(cx, cy, r * 0.44, r * 0.44, band); c.ellipse(cx, cy, r * 0.3, r * 0.3, lite(b, 0.55)); c.ellipse(cx, cy, r * 0.3, r * 0.3, lite(a, 0.2), 1);
+}
+// A Paldean Gym court over tiles x0..x1, y0..y1: double lines dashed in two colours and the faceted emblem.
+function svCourt(p, x0, y0, x1, y1, col, a, b, o = {}) {
+  p.paint(o.z || 0.5, (c) => {
+    const X = x0 * S, Y = y0 * S, w = (x1 - x0 + 1) * S, h = (y1 - y0 + 1) * S, cx = X + w / 2, cy = Y + h / 2;
+    if (col) c.rect(X, Y, w, h, col);
+    if (o.under) o.under(c, X, Y, w, h, cx, cy);
+    const dash = (x, y, len, across, k = 0) => { for (let i = 0; i < len; i += 8, k++) { const n = Math.min(8, len - i); if (across) c.rect(x + i, y, n, 2, k & 1 ? a : b); else c.rect(x, y + i, 2, n, k & 1 ? a : b); } };
+    dash(X, Y, w, true); dash(X, Y + h - 2, w, true, 1); dash(X, Y, h, false); dash(X + w - 2, Y, h, false, 1);
+    dash(X + 10, Y + 10, w - 20, true, 1); dash(X + 10, Y + h - 12, w - 20, true); dash(X + 10, Y + 10, h - 20, false, 1); dash(X + w - 12, Y + 10, h - 20, false); dash(cx - 1, Y + 10, h - 20, false);
+    ball(c, cx, cy, o.r || 26, o.top || a, o.bottom || b, o.band || col || WHITE);
+  });
+}
+// Outdoor rooms: the strips beside and below the floor in the colour of the land around, a graded sky, a palm.
+function outside(c, col) { c.rect(0, 4 * S, S, 18 * S, col); c.rect(23 * S, 4 * S, S, 18 * S, col); c.rect(0, 20 * S, 24 * S, 2 * S, col); }
+function sky(c, h, a, b) { for (let y = 0; y < h; y++) c.rect(0, y, 24 * S, 1, [a[0] + (b[0] - a[0]) * y / h, a[1] + (b[1] - a[1]) * y / h, a[2] + (b[2] - a[2]) * y / h]); }
+function palm(c, top, cx, by) { shadow(c, cx, by, 9); c.line(cx, by, cx + 2, by - 30, [150, 116, 80], 3); for (let y = by - 4; y > by - 28; y -= 5) c.rect(cx - 1, y, 4, 1, [116, 86, 60]); for (const [dx, dy] of [[-15, -2], [15, -2], [-11, -11], [11, -11], [-13, 6], [13, 6], [0, -14]]) { top.poly([[cx + 2, by - 31], [cx + 2 + dx * 0.5, by - 34 + dy * 0.5 - 3], [cx + 2 + dx, by - 30 + dy]], [50, 140, 80]); top.poly([[cx + 2, by - 31], [cx + 2 + dx * 0.5, by - 31 + dy * 0.5 + 2], [cx + 2 + dx, by - 30 + dy]], [84, 176, 100]); } top.ellipse(cx + 2, by - 30, 3, 3, [150, 116, 80]); }
+// The white deck of a Terarium plaza, with its scatter of pastel squares.
+function plaza(p, x0, y0, x1, y1, a, b) {
+  p.fill("paving", x0, y0, x1, y1); tiles(p, x0, y0, x1, y1, [246, 248, 252], [236, 240, 248]);
+  p.paint(0.12, (c) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const k = p.hash(x, y, 41); if (k > 0.72) c.rect(x * S + 1, y * S + 1, 14, 14, k > 0.86 ? a : b); } frame(c, x0 * S, y0 * S, (x1 - x0 + 1) * S, (y1 - y0 + 1) * S, [170, 190, 214]); });
+}
 // ---- small painted things; (cx, by) is the middle of the base in pixels.
 function cake(c, cx, by, icing = [250, 160, 185], sponge = [250, 232, 196]) {
   shadow(c, cx, by - 1, 15); c.ellipse(cx, by - 3, 15, 5, [226, 226, 238]);
@@ -139,167 +165,205 @@ function carve(p, discs, passages = [], floor = "ground", rock = [150, 104, 80])
 const R = {};
 
 // ---------------------------------------------------------------- the eight Gyms
-// Cortondo: Katy's patisserie. The shop counter of cakes along the back, a pistachio court, giant sweets.
+// Cortondo: the Gym's court, a clay field on a timber deck above the tilled plots and olive trees, with the
+// festival pennants and a terrace of tables beside it.
 R.PaldeaCortondoGym = {
-  theme: { room: "arena", floor: "rHouse", wall: null },
+  theme: { room: "arena", floor: "deck", wall: null },
   plan(p) {
-    tiles(p, 1, 4, 22, 19, [250, 240, 222], [246, 222, 214]);
-    // The shop front: striped awning, shelves of bread, glass cases of cakes.
-    p.block(1, 4, 22, 2);
-    p.paint(0.3, (c) => { const X = S, w = 22 * S;
-      c.rect(X, 2 * S, w, 4 * S, [244, 226, 196]); c.rect(X, 2 * S, w, 3, [150, 100, 70]);
-      for (let x = X + 6; x < X + w - 30; x += 44) { if (x > 9 * S && x < 13 * S) continue; c.box(x, 2 * S + 16, 36, 20, [120, 80, 56], [80, 50, 36]); for (let j = 0; j < 2; j++) { c.rect(x + 2, 2 * S + 25 + j * 9, 32, 1, [200, 160, 110]); for (let i = 0; i < 5; i++) c.ellipse(x + 5 + i * 6.5, 2 * S + 22 + j * 9, 3, 2, [[226, 170, 90], [200, 130, 70], [240, 200, 130]][(i + j + x) % 3]); } }
-      c.box(10 * S + 4, 2 * S + 12, 56, 52, [96, 64, 48], [60, 40, 30]); c.rect(10 * S + 8, 2 * S + 16, 48, 48, [60, 44, 40]); c.box(10 * S + 14, 2 * S + 20, 36, 12, [250, 240, 222], [150, 100, 70]); for (let i = 0; i < 4; i++) c.rect(10 * S + 18 + i * 8, 2 * S + 25, 5, 2, [220, 120, 140]);
-      for (let x = X; x < X + w; x += 8) { c.rect(x, 2 * S + 3, 8, 10, (x / 8) & 1 ? [250, 150, 175] : WHITE); c.ellipse(x + 4, 2 * S + 13, 4, 3, (x / 8) & 1 ? [250, 150, 175] : WHITE); }
-      for (const [x0, x1] of [[X + 4, 10 * S], [14 * S, X + w - 4]]) { c.box(x0, 4 * S + 6, x1 - x0, 26, [214, 236, 244], [150, 100, 70]); c.rect(x0 + 1, 4 * S + 7, x1 - x0 - 2, 3, WHITE); c.rect(x0 + 1, 4 * S + 20, x1 - x0 - 2, 2, [150, 100, 70]); c.rect(x0 + 1, 4 * S + 26, x1 - x0 - 2, 5, [200, 150, 110]);
-        for (let x = x0 + 6, k = 0; x < x1 - 6; x += 10, k++) { const col = [[250, 160, 185], [250, 236, 180], [150, 100, 70], [170, 220, 150], [250, 250, 250]][k % 5]; c.rect(x - 3, 4 * S + 13, 7, 6, col); c.rect(x - 3, 4 * S + 13, 7, 2, lite(col, 0.5)); c.rect(x, 4 * S + 11, 1, 2, [220, 50, 60]); } }
+    const grn = [110, 196, 96], yel = [250, 222, 90], tan = [226, 200, 146], rail = [120, 84, 54];
+    planks(p, 1, 4, 22, 19, [182, 142, 100]);
+    p.paint(0.3, (c) => { const w = 24 * S;
+      outside(c, tan); c.rect(0, 0, w, 4 * S, tan); for (let y = 5; y < 62; y += 7) c.rect(0, y, w, 1, [208, 180, 126]);
+      for (let i = 0; i < 16; i++) { const x = 8 + p.hash(i, 1, 7) * 15 * S, y = 10 + p.hash(i, 2, 7) * 36; c.ellipse(x + 3, y + 8, 8, 3, [0, 0, 0, 50]); c.rect(x - 1, y + 2, 2, 7, [110, 84, 60]); c.ellipse(x, y, 7, 6, [70, 120, 70]); c.ellipse(x - 2, y - 2, 4, 3, [116, 164, 96]); }
+      // an ochre house under a teal roof
+      c.box(17 * S + 4, 30, 5 * S, 34, [226, 180, 80], [150, 110, 50]); c.poly([[17 * S - 2, 34], [18 * S, 12], [22 * S + 8, 12], [22 * S + 14, 34]], [60, 160, 170]); for (let y = 16; y < 34; y += 5) c.rect(17 * S + 2, y, 5 * S + 6, 1, [40, 130, 140]);
+      for (const x of [18, 20.5]) c.box(x * S, 42, 12, 12, [70, 110, 190], [250, 240, 220]);
+      // the railing at the back of the deck, and the pennants
+      c.rect(S, 4 * S - 12, 22 * S, 2, rail); c.rect(S, 4 * S - 6, 22 * S, 2, rail); for (let x = S; x <= 23 * S - 3; x += 16) c.rect(Math.min(x, 23 * S - 3), 4 * S - 14, 3, 14, rail);
+      c.line(2 * S, 6, 16 * S, 22, [120, 100, 80], 1); for (let i = 0; i < 14; i++) { const x = 2 * S + 6 + i * 16, y = 7 + i * 1.14; c.poly([[x, y], [x + 8, y + 1], [x + 4, y + 9]], i & 1 ? [226, 150, 70] : [240, 214, 150]); }
     });
-    court(p, 6, 9, 17, 15, [176, 214, 150, 235], { dot: [120, 180, 90], under: (c, X, Y, w, h) => { for (let y = Y; y < Y + h; y += 16) for (let x = X + ((y / 16) & 1) * 8; x < X + w; x += 16) c.ellipse(x + 4, y + 8, 3, 3, [200, 230, 170, 200]); } });
-    for (const [x, col] of [[2, [250, 160, 185]], [20, [170, 210, 250]]]) prop(p, x, 7, 2, 3, (c, top, X, Y) => cake(c, X + 16, Y + 46, col), 2);
-    for (const [x, y, sh] of [[2, 11, [250, 150, 175]], [20, 11, [250, 200, 110]], [2, 14, [170, 210, 250]], [20, 14, [250, 150, 175]]]) prop(p, x, y, 2, 2, (c, top, X, Y) => cafeTable(c, X + 16, Y + 30, WHITE, sh), 1);
-    for (const x of [3, 20]) prop(p, x, 17, 1, 2, (c, top, X, Y) => donuts(c, X + 8, Y + 30), 1);
-    for (const x of [9, 14]) prop(p, x, 17, 2, 2, (c, top, X, Y) => cake(c, X + 16, Y + 30, [200, 230, 160], [250, 240, 210]), 1);
-    p.decor("rPlant", 1, 18, { optional: true }); p.decor("rPlant", 22, 18, { optional: true });
+    p.paint(0.4, (c) => { c.rect(4 * S + 6, 7 * S + 6, 15 * S + 4, 10 * S + 4, [150, 112, 78]); });
+    svCourt(p, 5, 8, 18, 16, [202, 126, 74], yel, grn, { top: grn, bottom: yel, band: [226, 160, 96] });
+    const pennant = (c, top, X, Y) => { shadow(c, X + 8, Y + 46, 6); c.rect(X + 7, Y + 2, 2, 44, rail); top.poly([[X + 9, Y - 12], [X + 30, Y + 22], [X + 9, Y + 22]], [214, 176, 110]); top.poly([[X + 9, Y - 12], [X + 14, Y + 22], [X + 9, Y + 22]], [236, 204, 140]); top.ellipse(X + 16, Y + 14, 4, 4, [250, 240, 200]); top.rect(X + 12, Y + 13, 8, 1, [120, 84, 54]); };
+    prop(p, 2, 4, 1, 3, pennant, 1); prop(p, 19, 4, 1, 3, pennant, 1);
+    for (const [x, y] of [[1, 9], [1, 13], [21, 9], [21, 13]]) prop(p, x, y, 2, 2, (c, top, X, Y) => cafeTable(c, X + 16, Y + 30, WHITE, [60, 150, 130]), 1);
+    for (const [x, y] of [[1, 17], [21, 17]]) p.decor("tree1", x, y, { optional: true });
+    for (const [x, y] of [[4, 18], [19, 18]]) p.decor("barrels", x, y, { optional: true });
   },
 };
 
-// Artazon: Brassius's studio garden. A glasshouse wall, flower beds, his sunflower sculptures and easels round a turf court.
+// Artazon: the Gym's turf court beside the windmill, ringed by a red-earth track and banks of flowers, with
+// Brassius's sunflower sculptures along one side.
 R.PaldeaArtazonGym = {
   theme: { room: "arena", floor: "lawn", wall: null },
   plan(p) {
     p.fill("flowersRed", 1, 4, 5, 5); p.fill("flowersPink", 6, 4, 9, 4); p.fill("flowersBlue", 18, 4, 22, 5); p.fill("flowersPink", 14, 4, 17, 4);
-    p.fill("sand", 11, 16, 12, 19); p.fill("sand", 4, 16, 19, 16); p.fill("sand", 4, 8, 4, 16); p.fill("sand", 19, 8, 19, 16); p.fill("sand", 4, 8, 19, 8);
-    p.paint(0.3, (c) => { const X = S, w = 22 * S, y = S + 6, h = 2 * S + 10;
-      c.rect(X, y, w, h, [150, 214, 226]); for (let i = 0; i < 26; i++) { const x = X + p.hash(i, 1, 3) * (w - 16), r = 6 + p.hash(i, 2, 3) * 9; c.ellipse(x + 8, y + h - 2, r, r * 1.3, [70 + (i % 3) * 14, 150 + (i % 4) * 10, 90]); }
-      for (let i = 0; i < 9; i++) { const x = X + 12 + i * 40 + p.hash(i, 5, 3) * 10; c.rect(x, y, 1, 8 + (i % 3) * 3, [90, 130, 80]); c.ellipse(x, y + 10 + (i % 3) * 3, 4, 3, [[250, 120, 120], [250, 220, 100], [200, 130, 230]][i % 3]); }
-      c.rect(X, y, w, h, [255, 255, 255, 40]); for (let x = X; x <= X + w; x += 16) c.rect(Math.min(x, X + w - 2), y, 2, h, WHITE); c.rect(X, y, w, 3, WHITE); c.rect(X, y + 14, w, 1, WHITE); c.rect(X, y + h - 3, w, 3, [226, 226, 236]);
-      for (let x = X + 3; x < X + w; x += 16) c.line(x, y + 26, x + 8, y + 18, [255, 255, 255, 120]);
+    p.fill("dirt", 11, 17, 12, 19); p.fill("dirt", 3, 7, 20, 17);
+    p.paint(0.3, (c) => { const w = 24 * S;
+      outside(c, [96, 170, 110]); sky(c, 4 * S, [96, 170, 240], [190, 226, 250]);
+      for (let i = 0; i < 22; i++) { const x = p.hash(i, 1, 3) * w, r = 9 + p.hash(i, 2, 3) * 9; c.ellipse(x, 44, r, r * 1.2, [50 + (i % 3) * 12, 130 + (i % 4) * 10, 70]); c.ellipse(x - 3, 40, r * 0.5, r * 0.6, [90, 170, 90]); }
+      // a red-roofed house among the trees, and the foot of the windmill
+      c.poly([[15 * S, 44], [16 * S + 8, 26], [18 * S, 44]], [150, 50, 50]); c.box(15 * S + 6, 44, 2 * S + 4, 10, [240, 230, 214], [150, 120, 100]);
+      c.poly([[3 * S, 64], [3 * S + 8, 0], [7 * S, 0], [7 * S + 8, 64]], [236, 236, 244]); c.poly([[6 * S, 0], [7 * S, 0], [7 * S + 8, 64], [6 * S + 6, 64]], [200, 204, 222]); c.rect(3 * S + 2, 50, 4 * S + 6, 14, [176, 170, 160]); for (let x = 3 * S + 4; x < 7 * S + 4; x += 9) c.rect(x, 52, 1, 12, [140, 134, 126]);
+      c.box(4 * S, 4, 2 * S - 4, 40, [206, 60, 56], [140, 30, 34]); c.ellipse(5 * S - 2, 22, 8, 8, WHITE); c.rect(5 * S - 10, 21, 16, 2, [206, 60, 56]); c.ellipse(5 * S - 2, 22, 3, 3, [206, 60, 56]);
+      // banks of flowers
+      c.rect(0, 52, 3 * S, 12, [60, 130, 70]); c.rect(8 * S, 52, 16 * S, 12, [60, 130, 70]);
+      for (let x = 0; x < w; x += 4) { if (x >= 3 * S && x < 8 * S) continue; const col = [[250, 190, 60], [80, 110, 230], [240, 110, 60], [230, 70, 80], [240, 130, 200]][Math.floor(x / 52) % 5]; c.rect(x + (x >> 2) % 2, 53 + ((x * 7) >> 2) % 8, 2, 2, col); c.rect(x + 2, 56 + ((x * 5) >> 2) % 6, 2, 2, lite(col, 0.3)); }
     });
-    court(p, 6, 10, 17, 14, [150, 206, 110, 200], { dot: [90, 170, 80], r: 20 });
+    p.paint(0.4, (c) => { c.rect(4 * S, 8 * S, 16 * S, 9 * S, [70, 164, 96]); });
+    svCourt(p, 4, 8, 19, 16, null, [240, 130, 60], [250, 214, 80], { top: [236, 90, 70], bottom: [250, 170, 70], band: [70, 164, 96], r: 28 });
     prop(p, 11, 4, 2, 3, (c, top, X, Y) => { c.box(X + 2, Y + 36, 28, 12, [190, 186, 196], [90, 86, 100]); sunflora(c, X + 16, Y + 40, 1.25); }, 2);
-    prop(p, 2, 7, 2, 3, (c, top, X, Y) => sunflora(c, X + 16, Y + 46, 1), 1); prop(p, 2, 10, 2, 3, (c, top, X, Y) => sunflora(c, X + 16, Y + 46, 1, true), 1); prop(p, 2, 13, 2, 3, (c, top, X, Y) => sunflora(c, X + 16, Y + 46, 1), 1);
-    const pics = [(c, x, y) => { c.rect(x, y, 12, 12, [140, 200, 240]); c.ellipse(x + 6, y + 6, 4, 4, [250, 210, 70]); c.rect(x, y + 9, 12, 3, [90, 170, 90]); }, (c, x, y) => { c.rect(x, y, 12, 12, [250, 236, 200]); c.rect(x + 1, y + 1, 5, 5, [220, 70, 70]); c.rect(x + 6, y + 6, 5, 5, [70, 110, 210]); c.rect(x + 6, y + 1, 5, 4, [250, 210, 70]); }, (c, x, y) => { c.rect(x, y, 12, 12, [90, 170, 110]); c.poly([[x + 1, y + 11], [x + 6, y + 2], [x + 11, y + 11]], [120, 90, 60]); c.ellipse(x + 6, y + 4, 3, 3, [60, 140, 70]); }];
-    [[20, 6], [21, 10], [20, 14]].forEach(([x, y], i) => prop(p, x, y, 1, 2, (c, top, X, Y) => { easel(c, X + 8, Y + 30, pics[i]); for (let k = 0; k < 3; k++) c.box(X - 8 + k * 5, Y + 26, 4, 5, [[220, 70, 70], [70, 110, 210], [250, 210, 70]][k], [80, 70, 70]); }, 1));
+    prop(p, 1, 7, 2, 3, (c, top, X, Y) => sunflora(c, X + 16, Y + 46, 1), 1); prop(p, 1, 10, 2, 3, (c, top, X, Y) => sunflora(c, X + 16, Y + 46, 1, true), 1); prop(p, 1, 13, 2, 3, (c, top, X, Y) => sunflora(c, X + 16, Y + 46, 1), 1);
+    prop(p, 21, 7, 2, 3, (c, top, X, Y) => sunflora(c, X + 16, Y + 46, 1, true), 1); prop(p, 21, 12, 2, 3, (c, top, X, Y) => sunflora(c, X + 16, Y + 46, 1), 1);
     p.decor("tree1", 1, 17, { optional: true }); p.decor("tree1", 21, 17, { optional: true });
     for (const [x, y] of [[6, 18], [7, 18], [16, 18], [17, 18], [1, 6], [22, 6]]) p.decor("hedge", x, y, { optional: true });
   },
 };
-// Levincia: Iono's streaming studio. Three great screens, a lit stage, cameras and an electric court.
+// Levincia: the Gym's round court standing in the bay, inside the ring of stone walkway with its billboards,
+// reached by a causeway from either side; the city's towers behind.
 R.PaldeaLevinciaGym = {
-  theme: { room: "arena", floor: "darkpave", wall: null },
+  theme: { room: "arena", floor: "paving", wall: null },
   plan(p) {
-    const cy = [90, 236, 250], pk = [250, 110, 200], yl = [250, 224, 90];
-    tiles(p, 1, 4, 22, 19, [48, 46, 78], [42, 40, 70]); tiles(p, 1, 4, 22, 6, [84, 70, 130], [76, 64, 120], 0.12);
-    p.paint(0.3, (c) => { const X = S, w = 22 * S;
-      c.rect(X, 0, w, 4 * S, [24, 22, 40]); c.rect(X, 4, w, 3, [70, 70, 90]); for (let x = X; x < X + w; x += 8) c.line(x, 4, x + 4, 10, [70, 70, 90]); c.rect(X, 10, w, 2, [70, 70, 90]);
-      screen(c, 2 * S, 20, 5 * S + 8, 38, cy, (g, x, y, w2) => { for (let i = 0; i < 4; i++) { g.rect(x + 4, y + 5 + i * 8, 5, 5, [cy, pk, yl][i % 3]); g.rect(x + 12, y + 6 + i * 8, 30 + ((i * 17) % 30), 2, lite(cy, 0.6)); } heart(g, x + w2 - 10, y + 12, 5, pk); heart(g, x + w2 - 16, y + 26, 4, pk); });
-      screen(c, 8 * S + 8, 16, 7 * S, 44, pk, (g, x, y, w2, h2) => { g.ellipse(x + w2 / 2, y + h2 / 2, 30, 17, lite(pk, 0.7)); g.ellipse(x + w2 / 2, y + h2 / 2, 13, 13, cy); g.ellipse(x + w2 / 2, y + h2 / 2, 6, 6, INK); bolt(g, x + 16, y + 14, 1.4, yl); bolt(g, x + w2 - 16, y + 30, 1.4, yl); });
-      screen(c, 16 * S + 8, 20, 5 * S + 8, 38, yl, (g, x, y, w2, h2) => { for (let i = 0; i < 8; i++) { const hh = 6 + ((i * 13 + 5) % 23); g.rect(x + 6 + i * 10, y + h2 - 3 - hh, 7, hh, i & 1 ? pk : lite(yl, 0.5)); } });
-      c.rect(X, 7 * S - 3, w, 3, yl); c.rect(X, 7 * S, w, 2, [30, 28, 50]); for (let x = X + 4; x < X + w; x += 12) c.rect(x, 7 * S - 3, 4, 3, pk);
-      for (const x of [3, 8, 16, 21]) { c.box(x * S - 4, 12, 8, 7, [50, 50, 66], [20, 20, 30]); c.ellipse(x * S, 20, 3, 2, [yl, pk, cy, yl][x % 4]); }
+    const sea = [60, 150, 236], yl = [250, 214, 80], og = [246, 150, 70], gn = [130, 210, 110];
+    const plat = (x, y) => ((x + 0.5 - 12) / 7) ** 2 + ((y + 0.5 - 12.5) / 4.6) ** 2 <= 1, way = (x) => x === 11 || x === 12;
+    const wet = (x, y) => y >= 6 && y <= 17 && x >= 3 && x <= 20 && !plat(x, y) && !way(x);
+    tiles(p, 1, 4, 22, 19, [160, 166, 180], [150, 156, 172], 0.1, wet);
+    for (let y = 6; y <= 17; y++) for (let x = 3; x <= 20; x++) if (wet(x, y)) p.fill("water", x, y, x, y);
+    p.paint(0.3, (c) => { const w = 24 * S;
+      outside(c, sea); sky(c, 4 * S, [110, 180, 244], [190, 226, 250]);
+      for (const [x, ww, h, col] of [[4, 30, 40, [50, 84, 170]], [40, 26, 54, [70, 110, 200]], [300, 34, 50, [50, 84, 170]], [340, 30, 36, [80, 120, 206]], [150, 40, 30, [90, 100, 130]], [200, 36, 38, [70, 110, 200]]]) { c.rect(x, 64 - h, ww, h, col); for (let y = 68 - h; y < 60; y += 6) for (let i = x + 3; i < x + ww - 3; i += 6) c.rect(i, y, 3, 3, lite(col, 0.45)); }
+      c.rect(0, 58, w, 6, [120, 126, 144]);
+      // the billboards on the ring
+      [[1.5, yl], [4.6, og], [7.7, gn], [13.3, gn], [16.4, yl], [19.5, og]].forEach(([x, col], i) => { c.box(x * S, 30, 46, 26, col, [40, 44, 60]); c.ellipse(x * S + 14, 43, 8, 8, lite(col, 0.55)); c.ellipse(x * S + 14, 43, 4, 4, [[240, 110, 160], [90, 170, 240], WHITE][i % 3]); c.rect(x * S + 26, 36, 16, 3, WHITE); c.rect(x * S + 26, 42, 12, 2, [40, 44, 60]); c.rect(x * S + 26, 47, 14, 2, [40, 44, 60]); c.rect(x * S + 10, 56, 3, 8, [60, 64, 80]); c.rect(x * S + 34, 56, 3, 8, [60, 64, 80]); });
+      // the ring's inner kerb and the causeways' rails
+      frame(c, 3 * S - 3, 6 * S - 3, 18 * S + 6, 12 * S + 6, [96, 102, 124]); frame(c, 3 * S - 2, 6 * S - 2, 18 * S + 4, 12 * S + 4, [206, 212, 226]);
+      for (const y of [6 * S, 17 * S]) { c.rect(11 * S - 2, y - 2, 2, S + 14, [96, 102, 124]); c.rect(13 * S, y - 2, 2, S + 14, [96, 102, 124]); }
     });
-    court(p, 5, 10, 19, 18, [30, 28, 58, 255], { line: cy, r: 24, emblem: (c, cx, cy2) => { c.ellipse(cx, cy2, 14, 14, [250, 224, 90, 60]); bolt(c, cx, cy2, 1.6, yl); },
-      under: (c, X, Y, w, h) => { for (let x = X + 6; x < X + w - 4; x += 12) { c.rect(x, Y - 4, 5, 2, (x / 12) & 1 ? pk : yl); c.rect(x, Y + h + 2, 5, 2, (x / 12) & 1 ? yl : pk); } for (let i = 0; i < 5; i++) { c.line(X + 20 + i * 48, Y + 4, X + 4 + i * 48, Y + h - 4, [90, 236, 250, 26], 3); } } });
-    for (const x of [1, 22]) for (const y of [4, 7]) prop(p, x, y, 1, 2, (c, top, X, Y) => speaker(c, X + 8, Y + 31, 30), 1);
-    const cam = (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 7); for (const dx of [-6, 0, 6]) c.line(X + 8, Y + 14, X + 8 + dx, Y + 30, [90, 90, 110], 1); c.box(X + 1, Y + 6, 13, 9, [60, 60, 80], [20, 20, 30]); c.ellipse(X + 12, Y + 10, 3, 3, cy); c.rect(X + 2, Y + 4, 3, 2, [230, 60, 60]); };
-    for (const [x, y] of [[3, 10], [21, 10], [3, 17], [21, 17]]) prop(p, x, y, 1, 2, cam, 1);
-    const ring = (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 6); c.rect(X + 7, Y + 12, 2, 18, [90, 90, 110]); c.ellipse(X + 8, Y + 8, 7, 7, [255, 250, 220], 2); c.ellipse(X + 8, Y + 8, 9, 9, [255, 250, 200, 50]); };
-    for (const [x, y] of [[2, 13], [22, 13]]) prop(p, x, y, 1, 2, ring, 1);
-    p.paint(90, (c, top) => { beam(top, 3 * S, 16, 8 * S, 13 * S, 34, cy); beam(top, 12 * S + 8, 16, 12 * S + 8, 14 * S + 8, 40, yl); beam(top, 21 * S, 16, 17 * S, 13 * S, 34, pk); });
+    p.paint(0.5, (c) => { const cx = 12 * S, cy = 12.5 * S, rx = 7 * S + 6, ry = 4.6 * S + 8;
+      c.ellipse(cx, cy + 5, rx, ry, [70, 76, 100]); c.ellipse(cx, cy, rx, ry, [120, 126, 148]); c.ellipse(cx, cy, rx - 3, ry - 3, yl);
+      for (let k = 0; k < 28; k++) { const a = k * Math.PI / 14; c.ellipse(cx + Math.cos(a) * (rx - 9), cy + Math.sin(a) * (ry - 8), 6, 5, [og, gn, [250, 240, 150]][k % 3]); }
+      c.ellipse(cx, cy, rx - 16, ry - 13, [222, 232, 244]); c.ellipse(cx, cy, rx - 16, ry - 13, WHITE, 2); c.rect(cx - 1, cy - ry + 14, 2, ry * 2 - 28, [250, 250, 255, 220]);
+      ball(c, cx, cy, 24, yl, [250, 232, 150], [222, 232, 244]);
+    });
+    const lamp = (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 5); c.rect(X + 7, Y + 2, 2, 28, [70, 76, 100]); c.box(X + 4, Y - 2, 8, 6, [250, 244, 190], [70, 76, 100]); c.ellipse(X + 8, Y + 1, 8, 6, [255, 250, 200, 50]); };
+    for (const [x, y] of [[1, 4], [22, 4], [1, 18], [22, 18]]) prop(p, x, y, 1, 2, lamp, 1);
+    for (const x of [5, 18]) prop(p, x, 18, 2, 2, (c, top, X, Y) => { shadow(c, X + 16, Y + 30, 14); c.box(X, Y + 4, 32, 20, x === 5 ? gn : yl, [40, 44, 60]); bolt(c, X + 16, Y + 14, 0.9, [40, 44, 60]); c.rect(X + 5, Y + 24, 3, 7, [60, 64, 80]); c.rect(X + 24, Y + 24, 3, 7, [60, 64, 80]); }, 1);
   },
 };
-// Cascarrafa: Kofu's court beside the market. A cascade into a basin, stalls of fish and fruit, water either side.
+// Cascarrafa: the Gym's court on the top terrace, a blue field on pale flagstones between blue-capped
+// sandstone posts and palms, with the steps and the desert cliffs behind.
 R.PaldeaCascarrafaGym = {
   theme: { room: "arena", floor: "sand", wall: null },
   plan(p) {
-    tiles(p, 1, 4, 22, 19, [238, 218, 176], [230, 208, 164], 0.1, (x, y) => (y <= 5 && x >= 9 && x <= 14) || (y >= 9 && y <= 15 && (x === 2 || x === 3 || x === 20 || x === 21)));
-    p.fill("water", 9, 4, 14, 5); p.fill("water", 2, 9, 3, 15); p.fill("water", 20, 9, 21, 15);
-    p.paint(0.3, (c) => { const X = S, w = 22 * S;
-      c.rect(X, 2 * S, w, 2 * S, [226, 196, 150]); for (let y = 2 * S; y < 4 * S; y += 8) for (let x = X + ((y / 8) & 1) * 8; x < X + w; x += 16) c.rect(x, y, 15, 7, [214, 182, 136]); c.rect(X, 2 * S, w, 3, [250, 236, 200]);
-      c.rect(9 * S + 6, 2 * S - 4, 5 * S + 4, 6, [120, 130, 150]); c.rect(9 * S + 10, 2 * S, 5 * S - 4, 2 * S + 4, [110, 190, 236]); for (let x = 9 * S + 12; x < 14 * S + 4; x += 5) c.rect(x, 2 * S + ((x * 7) % 9), 2, 2 * S - 6, [220, 244, 255]); c.ellipse(12 * S, 4 * S + 5, 40, 5, [240, 250, 255, 200]);
-      for (const [x0, y0, x1, y1] of [[9, 4, 14, 5], [2, 9, 3, 15], [20, 9, 21, 15]]) frame(c, x0 * S - 2, y0 * S - 2, (x1 - x0 + 1) * S + 4, (y1 - y0 + 1) * S + 4, [70, 130, 200]), frame(c, x0 * S - 1, y0 * S - 1, (x1 - x0 + 1) * S + 2, (y1 - y0 + 1) * S + 2, WHITE);
+    const blue = [66, 124, 226], stone = [226, 200, 156];
+    tiles(p, 1, 4, 22, 19, [244, 232, 208], [236, 222, 196]);
+    p.block(1, 4, 9, 1); p.block(14, 4, 9, 1);
+    p.paint(0.3, (c) => { const w = 24 * S;
+      outside(c, [214, 190, 150]); sky(c, 4 * S, [100, 170, 240], [200, 230, 250]);
+      c.poly([[0, 64], [0, 30], [40, 18], [90, 26], [130, 44], [150, 64]], [150, 110, 86]); c.poly([[0, 64], [0, 30], [40, 18], [60, 64]], [176, 132, 100]);
+      c.poly([[230, 64], [262, 34], [300, 20], [350, 14], [384, 24], [384, 64]], [150, 110, 86]); c.poly([[300, 20], [350, 14], [384, 24], [384, 40], [330, 34]], [186, 142, 108]);
+      // the balustrade, its blue caps, and the steps up
+      c.rect(0, 5 * S - 22, w, 22, stone); for (let x = 0; x < w; x += 16) c.rect(x, 5 * S - 22, 1, 22, mix(stone, 0.86)); c.rect(0, 5 * S - 26, w, 5, blue); c.rect(0, 5 * S - 26, w, 1, lite(blue, 0.4)); c.rect(0, 5 * S - 2, w, 2, mix(stone, 0.7));
+      for (let k = 0; k < 6; k++) { c.rect(10 * S, 5 * S - 26 + k * 5, 4 * S, 5, lite(stone, 0.3 - k * 0.04)); c.rect(10 * S, 5 * S - 22 + k * 5, 4 * S, 1, mix(stone, 0.72)); }
+      for (const x of [10 * S - 6, 14 * S]) { c.box(x, 5 * S - 34, 6, 34, stone, mix(stone, 0.6)); c.rect(x - 1, 5 * S - 38, 8, 5, blue); }
+      // the blue bands in the paving
+      for (const x of [8, 15]) c.rect(x * S + 4, 16 * S + 8, 8, 3 * S + 8, blue); c.rect(4 * S + 4, 8 * S + 4, 15 * S + 8, 8 * S + 8, [150, 196, 246]); frame(c, 4 * S + 4, 8 * S + 4, 15 * S + 8, 8 * S + 8, blue);
     });
-    court(p, 6, 9, 17, 15, [86, 160, 226, 235], { r: 20, under: (c, X, Y, w, h) => { for (let y = Y + 8; y < Y + h - 4; y += 12) for (let x = X + 6; x < X + w - 10; x += 16) { c.rect(x + ((y / 12) & 1) * 8, y, 6, 1, [170, 216, 250]); c.rect(x + 6 + ((y / 12) & 1) * 8, y + 1, 4, 1, [170, 216, 250]); } },
-      emblem: (c, cx, cy) => { c.ellipse(cx, cy + 3, 8, 8, WHITE); c.poly([[cx - 7, cy], [cx, cy - 13], [cx + 7, cy]], WHITE); c.ellipse(cx, cy + 3, 5, 5, [70, 140, 220]); } });
-    const fish = [[150, 190, 230], [240, 150, 130], [200, 210, 220]], fruit = [[240, 90, 70], [250, 200, 80], [130, 200, 90]];
-    [[1, [60, 130, 210], fish], [5, [240, 140, 60], fruit], [16, [220, 80, 80], fruit], [20, [60, 160, 150], fish]].forEach(([x, col, goods]) => prop(p, x, 4, 3, 2, (c, top, X, Y) => stall(c, X, Y, 48, col, goods)));
-    for (const [x, y] of [[1, 17], [22, 17], [5, 7], [18, 7]]) p.decor("barrels", x, y, { optional: true });
-    for (const [x, y, g] of [[8, 18, fish], [15, 18, fruit], [2, 18, fruit], [21, 18, fish]]) prop(p, x, y, 1, 1, (c, top, X, Y) => { c.box(X + 1, Y + 4, 14, 11, [176, 130, 84], [90, 60, 40]); for (let k = 0; k < 6; k++) c.ellipse(X + 4 + (k % 3) * 4, Y + 5 + ((k / 3) | 0) * 4, 2, 2, g[k % 3]); });
+    svCourt(p, 5, 9, 18, 15, blue, [190, 222, 255], WHITE, { top: [130, 190, 250], bottom: [96, 160, 244], band: blue, r: 24 });
+    const post = (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 8); c.box(X + 1, Y + 10, 14, 21, stone, mix(stone, 0.6)); c.poly([[X + 8, Y + 16], [X + 12, Y + 21], [X + 8, Y + 26], [X + 4, Y + 21]], blue); c.rect(X, Y + 6, 16, 5, blue); c.rect(X, Y + 6, 16, 1, lite(blue, 0.4)); c.rect(X + 7, Y - 4, 2, 10, [50, 56, 80]); c.box(X + 4, Y - 12, 8, 9, [250, 236, 170], [50, 56, 80]); c.ellipse(X + 8, Y - 8, 9, 8, [255, 244, 190, 50]); };
+    for (const [x, y] of [[3, 7], [20, 7], [3, 16], [20, 16], [9, 18], [14, 18]]) prop(p, x, y, 1, 2, post, 1);
+    for (const [x, y] of [[1, 6], [21, 6], [1, 11], [21, 11]]) prop(p, x, y, 2, 3, (c, top, X, Y) => palm(c, top, X + 16, Y + 46), 1);
+    for (const [x, y] of [[1, 17], [22, 17]]) p.decor("barrels", x, y, { optional: true });
   },
 };
-// Medali: the Treasure Eatery. The bar and kitchen along the back, tables down both sides, Larry's court between.
+// Medali: the Treasure Eatery's back hall. A green court on the boards under strings of Poké Ball lanterns,
+// the ink-painted wall behind, the counter and its stools down one side, tables down the other.
 R.PaldeaMedaliGym = {
   theme: { room: "arena", floor: "rHouse", wall: null },
   plan(p) {
-    const wood = [150, 96, 60];
-    planks(p, 1, 4, 22, 19, [204, 156, 104]);
-    p.block(1, 4, 15, 2);
+    const wood = [150, 96, 60], paper = [226, 200, 140];
+    planks(p, 1, 4, 22, 19, [196, 146, 96]);
     p.paint(0.3, (c) => { const X = S, w = 22 * S;
-      c.rect(X, 2 * S, w, 2 * S, [128, 84, 58]); for (let x = X; x < X + w; x += 16) c.rect(x, 2 * S, 1, 2 * S, [100, 64, 46]); c.rect(X, 2 * S, w, 3, [80, 50, 36]); c.rect(X, 4 * S - 3, w, 3, [80, 50, 36]);
-      for (let k = 0; k < 2; k++) { c.rect(2 * S, 2 * S + 12 + k * 10, 9 * S, 2, [70, 44, 32]); for (let x = 2 * S + 3; x < 11 * S - 4; x += 7) { const col = [[90, 150, 90], [200, 160, 70], [150, 70, 70], [230, 230, 220], [70, 110, 160]][(x + k * 3) % 5]; c.rect(x, 2 * S + 5 + k * 10, 4, 7, col); c.rect(x + 1, 2 * S + 3 + k * 10, 2, 2, col); } }
-      for (const x of [12, 14]) { c.box(x * S - 4, 2 * S + 6, 22, 20, [40, 60, 50], [200, 160, 90]); for (let j = 0; j < 4; j++) c.rect(x * S - 1, 2 * S + 10 + j * 4, 10 + ((j * 5 + x) % 6), 1, [230, 230, 220]); }
-      c.box(17 * S - 2, 2 * S + 4, 3 * S + 4, 2 * S - 4, [50, 36, 30], [80, 50, 36]); for (let i = 0; i < 4; i++) { c.rect(17 * S + i * 13, 2 * S + 4, 12, 16, [50, 80, 150]); c.ellipse(17 * S + 6 + i * 13, 2 * S + 11, 3, 3, WHITE); }
-      for (const x of [3, 8, 13, 21]) { c.rect(x * S + 7, 2 * S + 3, 1, 4, INK); c.ellipse(x * S + 8, 2 * S + 11, 5, 6, [240, 90, 60]); c.rect(x * S + 5, 2 * S + 5, 6, 2, INK); c.rect(x * S + 5, 2 * S + 15, 6, 2, INK); c.ellipse(x * S + 8, 2 * S + 11, 9, 9, [250, 200, 120, 40]); }
-      // behind the bar: stove and sink; then the counter with its stools
-      c.rect(X, 4 * S, 15 * S, 16, [170, 170, 180]); for (let x = X + 4; x < 15 * S; x += 24) { c.box(x, 4 * S + 2, 18, 12, [200, 200, 210], [110, 110, 126]); c.ellipse(x + 5, 4 * S + 8, 3, 3, [60, 60, 70]); c.ellipse(x + 13, 4 * S + 8, 3, 3, [150, 100, 60]); }
-      c.box(X, 5 * S, 15 * S, 15, wood, mix(wood, 0.45)); c.rect(X + 1, 5 * S + 1, 15 * S - 2, 4, lite(wood, 0.3)); c.rect(X + 1, 5 * S + 11, 15 * S - 2, 3, mix(wood, 0.7));
-      for (let x = 2; x <= 14; x += 3) { c.ellipse(x * S + 8, 5 * S + 3, 4, 2, WHITE); c.poly([[x * S + 22, 5 * S + 5], [x * S + 26, 5 * S], [x * S + 30, 5 * S + 5]], WHITE); c.rect(x * S + 24, 5 * S + 3, 4, 2, INK); }
+      c.rect(X, 0, w, 4 * S, paper); c.rect(X, 0, w, 14, [120, 76, 50]); c.rect(X, 4 * S - 4, w, 4, [96, 60, 40]);
+      // ink paintings: blossom boughs and round beasts
+      for (const [x, y, r] of [[4, 40, 13], [9.5, 44, 10], [15, 40, 14], [20, 44, 9]]) { c.ellipse(x * S, y, r, r, [206, 170, 110]); c.ellipse(x * S, y, r, r, [150, 110, 70], 1); c.ellipse(x * S - r * 0.5, y - r * 0.9, r * 0.3, r * 0.3, [206, 170, 110]); c.ellipse(x * S + r * 0.5, y - r * 0.9, r * 0.3, r * 0.3, [206, 170, 110]); c.rect(x * S - 4, y - 3, 2, 2, [96, 60, 40]); c.rect(x * S + 3, y - 3, 2, 2, [96, 60, 40]); }
+      for (const [x0, x1] of [[1.5, 8], [11, 14], [17, 22.5]]) { c.line(x0 * S, 22, x1 * S, 30, [110, 76, 56], 2); for (let i = 0; i < 6; i++) c.ellipse(x0 * S + (x1 - x0) * S * (i + 0.5) / 6, 20 + i * 1.4 + (i % 2) * 5, 3, 3, [236, 130, 120]); }
+      for (const x of [1, 6.5, 12, 17.5, 23]) c.rect(x * S - (x > 1 ? 3 : 0), 0, 4, 4 * S, [120, 76, 50]);
+      // strings of lanterns
+      for (let i = 0; i < 15; i++) { const x = X + 14 + i * 23.5, y = 12 + ((i % 3) === 1 ? 4 : 0); c.rect(x, 8, 1, y - 8, INK); c.ellipse(x, y + 5, 6, 6, WHITE); c.poly([[x - 6, y + 5], [x - 4, y], [x + 4, y], [x + 6, y + 5]], [226, 60, 56]); c.rect(x - 6, y + 4, 12, 2, INK); c.ellipse(x, y + 5, 2, 2, WHITE); c.ellipse(x, y + 5, 9, 9, [255, 220, 150, 40]); }
+      // the low fence in front of the wall
+      c.rect(X, 4 * S + 2, w, 3, wood); c.rect(X, 4 * S + 10, w, 2, wood); for (let x = X; x <= X + w - 3; x += 16) c.rect(Math.min(x, X + w - 3), 4 * S - 2, 3, 16, mix(wood, 0.8));
     });
-    for (let x = 2; x <= 14; x += 2) prop(p, x, 6, 1, 1, (c, top, X, Y) => { c.ellipse(X + 8, Y + 13, 5, 2, [0, 0, 0, 60]); c.rect(X + 7, Y + 6, 2, 7, [90, 80, 80]); c.ellipse(X + 8, Y + 6, 5, 3, [190, 60, 60]); c.ellipse(X + 8, Y + 5, 5, 3, [226, 90, 80]); });
-    p.decor("rKitchen", 18, 4, { optional: true });
-    court(p, 6, 10, 18, 18, [226, 200, 150, 150], { line: [250, 240, 214, 240], dot: [150, 150, 150], r: 22 });
-    for (const x of [2, 20]) for (const y of [8, 11, 14, 17]) { if (x === 2 && y === 8) continue; prop(p, x, y, 2, 2, (c, top, X, Y) => diner(c, X + 16, Y + 31, wood), 1); }
-    p.decor("rPlant", 1, 8, { optional: true }); p.decor("rPlant", 22, 5, { optional: true });
+    p.block(1, 4, 22, 1);
+    p.paint(0.4, (c) => { c.rect(4 * S + 6, 7 * S + 6, 15 * S + 4, 11 * S + 4, [130, 84, 54]); });
+    svCourt(p, 5, 8, 18, 17, [44, 120, 74], [226, 70, 60], [250, 206, 80], { top: [240, 150, 60], bottom: [250, 214, 110], band: [44, 120, 74], r: 26 });
+    // the counter down the left wall, with its stools
+    prop(p, 1, 6, 1, 9, (c, top, X, Y, w, h) => { c.rect(X + 2, Y + h, w, 3, [0, 0, 0, 50]); c.box(X, Y, w, h, wood, mix(wood, 0.45)); c.rect(X + 1, Y + 1, 5, h - 2, lite(wood, 0.3)); for (let y = Y + 10; y < Y + h - 8; y += 24) { c.ellipse(X + 8, y, 4, 3, WHITE); c.ellipse(X + 8, y, 2, 1, [226, 150, 70]); c.rect(X + 5, y + 9, 6, 4, [90, 150, 90]); } });
+    for (const y of [6, 8, 10, 12, 14]) prop(p, 2, y, 1, 1, (c, top, X, Y) => { c.ellipse(X + 8, Y + 13, 5, 2, [0, 0, 0, 60]); c.rect(X + 7, Y + 6, 2, 7, [90, 80, 80]); c.ellipse(X + 8, Y + 6, 5, 3, [190, 60, 60]); c.ellipse(X + 8, Y + 5, 5, 3, [226, 90, 80]); });
+    for (const y of [6, 9, 12, 15]) prop(p, 21, y, 2, 2, (c, top, X, Y) => diner(c, X + 16, Y + 31, wood), 1);
+    p.decor("rPlant", 1, 17, { optional: true }); p.decor("rPlant", 22, 18, { optional: true });
   },
 };
-// Montenevera: Ryme's stage. Speaker stacks and a DJ booth under the lights, the crowd along both walls.
+// Montenevera: Ryme's open-air stage in the snow at night. A stained-glass floor under a lighting truss,
+// speaker stacks behind, the crowd standing in the snow, dark banners on the rocks.
 R.PaldeaMonteneveraGym = {
-  theme: { room: "arena", floor: "darkpave", wall: null },
+  theme: { room: "arena", floor: "snow", wall: null },
   plan(p) {
-    const pu = [170, 110, 250], gr = [120, 250, 150], pk = [250, 110, 200];
-    tiles(p, 1, 4, 22, 19, [52, 48, 70], [46, 42, 62]); planks(p, 1, 4, 22, 7, [104, 76, 124], 0.12);
-    p.paint(0.3, (c) => { const X = S, w = 22 * S;
-      c.rect(X, 0, w, 4 * S, [20, 16, 34]); c.rect(X, 4, w, 3, [80, 80, 100]); for (let x = X; x < X + w; x += 8) c.line(x, 4, x + 4, 10, [80, 80, 100]); c.rect(X, 10, w, 2, [80, 80, 100]);
-      c.box(6 * S, 16, 12 * S, 44, [44, 30, 76], pu); for (let i = 0; i < 9; i++) c.poly([[6 * S + 6 + i * 21, 58], [6 * S + 12 + i * 21, 42 - (i % 3) * 5], [6 * S + 20 + i * 21, 58]], [90, 50, 150]);
-      c.ellipse(12 * S, 36, 15, 13, [236, 230, 250]); c.rect(12 * S - 9, 44, 18, 8, [236, 230, 250]); c.ellipse(12 * S - 6, 35, 4, 5, INK); c.ellipse(12 * S + 6, 35, 4, 5, INK); for (let i = -6; i <= 6; i += 4) c.rect(12 * S + i, 46, 1, 6, INK);
-      for (const sx of [8, 16]) { star(c, sx * S, 30, 9, gr); star(c, sx * S, 46, 5, pk); }
-      for (const x of [3, 7, 12, 17, 21]) { c.box(x * S - 4, 12, 8, 7, [50, 50, 66], [20, 20, 30]); c.ellipse(x * S, 20, 3, 2, [pu, gr, pk][x % 3]); }
-      c.rect(X, 8 * S - 4, w, 4, [70, 50, 90]); c.rect(X, 8 * S, w, 3, [26, 22, 40]); for (let x = X + 2; x < X + w; x += 10) c.rect(x, 8 * S - 3, 5, 2, (x / 10) & 1 ? pu : gr);
+    const pu = [170, 110, 250], gr = [120, 250, 150], pk = [250, 110, 200], night = [20, 24, 60], glass = [[196, 130, 240], [150, 104, 226], [226, 150, 236], [124, 92, 206], [236, 180, 250]];
+    p.paint(0.2, (c) => c.rect(S, 4 * S, 22 * S, 16 * S, [40, 40, 110, 90]));
+    p.paint(0.3, (c) => { const w = 24 * S;
+      outside(c, [60, 66, 110]); c.rect(0, 0, w, 4 * S, night); for (let i = 0; i < 40; i++) c.rect(p.hash(i, 1, 9) * w, p.hash(i, 2, 9) * 40, 1, 1, WHITE);
+      for (const [x, h, ww] of [[20, 44, 60], [120, 30, 70], [270, 36, 80], [370, 48, 60]]) { c.poly([[x - ww, 64], [x - ww * 0.3, 64 - h], [x + ww * 0.2, 64 - h * 0.9], [x + ww, 64]], [70, 76, 110]); c.poly([[x - ww * 0.6, 64 - h * 0.55], [x - ww * 0.3, 64 - h], [x + ww * 0.2, 64 - h * 0.9], [x + ww * 0.5, 64 - h * 0.5], [x, 64 - h * 0.7]], [170, 180, 220]); }
+      for (const x of [8, 52, 330, 372]) { c.rect(x - 1, 54, 3, 10, [60, 44, 40]); for (const [ww, y] of [[10, 58], [8, 48], [5, 39]]) { c.poly([[x - ww, y], [x, y - 12], [x + ww, y]], [30, 70, 66]); c.poly([[x - ww * 0.6, y - 5], [x, y - 12], [x + ww * 0.6, y - 5]], [190, 200, 236]); } }
+      for (const x of [3 * S, 20 * S]) { c.rect(x, 4, 2, 60, [90, 90, 110]); c.poly([[x + 2, 6], [x + 22, 6], [x + 18, 30], [x + 22, 52], [x + 2, 46]], [60, 30, 110]); c.ellipse(x + 11, 24, 5, 5, [200, 170, 250]); c.rect(x + 6, 23, 10, 2, [60, 30, 110]); }
+      c.rect(0, 62, w, 2, [150, 160, 206]);
     });
-    for (const x of [2, 20]) prop(p, x, 3, 2, 4, (c, top, X, Y) => { speaker(c, X + 8, Y + 62, 42); speaker(c, X + 24, Y + 62, 42); speaker(c, X + 16, Y + 22, 24, [60, 50, 80]); }, 2);
-    prop(p, 10, 4, 4, 2, (c, top, X, Y) => { c.rect(X + 2, Y + 30, 60, 3, [0, 0, 0, 60]); c.box(X, Y + 10, 64, 21, [60, 44, 96], [20, 16, 34]); c.rect(X + 1, Y + 11, 62, 3, pu); for (const dx of [14, 50]) { c.ellipse(X + dx, Y + 8, 10, 5, [30, 28, 40]); c.ellipse(X + dx, Y + 8, 7, 3, [70, 70, 90]); c.ellipse(X + dx, Y + 8, 2, 1, pk); } c.box(X + 26, Y + 2, 12, 9, [200, 200, 214], [60, 60, 80]); c.rect(X + 28, Y + 4, 8, 5, gr); star(c, X + 32, Y + 22, 6, gr); });
-    for (const x of [7, 16]) prop(p, x, 6, 1, 2, (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 5); c.rect(X + 7, Y + 8, 2, 22, [150, 150, 170]); c.ellipse(X + 8, Y + 6, 3, 4, [60, 60, 76]); c.rect(X + 4, Y + 29, 8, 2, [150, 150, 170]); }, 1);
-    court(p, 5, 10, 19, 18, [66, 46, 108, 255], { line: [214, 180, 255, 240], r: 24, emblem: (c, cx, cy) => { c.ellipse(cx, cy - 2, 9, 9, [236, 230, 250]); c.rect(cx - 9, cy - 1, 18, 9, [236, 230, 250]); for (let i = -9; i < 9; i += 6) c.poly([[cx + i, cy + 8], [cx + i + 3, cy + 12], [cx + i + 6, cy + 8]], [236, 230, 250]); c.ellipse(cx - 4, cy - 2, 2, 3, INK); c.ellipse(cx + 4, cy - 2, 2, 3, INK); },
-      under: (c, X, Y, w, h) => { for (let i = 0; i < 14; i++) star(c, X + 12 + p.hash(i, 1, 4) * (w - 24), Y + 10 + p.hash(i, 2, 4) * (h - 20), 3, [120, 90, 170]); } });
-    for (const x of [1, 21]) prop(p, x, 9, 2, 10, (c, top, X, Y, w, h) => { c.rect(X, Y, w, h, [30, 26, 44]); crowd(c, x === 1 ? X - 2 : X + 3, Y, w, h, x, p); const e = x === 1 ? X + w - 2 : X; c.rect(e, Y, 2, h, [170, 170, 190]); for (let y = Y; y < Y + h; y += 16) c.rect(e - 1, y, 4, 3, [220, 220, 236]); });
-    p.paint(90, (c, top) => { beam(top, 3 * S, 16, 8 * S, 13 * S, 34, pu); beam(top, 12 * S + 8, 16, 12 * S + 8, 14 * S + 8, 40, gr); beam(top, 21 * S, 16, 17 * S, 13 * S, 34, pk); });
+    // the stage: a dark plinth, the glass floor, bulbs round the edge
+    p.paint(0.4, (c) => { const X = 4 * S + 4, Y = 7 * S + 4, w = 16 * S - 8, h = 11 * S; c.rect(X + 3, Y + 6, w, h, [0, 0, 0, 70]); c.box(X, Y, w, h, [40, 34, 60], [16, 14, 28]);
+      for (let y = 8 * S; y < 18 * S; y += 16) for (let x = 5 * S; x < 19 * S; x += 16) { const k = p.hash(x, y, 4), jx = p.hash(x, y, 5) * 6 - 3, jy = p.hash(y, x, 5) * 6 - 3; c.poly([[x, y], [x + 16, y], [x + 16, y + 16], [x, y + 16]], glass[Math.floor(k * 5)]); c.poly([[x, y], [x + 8 + jx, y + 8 + jy], [x, y + 16]], glass[Math.floor(p.hash(y, x, 6) * 5)]); c.poly([[x + 16, y], [x + 8 + jx, y + 8 + jy], [x + 16, y + 16]], glass[Math.floor(p.hash(x + 1, y, 7) * 5)]); c.line(x, y, x + 8 + jx, y + 8 + jy, [60, 30, 110], 1); c.line(x + 16, y, x + 8 + jx, y + 8 + jy, [60, 30, 110], 1); c.line(x, y + 16, x + 8 + jx, y + 8 + jy, [60, 30, 110], 1); c.line(x + 16, y + 16, x + 8 + jx, y + 8 + jy, [60, 30, 110], 1); }
+      for (let x = X + 6; x < X + w - 2; x += 10) { c.ellipse(x, Y + 2, 2, 2, [255, 244, 190]); c.ellipse(x, Y + h - 3, 2, 2, [255, 244, 190]); } for (let y = Y + 8; y < Y + h - 4; y += 10) { c.ellipse(X + 2, y, 2, 2, [255, 244, 190]); c.ellipse(X + w - 3, y, 2, 2, [255, 244, 190]); } });
+    svCourt(p, 5, 8, 18, 17, null, WHITE, [250, 226, 250], { top: [250, 170, 60], bottom: [250, 226, 110], band: [250, 244, 250], r: 26 });
+    // speaker stacks and the decks at the back of the stage; the truss above
+    for (const x of [1, 19]) prop(p, x, 4, 4, 3, (c, top, X, Y) => { speaker(c, X + 10, Y + 46, 40); speaker(c, X + 28, Y + 46, 40); speaker(c, X + 46, Y + 46, 30, [60, 50, 80]); for (const dx of [10, 28]) { c.ellipse(X + dx, Y + 4, 6, 3, gr, 1); } }, 1);
+    prop(p, 10, 5, 4, 2, (c, top, X, Y) => decks(c, X, Y, [60, 44, 96], pu, gr));
+    p.paint(91, (c, top) => { const tr = [150, 156, 176]; for (const [x0, y0, x1, y1] of [[2 * S, 8, 22 * S, 8], [2 * S, 16, 22 * S, 16]]) top.line(x0, y0, x1, y1, tr, 2); for (let x = 2 * S; x < 22 * S; x += 8) top.line(x, 8, x + 8, 16, tr, 1);
+      for (const x of [2 * S, 22 * S - 4]) { top.rect(x, 8, 2, 7 * S, tr); top.rect(x + 4, 8, 2, 7 * S, tr); for (let y = 12; y < 7 * S; y += 8) top.line(x, y, x + 5, y + 8, tr, 1); }
+      for (const [x, col] of [[5, pu], [9, pk], [12, WHITE], [15, gr], [19, pu]]) { top.box(x * S - 4, 16, 8, 7, [50, 50, 66], [20, 20, 30]); top.ellipse(x * S, 24, 3, 2, col); }
+      beam(top, 5 * S, 24, 8 * S, 12 * S, 30, pu); beam(top, 12 * S, 24, 12 * S, 13 * S, 36, [255, 244, 200]); beam(top, 19 * S, 24, 16 * S, 12 * S, 30, pk); });
+    // the crowd in the snow
+    for (const x of [1, 20]) prop(p, x, 9, 3, 10, (c, top, X, Y, w, h) => { crowd(c, X + 1, Y + 20, w, h - 20, x, p); }, 8);
+    for (const [x, y, r] of [[6, 19, 9], [17, 19, 8], [2, 8, 8], [21, 8, 9]]) p.paint(y + 0.5, (c) => mound(c, x * S + 8, y * S + 12, r, [214, 220, 250]));
   },
 };
-// Alfornada: Tulip's studio. Mirrors and a barre, the pads of the Emotional Spectrum Practice, tulips, a rose-pink court.
+// Alfornada: the Gym's court on the hilltop terrace. A lilac field on a stone step among terracotta bricks,
+// the four great leaning columns at its corners, torches, the blue-tiled parapet and the sea beyond.
 R.PaldeaAlfornadaGym = {
-  theme: { room: "arena", floor: "rHouse", wall: null },
+  theme: { room: "arena", floor: "brick", wall: null },
   plan(p) {
-    const pk = [236, 110, 170], tul = [[236, 80, 110], [250, 200, 90], [250, 150, 190], [200, 130, 230]];
-    tiles(p, 1, 4, 22, 19, [252, 226, 236], [248, 208, 224]);
-    p.paint(0.3, (c) => { const X = S, w = 22 * S;
-      c.rect(X, 2 * S, w, 2 * S, [214, 160, 200]); c.rect(X, 2 * S, w, 3, [250, 226, 240]);
-      for (let x = X + 8; x < X + w - 30; x += 44) { c.box(x, 2 * S + 5, 36, 24, [196, 232, 244], [226, 190, 110]); c.line(x + 4, 2 * S + 24, x + 16, 2 * S + 8, [255, 255, 255, 190], 2); c.line(x + 14, 2 * S + 26, x + 30, 2 * S + 8, [255, 255, 255, 120], 3); c.poly([[x, 2 * S + 5], [x + 18, 2 * S - 1], [x + 36, 2 * S + 5]], [226, 190, 110]); }
-      c.rect(X, 4 * S - 6, w, 2, [150, 100, 70]); for (let x = X + 4; x < X + w; x += 44) c.rect(x, 4 * S - 6, 2, 6, [150, 100, 70]);
-      // the Emotional Spectrum pads
-      [[240, 80, 90], [250, 160, 70], [250, 226, 90], [120, 210, 120], [90, 170, 240], [130, 110, 230], [220, 120, 220]].forEach((col, i) => { const cx = (4.5 + i * 2.5) * S, cyy = 7 * S + 2; c.ellipse(cx, cyy + 1, 13, 8, mix(col, 0.7)); c.ellipse(cx, cyy, 13, 8, col); c.ellipse(cx, cyy, 9, 5, lite(col, 0.45)); heart(c, cx, cyy - 1, 3, WHITE); });
-      for (const [x, y] of [[9, 18], [15, 18]]) heart(c, x * S + 8, y * S + 6, 7, [250, 170, 200, 200]);
+    const blue = [96, 150, 214], col = [176, 190, 226], stone = [204, 200, 210];
+    tiles(p, 1, 4, 22, 19, [220, 146, 110], [210, 134, 100]);
+    p.block(1, 4, 22, 1);
+    p.paint(0.3, (c) => { const w = 24 * S;
+      outside(c, [150, 196, 236]); sky(c, 3 * S, [110, 176, 244], [214, 236, 252]);
+      for (const [x, y, r] of [[60, 14, 16], [84, 18, 12], [250, 10, 18], [280, 16, 12], [330, 24, 10]]) c.ellipse(x, y, r, r * 0.45, [250, 250, 255, 220]);
+      c.rect(0, 40, w, 14, [70, 150, 220]); c.rect(0, 40, w, 1, [200, 230, 250]); c.poly([[0, 54], [0, 34], [50, 30], [90, 44], [110, 54]], [110, 160, 110]); c.poly([[300, 54], [330, 30], [384, 26], [384, 54]], [170, 176, 190]); c.poly([[330, 30], [384, 26], [384, 36], [340, 38]], [110, 160, 110]);
+      // the parapet of blue tiles
+      c.rect(0, 52, w, 28, blue); for (let y = 52; y < 80; y += 7) for (let x = ((y / 7) & 1) * 5; x < w; x += 10) c.rect(x, y, 9, 6, (x + y) % 3 ? lite(blue, 0.18) : mix(blue, 0.88)); c.rect(0, 50, w, 4, lite(blue, 0.5)); c.rect(0, 78, w, 2, mix(blue, 0.6));
+      for (const x of [1, 8, 15, 22]) { c.box(x * S - 3, 44, 22, 36, lite(blue, 0.3), mix(blue, 0.6)); c.ellipse(x * S + 8, 44, 11, 4, WHITE); }
     });
-    court(p, 5, 10, 19, 18, [240, 140, 186, 235], { r: 24, emblem: (c, cx, cy) => { c.ellipse(cx, cy, 15, 9, WHITE); c.ellipse(cx, cy, 7, 7, [170, 90, 220]); c.ellipse(cx, cy, 3, 3, INK); c.rect(cx - 3, cy - 4, 2, 2, WHITE); for (let a = 0; a < 5; a++) c.line(cx - 12 + a * 6, cy - 9, cx - 14 + a * 7, cy - 14, WHITE, 1); },
-      under: (c, X, Y, w, h) => { for (let y = Y + 10; y < Y + h - 6; y += 22) for (let x = X + 14 + ((y / 22) & 1) * 16; x < X + w - 10; x += 32) heart(c, x, y, 4, [250, 176, 208]); } });
-    const vanity = (c, top, X, Y) => { c.rect(X + 2, Y + 30, 30, 3, [0, 0, 0, 50]); c.box(X + 1, Y + 16, 30, 15, WHITE, [200, 150, 180]); c.rect(X + 3, Y + 22, 26, 1, [226, 190, 110]); c.ellipse(X + 16, Y + 7, 10, 10, [226, 190, 110]); c.ellipse(X + 16, Y + 7, 8, 8, [196, 232, 244]); c.line(X + 12, Y + 10, X + 18, Y + 3, WHITE, 1); for (let a = 0; a < 8; a++) c.rect(X + 15 + Math.cos(a * 0.785) * 11, Y + 6 + Math.sin(a * 0.785) * 11, 2, 2, [255, 244, 180]); for (let k = 0; k < 4; k++) c.rect(X + 5 + k * 6, Y + 13, 3, 4, tul[k]); };
-    prop(p, 1, 4, 2, 2, vanity); prop(p, 21, 4, 2, 2, vanity);
-    prop(p, 4, 4, 3, 2, (c, top, X, Y) => { c.rect(X + 2, Y + 4, 2, 27, [150, 150, 170]); c.rect(X + 44, Y + 4, 2, 27, [150, 150, 170]); c.rect(X + 2, Y + 4, 44, 2, [150, 150, 170]); for (let k = 0; k < 6; k++) { const col = [[240, 80, 90], [250, 226, 90], [90, 170, 240], [220, 120, 220], [250, 250, 250], [120, 210, 120]][k]; c.poly([[X + 7 + k * 6, Y + 8], [X + 12 + k * 6, Y + 8], [X + 13 + k * 6, Y + 24], [X + 6 + k * 6, Y + 24]], col); } c.rect(X, Y + 30, 48, 2, [0, 0, 0, 50]); }, 1);
-    prop(p, 17, 4, 3, 2, (c, top, X, Y) => { c.rect(X + 2, Y + 30, 46, 3, [0, 0, 0, 50]); c.box(X, Y + 8, 48, 22, pk, mix(pk, 0.6)); c.box(X + 4, Y + 16, 40, 12, lite(pk, 0.4), mix(pk, 0.6)); c.rect(X + 24, Y + 16, 1, 12, mix(pk, 0.6)); heart(c, X + 12, Y + 20, 4, WHITE); });
-    for (const x of [1, 21]) for (const y of [10, 13, 16]) prop(p, x, y, 2, 1, (c, top, X, Y) => planter(c, X, Y, 32, tul.slice((y + x) % 3)));
-    p.decor("rPlant", 1, 18, { optional: true }); p.decor("rPlant", 22, 18, { optional: true });
+    // the stone step under the court
+    p.paint(0.4, (c) => { const X = 3 * S + 8, Y = 8 * S, w = 17 * S, h = 10 * S + 8; c.rect(X, Y + 4, w, h, mix(stone, 0.7)); c.box(X, Y, w, h, stone, mix(stone, 0.6)); c.box(X + 6, Y + 5, w - 12, h - 12, lite(stone, 0.3), mix(stone, 0.75)); c.rect(4 * S + 8, 8 * S + 12, 15 * S, 9 * S, [230, 190, 150]); });
+    svCourt(p, 5, 9, 18, 17, [174, 150, 236], WHITE, [226, 214, 252], { top: [200, 180, 250], bottom: [150, 124, 226], band: [174, 150, 236], r: 24 });
+    // the four columns: a plinth each, the shaft leaning in over the court (walked behind)
+    const column = (lean, up) => (c, top, X, Y) => { c.ellipse(X + 16, Y + 30, 17, 5, [0, 0, 0, 70]); c.poly([[X + 1, Y + 31], [X + 6, Y + 12], [X + 26, Y + 12], [X + 31, Y + 31]], [130, 140, 170]); c.poly([[X + 1, Y + 31], [X + 6, Y + 12], [X + 14, Y + 12], [X + 12, Y + 31]], [170, 180, 206]);
+      const bx = X + 16, by = Y + 14, tx = bx + lean, ty = by - up; top.poly([[bx - 8, by], [tx - 6, ty], [tx + 6, ty], [bx + 8, by]], col); top.poly([[bx - 8, by], [tx - 6, ty], [tx - 2, ty], [bx - 3, by]], lite(col, 0.5)); top.poly([[bx + 4, by], [tx + 3, ty], [tx + 6, ty], [bx + 8, by]], mix(col, 0.78)); top.ellipse(tx, ty, 6, 2, lite(col, 0.3)); };
+    prop(p, 3, 7, 2, 2, column(22, 58)); prop(p, 19, 7, 2, 2, column(-22, 58)); prop(p, 3, 17, 2, 2, column(14, 40)); prop(p, 19, 17, 2, 2, column(-14, 40));
+    for (const [x, y] of [[1, 6], [22, 6], [1, 13], [22, 13], [8, 5], [15, 5]]) prop(p, x, y - 1, 1, 2, (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 6); for (const dx of [-5, 0, 5]) c.line(X + 8, Y + 14, X + 8 + dx, Y + 30, [60, 50, 50], 1); c.poly([[X + 3, Y + 10], [X + 13, Y + 10], [X + 10, Y + 15], [X + 6, Y + 15]], [70, 60, 66]); flame(c, X + 8, Y + 10, 0.8); }, 1);
+    for (const [x, y] of [[1, 18], [22, 18]]) prop(p, x, y, 1, 1, (c, top, X, Y) => planter(c, X, Y, 16, [[236, 80, 110], [250, 200, 90], [200, 130, 230]]));
   },
 };
-// Glaseado: Grusha's court on the mountain top. Peaks behind, snowbound pines, slalom gates and an ice court.
+// Glaseado: Grusha's court on the mountain top. Peaks behind, an ice field inside red safety netting, the
+// blue start arch, slalom gates and snowbound pines.
 R.PaldeaGlaseadoGym = {
   theme: { room: "arena", floor: "snow", wall: null },
   plan(p) {
@@ -307,16 +371,22 @@ R.PaldeaGlaseadoGym = {
     p.paint(0.3, (c) => { const w = 24 * S;
       for (let y = 0; y < 4 * S; y++) c.rect(0, y, w, 1, [150 + y * 1.3, 196 + y * 0.8, 240]);
       for (const [x, h, ww] of [[30, 34, 50], [110, 50, 70], [200, 40, 60], [280, 56, 80], [350, 36, 50]]) { c.poly([[x - ww, 64], [x, 64 - h], [x + ww, 64]], [150, 170, 206]); c.poly([[x - ww, 64], [x, 64 - h], [x - ww * 0.1, 64]], [200, 214, 236]); c.poly([[x - ww * 0.35, 64 - h * 0.65], [x, 64 - h], [x + ww * 0.35, 64 - h * 0.65], [x + ww * 0.12, 64 - h * 0.55], [x, 64 - h * 0.68], [x - ww * 0.15, 64 - h * 0.5]], WHITE); }
-      c.rect(0, 60, w, 4, [236, 242, 252]); c.rect(0, 4 * S, S, 16 * S + 6, [200, 214, 236]); c.rect(23 * S, 4 * S, S, 16 * S + 6, [200, 214, 236]); c.rect(0, 20 * S, w, 6, [200, 214, 236]);
+      c.rect(0, 60, w, 4, [236, 242, 252]); outside(c, [200, 214, 236]);
     });
-    court(p, 5, 10, 19, 18, [176, 222, 246, 240], { line: [70, 130, 210, 240], r: 24, dot: [70, 130, 210],
-      under: (c, X, Y, w, h) => { for (let i = 0; i < 9; i++) { const x = X + 10 + i * 27; c.line(x + 12, Y + 6 + (i % 3) * 30, x, Y + 26 + (i % 3) * 30, [255, 255, 255, 170], 2); c.line(x + 20, Y + 50 + (i % 2) * 40, x + 12, Y + 62 + (i % 2) * 40, [255, 255, 255, 120], 1); } },
-      emblem: (c, cx, cy) => { for (let a = 0; a < 3; a++) { const dx = Math.cos(a * 1.047) * 12, dy = Math.sin(a * 1.047) * 12; c.line(cx - dx, cy - dy, cx + dx, cy + dy, WHITE, 2); } c.ellipse(cx, cy, 4, 4, [70, 130, 210]); } });
+    p.paint(0.4, (c) => { c.rect(4 * S + 4, 9 * S + 4, 15 * S + 8, 9 * S + 8, [226, 244, 252]); });
+    svCourt(p, 5, 10, 18, 17, [170, 226, 246], [70, 150, 226], [130, 196, 244], { top: [120, 200, 240], bottom: [250, 236, 150], band: [226, 246, 255], r: 24,
+      under: (c, X, Y, w, h) => { for (let i = 0; i < 9; i++) { const x = X + 10 + i * 24; c.line(x + 12, Y + 6 + (i % 3) * 30, x, Y + 26 + (i % 3) * 30, [255, 255, 255, 170], 2); c.line(x + 20, Y + 50 + (i % 2) * 40, x + 12, Y + 62 + (i % 2) * 40, [255, 255, 255, 120], 1); } } });
+    // the red netting round the ice, with its blue and yellow posts
+    const net = (c, X, Y, w) => { c.rect(X, Y + 14, w, 2, [0, 0, 0, 40]); c.rect(X, Y + 3, w, 10, [214, 60, 60]); for (let x = X + 2; x < X + w; x += 4) c.rect(x, Y + 4, 1, 8, [250, 150, 150]); c.rect(X, Y + 7, w, 1, [250, 150, 150]); c.rect(X, Y + 2, w, 2, WHITE); for (let x = X; x <= X + w - 3; x += 32) c.box(Math.min(x, X + w - 3), Y - 2, 3, 16, (x / 32) & 1 ? [250, 210, 70] : [60, 110, 220], [40, 50, 90]); };
+    prop(p, 4, 8, 16, 1, (c, top, X, Y, w) => net(c, X, Y, w));
+    for (const x of [4, 19]) prop(p, x, 9, 1, 8, (c, top, X, Y, w, h) => { const px = x === 4 ? X + 4 : X + 9; c.rect(px + 3, Y, 2, h, [0, 0, 0, 40]); c.rect(px, Y, 3, h, [214, 60, 60]); for (let y = Y + 2; y < Y + h; y += 4) c.rect(px, y, 3, 1, [250, 150, 150]); for (let y = Y; y < Y + h; y += 32) c.box(px, y - 2, 3, 12, (y / 32) & 1 ? [250, 210, 70] : [60, 110, 220], [40, 50, 90]); });
+    // the inflatable start arch over the way in
+    for (const x of [10, 14]) prop(p, x, 18, 1, 2, (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 7); c.box(X + 3, Y + 4, 10, 27, [60, 150, 226], [30, 80, 150]); c.rect(X + 5, Y + 6, 3, 23, [130, 200, 250]); }, 1);
+    p.paint(92, (c, top) => { top.box(10 * S + 3, 17 * S + 6, 4 * S + 10, 12, [60, 150, 226], [30, 80, 150]); top.rect(10 * S + 5, 17 * S + 8, 4 * S + 6, 3, [130, 200, 250]); top.ellipse(12 * S + 8, 17 * S + 12, 4, 4, WHITE); top.rect(12 * S + 4, 17 * S + 11, 8, 2, [30, 80, 150]); });
     for (const x of [1, 22]) for (const y of [5, 9, 13, 17]) prop(p, x, y, 1, 1, (c, top, X, Y) => pine(c, top, X + 8, Y + 15));
-    [[5, 5, 0], [8, 7, 1], [11, 5, 0], [14, 7, 1], [17, 5, 0], [20, 7, 1]].forEach(([x, y, k]) => p.paint(y + 1, (c) => { const col = k ? [70, 110, 220] : [226, 60, 60]; for (const dx of [2, 22]) { c.rect(x * S + dx, y * S, 1, 15, [120, 100, 90]); c.poly([[x * S + dx + 1, y * S], [x * S + dx + 8, y * S + 3], [x * S + dx + 1, y * S + 6]], col); } }));
-    for (const [x, y] of [[3, 9], [20, 10]]) prop(p, x, y, 1, 2, (c, top, X, Y) => crystal(c, X + 8, Y + 31, 0.9, [150, 210, 250]), 1);
-    prop(p, 3, 18, 1, 2, (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 8); c.ellipse(X + 8, Y + 23, 7, 7, WHITE); c.ellipse(X + 8, Y + 12, 5, 5, WHITE); c.rect(X + 6, Y + 11, 1, 1, INK); c.rect(X + 10, Y + 11, 1, 1, INK); c.rect(X + 8, Y + 13, 3, 1, [240, 140, 60]); c.rect(X + 3, Y + 16, 10, 2, [220, 70, 70]); c.rect(X + 5, Y + 5, 6, 3, INK); }, 1);
-    for (const [x, y, r] of [[3, 13, 10], [21, 14, 9], [8, 19, 9], [16, 19, 8], [20, 5, 10]]) p.paint(y + 0.5, (c) => mound(c, x * S + 8, y * S + 12, r));
+    [[5, 5, 0], [8, 6, 1], [11, 5, 0], [14, 6, 1], [17, 5, 0], [20, 6, 1]].forEach(([x, y, k]) => p.paint(y + 1, (c) => { const cl = k ? [70, 110, 220] : [226, 60, 60]; for (const dx of [2, 22]) { c.rect(x * S + dx, y * S, 1, 15, [120, 100, 90]); c.poly([[x * S + dx + 1, y * S], [x * S + dx + 8, y * S + 3], [x * S + dx + 1, y * S + 6]], cl); } }));
+    prop(p, 2, 18, 1, 2, (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 8); c.ellipse(X + 8, Y + 23, 7, 7, WHITE); c.ellipse(X + 8, Y + 12, 5, 5, WHITE); c.rect(X + 6, Y + 11, 1, 1, INK); c.rect(X + 10, Y + 11, 1, 1, INK); c.rect(X + 8, Y + 13, 3, 1, [240, 140, 60]); c.rect(X + 3, Y + 16, 10, 2, [220, 70, 70]); c.rect(X + 5, Y + 5, 6, 3, INK); }, 1);
+    for (const [x, y, r] of [[2, 13, 10], [21, 14, 9], [7, 19, 9], [17, 19, 8], [20, 4, 10]]) p.paint(y + 0.5, (c) => mound(c, x * S + 8, y * S + 12, r));
     p.decor("boulder", 2, 4, { optional: true });
   },
 };
@@ -447,51 +517,50 @@ R.PaldeaAcademyCourtyard = {
 };
 
 // ---------------------------------------------------------------- the League
-// The Pokémon League hall: Rika's interview desk, the Elite Four's court under their four banners,
-// and the stairs up to the Top Champion's roof.
+// The Pokémon League: the Elite Four's chamber, a pale court walled in turquoise glass, with the corner where
+// Rika holds the interview (desk, carpet, two plants) and the bronze lift doors up to the Top Champion's roof.
 R.PaldeaLeagueHall = {
   theme: { room: "arena", floor: "hallFloor", wall: null },
   plan(p) {
-    const gold = [240, 200, 100];
-    tiles(p, 1, 4, 22, 19, [230, 230, 240], [216, 216, 232]);
-    p.block(10, 4, 4, 2);
-    p.paint(0.3, (c) => { const X = S, w = 22 * S;
-      c.rect(X, 0, w, 4 * S, [44, 48, 88]); for (let x = X; x < X + w; x += 16) c.rect(x, 0, 1, 4 * S, [36, 40, 76]); c.rect(X, 4 * S - 4, w, 4, gold); c.rect(X, 0, w, 3, gold);
-      [[3, [204, 150, 84]], [6.5, [150, 170, 192]], [17.5, [130, 190, 250]], [21, [96, 84, 206]]].forEach(([x, col], i) => banner(c, x * S, 8, 30, 46, col, (g, cx, cy) => { g.ellipse(cx, cy, 8, 8, WHITE); if (i === 0) g.poly([[cx - 6, cy + 4], [cx, cy - 6], [cx + 6, cy + 4]], col); else if (i === 1) hex(g, cx, cy, 6, col, 1); else if (i === 2) { g.poly([[cx - 7, cy + 2], [cx, cy - 4], [cx, cy + 1]], col); g.poly([[cx + 7, cy + 2], [cx, cy - 4], [cx, cy + 1]], col); } else { g.poly([[cx - 5, cy - 5], [cx + 5, cy], [cx - 5, cy + 5], [cx - 2, cy]], col); } }));
-      // the way up to the roof: an arch on the night sky
-      c.ellipse(12 * S, 2 * S, 44, 30, gold); c.rect(12 * S - 44, 2 * S, 88, 2 * S - 4, gold); c.ellipse(12 * S, 2 * S, 40, 26, [20, 24, 66]); c.rect(12 * S - 40, 2 * S, 80, 2 * S - 4, [20, 24, 66]);
-      for (let i = 0; i < 22; i++) c.rect(12 * S - 36 + p.hash(i, 1, 2) * 72, 10 + p.hash(i, 2, 2) * 34, 1, 1, WHITE); c.ellipse(12 * S + 20, 22, 6, 6, [250, 240, 190]); c.ellipse(12 * S + 23, 20, 5, 5, [20, 24, 66]);
-      for (const [x, h] of [[-36, 12], [-26, 20], [-14, 14], [4, 18], [16, 10], [28, 16]]) c.rect(12 * S + x, 60 - h, 9, h, [40, 46, 100]);
-      for (let k = 0; k < 8; k++) { c.rect(10 * S + 2, 4 * S - 6 + k * 5, 4 * S - 4, 5, [226, 226, 240]); c.rect(10 * S + 2, 4 * S - 2 + k * 5, 4 * S - 4, 1, [150, 150, 176]); c.rect(11 * S, 4 * S - 6 + k * 5, 2 * S, 4, [190, 60, 60]); }
-      for (const x of [10 * S, 14 * S - 3]) c.rect(x, 3 * S + 4, 3, 2 * S + 14, gold);
-      c.rect(11 * S, 6 * S + 2, 2 * S, 3 * S - 2, [190, 60, 60]); c.rect(11 * S + 8, 18 * S, S, 2 * S, [190, 60, 60]);
+    const gl = [84, 214, 214], fr = [214, 244, 244], bronze = [150, 124, 84];
+    tiles(p, 1, 4, 22, 19, [222, 230, 232], [212, 222, 226]);
+    const glass = (c, X, Y, w, h) => { c.rect(X, Y, w, h, gl); for (let y = Y; y < Y + h; y += 16) for (let x = X; x < X + w; x += 24) { c.rect(x + 1, y + 1, Math.min(22, X + w - x - 1), 14, (x / 24 + y / 16) & 1 ? lite(gl, 0.12) : mix(gl, 0.94)); c.line(x + 4, y + 13, x + 14, y + 3, [255, 255, 255, 70], 2); } for (let y = Y; y <= Y + h; y += 16) c.rect(X, Math.min(y, Y + h - 1), w, 1, fr); for (let x = X; x <= X + w; x += 24) { c.rect(Math.min(x, X + w - 1), Y, 1, h, fr); for (let y = Y; y <= Y + h; y += 16) c.rect(Math.min(x, X + w - 2) - 1, Math.min(y, Y + h - 2) - 1, 3, 3, [150, 170, 176]); } };
+    p.paint(0.3, (c) => { const w = 24 * S;
+      glass(c, 0, 0, w, 4 * S); glass(c, 0, 4 * S, S, 16 * S); glass(c, 23 * S, 4 * S, S, 16 * S); c.rect(0, 20 * S, w, 2 * S, [60, 150, 156]); c.rect(0, 4 * S - 3, w, 3, [150, 170, 176]);
+      // the lift to the roof
+      c.box(10 * S - 4, 14, 4 * S + 8, 50, [176, 150, 106], [96, 80, 56]); c.box(10 * S + 2, 22, 2 * S - 3, 42, bronze, [96, 80, 56]); c.box(12 * S + 1, 22, 2 * S - 3, 42, bronze, [96, 80, 56]); for (const x of [10 * S + 6, 12 * S + 5]) { c.rect(x, 26, 20, 14, lite(bronze, 0.2)); c.rect(x, 44, 20, 16, lite(bronze, 0.1)); } c.rect(12 * S - 4, 40, 2, 8, [60, 50, 40]); c.rect(12 * S + 2, 40, 2, 8, [60, 50, 40]);
+      c.ellipse(12 * S, 8, 7, 6, WHITE); c.rect(12 * S - 7, 7, 14, 2, [150, 170, 176]); c.ellipse(12 * S, 8, 2, 2, [150, 170, 176]);
+      // the interview corner's carpet
+      for (let y = 4 * S; y < 9 * S; y += 4) for (let x = S; x < 8 * S; x += 4) c.rect(x, y, 4, 4, ((x + y) >> 2) & 1 ? [126, 130, 138] : [112, 116, 126]); c.rect(S, 9 * S - 2, 7 * S, 2, [90, 94, 104]); c.rect(8 * S - 2, 4 * S, 2, 5 * S, [90, 94, 104]);
     });
-    court(p, 5, 9, 19, 18, [46, 52, 100, 245], { line: [240, 200, 100, 250], r: 24, under: (c, X, Y, w, h) => { for (let j = 0; j * 21 < h - 34; j++) for (let i = 0; i * 26 < w - 44; i++) hex(c, X + 18 + i * 26 + (j & 1) * 13, Y + 14 + j * 21, 11, [58, 66, 124], 0.9); },
-      emblem: (c, cx, cy) => { c.ellipse(cx, cy, 10, 10, gold); c.rect(cx - 10, cy - 1, 20, 2, [46, 52, 100]); c.ellipse(cx, cy, 4, 4, [46, 52, 100]); c.ellipse(cx, cy, 2, 2, WHITE); } });
-    // Rika's interview desk.
-    prop(p, 2, 5, 4, 3, (c, top, X, Y) => { const wd = [120, 76, 56]; c.rect(X + 2, Y + 46, 62, 3, [0, 0, 0, 50]); c.box(X + 24, Y + 2, 16, 14, [60, 50, 70], [30, 26, 40]); c.box(X, Y + 12, 64, 20, wd, mix(wd, 0.45)); c.rect(X + 1, Y + 13, 62, 4, lite(wd, 0.3)); c.box(X + 6, Y + 6, 10, 8, WHITE, [150, 150, 150]); c.rect(X + 50, Y + 2, 2, 11, [90, 80, 80]); c.poly([[X + 44, Y + 4], [X + 58, Y + 4], [X + 55, Y - 2], [X + 47, Y - 2]], gold); c.box(X + 24, Y + 36, 16, 10, [150, 60, 60], [90, 30, 34]); c.rect(X + 26, Y + 34, 12, 3, [190, 80, 80]); }, 2);
-    // The trophies.
-    prop(p, 18, 5, 4, 2, (c, top, X, Y) => { c.rect(X + 2, Y + 30, 62, 3, [0, 0, 0, 50]); c.box(X, Y + 14, 64, 17, [60, 64, 110], [30, 32, 60]); c.rect(X + 1, Y + 15, 62, 3, gold); for (let k = 0; k < 4; k++) { const x = X + 9 + k * 15; c.rect(x - 1, Y + 9, 3, 5, gold); c.rect(x - 4, Y + 12, 9, 2, gold); c.poly([[x - 5, Y + 1], [x + 6, Y + 1], [x + 3, Y + 9], [x - 2, Y + 9]], k === 3 ? [226, 226, 240] : gold); c.rect(x - 3, Y + 2, 2, 4, WHITE); } });
-    for (const x of [3, 20]) for (const y of [10, 14, 18]) prop(p, x, y, 1, 1, (c, top, X, Y) => pillar(c, X, Y));
-    for (const x of [9, 15]) prop(p, x, 18, 1, 2, (c, top, X, Y) => { brazier(c, X + 8, Y + 30); }, 1);
+    court(p, 5, 10, 19, 18, [200, 210, 214, 255], { line: WHITE, r: 24, dot: [84, 214, 214], under: (c, X, Y, w, h) => { for (let i = 0; i < 7; i++) c.line(X + 30 + i * 34, Y + 4, X + 10 + i * 34, Y + h - 4, [150, 230, 230, 46], 5); } });
+    // Rika's desk: a white desk with a screen, her chair behind it and the candidate's chair in front
+    prop(p, 2, 5, 4, 3, (c, top, X, Y) => { c.rect(X + 2, Y + 46, 62, 3, [0, 0, 0, 50]); c.box(X + 24, Y, 16, 14, [70, 76, 90], [30, 34, 46]); c.box(X, Y + 12, 64, 20, [236, 240, 244], [150, 160, 170]); c.rect(X + 1, Y + 13, 62, 4, WHITE); c.rect(X + 1, Y + 26, 62, 5, [200, 226, 230]); c.box(X + 44, Y + 2, 14, 11, [40, 44, 56], [20, 22, 30]); c.rect(X + 46, Y + 4, 10, 6, [130, 210, 230]); c.box(X + 8, Y + 8, 10, 6, WHITE, [150, 150, 150]); c.box(X + 24, Y + 36, 16, 10, [70, 76, 90], [30, 34, 46]); c.rect(X + 26, Y + 34, 12, 3, [110, 116, 130]); }, 2);
+    p.decor("rPlant", 1, 4, { optional: true }); p.decor("rPlant", 7, 4, { optional: true });
+    p.decor("rPlant", 16, 4, { optional: true }); p.decor("rPlant", 22, 4, { optional: true });
+    for (const x of [18, 20]) prop(p, x, 4, 2, 2, (c, top, X, Y) => { c.rect(X + 2, Y + 30, 28, 2, [0, 0, 0, 50]); c.box(X + 1, Y + 8, 30, 22, bronze, [96, 80, 56]); c.rect(X + 15, Y + 9, 2, 20, [96, 80, 56]); c.rect(X + 3, Y + 10, 10, 18, lite(bronze, 0.16)); c.rect(X + 19, Y + 10, 10, 18, lite(bronze, 0.16)); c.rect(X + 12, Y + 18, 2, 4, [60, 50, 40]); c.rect(X + 18, Y + 18, 2, 4, [60, 50, 40]); });
   },
 };
 // ---------------------------------------------------------------- Area Zero
-// Zero Lab: the time machine's great ring on its dais, banks of consoles, stasis pods, and the lift down.
+// Zero Lab: the chamber of the time machine. Walls crusted with glittering Tera crystal, a dark floor of
+// circuit plates, the machine's ring on its dais, banks of consoles, stasis pods, and the lift down.
 R.PaldeaZeroLab = {
   theme: { room: "lab", floor: "steel", wall: null },
   plan(p) {
-    const vi = [170, 110, 250], cy = [110, 236, 250];
-    tiles(p, 1, 4, 22, 19, [86, 94, 116], [78, 86, 108]);
+    const vi = [170, 110, 250], cy = [110, 236, 250], shards = [[214, 244, 236], [232, 214, 250], [250, 244, 206], [180, 232, 250], [206, 250, 214], [250, 250, 255], [170, 200, 214]];
+    tiles(p, 1, 4, 22, 19, [56, 52, 66], [48, 46, 58]);
+    const crust = (c, X, Y, w, h) => { for (let y = Y; y < Y + h; y += 8) for (let x = X - ((y >> 3) & 1) * 4; x < X + w; x += 8) { const a = shards[Math.floor(p.hash(x, y, 31) * 7)], b = shards[Math.floor(p.hash(y, x, 32) * 7)]; c.poly([[Math.max(X, x), y + 8], [Math.max(X, Math.min(X + w, x + 4)), y], [Math.min(X + w, x + 8), y + 8]], a); c.poly([[Math.max(X, Math.min(X + w, x + 4)), y], [Math.min(X + w, x + 8), y + 8], [Math.min(X + w, x + 12), y]], mix(b, 0.9)); } };
     p.paint(0.3, (c) => { const X = S, w = 22 * S;
-      c.rect(X, 0, w, 4 * S, [46, 50, 70]); for (let x = X; x < X + w; x += 24) c.rect(x, 0, 1, 4 * S, [34, 38, 56]); c.rect(X, 4 * S - 3, w, 3, [110, 120, 150]); c.rect(X, 20, w, 2, [34, 38, 56]);
+      crust(c, 0, 0, 24 * S, 4 * S); crust(c, 0, 4 * S, S, 18 * S); crust(c, 23 * S, 4 * S, S, 18 * S); crust(c, 0, 20 * S, 24 * S, 2 * S); c.rect(X, 4 * S - 3, w, 3, [60, 64, 84]);
+      // circuit traces in the floor plates
+      for (let i = 0; i < 46; i++) { const x = (1 + Math.floor(p.hash(i, 1, 33) * 21)) * S + 4, y = (4 + Math.floor(p.hash(i, 2, 33) * 15)) * S + 4, col = [[110, 100, 140, 150], [80, 130, 140, 150]][i % 2]; c.rect(x, y, 8, 1, col); c.rect(x + 8, y, 1, 6, col); c.rect(x + 2, y + 9, 4, 1, col); }
       for (const x of [4.5, 6, 16.5, 18]) screen(c, x * S, 2 * S + 4, 20, 20, cy, (g, sx, sy) => { for (let i = 0; i < 18; i++) g.rect(sx + 1 + i, sy + 10 + Math.round(Math.sin(i * 0.9 + x) * 5), 1, 2, lite(cy, 0.5)); });
       // cables on the floor
-      for (const [pts, col] of [[[[8 * S, 8 * S + 8], [5 * S, 8 * S + 8], [5 * S, 6 * S]], vi], [[[16 * S, 8 * S + 8], [19 * S, 8 * S + 8], [19 * S, 6 * S]], cy], [[[9 * S, 8 * S + 12], [9 * S, 12 * S], [3 * S, 12 * S]], cy], [[[15 * S, 8 * S + 12], [15 * S, 11 * S], [20 * S, 11 * S]], vi]]) for (let i = 0; i + 1 < pts.length; i++) { c.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], [30, 32, 46], 4); c.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], col, 1); }
+      for (const [pts, col] of [[[[8 * S, 8 * S + 8], [5 * S, 8 * S + 8], [5 * S, 6 * S]], vi], [[[16 * S, 8 * S + 8], [19 * S, 8 * S + 8], [19 * S, 6 * S]], cy], [[[9 * S, 8 * S + 12], [9 * S, 12 * S], [3 * S, 12 * S]], cy], [[[15 * S, 8 * S + 12], [15 * S, 11 * S], [20 * S, 11 * S]], vi]]) for (let i = 0; i + 1 < pts.length; i++) { c.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], [20, 20, 30], 4); c.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], col, 1); }
       // hazard edge of the dais
       for (let x = 8 * S; x < 16 * S; x += 8) c.rect(x, 8 * S, 8, 4, (x / 8) & 1 ? [250, 210, 60] : [40, 40, 50]);
       // the lift
-      const lx = 21 * S + 8, ly = 15 * S + 8; c.ellipse(lx, ly, 22, 16, [40, 44, 60]); c.ellipse(lx, ly, 19, 13, [120, 130, 160]); c.ellipse(lx, ly, 15, 10, [60, 66, 90]); c.ellipse(lx, ly, 15, 10, cy, 2); c.poly([[lx - 5, ly - 2], [lx + 5, ly - 2], [lx, ly + 5]], cy); c.ellipse(lx, ly, 26, 19, [110, 236, 250, 30]);
+      const lx = 21 * S + 8, ly = 15 * S + 8; c.ellipse(lx, ly, 22, 16, [30, 32, 44]); c.ellipse(lx, ly, 19, 13, [120, 130, 160]); c.ellipse(lx, ly, 15, 10, [60, 66, 90]); c.ellipse(lx, ly, 15, 10, cy, 2); c.poly([[lx - 5, ly - 2], [lx + 5, ly - 2], [lx, ly + 5]], cy); c.ellipse(lx, ly, 26, 19, [110, 236, 250, 30]);
     });
     p.bare(1);
     // The time machine.
@@ -558,28 +627,26 @@ R.PaldeaCommunityCenter = {
     p.decor("rPot", 1, 12, { optional: true }); p.decor("rPlant", 10, 4, { optional: true });
   },
 };
-// The Blueberry League's champion court, off the League Club room: Kieran's dais under the screen, the club's
-// table and lockers, students in the stands.
+// The Blueberry League's champion court: a dim arena with tiers of navy seats on every side under the teal
+// band of the scoreboard, students watching from the stands, the blue court in the lights.
 R.PaldeaKieranArena = {
   theme: { room: "arena", floor: "rLab", wall: null },
   plan(p) {
-    const bl = [56, 104, 216], navy = [30, 44, 110];
-    tiles(p, 1, 4, 22, 19, [228, 238, 252], [210, 224, 246]);
-    p.block(9, 4, 6, 2);
-    p.paint(0.3, (c) => { const X = S, w = 22 * S;
-      c.rect(X, 0, w, 4 * S, navy); for (let x = X; x < X + w; x += 16) c.rect(x, 0, 1, 4 * S, [24, 36, 94]); c.rect(X, 4 * S - 3, w, 3, [250, 210, 80]); c.rect(X, 0, w, 3, WHITE);
-      screen(c, 8 * S, 8, 8 * S, 48, bl, (g, x, y, w2, h2) => { berry(g, x + w2 / 2, y + h2 / 2 + 2, 15); for (const dx of [14, w2 - 30]) for (let k = 0; k < 4; k++) g.rect(x + dx, y + 10 + k * 8, 16 - (k % 2) * 5, 3, WHITE); });
-      for (const x of [3, 6, 18, 21]) banner(c, x * S, 8, 26, 44, x === 6 || x === 18 ? WHITE : bl, (g, cx, cyy) => berry(g, cx, cyy, 7));
-      // the champion's dais
-      for (let k = 0; k < 3; k++) { c.box(9 * S - 8 + k * 6, 4 * S + k * 9, 6 * S + 16 - k * 12, 12, [mix(bl, 0.9), bl, lite(bl, 0.2)][k], navy); }
-      c.box(11 * S, 3 * S + 6, 2 * S, 30, [250, 210, 80], [150, 110, 30]); c.box(11 * S + 4, 3 * S + 16, 2 * S - 8, 20, [200, 60, 80], [120, 30, 50]); berry(c, 12 * S, 3 * S + 10, 5);
+    const bl = [56, 104, 216], navy = [24, 34, 84], teal = [70, 200, 210];
+    tiles(p, 1, 4, 22, 19, [66, 76, 118], [58, 68, 108]);
+    p.block(1, 4, 22, 2);
+    const seats = (c, X, Y, w, h) => { c.rect(X, Y, w, h, navy); for (let y = Y; y < Y + h; y += 10) { c.rect(X, y, w, 6, [38, 54, 120]); c.rect(X, y, w, 1, [64, 86, 160]); for (let x = X + 3; x < X + w; x += 12) c.rect(x, y + 1, 1, 5, navy); } };
+    p.paint(0.3, (c) => { const w = 24 * S;
+      seats(c, 0, 16, w, 6 * S - 16); seats(c, 0, 6 * S, S, 14 * S); seats(c, 23 * S, 6 * S, S, 14 * S); c.rect(0, 20 * S, w, 2 * S, navy);
+      // the scoreboard band
+      c.rect(0, 0, w, 16, mix(teal, 0.5)); c.rect(0, 2, w, 11, teal); for (let x = 6; x < w; x += 40) { c.rect(x, 5, 18, 2, WHITE); c.rect(x + 2, 9, 12, 2, lite(teal, 0.6)); berry(c, x + 28, 7, 4); } c.rect(0, 15, w, 1, [200, 244, 250]);
+      // the stairs down between the blocks of seats, and a few students
+      for (const x of [6, 12, 18]) { c.rect(x * S - 6, 16, 12, 6 * S - 16, [50, 56, 90]); for (let y = 18; y < 6 * S; y += 5) c.rect(x * S - 6, y, 12, 1, [90, 100, 150]); }
+      crowd(c, 1 * S, 22, 4 * S, 6 * S - 30, 3, p); crowd(c, 13 * S + 8, 32, 4 * S, 6 * S - 44, 4, p); crowd(c, 19 * S, 22, 4 * S, 6 * S - 30, 6, p);
+      c.rect(S, 6 * S - 3, 22 * S, 3, [150, 170, 220]);
     });
-    court(p, 5, 10, 19, 18, [60, 112, 224, 245], { r: 24, under: (c, X, Y, w, h) => { for (let j = 0; j * 21 < h - 34; j++) for (let i = 0; i * 26 < w - 44; i++) hex(c, X + 18 + i * 26 + (j & 1) * 13, Y + 14 + j * 21, 11, [76, 130, 236], 0.9); }, emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); berry(c, cx, cy, 8); } });
-    for (const x of [1, 21]) prop(p, x, 9, 2, 10, (c, top, X, Y, w, h) => { c.rect(X, Y, w, h, navy); for (let y = Y; y < Y + h; y += 18) c.rect(X, y, w, 2, [50, 70, 150]); crowd(c, x === 1 ? X - 2 : X + 3, Y, w, h, x + 5, p); const e = x === 1 ? X + w - 2 : X; c.rect(e, Y, 2, h, WHITE); });
-    // the League Club's table and lockers
-    prop(p, 3, 5, 4, 2, (c, top, X, Y) => { c.rect(X + 2, Y + 30, 62, 3, [0, 0, 0, 50]); for (const dx of [6, 26, 46]) c.box(X + dx, Y + 1, 12, 9, bl, navy); c.box(X, Y + 8, 64, 22, WHITE, [150, 170, 210]); c.rect(X + 1, Y + 24, 62, 5, [200, 214, 240]); c.box(X + 6, Y + 12, 12, 8, [70, 80, 100], INK); c.rect(X + 8, Y + 13, 8, 5, [150, 220, 250]); c.ellipse(X + 30, Y + 16, 5, 4, [250, 220, 120]); c.box(X + 42, Y + 11, 5, 9, [226, 80, 80], INK); c.box(X + 50, Y + 11, 5, 9, [90, 190, 120], INK); });
-    prop(p, 16, 4, 5, 2, (c, top, X, Y) => { c.rect(X + 2, Y + 30, 78, 3, [0, 0, 0, 50]); for (let k = 0; k < 5; k++) { c.box(X + k * 16, Y - 6, 16, 37, k & 1 ? bl : lite(bl, 0.25), navy); for (let j = 0; j < 3; j++) c.rect(X + k * 16 + 4, Y - 2 + j * 3, 8, 1, navy); c.rect(X + k * 16 + 11, Y + 14, 2, 4, [250, 210, 80]); } });
-    p.decor("rPlant", 8, 4, { optional: true }); p.decor("rPlant", 15, 4, { optional: true });
+    court(p, 5, 9, 19, 18, [60, 112, 224, 245], { r: 24, under: (c, X, Y, w, h) => { for (let j = 0; j * 21 < h - 34; j++) for (let i = 0; i * 26 < w - 44; i++) hex(c, X + 18 + i * 26 + (j & 1) * 13, Y + 14 + j * 21, 11, [76, 130, 236], 0.9); }, emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); berry(c, cx, cy, 8); } });
+    for (const x of [1, 21]) prop(p, x, 8, 2, 11, (c, top, X, Y, w, h) => { seats(c, X, Y, w, h); crowd(c, x === 1 ? X - 2 : X + 3, Y, w, h, x + 5, p); const e = x === 1 ? X + w - 2 : X; c.rect(e, Y, 2, h, [150, 170, 220]); });
     p.paint(90, (c, top) => { beam(top, 4 * S, 0, 8 * S, 13 * S, 32, [200, 230, 255]); beam(top, 20 * S, 0, 17 * S, 13 * S, 32, [200, 230, 255]); });
   },
 };
@@ -656,34 +723,34 @@ R.PaldeaAreaZeroDepths = {
 };
 // ---------------------------------------------------------------- the Blueberry Elite Four, each in their biome
 const biome = (theme, draw) => ({ theme: { cave: false, closed: true, density: 0, groves: 0, flowers: 0, autoHouses: false, ...theme }, plan: draw });
-// Crispin, Savanna Biome: a red-earth court among acacias, with his camp kitchen and fires.
+// Crispin, Savanna Biome: the plaza's white deck and its rose court among acacias, with his camp kitchen and fires.
 R.PaldeaSavannaTrial = biome({ ground: "autumn", road: "clay", border: "rock", grass: "autumn" }, (p) => {
-  p.fill("clay", 3, 9, 20, 19); p.fill("clay", 9, 3, 14, 8);
+  plaza(p, 3, 9, 20, 19, [250, 190, 180, 200], [250, 226, 170, 200]); p.fill("clay", 9, 3, 14, 8);
   p.paint(0.04, (c) => c.rect(S, S, 22 * S, 20 * S, [230, 190, 80, 80]));
-  court(p, 4, 10, 20, 18, [226, 110, 60, 200], { r: 24, emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); flame(c, cx, cy + 8, 1); } });
+  court(p, 5, 10, 19, 18, [240, 146, 146, 240], { r: 24, emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); flame(c, cx, cy + 8, 1); } });
   const acacia = (c, top, X, Y) => { shadow(c, X + 24, Y + 46, 18); c.line(X + 24, Y + 46, X + 22, Y + 22, [120, 84, 54], 4); c.line(X + 22, Y + 28, X + 10, Y + 16, [120, 84, 54], 2); c.line(X + 23, Y + 26, X + 38, Y + 16, [120, 84, 54], 2); top.ellipse(X + 24, Y + 12, 24, 9, [110, 140, 60]); top.ellipse(X + 20, Y + 9, 18, 6, [140, 170, 70]); top.ellipse(X + 12, Y + 14, 9, 4, [140, 170, 70]); };
   for (const [x, y] of [[2, 3], [18, 2], [5, 5]]) prop(p, x, y, 3, 3, acacia, 1);
   prop(p, 10, 4, 4, 2, (c, top, X, Y) => { c.rect(X + 2, Y + 30, 62, 3, [0, 0, 0, 50]); c.box(X, Y + 12, 64, 19, [176, 130, 84], [90, 60, 40]); c.rect(X + 1, Y + 13, 62, 4, [214, 170, 120]); c.box(X + 6, Y + 2, 16, 12, [70, 70, 80], INK); c.ellipse(X + 14, Y + 3, 8, 3, [200, 90, 50]); c.rect(X + 22, Y + 6, 6, 2, INK); for (let k = 0; k < 3; k++) c.ellipse(X + 36 + k * 8, Y + 10, 3, 3, [[226, 60, 60], [250, 200, 80], [130, 200, 90]][k]); c.box(X + 26, Y + 20, 14, 8, [226, 60, 50], [130, 30, 30]); flame(c, X + 33, Y + 28, 0.4); });
-  for (const [x, y] of [[8, 7], [15, 7], [3, 9], [20, 9]]) prop(p, x, y, 1, 1, (c, top, X, Y) => brazier(c, X + 8, Y + 15));
+  for (const [x, y] of [[8, 7], [15, 7]]) prop(p, x, y, 1, 1, (c, top, X, Y) => brazier(c, X + 8, Y + 15));
   for (const [x, y] of [[16, 4], [2, 15]]) p.decor("boulder", x, y);
   p.paint(0.3, (c) => { for (let i = 0; i < 30; i++) { const x = (2 + p.hash(i, 1, 4) * 19) * S, y = (2 + p.hash(i, 2, 4) * 6) * S; c.rect(x, y, 1, 5, [200, 170, 80]); c.rect(x + 2, y + 1, 1, 4, [220, 190, 100]); c.rect(x - 2, y + 2, 1, 3, [200, 170, 80]); } });
 });
-// Lacey, Coastal Biome: a pink court on the sand by the water, parasols and shells.
+// Lacey, Coastal Biome: the plaza's white deck and its lilac court on the sand by the water, parasols and shells.
 R.PaldeaCoastalTrial = biome({ ground: "beach", road: "sand", border: "palms", grass: "beach", water: "sea" }, (p) => {
   p.fill("water", 2, 2, 21, 5); p.disc("water", 5, 6, 3, 1.6); p.disc("water", 17, 6, 4, 1.6);
-  p.fill("deck", 3, 9, 20, 19); p.fill("deck", 11, 4, 12, 8);
-  court(p, 4, 10, 20, 18, [250, 170, 206, 220], { r: 24, emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); heart(c, cx, cy, 7, [240, 110, 170]); },
-    under: (c, X, Y, w, h) => { for (let y = Y + 12; y < Y + h - 8; y += 24) for (let x = X + 16 + ((y / 24) & 1) * 16; x < X + w - 10; x += 32) star(c, x, y, 4, [255, 214, 232]); } });
+  plaza(p, 3, 9, 20, 19, [214, 196, 250, 200], [250, 200, 226, 200]); p.fill("deck", 11, 4, 12, 8);
+  court(p, 5, 10, 19, 18, [188, 166, 240, 240], { r: 24, emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); heart(c, cx, cy, 7, [240, 110, 170]); },
+    under: (c, X, Y, w, h) => { for (let y = Y + 12; y < Y + h - 8; y += 24) for (let x = X + 16 + ((y / 24) & 1) * 16; x < X + w - 10; x += 32) star(c, x, y, 4, [214, 198, 250]); } });
   const parasol = (col) => (c, top, X, Y) => { shadow(c, X + 16, Y + 30, 12); c.box(X + 2, Y + 22, 28, 7, [250, 250, 240], [190, 170, 150]); c.rect(X + 2, Y + 22, 9, 7, col); c.rect(X + 15, Y + 2, 2, 26, [150, 130, 110]); top.poly([[X - 2, Y + 8], [X + 16, Y - 6], [X + 34, Y + 8]], col); for (let i = -1; i < 3; i++) top.poly([[X + 2 + i * 12, Y + 8], [X + 16, Y - 6], [X + 8 + i * 12, Y + 8]], WHITE); top.rect(X - 2, Y + 8, 36, 2, mix(col, 0.8)); };
   [[3, 7, [250, 130, 170]], [7, 7, [120, 200, 240]], [15, 7, [250, 210, 110]], [19, 7, [250, 130, 170]]].forEach(([x, y, col]) => prop(p, x, y, 2, 2, parasol(col), 1));
   prop(p, 11, 3, 2, 1, (c, top, X, Y) => { c.box(X + 2, Y + 2, 28, 12, [250, 250, 250], [200, 150, 180]); heart(c, X + 16, Y + 7, 4, [240, 110, 170]); c.rect(X + 4, Y + 14, 2, 4, [150, 130, 110]); c.rect(X + 26, Y + 14, 2, 4, [150, 130, 110]); });
   p.paint(0.6, (c) => { for (let i = 0; i < 18; i++) { const x = (2 + p.hash(i, 1, 6) * 19) * S, y = (6.5 + p.hash(i, 2, 6) * 2.2) * S; if (i % 3 === 0) star(c, x, y, 4, [250, 150, 130]); else { c.ellipse(x, y, 3, 2, [250, 240, 244]); c.rect(x - 2, y, 5, 1, [240, 190, 200]); } } });
 });
-// Amarys, Canyon Biome: a steel court on the rock, pylons and the flight team's rings.
+// Amarys, Canyon Biome: the plaza's white deck and its pale-blue court on the rock, pylons and the flight team's rings.
 R.PaldeaCanyonTrial = biome({ ground: "gravel", road: "gravel", border: "rock", grass: "gravel" }, (p) => {
-  p.fill("steel", 3, 9, 20, 19); p.fill("steel", 10, 3, 13, 8);
-  court(p, 4, 10, 20, 18, [150, 170, 200, 230], { line: [40, 60, 110, 240], r: 24, dot: [40, 60, 110], emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); hex(c, cx, cy, 9, [110, 130, 170], 1); hex(c, cx, cy, 5, WHITE, 1); },
-    under: (c, X, Y, w, h) => { for (let x = X + 8; x < X + w; x += 16) c.rect(x, Y, 1, h, [130, 150, 184]); for (let y = Y + 8; y < Y + h; y += 16) c.rect(X, y, w, 1, [130, 150, 184]); } });
+  plaza(p, 3, 9, 20, 19, [190, 214, 250, 200], [200, 236, 220, 200]); p.fill("steel", 10, 3, 13, 8);
+  court(p, 5, 10, 19, 18, [168, 198, 250, 240], { line: [40, 60, 110, 240], r: 24, dot: [40, 60, 110], emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); hex(c, cx, cy, 9, [110, 130, 170], 1); hex(c, cx, cy, 5, WHITE, 1); },
+    under: (c, X, Y, w, h) => { for (let x = X + 8; x < X + w; x += 16) c.rect(x, Y, 1, h, [150, 180, 236]); for (let y = Y + 8; y < Y + h; y += 16) c.rect(X, y, w, 1, [150, 180, 236]); } });
   const pylon = (c, top, X, Y) => { shadow(c, X + 8, Y + 30, 7); c.box(X + 4, Y - 10, 8, 40, [150, 160, 184], [50, 56, 76]); c.rect(X + 6, Y - 8, 2, 36, [210, 216, 232]); for (let k = 0; k < 4; k++) c.rect(X + 4, Y - 4 + k * 9, 8, 2, k & 1 ? [250, 210, 60] : [40, 60, 110]); top.ellipse(X + 8, Y - 12, 3, 3, [250, 90, 80]); };
   for (const [x, y] of [[3, 8], [20, 8], [8, 6], [15, 6]]) prop(p, x, y - 1, 1, 2, pylon, 1);
   const ring = (c, top, X, Y) => { shadow(c, X + 16, Y + 30, 10); c.rect(X + 15, Y + 22, 2, 8, [90, 96, 120]); c.ellipse(X + 16, Y + 10, 13, 13, [250, 210, 60], 3); c.ellipse(X + 16, Y + 10, 13, 13, [40, 60, 110], 1); };
@@ -691,11 +758,12 @@ R.PaldeaCanyonTrial = biome({ ground: "gravel", road: "gravel", border: "rock", 
   prop(p, 11, 3, 2, 2, (c, top, X, Y) => { shadow(c, X + 16, Y + 30, 12); c.box(X + 2, Y + 8, 28, 22, [110, 120, 150], [40, 44, 60]); for (let k = 0; k < 3; k++) { c.rect(X + 5, Y + 11 + k * 6, 22, 3, [60, 66, 90]); c.rect(X + 6 + k * 7, Y + 12 + k * 6, 4, 1, [110, 236, 250]); } c.rect(X + 15, Y - 6, 2, 14, [150, 160, 184]); for (let a = 0; a < 3; a++) c.line(X + 16, Y - 6, X + 16 + Math.cos(a * 2.094 + 0.4) * 11, Y - 6 + Math.sin(a * 2.094 + 0.4) * 11, WHITE, 2); });
   for (const [x, y] of [[2, 14], [6, 2], [15, 3], [20, 5]]) p.decor("boulder", x, y);
 });
-// Drayton, Polar Biome: an indigo court on the ice between snowbound pines and dragon stones.
+// Drayton, Polar Biome: the plaza's white deck, tiled in lilac and pale green, and its yellow court between snowbound pines and dragon stones.
 R.PaldeaPolarTrial = biome({ ground: "snow", road: "snow", border: "pine", grass: "snow" }, (p) => {
   for (const [x, y, r] of [[5, 5, 3], [18, 6, 3], [11, 4, 2.4]]) p.disc("drift", x, y, r, r * 0.7);
-  court(p, 4, 10, 20, 18, [110, 110, 220, 215], { r: 24, emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); c.poly([[cx - 7, cy - 6], [cx + 8, cy], [cx - 7, cy + 6], [cx - 3, cy]], [90, 80, 200]); c.rect(cx + 2, cy - 1, 2, 2, WHITE); },
-    under: (c, X, Y, w, h) => { for (let i = 0; i < 9; i++) { const x = X + 10 + i * 30; c.line(x + 12, Y + 6 + (i % 3) * 30, x, Y + 26 + (i % 3) * 30, [255, 255, 255, 110], 2); } } });
+  plaza(p, 3, 9, 20, 19, [196, 160, 240, 220], [196, 236, 196, 220]);
+  court(p, 5, 10, 19, 18, [246, 228, 150, 240], { r: 24, emblem: (c, cx, cy) => { c.ellipse(cx, cy, 12, 12, WHITE); c.poly([[cx - 7, cy - 6], [cx + 8, cy], [cx - 7, cy + 6], [cx - 3, cy]], [90, 80, 200]); c.rect(cx + 2, cy - 1, 2, 2, WHITE); },
+    under: (c, X, Y, w, h) => { for (let i = 0; i < 9; i++) { const x = X + 10 + i * 26; c.line(x + 12, Y + 6 + (i % 3) * 30, x, Y + 26 + (i % 3) * 30, [255, 255, 255, 110], 2); } }, line: [150, 130, 220, 240], dot: [150, 130, 220] });
   for (const [x, y] of [[3, 3], [20, 3], [2, 8], [21, 8], [8, 3], [15, 3]]) prop(p, x, y, 1, 1, (c, top, X, Y) => pine(c, top, X + 8, Y + 15));
   const dragon = (c, top, X, Y) => { const st = [150, 156, 190]; shadow(c, X + 16, Y + 30, 12); c.box(X + 4, Y + 24, 24, 7, mix(st, 0.8), [70, 74, 100]); c.poly([[X + 8, Y + 24], [X + 10, Y + 8], [X + 16, Y + 2], [X + 24, Y + 6], [X + 26, Y + 12], [X + 20, Y + 12], [X + 22, Y + 24]], st); c.poly([[X + 10, Y + 8], [X + 4, Y - 2], [X + 14, Y + 4]], lite(st, 0.3)); c.poly([[X + 16, Y + 2], [X + 20, Y - 6], [X + 21, Y + 4]], lite(st, 0.3)); c.rect(X + 20, Y + 7, 2, 2, [250, 210, 60]); c.rect(X + 8, Y + 22, 16, 2, WHITE); };
   prop(p, 5, 6, 2, 2, dragon, 1); prop(p, 17, 6, 2, 2, dragon, 1);
