@@ -1783,10 +1783,42 @@ function dineSet(c, top, X, Y, o = {}) {
   c.box(cx - 5, cy + 12, 10, 6, cc, dk(cc, 0.6)); c.box(cx - 5, cy + 6, 10, 7, dk(cc, 0.15), dk(cc, 0.6)); c.rect(cx - 4, cy + 7, 8, 1, lt(cc, 0.3));
 }
 function tillBox(top, x, y, col = [70, 74, 92]) { top.box(x, y - 9, 11, 10, col, INK); top.rect(x + 2, y - 7, 7, 3, [130, 220, 200]); top.rect(x + 2, y - 3, 7, 1, lt(col, 0.4)); top.rect(x - 1, y, 13, 2, dk(col, 0.3)); }
-// A counter along row y from x0 to x1, broken at the tiles in `gaps` (where the clerk stands).
+// The counter carried on across the tile (x, y) where its clerk stands, so they read as standing behind it: its
+// front on the ground (under them) and its top and upper front walked behind (over their middle). The walk-behind
+// part stops 9px into the tile, clear of the head of whoever stands below to be served.
+// A serving counter, lower than `counter`: its top from Y+4 to Y+7, a narrow front, and a deep shadowed toe-kick.
+function barCounter(c, X, Y, w, col, topc, joins = 0) {
+  const tc = topc || lt(col, 0.45), e = dk(col, 0.55);
+  c.ellipse(X + w / 2, Y + 15, w / 2, 3, [0, 0, 0, 50]); c.rect(X, Y + 3, w, 13, e);
+  const x0 = X + (joins & 1 ? 0 : 1), x1 = X + w - (joins & 2 ? 0 : 1), ww = x1 - x0;
+  c.rect(x0, Y + 4, ww, 4, tc); c.rect(x0, Y + 5, ww, 1, lt(tc, 0.35)); c.rect(x0, Y + 8, ww, 1, dk(col, 0.4)); c.rect(x0, Y + 9, ww, 1, col); c.rect(x0, Y + 10, ww, 1, dk(col, 0.25)); c.rect(x0, Y + 11, ww, 4, dk(col, 0.5));
+  for (let x = X + 7; x < X + w - 4; x += 16) c.rect(x, Y + 11, 2, 4, dk(col, 0.25));
+}
+// The counter carried on across the tile (x, y) where its clerk stands, so they read as standing behind it: its
+// front on the ground (under them) and its top and front walked behind (over their middle). The walk-behind part
+// stops 9px into the tile, clear of the head of whoever stands below to be served; their feet show in the shadow
+// under the counter.
+function clerkGap(p, x, y, col, topc) {
+  p.paint(y + 1.6, (c, top) => {
+    const X = x * T - 1, Y = y * T, w = T + 2, tc = topc || lt(col, 0.45);
+    barCounter(c, X, Y, w, col, topc, 3);
+    top.rect(X, Y + 3, w, 1, dk(col, 0.55)); top.rect(X, Y + 4, w, 4, tc); top.rect(X, Y + 5, w, 1, lt(tc, 0.35)); top.rect(X, Y + 8, w, 1, dk(col, 0.4)); top.rect(X, Y + 9, w, 1, col);
+  });
+}
+// A counter along row y from x0 to x1, broken at the tiles in `gaps` (where the clerk stands) and carried across
+// them by `clerkGap`. `deco` gets Y moved down to where the counter top now is (as `counter`'s would be at Y).
 function tillRow(p, x0, x1, y, gaps, col, topc, deco) {
   let a = x0, n = 0;
-  for (let x = x0; x <= x1 + 1; x++) if (x > x1 || gaps.includes(x)) { if (x > a) { const k = n++, w = (x - a) * T; prop(p, a, y, x - a, 1, (c, top, X, Y) => { counter(c, X, Y, w, col, topc); if (deco) deco(c, top, X, Y, w, k); }); } a = x + 1; }
+  for (let x = x0; x <= x1 + 1; x++) if (x > x1 || gaps.includes(x)) { if (x > a) { const k = n++, w = (x - a) * T, joins = (a > x0 ? 1 : 0) | (x <= x1 ? 2 : 0); prop(p, a, y, x - a, 1, (c, top, X, Y) => { barCounter(c, X, Y, w, col, topc, joins); if (deco) deco(c, top, X, Y + 7, w, k); }); } a = x + 1; }
+  for (const g of gaps) if (g > x0 && g < x1) clerkGap(p, g, y, col, topc);
+}
+// A host's desk for a restaurant's maître d' at (x, y): a tile of desk either side, the bookings on one, a lamp and
+// the menus on the other.
+function hostDesk(p, x, y, col, topc, lamp = GOLD) {
+  tillRow(p, x - 1, x + 1, y, [x], col, topc, (c, top, X, Y, w, k) => {
+    if (k) { for (let n = 0; n < 3; n++) c.box(X + 6 - n, Y - 3 - n, 9, 4, n % 2 ? [150, 40, 50] : [110, 30, 40], GOLD); top.rect(X + 3, Y - 12, 1, 10, dk(lamp, 0.3)); top.rect(X + 1, Y - 3, 5, 2, dk(lamp, 0.3)); top.poly([[X, Y - 12], [X + 7, Y - 12], [X + 6, Y - 16], [X + 1, Y - 16]], [250, 236, 180]); }
+    else { c.box(X + 2, Y - 4, 12, 5, WHITE, [150, 150, 170]); c.rect(X + 8, Y - 4, 1, 5, [190, 190, 204]); for (let n = 0; n < 3; n++) { c.rect(X + 3, Y - 3 + n, 4, 1, [120, 120, 140]); c.rect(X + 10, Y - 3 + n, 3, 1, [120, 120, 140]); } c.line(X + 12, Y - 2, X + 15, Y - 7, INK); }
+  });
 }
 const one = (p, list, f) => { for (const [x, y, a, b] of list) prop(p, x, y, 1, 1, (c, top, X, Y) => f(c, top, X, Y, a, b)); };
 const wide = (p, list, w, h, f) => { for (const [x, y, a, b] of list) prop(p, x, y, w, h, (c, top, X, Y) => f(c, top, X, Y, a, b)); };
@@ -1860,6 +1892,8 @@ PLANS.KalosCafeRouleau = shop({
     const TEAL = [70, 190, 180], PINK = [244, 130, 170], o = (k) => ({ table: WHITE, chair: k % 2 ? PINK : TEAL, cloth: k % 2 ? [255, 230, 240] : [226, 248, 244] });
     wide(p, [[4, 5]], 8, 1, (c, top, X, Y) => { counter(c, X, Y, 128, [40, 120, 120], WHITE); top.box(X + 6, Y - 12, 18, 12, [226, 226, 236], INK); top.rect(X + 9, Y - 9, 12, 3, PINK); for (const dx of [40, 54, 68]) { top.rect(X + dx, Y - 9, 5, 9, [[250, 200, 90], PINK, [150, 220, 240]][dx % 3]); top.rect(X + dx, Y - 10, 5, 2, WHITE); } tillBox(top, X + 104, Y, TEAL); });
     one(p, [[5, 6], [7, 6], [9, 6], [11, 6]], (c, top, X, Y) => stool(c, top, X, Y, PINK));
+    // The rink desk: skates out on the counter, the till by the attendant.
+    tillRow(p, 14, 18, 8, [16], [40, 120, 120], WHITE, (c, top, X, Y, w, k) => { if (k) { tillBox(top, X + 4, Y, TEAL); top.ellipse(X + 24, Y - 3, 3, 2, GOLD); top.rect(X + 23, Y - 6, 2, 2, GOLD); } else for (const [dx, col] of [[5, PINK], [17, TEAL]]) { c.rect(dx + X, Y - 7, 4, 6, WHITE); c.rect(dx + X, Y - 2, 8, 3, col); c.p(dx + X + 1, Y + 1, INK); c.p(dx + X + 6, Y + 1, INK); c.rect(dx + X + 1, Y - 6, 2, 1, col); } });
     // Skates to borrow.
     wide(p, [[21, 4], [23, 4], [25, 4], [27, 4]], 2, 1, (c, top, X, Y, k) => rack(c, X, Y, 32, [240, 244, 240], (cc, x, y, n) => { const col = [PINK, TEAL, [250, 220, 110], [150, 150, 230]][n % 4]; cc.rect(x, y, 3, 4, WHITE); cc.rect(x, y + 3, 5, 2, col); cc.p(x + 1, y + 5, INK); cc.p(x + 4, y + 5, INK); }, X));
     [[3, 10], [3, 14], [3, 18], [26, 10], [26, 14], [26, 18], [8, 21], [21, 21]].forEach(([x, y], k) => prop(p, x, y, 3, 1, (c, top, X, Y) => cafeSet(c, top, X, Y, o(k))));
@@ -1886,6 +1920,7 @@ PLANS.KalosLeNah = shop({
     const WOOD = [150, 100, 60];
     wide(p, [[10, 5]], 13, 1, (c, top, X, Y) => { counter(c, X, Y, 13 * T, WOOD, [226, 200, 150]); for (let k = 0; k < 6; k++) plate(c, X + 20 + k * 34, Y - 1, [[226, 150, 90], [130, 190, 110], [240, 220, 150]][k % 3]); top.box(X + 96, Y - 12, 14, 10, [200, 120, 70], INK); top.rect(X + 110, Y - 8, 6, 2, INK); });
     wide(p, DINERS, 3, 2, (c, top, X, Y) => dineSet(c, top, X, Y, { square: true, cloth: WHITE, check: [226, 70, 70], chair: WOOD, table: WOOD }));
+    hostDesk(p, 16, 8, WOOD, [226, 200, 150]);
     // The barrels.
     wide(p, [[4, 11], [25, 11]], 2, 2, (c, top, X, Y) => { c.ellipse(X + 16, Y + 29, 16, 4, [0, 0, 0, 60]); c.box(X + 2, Y + 22, 28, 8, [110, 70, 44], INK); c.ellipse(X + 16, Y + 10, 15, 16, [80, 50, 34]); c.ellipse(X + 16, Y + 10, 14, 15, [176, 124, 76]); for (let k = -10; k <= 10; k += 5) c.rect(X + 16 + k, Y - 3 + Math.abs(k) / 2, 1, 27 - Math.abs(k), [130, 88, 54]); c.ellipse(X + 16, Y + 10, 14, 15, [90, 90, 100], 2); c.ellipse(X + 16, Y + 10, 9, 10, [90, 90, 100], 1); c.rect(X + 14, Y + 16, 4, 5, [200, 160, 100]); });
     wide(p, [[13, 21], [19, 21]], 1, 1, (c, top, X, Y) => { shadow(c, X, Y); c.line(X + 3, Y + 14, X + 6, Y - 6, WOOD); c.line(X + 13, Y + 14, X + 10, Y - 6, WOOD); chalkboard(top, X + 2, Y - 10, 12, 16, [44, 70, 60], WOOD); });
@@ -1907,13 +1942,16 @@ PLANS.KalosLeYeah = shop({
     one(p, [[5, 6], [7, 6], [9, 6]], (c, top, X, Y) => stool(c, top, X, Y, BLUE));
     wide(p, [[22, 4], [24, 4], [26, 4]], 2, 1, (c, top, X, Y) => rack(c, X, Y, 32, WOOD, jarItem([[90, 30, 50], [60, 100, 60], [200, 170, 90], [226, 226, 236]]), X));
     wide(p, DINERS, 3, 2, (c, top, X, Y) => dineSet(c, top, X, Y, { cloth: WHITE, chair: BLUE, table: WOOD, flower: [250, 210, 90] }));
+    hostDesk(p, 16, 8, WOOD, [226, 214, 190]);
     // The sideboards.
     wide(p, [[4, 11], [25, 11]], 2, 2, (c, top, X, Y) => { c.ellipse(X + 16, Y + 30, 16, 3, [0, 0, 0, 60]); c.box(X, Y - 8, 32, 39, WOOD, dk(WOOD, 0.6)); c.rect(X + 2, Y - 6, 28, 13, dk(WOOD, 0.45)); for (const dx of [5, 13, 21]) { c.ellipse(X + dx + 3, Y + 1, 3, 4, WHITE); c.ellipse(X + dx + 3, Y + 1, 3, 4, [150, 170, 220], 1); } c.rect(X, Y + 8, 32, 3, lt(WOOD, 0.35)); for (const dx of [2, 17]) { c.box(X + dx, Y + 13, 13, 15, lt(WOOD, 0.1), dk(WOOD, 0.5)); c.rect(X + dx + (dx < 10 ? 9 : 2), Y + 19, 2, 3, GOLD); } top.ellipse(X + 16, Y - 10, 7, 4, WHITE); top.rect(X + 14, Y - 15, 4, 2, GOLD); });
     one(p, [[2, 4], [29, 4], [2, 23], [29, 23], [12, 4], [20, 4]], (c, top, X, Y) => plant(c, top, X, Y, [80, 150, 110]));
     one(p, [[13, 12], [19, 12]], (c, top, X, Y) => statue(c, top, X, Y, [226, 226, 236]));
   },
 });
-// Le Wow, three stars: marble and gold under chandeliers, a piano, candlelight on every table.
+// Le Wow, three stars: marble and gold under chandeliers, a piano, candlelight on every table. The chandeliers hang
+// over the open floor between the tables, well clear of the urns.
+const LE_WOW_LIGHTS = [[7.5, 16.5], [24.5, 16.5], [7.5, 21.5], [24.5, 21.5], [16, 15]];
 PLANS.KalosLeWow = shop({
   ground(p, c, yb) {
     const PUR = [104, 50, 124];
@@ -1921,11 +1959,11 @@ PLANS.KalosLeWow = shop({
     shopWall(p, c, yb, [84, 40, 100], { stripe: [100, 52, 118], gap: 12, sw: 3, panel: [60, 30, 74], top: GOLD, skirt: GOLD });
     for (const x of [6, 14, 22]) nightWindow(p, c, x * T, 8, 4 * T, 40); for (const x of [3, 11, 19, 27]) { c.rect(x * T + 6, 8, 4, 40, GOLD); c.ellipse(x * T + 8, 10, 5, 3, GOLD); }
     rug(c, 13, 6, 19, 22, PUR, GOLD); c.ellipse(16 * T + 8, 15 * T, 64, 40, PUR); c.ellipse(16 * T + 8, 15 * T, 64, 40, GOLD, 2); c.ellipse(16 * T + 8, 15 * T, 44, 26, A(GOLD, 200), 1);
-    for (const [x, y] of [[8, 12.5], [23, 12.5], [8, 21.5], [23, 21.5], [16, 15]]) glow(c, x * T + 8, y * T, 40, [255, 240, 180], 14);
+    for (const [x, y] of LE_WOW_LIGHTS) glow(c, x * T + 8, y * T, 40, [255, 240, 180], 14);
   },
   fit(p) {
     const PUR = [130, 60, 150];
-    p.paint(40, (c, top) => { for (const [x, y] of [[8, 12.5], [23, 12.5], [8, 21.5], [23, 21.5], [16, 15]]) chandelier(top, x * T + 8, y * T - 8); });
+    p.paint(40, (c, top) => { for (const [x, y] of LE_WOW_LIGHTS) chandelier(top, x * T + 8, y * T - 8); });
     wide(p, [[3, 5]], 3, 2, (c, top, X, Y) => piano(c, top, X, Y));
     wide(p, DINERS.filter(([x, y]) => !(x === 7 && y === 8)), 3, 2, (c, top, X, Y) => dineSet(c, top, X, Y, { cloth: WHITE, chair: PUR, table: [110, 76, 50], candle: GOLD, food: [236, 120, 110], food2: [250, 220, 130] }));
     wide(p, [[8, 9]], 3, 2, (c, top, X, Y) => dineSet(c, top, X, Y, { cloth: WHITE, chair: PUR, table: [110, 76, 50], candle: GOLD }));
@@ -1933,8 +1971,8 @@ PLANS.KalosLeWow = shop({
     wide(p, [[4, 11], [25, 11]], 2, 2, (c, top, X, Y) => { c.ellipse(X + 16, Y + 29, 15, 4, [0, 0, 0, 60]); c.box(X + 4, Y + 20, 24, 10, [250, 244, 230], [150, 140, 120]); c.poly([[X + 8, Y + 20], [X + 24, Y + 20], [X + 27, Y + 4], [X + 5, Y + 4]], GOLD); c.rect(X + 8, Y + 6, 3, 12, lt(GOLD, 0.5)); c.rect(X + 4, Y + 2, 24, 3, dk(GOLD, 0.2)); top.ellipse(X + 16, Y - 8, 16, 12, [50, 120, 76]); for (let k = 0; k < 11; k++) top.ellipse(X + 4 + (k * 7) % 25, Y - 16 + (k * 5) % 15, 3, 3, [[240, 130, 170], WHITE, [200, 130, 230]][k % 3]); });
     one(p, [[11, 5], [21, 5], [28, 5]], (c, top, X, Y) => statue(c, top, X, Y, GOLD));
     one(p, [[2, 4], [29, 4], [2, 23], [29, 23]], (c, top, X, Y) => urn(c, top, X, Y));
-    // The maître d's stand, and rope posts by the door.
-    wide(p, [[18, 8]], 1, 1, (c, top, X, Y) => { shadow(c, X, Y); c.box(X + 4, Y, 8, 15, [110, 76, 50], INK); top.box(X + 1, Y - 6, 14, 7, [130, 92, 60], INK); top.rect(X + 3, Y - 4, 10, 3, WHITE); });
+    // The maître d's desk, and rope posts by the door.
+    hostDesk(p, 16, 8, [96, 50, 110], GOLD);
     one(p, [[14, 21], [18, 21]], (c, top, X, Y) => { shadow(c, X, Y); c.rect(X + 7, Y + 2, 2, 12, GOLD); c.ellipse(X + 8, Y + 2, 2, 2, GOLD); c.rect(X + 4, Y + 13, 8, 2, dk(GOLD, 0.3)); });
   },
 });
@@ -1955,7 +1993,7 @@ PLANS.KalosSushiHighRoller = shop({
   fit(p) {
     const LAC = [44, 32, 38], RED = [190, 44, 48], HINOKI = [232, 204, 150];
     tillRow(p, 5, 27, 8, [16], LAC, HINOKI, (c, top, X, Y, w, k) => {
-      c.rect(X, Y + 12, w, 1, GOLD);
+      c.rect(X, Y + 2, w, 1, GOLD);
       for (let x = X + 8, n = k * 2; x < X + w - 60; x += 16, n++) { c.rect(x - 4, Y - 1, 9, 2, INK); c.rect(x - 3, Y - 3, 3, 2, WHITE); c.rect(x - 3, Y - 4, 3, 1, [[240, 120, 90], [250, 190, 80], [226, 80, 80]][n % 3]); c.rect(x + 1, Y - 3, 3, 2, WHITE); c.rect(x + 1, Y - 4, 3, 1, [[226, 80, 80], [240, 240, 244], [250, 150, 110]][n % 3]); }
       const gx = k ? X + 8 : X + w - 56; top.box(gx, Y - 11, 48, 10, [200, 230, 244, 120], [120, 150, 170]); for (let n = 0; n < 5; n++) fish(top, gx + 7 + n * 9, Y - 5, [[240, 120, 90], [226, 80, 80], [200, 220, 240], [250, 190, 80]][(n + k) % 4], 0.7, n % 2 ? 1 : -1);
     });
@@ -1990,7 +2028,7 @@ PLANS.KalosStoneEmporium = shop({
   },
   fit(p) {
     const BASE = [62, 66, 96];
-    tillRow(p, 12, 20, 8, [16], BASE, [200, 206, 226], (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 44, Y); else c.box(X + 6, Y - 3, 14, 4, [150, 40, 50], GOLD); for (let n = 0; n < 3; n++) gem(top, X + (k ? 8 : 28) + n * 10, Y - 4, EVO[(n + k * 3 + 4) % 10], 0.8); });
+    tillRow(p, 12, 20, 8, [16], BASE, [200, 206, 226], (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 4, Y); else c.box(X + 6, Y - 3, 14, 4, [150, 40, 50], GOLD); for (let n = 0; n < 3; n++) gem(top, X + (k ? 28 : 28) + n * 10, Y - 4, EVO[(n + k * 3 + 4) % 10], 0.8); });
     [[3, 4], [5, 4], [7, 4], [9, 4], [21, 4], [23, 4], [25, 4], [27, 4]].forEach(([x, y]) => prop(p, x, y, 2, 1, (c, top, X, Y) => rack(c, X, Y, 32, BASE, (cc, px, py, k) => { const col = EVO[(k + x) % 10]; cc.ellipse(px + 2, py + 3, 2.5, 2.5, dk(col, 0.2)); cc.rect(px + 1, py + 1, 2, 2, lt(col, 0.4)); })));
     [[4, 12], [24, 12], [4, 17], [24, 17]].forEach(([x, y], k) => prop(p, x, y, 4, 1, (c, top, X, Y) => caseOf(c, top, X, Y, 64, [0, 1, 2, 3].map((n) => (cc, gx, gy) => gem(cc, gx, gy, EVO[(k * 2 + n) % 10], 1.1)), BASE)));
     [[10, 11], [22, 11], [10, 20], [22, 20], [4, 21], [28, 21]].forEach(([x, y], k) => prop(p, x, y, 1, 1, (c, top, X, Y) => showcase(c, top, X, Y, 16, (cc, gx, gy) => megaStone(EVO[(k + 6) % 10])(cc, gx, gy), BASE)));
@@ -2015,7 +2053,7 @@ PLANS.KalosPokeBallBoutique = shop({
   },
   fit(p) {
     const RED = [214, 60, 56];
-    tillRow(p, 12, 20, 8, [16], RED, WHITE, (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 44, Y); for (let n = 0; n < 3; n++) ball(top, X + (k ? 8 : 12) + n * 13, Y - 4, 4, BALLS[(n + k * 3) % 10]); });
+    tillRow(p, 12, 20, 8, [16], RED, WHITE, (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 4, Y); for (let n = 0; n < 3; n++) ball(top, X + (k ? 26 : 12) + n * 12, Y - 4, 4, BALLS[(n + k * 3) % 10]); });
     [[3, 4], [5, 4], [7, 4], [9, 4], [21, 4], [23, 4], [25, 4], [27, 4]].forEach(([x, y], k) => prop(p, x, y, 2, 1, (c, top, X, Y) => rack(c, X, Y, 32, [226, 228, 238], ballItem([BALLS[k], BALLS[k], BALLS[(k + 5) % 10]]), k)));
     [[11, 12], [21, 12], [8, 14], [24, 14], [8, 18], [24, 18], [11, 20], [21, 20]].forEach(([x, y], k) => prop(p, x, y, 1, 1, (c, top, X, Y) => showcase(c, top, X, Y, 16, (cc, gx, gy) => ball(cc, gx, gy - 1, 5, BALLS[(k + 2) % 10]), RED)));
     [[3, 11], [26, 11], [3, 21], [26, 21]].forEach(([x, y], k) => prop(p, x, y, 3, 1, (c, top, X, Y) => caseOf(c, top, X, Y, 48, [0, 1, 2].map((n) => (cc, gx, gy) => ball(cc, gx, gy - 1, 4, BALLS[(k * 3 + n) % 10])), [70, 74, 96])));
@@ -2049,6 +2087,32 @@ PLANS.KalosJuiceShoppe = shop({
     one(p, [[8, 4], [29, 13], [2, 13]], (c, top, X, Y) => plant(c, top, X, Y, [110, 190, 90]));
   },
 });
+// The Loto-ID's set pieces: the draw machine (3 x 3), the first prize on its podium (3 x 3), a ticket booth (2 x 2)
+// and a poster on its stand.
+function lottoMachine(c, top, X, Y) {
+  const RED = [200, 50, 60]; c.ellipse(X + 24, Y + 46, 23, 4, [0, 0, 0, 70]);
+  c.box(X + 4, Y + 24, 40, 23, RED, [110, 20, 30]); c.rect(X + 5, Y + 25, 38, 3, GOLD); c.rect(X + 5, Y + 41, 38, 2, dk(RED, 0.3)); for (let k = 0; k < 4; k++) c.ellipse(X + 12 + k * 8, Y + 34, 2, 2, k % 2 ? GOLD : [255, 240, 150]);
+  c.box(X + 30, Y + 30, 10, 8, [30, 34, 56], GOLD); c.rect(X + 32, Y + 32, 6, 3, [110, 230, 200]);
+  top.ellipse(X + 24, Y + 12, 19, 17, [200, 230, 244, 120]); top.ellipse(X + 24, Y + 12, 19, 17, [150, 180, 200], 1); for (let k = 0; k < 22; k++) { const a = k * 2.4, r = 2 + (k * 7) % 15; top.ellipse(X + 24 + Math.cos(a) * r, Y + 16 + Math.sin(a) * r * 0.55 - (k % 5) * 2, 2.5, 2.5, BALLS[(k * 3) % 10]); top.p(X + 23 + Math.cos(a) * r, Y + 15 + Math.sin(a) * r * 0.55 - (k % 5) * 2, WHITE); }
+  top.line(X + 12, Y + 2, X + 18, Y - 3, [255, 255, 255, 200], 2); top.rect(X + 18, Y - 7, 12, 4, GOLD); top.rect(X + 22, Y - 9, 4, 3, dk(GOLD, 0.3));
+  top.rect(X + 41, Y + 4, 5, 22, [200, 230, 244, 150]); top.rect(X + 41, Y + 4, 1, 22, [120, 150, 170]); top.rect(X + 45, Y + 4, 1, 22, [120, 150, 170]); top.rect(X + 38, Y + 4, 8, 2, [120, 150, 170]); for (let k = 0; k < 3; k++) top.ellipse(X + 43, Y + 11 + k * 6, 2, 2, BALLS[(k * 4 + 1) % 10]);
+  c.box(X + 39, Y + 26, 8, 6, [90, 94, 110], INK); c.ellipse(X + 43, Y + 29, 2, 2, BALLS[2]);
+  c.rect(X, Y + 30, 4, 2, [150, 154, 170]); c.rect(X, Y + 22, 2, 9, [150, 154, 170]); c.ellipse(X + 1, Y + 21, 3, 3, RED);
+}
+function prizePodium(c, top, X, Y) {
+  glow(c, X + 24, Y + 20, 34, [255, 240, 170], 22); c.ellipse(X + 24, Y + 44, 22, 5, [0, 0, 0, 60]);
+  c.ellipse(X + 24, Y + 38, 22, 8, dk(GOLD, 0.35)); c.rect(X + 2, Y + 30, 44, 8, dk(GOLD, 0.35)); c.ellipse(X + 24, Y + 30, 22, 8, GOLD); c.ellipse(X + 24, Y + 28, 16, 6, [200, 50, 60]); c.ellipse(X + 24, Y + 27, 14, 5, lt([200, 50, 60], 0.2));
+  top.ellipse(X + 24, Y + 8, 15, 20, [200, 230, 244, 90]); top.ellipse(X + 24, Y + 8, 15, 20, [150, 180, 200], 1); top.line(X + 15, Y - 2, X + 18, Y - 8, [255, 255, 255, 190], 2);
+  ball(top, X + 24, Y + 16, 9, [130, 60, 170]); top.ellipse(X + 20, Y + 11, 2, 2, [240, 130, 200]); top.ellipse(X + 28, Y + 11, 2, 2, [240, 130, 200]); top.rect(X + 22, Y + 6, 4, 2, WHITE);
+  c.poly([[X + 36, Y + 30], [X + 44, Y + 30], [X + 46, Y + 42], [X + 40, Y + 38], [X + 36, Y + 42]], [200, 50, 60]); c.ellipse(X + 40, Y + 30, 5, 5, GOLD); c.ellipse(X + 40, Y + 30, 3, 3, [250, 230, 140]);
+}
+function ticketBooth(c, top, X, Y, col, sign = GOLD) {
+  c.ellipse(X + 16, Y + 30, 16, 3, [0, 0, 0, 60]); c.box(X + 1, Y + 6, 30, 25, col, dk(col, 0.55)); c.rect(X + 2, Y + 7, 28, 2, lt(col, 0.3)); c.box(X + 2, Y + 20, 28, 4, [244, 240, 226], dk(col, 0.5)); c.rect(X + 13, Y + 21, 6, 2, INK);
+  c.box(X + 4, Y + 9, 24, 11, [40, 44, 70], dk(col, 0.6)); c.rect(X + 5, Y + 10, 22, 4, [90, 110, 170]); c.rect(X + 6, Y + 10, 3, 9, A(WHITE, 120)); for (let k = 0; k < 3; k++) c.rect(X + 6 + k * 8, Y + 26, 4, 3, dk(col, 0.3));
+  top.box(X - 1, Y - 6, 34, 12, sign === GOLD ? [16, 18, 40] : sign, GOLD); for (let k = 0; k < 4; k++) top.rect(X + 4 + k * 7, Y - 3, 5, 6, k % 2 ? GOLD : [255, 240, 150]);
+  top.poly([[X - 2, Y + 6], [X + 34, Y + 6], [X + 32, Y + 11], [X, Y + 11]], WHITE); for (let x = X; x < X + 32; x += 8) top.poly([[x, Y + 6], [x + 4, Y + 6], [x + 4, Y + 11], [x, Y + 11]], [200, 50, 60]);
+}
+function posterStand(c, top, X, Y, col, n) { shadow(c, X, Y); c.line(X + 3, Y + 14, X + 5, Y + 2, [110, 76, 50]); c.line(X + 13, Y + 14, X + 11, Y + 2, [110, 76, 50]); top.box(X + 1, Y - 14, 14, 18, WHITE, [110, 76, 50]); top.rect(X + 3, Y - 12, 10, 4, col); for (let k = 0; k < 3; k++) top.ellipse(X + 4 + k * 4, Y - 4, 1.5, 1.5, BALLS[(n + k * 3) % 10]); top.rect(X + 3, Y, 10, 1, [150, 150, 170]); star(top, X + 12, Y - 6, GOLD, 1); }
 // Loto-ID Center: the draw board over the counter, two drums of numbered balls, a roped queue, prizes under glass.
 PLANS.KalosLumioseLoto = shop({
   ground(p, c, yb) {
@@ -2058,13 +2122,13 @@ PLANS.KalosLumioseLoto = shop({
     for (let x = p.left * T + 6; x < (p.right + 1) * T; x += 12) c.ellipse(x, 8, 2, 2, (x / 12 | 0) % 2 ? [255, 240, 150] : WHITE);
     // The draw board.
     const X = 10 * T + 8, Y = 14; c.box(X, Y, 12 * T, 40, [16, 18, 40], GOLD); c.rect(X + 4, Y + 4, 12 * T - 8, 7, RED); for (let k = X + 10; k < X + 12 * T - 12; k += 9) c.rect(k, Y + 6, 5, 3, GOLD);
-    for (let k = 0; k < 5; k++) { const x = X + 14 + k * 34; c.box(x, Y + 15, 26, 20, WHITE, [120, 126, 146]); const col = BALLS[(k * 3 + 1) % 10]; c.rect(x + 9, Y + 18, 8, 2, col); c.rect(x + (k % 2 ? 9 : 15), Y + 18, 2, 14, col); c.rect(x + 9, Y + 24, 8, 2, col); c.rect(x + 9, Y + 30, 8, 2, col); if (k % 3 === 0) c.rect(x + (k % 2 ? 15 : 9), Y + 24, 2, 8, col); }
+    for (let k = 0; k < 5; k++) { const x = X + 14 + k * 34; c.box(x, Y + 15, 26, 20, WHITE, [120, 126, 146]); const col = BALLS[[1, 4, 7, 0, 9][k]]; c.rect(x + 9, Y + 18, 8, 2, col); c.rect(x + (k % 2 ? 9 : 15), Y + 18, 2, 14, col); c.rect(x + 9, Y + 24, 8, 2, col); c.rect(x + 9, Y + 30, 8, 2, col); if (k % 3 === 0) c.rect(x + (k % 2 ? 15 : 9), Y + 24, 2, 8, col); }
     for (const x of [4, 25]) { c.box(x * T, 16, 3 * T, 36, [250, 244, 220], GOLD); ball(c, x * T + 24, 30, 8, x === 4 ? BALLS[9] : BALLS[2]); c.rect(x * T + 8, 44, 32, 2, RED); star(c, x * T + 8, 22, GOLD); star(c, x * T + 40, 24, GOLD); }
     rug(c, 15, 10, 17, 22, RED, GOLD);
   },
   fit(p) {
     const RED = [200, 50, 60];
-    tillRow(p, 11, 21, 8, [16], RED, GOLD, (c, top, X, Y, w, k) => { tillBox(top, X + (k ? 60 : 8), Y); papers(c, X + (k ? 12 : 56), Y - 1, 4); papers(c, X + (k ? 30 : 38), Y - 1, 2); });
+    tillRow(p, 11, 21, 8, [16], RED, GOLD, (c, top, X, Y, w, k) => { tillBox(top, X + (k ? 4 : 66), Y); papers(c, X + (k ? 30 : 12), Y - 1, 4); papers(c, X + (k ? 48 : 34), Y - 1, 2); });
     // The drums.
     wide(p, [[5, 5], [25, 5]], 2, 2, (c, top, X, Y) => { c.ellipse(X + 16, Y + 29, 15, 4, [0, 0, 0, 60]); c.box(X + 5, Y + 14, 22, 16, RED, [110, 20, 30]); c.rect(X + 6, Y + 15, 20, 2, GOLD); c.rect(X + 12, Y + 22, 8, 5, INK); c.rect(X + 27, Y + 4, 4, 2, GOLD); c.rect(X + 30, Y + 4, 2, 8, GOLD); top.ellipse(X + 16, Y, 15, 15, [200, 230, 244, 140]); top.ellipse(X + 16, Y, 15, 15, [120, 150, 170], 1); for (let k = 0; k < 12; k++) { const a = k * 1.9, r = 3 + (k * 5) % 9; top.ellipse(X + 16 + Math.cos(a) * r, Y + 3 + Math.sin(a) * r * 0.8, 2.5, 2.5, BALLS[(k * 3) % 10]); } top.line(X + 7, Y - 8, X + 12, Y - 11, [255, 255, 255, 200]); });
     // The roped queue.
@@ -2072,6 +2136,10 @@ PLANS.KalosLumioseLoto = shop({
     [[4, 11], [26, 11], [4, 15], [26, 15]].forEach(([x, y], k) => prop(p, x, y, 2, 1, (c, top, X, Y) => caseOf(c, top, X, Y, 32, [(cc, gx, gy) => ball(cc, gx, gy - 1, 4, BALLS[(k * 2 + 9) % 10]), (cc, gx, gy) => (k % 2 ? gem(cc, gx, gy, EVO[k]) : (cc.ellipse(gx, gy, 4, 3, GOLD), cc.ellipse(gx - 1, gy - 1, 2, 1, lt(GOLD, 0.5))))], [150, 110, 40])));
     wide(p, [[8, 19], [22, 19]], 2, 1, (c, top, X, Y) => machine(c, X, Y, 32, 16, [200, 60, 70], [250, 220, 110]));
     wide(p, [[8, 11], [22, 11]], 2, 1, (c, top, X, Y) => bench(c, X, Y, 32, [150, 110, 40]));
+    // The draw machine and the first prize, either side of the queue; a ticket booth by each wall; posters.
+    wide(p, [[8, 13]], 3, 3, (c, top, X, Y) => lottoMachine(c, top, X, Y)); wide(p, [[21, 13]], 3, 3, (c, top, X, Y) => prizePodium(c, top, X, Y));
+    wide(p, [[3, 18], [27, 18]], 2, 2, (c, top, X, Y) => ticketBooth(c, top, X, Y, X < 200 ? RED : [60, 90, 170]));
+    [[11, 11, 0], [20, 11, 1], [12, 21, 2], [20, 21, 3]].forEach(([x, y, n]) => prop(p, x, y, 1, 1, (c, top, X, Y) => posterStand(c, top, X, Y, n % 2 ? [60, 90, 170] : RED, n * 3)));
     wide(p, [[4, 21], [25, 21]], 3, 1, (c, top, X, Y) => sofa(c, X, Y, 48, [200, 50, 60])); one(p, [[8, 22], [23, 22]], (c, top, X, Y) => plant(c, top, X, Y));
     // Balloons in the corners.
     one(p, [[2, 5], [29, 5], [2, 23], [29, 23], [10, 4], [22, 4]], (c, top, X, Y) => { shadow(c, X, Y); c.box(X + 5, Y + 10, 6, 5, [90, 96, 130], INK); for (const [dx, dy, k] of [[3, -10, 0], [12, -12, 1], [8, -18, 2]]) { top.line(X + 8, Y + 10, X + dx, Y + dy + 5, [226, 226, 236]); top.ellipse(X + dx, Y + dy, 4, 5, [RED, GOLD, [110, 170, 240]][(k + (X >> 4)) % 3]); top.p(X + dx - 1, Y + dy - 2, WHITE); } });
@@ -2146,7 +2214,7 @@ PLANS.KalosPRVideoStudio = shop({
 });
 // Lumiose Press: the newsroom. Rows of reporters' desks, the editor's desk at the back, the press and its bundles.
 function frontPage(c, x, y, w, h) { c.box(x, y, w, h, [244, 240, 226], [70, 66, 60]); c.rect(x + 3, y + 3, w - 6, 4, INK); c.rect(x + 3, y + 9, (w - 6) / 2 - 1, h / 3, [150, 156, 170]); for (let k = y + 9; k < y + h - 3; k += 3) c.rect(x + w / 2 + 1, k, w / 2 - 4, 1, [110, 110, 120]); for (let k = y + 11 + h / 3; k < y + h - 3; k += 3) c.rect(x + 3, k, w / 2 - 4, 1, [110, 110, 120]); }
-function bundle(c, top, X, Y) { shadow(c, X, Y); for (let k = 0; k < 4; k++) c.box(X + 2, Y + 10 - k * 4, 12, 5, k % 2 ? [236, 230, 214] : [244, 240, 230], [130, 126, 120]); c.rect(X + 7, Y - 2, 2, 17, [200, 90, 60]); c.rect(X + 4, Y, 8, 1, INK); }
+function bundle(c, top, X, Y, n = 0) { c.ellipse(X + 8, Y + 14, 8, 3, [0, 0, 0, 70]); for (let k = 0; k < 4; k++) { const y = Y + 12 - k * 3, x = X + ((k + n) % 2); c.box(x, y, 16, 4, k % 2 ? [226, 220, 204] : [240, 236, 224], [120, 116, 110]); c.rect(x + 1, y + 2, 14, 1, [176, 172, 164]); } frontPage(c, X + (n % 2), Y - 2, 16, 13); c.rect(X + 7, Y - 2, 2, 17, [176, 120, 70]); c.rect(X, Y + 5, 16, 1, [176, 120, 70]); }
 PLANS.KalosLumiosePress = shop({
   ground(p, c, yb) {
     tiled(p, c, [124, 138, 162], [132, 146, 170]);
@@ -2159,6 +2227,8 @@ PLANS.KalosLumiosePress = shop({
   fit(p) {
     const WOOD = [150, 108, 70], DESK = [200, 204, 216];
     wide(p, [[14, 5]], 5, 1, (c, top, X, Y) => { desk(c, top, X, Y, 80, WOOD); papers(c, X + 60, Y + 3, 4); c.rect(X + 22, Y + 9, 12, 3, GOLD); });
+    // The front desk: today's edition laid out, the till and the telephone.
+    tillRow(p, 13, 19, 8, [16], WOOD, [226, 214, 190], (c, top, X, Y, w, k) => { if (k) { tillBox(top, X + 4, Y); top.box(X + 22, Y - 5, 12, 5, INK, [20, 20, 30]); top.rect(X + 21, Y - 7, 14, 2, INK); top.rect(X + 24, Y - 4, 8, 1, [150, 154, 170]); papers(c, X + 38, Y - 1, 3); } else for (let n = 0; n < 3; n++) { c.box(X + 4 + n * 15, Y - 5, 13, 7, [244, 240, 226], [70, 66, 60]); c.rect(X + 5 + n * 15, Y - 4, 11, 2, INK); c.rect(X + 5 + n * 15, Y - 1, 5, 2, [150, 156, 170]); } });
     [[4, 9], [9, 9], [21, 9], [26, 9], [4, 13], [9, 13], [21, 13], [26, 13]].forEach(([x, y], k) => { prop(p, x, y, 3, 1, (c, top, X, Y) => { desk(c, top, X, Y, 48, DESK, k % 3 ? [110, 200, 240] : [236, 236, 244]); papers(c, X + 36, Y + 4, 1 + k % 3); if (k % 2) cup(c, X + 6, Y + 6); }); prop(p, x + 1, y + 1, 1, 1, (c, top, X, Y) => salonChair(c, top, X, Y, [70, 80, 110])); });
     one(p, [[3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [24, 4], [25, 4], [26, 4], [27, 4], [28, 4]], (c, top, X, Y) => cabinet(c, X, Y, [150, 156, 170], (X >> 4) % 4 === 1));
     // The press.
@@ -2168,7 +2238,7 @@ PLANS.KalosLumiosePress = shop({
       c.rect(X + 6, Y + 4, 84, 3, [244, 240, 230]); c.rect(X + 6, Y + 24, 84, 3, [244, 240, 230]); c.box(X + 90, Y + 2, 18, 28, [60, 62, 76], INK); c.rect(X + 93, Y + 5, 12, 6, [110, 230, 200]); for (let k = 0; k < 3; k++) c.rect(X + 93 + k * 4, Y + 15, 3, 3, [[240, 90, 90], [250, 220, 70], [110, 220, 200]][k]);
       c.rect(X + 4, Y + 34, 104, 2, [250, 210, 70]); for (let x = X + 4; x < X + 108; x += 8) c.rect(x, Y + 34, 4, 2, INK); for (let k = 0; k < 4; k++) c.box(X + 8 + k * 14, Y + 38, 12, 6, [244, 240, 230], [130, 126, 120]);
     });
-    one(p, [[3, 19], [4, 19], [3, 20], [5, 20], [3, 22], [4, 22], [19, 20], [19, 21]], (c, top, X, Y) => bundle(c, top, X, Y));
+    one(p, [[3, 19], [4, 19], [3, 20], [5, 20], [3, 22], [4, 22], [19, 20], [19, 21]], (c, top, X, Y) => bundle(c, top, X, Y, (X + Y) >> 4));
     wide(p, [[8, 19]], 2, 1, (c, top, X, Y) => machine(c, X, Y, 32, 16, [226, 226, 236], [110, 200, 240]));
     wide(p, [[8, 22]], 3, 1, (c, top, X, Y) => sofa(c, X, Y, 48, [90, 100, 130]));
     // The water cooler.
@@ -2182,7 +2252,14 @@ PLANS.KalosLumiosePress = shop({
 function stylingStation(c, top, X, Y, col) { table(c, X + 2, Y - 2, 28, 14, [236, 232, 240]); for (const [dx, k] of [[6, [240, 120, 150]], [11, [130, 200, 220]], [22, [250, 220, 130]]]) { c.rect(X + dx, Y - 3, 3, 5, k); c.rect(X + dx + 1, Y - 5, 1, 2, INK); } salonChair(c, top, X + 8, Y + 16, col); }
 function bulbMirror(c, x, y, w, h, edge = WHITE) { mirror(c, x, y, w, h, edge); for (let k = x + 3; k < x + w - 1; k += 6) { c.ellipse(k, y - 2, 1.5, 1.5, [255, 240, 150]); c.ellipse(k, y + h + 1, 1.5, 1.5, [255, 240, 150]); } }
 // Two chairs under hood dryers (2 x 2 tiles).
-function dryers(c, top, X, Y, col) { for (const dx of [0, 16]) { salonChair(c, top, X + dx, Y + 16, col); c.rect(X + dx + 7, Y - 4, 2, 12, [170, 174, 190]); top.ellipse(X + dx + 8, Y + 3, 7, 6, [226, 228, 238]); top.ellipse(X + dx + 8, Y + 5, 5, 3, [150, 156, 176]); top.rect(X + dx + 6, Y - 10, 4, 8, [190, 194, 210]); } }
+// A hood dryer (2 x 2 tiles): a big salon chair, the dryer's stand behind it and its hood over where the head goes.
+function dryers(c, top, X, Y, col, hood = [244, 214, 226]) {
+  const CH = [190, 194, 210]; c.ellipse(X + 16, Y + 30, 14, 3, [0, 0, 0, 60]);
+  c.rect(X + 26, Y - 2, 3, 30, CH); c.rect(X + 27, Y - 2, 1, 30, WHITE); c.ellipse(X + 27, Y + 29, 6, 2, dk(CH, 0.3)); c.box(X + 24, Y + 12, 7, 6, [70, 74, 92], INK); c.rect(X + 26, Y + 14, 3, 1, [110, 230, 200]);
+  c.box(X + 6, Y + 6, 20, 17, dk(col, 0.1), dk(col, 0.65)); c.rect(X + 8, Y + 8, 16, 2, lt(col, 0.3)); c.box(X + 4, Y + 19, 24, 8, col, dk(col, 0.65)); c.rect(X + 6, Y + 20, 20, 2, lt(col, 0.35)); for (const dx of [2, 26]) c.box(X + dx, Y + 14, 4, 11, CH, [110, 114, 130]); c.rect(X + 14, Y + 27, 4, 3, CH); c.ellipse(X + 16, Y + 30, 7, 2, [130, 134, 150]);
+  top.rect(X + 20, Y - 1, 8, 3, CH); top.ellipse(X + 16, Y + 2, 13, 10, dk(hood, 0.25)); top.ellipse(X + 16, Y + 1, 13, 9, hood); top.ellipse(X + 13, Y - 3, 6, 3, lt(hood, 0.5)); for (let k = -6; k <= 6; k += 4) top.rect(X + 16 + k, Y - 6, 2, 3, dk(hood, 0.2));
+  top.ellipse(X + 16, Y + 7, 10, 4, dk(hood, 0.45)); top.ellipse(X + 16, Y + 7, 8, 3, [70, 60, 80]); top.ellipse(X + 16, Y + 6, 6, 1, [255, 200, 140, 160]);
+}
 // Coiffure Clips: black and white tiles, pink walls, a row of mirrors with their chairs.
 PLANS.KalosCoiffureClips = shop({
   ground(p, c, yb) {
@@ -2199,10 +2276,19 @@ PLANS.KalosCoiffureClips = shop({
     wide(p, [[4, 4], [8, 4], [12, 4], [19, 4], [22, 4]], 2, 2, (c, top, X, Y) => stylingStation(c, top, X, Y, PINK));
     // Where the cabinets stood: shelves of lotions, and the hood dryers.
     wide(p, [[25, 4]], 2, 3, (c, top, X, Y) => { c.ellipse(X + 16, Y + 46, 16, 3, [0, 0, 0, 60]); rack(c, X, Y, 32, [240, 232, 240], jarItem([[240, 120, 150], [130, 200, 220], [250, 220, 130], [170, 130, 220]]), 2); c.box(X, Y + 15, 32, 32, [240, 232, 240], [140, 120, 140]); for (let r = 0; r < 2; r++) for (const dx of [2, 17]) { c.box(X + dx, Y + 18 + r * 14, 13, 12, WHITE, [170, 150, 170]); c.rect(X + dx + 4, Y + 23 + r * 14, 5, 1, PINK); } });
-    wide(p, [[5, 12], [25, 12]], 2, 2, (c, top, X, Y) => dryers(c, top, X, Y, BLK));
-    wide(p, [[18, 8]], 3, 1, (c, top, X, Y) => { counter(c, X, Y, 48, BLK, PINK); tillBox(top, X + 30, Y); top.rect(X + 10, Y - 8, 3, 7, [200, 226, 240]); top.ellipse(X + 11, Y - 10, 3, 3, PINK); });
+    wide(p, [[4, 12], [7, 12], [22, 12], [25, 12]], 2, 2, (c, top, X, Y) => dryers(c, top, X, Y, BLK));
+    tillRow(p, 14, 18, 8, [16], BLK, PINK, (c, top, X, Y, w, k) => { if (k) { tillBox(top, X + 4, Y, [200, 110, 140]); for (const [dx, col] of [[21, [240, 120, 150]], [25, [130, 200, 220]], [29, [250, 220, 130]]]) { top.rect(X + dx, Y - 7, 3, 7, col); top.rect(X + dx + 1, Y - 9, 1, 2, INK); } } else { c.box(X + 5, Y - 3, 14, 4, WHITE, [150, 150, 170]); c.rect(X + 12, Y - 3, 1, 4, [190, 190, 204]); top.rect(X + 24, Y - 8, 3, 7, [200, 226, 240]); top.ellipse(X + 25, Y - 10, 3, 3, PINK); } });
     // The basins.
-    wide(p, [[26, 17], [26, 20]], 3, 1, (c, top, X, Y) => { c.ellipse(X + 24, Y + 14, 24, 3, [0, 0, 0, 55]); c.box(X + 30, Y - 4, 18, 19, [240, 240, 244], [130, 134, 150]); c.ellipse(X + 39, Y + 3, 6, 4, [150, 200, 230]); c.rect(X + 38, Y - 6, 2, 5, [170, 174, 190]); c.box(X, Y + 4, 30, 9, BLK, INK); c.box(X, Y - 3, 8, 9, lt(BLK, 0.15), INK); c.rect(X + 2, Y + 5, 26, 2, lt(BLK, 0.3)); });
+    wide(p, [[26, 17], [26, 20]], 3, 1, (c, top, X, Y) => {
+      const CH = [190, 194, 210]; c.ellipse(X + 24, Y + 14, 24, 3, [0, 0, 0, 60]);
+      // The reclining chair, its back to the basin.
+      c.box(X + 2, Y + 5, 26, 9, BLK, INK); c.rect(X + 4, Y + 6, 22, 2, lt(BLK, 0.3)); c.box(X, Y + 1, 6, 8, lt(BLK, 0.12), INK); c.poly([[X + 22, Y + 13], [X + 30, Y - 1], [X + 34, Y + 1], [X + 28, Y + 14]], lt(BLK, 0.1)); c.rect(X + 6, Y + 13, 2, 2, CH); c.rect(X + 22, Y + 13, 2, 2, CH); c.box(X + 8, Y + 9, 12, 3, [244, 214, 226], [150, 60, 90]);
+      // The basin on its pedestal, the neck rest towards the chair, the spray on its hose.
+      c.box(X + 34, Y + 3, 12, 12, WHITE, [130, 134, 150]); c.rect(X + 36, Y + 5, 2, 9, [214, 216, 228]);
+      top.ellipse(X + 40, Y + 1, 9, 6, [130, 134, 150]); top.ellipse(X + 40, Y, 9, 6, WHITE); top.ellipse(X + 40, Y + 1, 6, 3, [150, 200, 230]); top.ellipse(X + 38, Y, 2, 1, WHITE); top.rect(X + 31, Y - 1, 4, 3, [214, 216, 228]);
+      top.rect(X + 44, Y - 10, 2, 9, CH); top.rect(X + 40, Y - 10, 6, 2, CH); top.rect(X + 40, Y - 9, 2, 3, CH); top.box(X + 42, Y - 5, 4, 3, [70, 74, 92], INK);
+      for (const [dx, col] of [[33, [240, 120, 150]], [37, [130, 200, 220]]]) top.rect(X + dx + 12, Y - 6, 3, 6, col);
+    });
     // Waiting: a sofa, magazines.
     wide(p, [[3, 18]], 3, 1, (c, top, X, Y) => sofa(c, X, Y, 48, PINK)); wide(p, [[3, 20]], 3, 1, (c, top, X, Y) => { table(c, X, Y, 48, 16, [240, 240, 244]); for (let k = 0; k < 3; k++) c.box(X + 6 + k * 13, Y + 3, 9, 7, [[240, 120, 150], [130, 200, 220], [250, 220, 130]][k], INK); });
     wide(p, [[7, 22]], 3, 1, (c, top, X, Y) => sofa(c, X, Y, 48, PINK));
@@ -2230,7 +2316,7 @@ PLANS.KalosFriseurFurfrou = shop({
   },
   fit(p) {
     const PINK = [240, 150, 180], TR = [[240, 130, 170], [110, 170, 240], [250, 210, 90], [150, 110, 220]];
-    tillRow(p, 12, 20, 8, [16], [252, 250, 252], PINK, (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 44, Y, [200, 110, 140]); for (let n = 0; n < 3; n++) { const x = X + (k ? 6 : 14) + n * 12; top.rect(x, Y - 6, 2, 6, [150, 108, 70]); top.rect(x - 2, Y - 9, 6, 3, TR[(n + k) % 4]); } });
+    tillRow(p, 12, 20, 8, [16], [252, 250, 252], PINK, (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 4, Y, [200, 110, 140]); for (let n = 0; n < 3; n++) { const x = X + (k ? 26 : 14) + n * 12; top.rect(x, Y - 6, 2, 6, [150, 108, 70]); top.rect(x - 2, Y - 9, 6, 3, TR[(n + k) % 4]); } });
     // Grooming tables.
     [[4, 11], [25, 11], [4, 15], [25, 15]].forEach(([x, y], k) => prop(p, x, y, 3, 1, (c, top, X, Y) => { table(c, X + 2, Y, 44, 16, [200, 206, 226]); c.rect(X + 4, Y + 2, 40, 5, [226, 110, 150]); top.rect(X + 42, Y - 16, 2, 18, [150, 154, 170]); top.rect(X + 30, Y - 16, 13, 2, [150, 154, 170]); furfrou(top, X + 20, Y + 1, TR[k], 1.2); }));
     // The tubs.
@@ -2264,7 +2350,7 @@ PLANS.KalosBoutiqueCouture = shop({
   },
   fit(p) {
     const BLK = [40, 36, 48], LOOKS = [[40, 36, 48], [190, 40, 60], WHITE, [110, 60, 150], GOLD, [60, 80, 130]];
-    tillRow(p, 12, 20, 8, [16], BLK, [244, 240, 232], (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 44, Y, GOLD); else { top.box(X + 8, Y - 8, 14, 8, [190, 40, 60], GOLD); top.rect(X + 8, Y - 5, 14, 1, GOLD); } c.box(X + (k ? 8 : 36), Y - 2, 12, 4, WHITE, [150, 150, 170]); });
+    tillRow(p, 12, 20, 8, [16], BLK, [244, 240, 232], (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 4, Y, GOLD); else { top.box(X + 8, Y - 8, 14, 8, [190, 40, 60], GOLD); top.rect(X + 8, Y - 5, 14, 1, GOLD); } c.box(X + (k ? 30 : 36), Y - 2, 12, 4, WHITE, [150, 150, 170]); });
     [[4, 5], [7, 5], [10, 5], [21, 5], [10, 14], [22, 14]].forEach(([x, y], k) => prop(p, x, y, 1, 1, (c, top, X, Y) => mannequin(c, top, X, Y, LOOKS[k], GOLD)));
     wide(p, [[25, 4]], 2, 3, (c, top, X, Y) => booth(c, top, X, Y, 32, 48, [110, 60, 150], [30, 28, 36]));
     // Bags and shoes.
@@ -2304,7 +2390,7 @@ function boutique(o) {
   return shop({
     ground(p, c, yb) { o.floor(p, c); shopWall(p, c, yb, o.wall, o.wallOpts); o.art(p, c); if (o.rug) rug(c, 14, 10, 18, 22, o.rug, o.trim || WHITE); },
     fit(p) {
-      tillRow(p, 13, 19, 8, [16], o.wood, o.top, (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 30, Y, dk(o.accent, 0.2)); for (let n = 0; n < 2; n++) { const col = o.cloth[(n + k * 2) % o.cloth.length]; c.box(X + (k ? 4 : 8) + n * 13, Y - 3, 10, 5, col, dk(col, 0.45)); } });
+      tillRow(p, 13, 19, 8, [16], o.wood, o.top, (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 4, Y, dk(o.accent, 0.2)); for (let n = 0; n < 2; n++) { const col = o.cloth[(n + k * 2) % o.cloth.length]; c.box(X + (k ? 21 : 8) + n * 12, Y - 3, 10, 5, col, dk(col, 0.45)); } });
       prop(p, 25, 4, 2, 3, (c, top, X, Y) => booth(c, top, X, Y, 32, 48, o.accent, o.wood));
       prop(p, 5, 5, 2, 2, (c, top, X, Y) => wardrobe(c, top, X, Y, o.cloth, o.wood));
       // Where the wardrobe assistant waits: a rail to choose from and the long mirror.
@@ -2403,19 +2489,63 @@ function fridge(c, top, X, Y, col = [236, 240, 246]) { c.ellipse(X + 8, Y + 15, 
 function tvSet(c, top, X, Y, wood = [110, 76, 50]) { table(c, X, Y, 32, 16, wood); top.box(X + 4, Y - 14, 24, 17, [40, 44, 56], INK); top.rect(X + 6, Y - 12, 20, 12, [96, 170, 230]); top.rect(X + 7, Y - 11, 8, 3, [190, 226, 250]); c.rect(X + 13, Y + 3, 6, 2, [40, 44, 56]); }
 function bigBed(c, top, X, Y, col, wood = [150, 108, 70]) { c.ellipse(X + 16, Y + 31, 16, 3, [0, 0, 0, 55]); c.box(X, Y - 8, 32, 8, wood, dk(wood, 0.5)); c.box(X, Y - 2, 32, 33, [240, 240, 244], dk(wood, 0.5)); c.box(X + 3, Y + 1, 11, 7, WHITE, [170, 170, 190]); c.box(X + 18, Y + 1, 11, 7, WHITE, [170, 170, 190]); c.box(X, Y + 11, 32, 20, col, dk(col, 0.5)); c.rect(X + 1, Y + 12, 30, 3, lt(col, 0.45)); frame(c, X + 4, Y + 17, 24, 10, lt(col, 0.25)); }
 function nightstand(c, top, X, Y, wood = [150, 108, 70]) { shadow(c, X, Y); c.box(X + 2, Y + 3, 12, 12, wood, dk(wood, 0.55)); c.rect(X + 6, Y + 8, 4, 1, dk(wood, 0.6)); top.rect(X + 7, Y - 3, 2, 6, GOLD); top.poly([[X + 3, Y - 3], [X + 13, Y - 3], [X + 11, Y - 10], [X + 5, Y - 10]], [255, 236, 170]); }
+// Small things for the houses' corners.
+function hutch(c, top, X, Y, wood, plates = WHITE) { c.ellipse(X + 16, Y + 15, 16, 2, [0, 0, 0, 55]); c.box(X, Y - 2, 32, 17, wood, dk(wood, 0.6)); for (const dx of [2, 17]) { c.box(X + dx, Y + 3, 13, 10, lt(wood, 0.1), dk(wood, 0.5)); c.rect(X + dx + (dx < 10 ? 10 : 2), Y + 7, 1, 3, GOLD); } top.box(X + 2, Y - 18, 28, 17, dk(wood, 0.15), dk(wood, 0.6)); top.rect(X + 4, Y - 16, 24, 13, dk(wood, 0.45)); top.rect(X + 4, Y - 10, 24, 1, wood); for (const dx of [8, 16, 24]) { top.ellipse(X + dx, Y - 13, 3, 3, plates); top.ellipse(X + dx, Y - 13, 1, 1, dk(plates, 0.2)); } for (const dx of [7, 12, 18, 23]) top.rect(X + dx, Y - 8, 3, 4, lt(plates, 0.2)); top.rect(X + 1, Y - 19, 30, 2, lt(wood, 0.3)); }
+function coffeeTable(c, X, Y, w, wood, o = {}) { c.ellipse(X + w / 2, Y + 14, w / 2 - 2, 3, [0, 0, 0, 55]); c.box(X + 3, Y + 1, w - 6, 9, wood, dk(wood, 0.6)); c.rect(X + 4, Y + 2, w - 8, 2, lt(wood, 0.3)); c.rect(X + 4, Y + 10, 2, 4, dk(wood, 0.5)); c.rect(X + w - 6, Y + 10, 2, 4, dk(wood, 0.5)); cup(c, X + 12, Y + 6); c.box(X + w - 20, Y + 3, 10, 6, o.mag || [226, 110, 90], [120, 116, 130]); c.rect(X + w - 18, Y + 5, 6, 1, WHITE); if (o.bowl) { c.ellipse(X + w / 2, Y + 6, 5, 2, o.bowl); c.ellipse(X + w / 2 - 1, Y + 4, 2, 2, [226, 70, 70]); c.ellipse(X + w / 2 + 2, Y + 4, 2, 2, [250, 200, 70]); } }
+function floorLamp(c, top, X, Y, col = [255, 236, 170], pole = [110, 76, 50]) { glow(c, X + 8, Y - 4, 16, [255, 230, 150], 18); shadow(c, X, Y); c.ellipse(X + 8, Y + 13, 4, 2, pole); c.rect(X + 7, Y - 6, 2, 19, pole); top.poly([[X + 2, Y - 6], [X + 14, Y - 6], [X + 11, Y - 16], [X + 5, Y - 16]], col); top.rect(X + 2, Y - 7, 12, 1, dk(col, 0.25)); }
+function armchair(c, X, Y, col) { c.ellipse(X + 8, Y + 14, 8, 3, [0, 0, 0, 50]); c.box(X + 1, Y - 5, 14, 12, dk(col, 0.2), dk(col, 0.6)); c.box(X + 1, Y + 4, 14, 10, col, dk(col, 0.6)); c.rect(X + 3, Y + 5, 10, 2, lt(col, 0.3)); c.box(X - 1, Y, 4, 14, dk(col, 0.1), dk(col, 0.6)); c.box(X + 13, Y, 4, 14, dk(col, 0.1), dk(col, 0.6)); }
+function globe(c, top, X, Y, wood = [110, 76, 50]) { shadow(c, X, Y); c.rect(X + 5, Y + 12, 6, 2, wood); c.rect(X + 7, Y + 5, 2, 8, wood); top.ellipse(X + 8, Y, 6, 6, [90, 150, 220]); top.ellipse(X + 6, Y - 2, 2, 3, [110, 180, 100]); top.ellipse(X + 10, Y + 2, 2, 2, [110, 180, 100]); top.ellipse(X + 8, Y, 7, 7, GOLD, 1); }
+function bookPile(c, X, Y, cols) { shadow(c, X, Y); cols.forEach((col, k) => { c.box(X + 3 + (k % 2), Y + 10 - k * 3, 10, 4, col, dk(col, 0.5)); c.rect(X + 4 + (k % 2), Y + 11 - k * 3, 8, 1, [244, 240, 226]); }); }
+function coatStand(c, top, X, Y, cols) { shadow(c, X, Y); c.rect(X + 7, Y - 12, 2, 26, [110, 76, 50]); c.rect(X + 3, Y + 13, 10, 2, [90, 60, 40]); top.rect(X + 3, Y - 12, 10, 1, [110, 76, 50]); top.poly([[X + 2, Y - 11], [X + 7, Y - 11], [X + 8, Y + 2], [X + 1, Y + 2]], cols[0]); top.poly([[X + 9, Y - 11], [X + 14, Y - 11], [X + 15, Y - 1], [X + 9, Y - 1]], cols[1]); top.ellipse(X + 8, Y - 14, 5, 2, cols[2] || cols[0]); }
+function toyBox(c, top, X, Y, col, toys) { c.ellipse(X + 16, Y + 14, 15, 3, [0, 0, 0, 55]); c.box(X + 2, Y + 1, 28, 13, col, dk(col, 0.55)); c.rect(X + 3, Y + 2, 26, 2, lt(col, 0.35)); for (let k = 0; k < 4; k++) c.rect(X + 6 + k * 6, Y + 7, 3, 3, toys[k % toys.length]); top.box(X + 1, Y - 6, 30, 6, dk(col, 0.1), dk(col, 0.55)); ball(top, X + 9, Y - 2, 4, toys[0]); top.ellipse(X + 21, Y - 3, 5, 4, toys[1]); top.p(X + 19, Y - 4, INK); top.p(X + 23, Y - 4, INK); }
+function blocks(c, X, Y, cols) { shadow(c, X, Y); [[2, 9], [8, 9], [5, 4], [11, 4]].forEach(([dx, dy], k) => { const col = cols[k % cols.length]; c.box(X + dx, Y + dy, 6, 6, col, dk(col, 0.5)); c.rect(X + dx + 2, Y + dy + 2, 2, 2, lt(col, 0.5)); }); }
+function rockingToy(c, top, X, Y, col) { c.ellipse(X + 8, Y + 14, 8, 2, [0, 0, 0, 50]); c.ellipse(X + 8, Y + 12, 8, 3, dk(col, 0.45), 2); c.rect(X + 4, Y + 4, 2, 8, dk(col, 0.3)); c.rect(X + 10, Y + 4, 2, 8, dk(col, 0.3)); c.ellipse(X + 8, Y + 3, 6, 4, col); top.ellipse(X + 13, Y - 3, 3, 4, col); top.p(X + 14, Y - 4, INK); top.poly([[X + 2, Y - 2], [X + 6, Y - 6], [X + 7, Y]], [250, 150, 60]); top.poly([[X + 11, Y - 6], [X + 13, Y - 10], [X + 15, Y - 6]], [250, 150, 60]); }
+function screen(c, top, X, Y, w, col, wood) { c.ellipse(X + w / 2, Y + 14, w / 2, 3, [0, 0, 0, 50]); for (let k = 0, x = X + 1; x + 6 <= X + w; k++, x += 8) { const f = k % 2 ? dk(col, 0.12) : lt(col, 0.18); c.box(x, Y + 2, 8, 12, f, dk(wood, 0.3)); c.rect(x + 1, Y + 12, 6, 1, dk(wood, 0.2)); top.box(x, Y - 14, 8, 17, f, dk(wood, 0.3)); top.rect(x + 2, Y - 11, 4, 9, lt(f, 0.35)); top.ellipse(x + 4, Y - 7, 2, 2, k % 2 ? lt(col, 0.5) : dk(col, 0.25)); top.rect(x, Y - 15, 8, 2, wood); } }
+function petBed(c, top, X, Y, col, mon) { c.ellipse(X + 16, Y + 13, 15, 3, [0, 0, 0, 55]); c.ellipse(X + 16, Y + 8, 14, 7, dk(col, 0.3)); c.ellipse(X + 16, Y + 8, 11, 5, lt(col, 0.3)); c.ellipse(X + 15, Y + 7, 6, 4, mon); c.ellipse(X + 20, Y + 5, 4, 3, mon); c.rect(X + 19, Y + 5, 2, 1, INK); c.rect(X + 22, Y + 5, 2, 1, INK); ball(c, X + 6, Y + 3, 3); }
+function shoeBench(c, X, Y, wood, cols) { bench(c, X, Y, 32, wood); cols.forEach((col, k) => { c.rect(X + 4 + k * 9, Y + 11, 6, 3, col); c.rect(X + 4 + k * 9, Y + 9, 3, 3, col); }); }
+function photoTable(c, top, X, Y, wood, cols) { table(c, X, Y, 32, 16, wood); cols.forEach((col, k) => { const x = X + 4 + k * 9; top.box(x, Y - 6 + (k % 2) * 2, 8, 9, [250, 246, 236], dk(wood, 0.4)); top.rect(x + 2, Y - 4 + (k % 2) * 2, 4, 5, col); }); }
+function vanity(c, top, X, Y, wood, cols) { c.ellipse(X + 16, Y + 14, 15, 3, [0, 0, 0, 55]); c.box(X + 1, Y + 1, 30, 13, wood, dk(wood, 0.55)); for (const dx of [3, 17]) { c.box(X + dx, Y + 5, 12, 7, lt(wood, 0.12), dk(wood, 0.45)); c.rect(X + dx + 5, Y + 8, 3, 1, GOLD); } top.box(X + 8, Y - 16, 16, 18, wood, dk(wood, 0.55)); mirror(top, X + 10, Y - 14, 12, 14, lt(wood, 0.3)); cols.forEach((col, k) => top.rect(X + 3 + k * 23, Y - 4, 3, 5, col)); }
+function playMat(c, x0, y0, x1, y1, cols) { const X = x0 * T + 2, Y = y0 * T + 2, W = (x1 - x0 + 1) * T - 4, H = (y1 - y0 + 1) * T - 4; c.box(X, Y, W, H, [250, 246, 236], dk(cols[0], 0.3)); for (let y = Y + 2, j = 0; y < Y + H - 2; y += 12, j++) for (let x = X + 2, i = 0; x < X + W - 2; x += 12, i++) c.rect(x, y, Math.min(11, X + W - 2 - x), Math.min(11, Y + H - 2 - y), A(cols[(i + j * 2) % cols.length], 150)); }
+// A house of three rooms in one: kitchen and dining corner, the living room, a reading nook, the study, a play mat,
+// a corner of the house's own (`more`), the bedroom behind its screen, and the coats by the door. `flip` mirrors it.
 function house(o) {
+  const fx = (x0, x1) => (o.flip ? [31 - x1, 31 - x0] : [x0, x1]);
   return shop({
-    ground(p, c, yb) { o.floor(p, c); if (o.log) logWall(p, c, yb, o.wall); else shopWall(p, c, yb, o.wall, o.wallOpts); o.art(p, c); for (const [x0, y0, x1, y1, col, trim] of o.rugs) rug(c, x0, y0, x1, y1, col, trim || WHITE); },
+    ground(p, c, yb) {
+      o.floor(p, c); if (o.log) logWall(p, c, yb, o.wall); else shopWall(p, c, yb, o.wall, o.wallOpts); o.art(p, c);
+      const R = (x0, y0, x1, y1, col, trim) => { const [a, b] = fx(x0, x1); rug(c, a, y0, b, y1, col, trim || WHITE); };
+      R(13, 7, 19, 11, o.rug); R(3, 8, 7, 11, o.rug2); R(23, 9, 27, 11, o.rug2); R(3, 14, 7, 16, o.rug, o.rug2); R(25, 16, 29, 19, o.rug2, o.rug); R(18, 14, 22, 17, o.rug, o.rug2);
+      const [a, b] = fx(9, 13); playMat(c, a, 18, b, 21, [o.bed, o.sofa, o.check || o.cloth, [250, 210, 90]]);
+    },
     fit(p) {
-      const m = (x, w = 1) => (o.flip ? 31 - x - (w - 1) : x), W = o.wood;
-      prop(p, m(3, 5), 4, 5, 1, (c, top, X, Y) => kitchen(c, top, X, Y, 80, o.units, o.worktop)); prop(p, m(8), 4, 1, 1, (c, top, X, Y) => fridge(c, top, X, Y));
-      prop(p, m(4, 3), 9, 3, 2, (c, top, X, Y) => dineSet(c, top, X, Y, { square: true, cloth: o.cloth, check: o.check, chair: W, table: W }));
-      for (const x of [20, 22]) prop(p, m(x, 2), 4, 2, 1, (c, top, X, Y) => shelf(c, X, Y, 32, W, x));
-      prop(p, m(25, 2), 4, 2, 1, (c, top, X, Y) => tvSet(c, top, X, Y, W)); prop(p, m(24, 3), 8, 3, 1, (c, top, X, Y) => sofa(c, X, Y, 48, o.sofa)); prop(p, m(28), 7, 1, 1, (c, top, X, Y) => sofa(c, X, Y, 16, o.sofa));
-      prop(p, m(26, 2), 17, 2, 2, (c, top, X, Y) => bigBed(c, top, X, Y, o.bed, W)); prop(p, m(28), 17, 1, 1, (c, top, X, Y) => nightstand(c, top, X, Y, W)); prop(p, m(24, 2), 20, 2, 2, (c, top, X, Y) => wardrobe(c, top, X, Y, [o.bed, o.sofa, WHITE, o.check || o.cloth], W));
-      prop(p, m(4, 3), 18, 3, 1, (c, top, X, Y) => { desk(c, top, X, Y, 48, W); papers(c, X + 36, Y + 4, 2); }); prop(p, m(5), 19, 1, 1, (c, top, X, Y) => stool(c, top, X, Y, o.sofa));
-      one(p, [[m(2), 4], [m(29), 4], [m(2), 23], [m(29), 23], [m(12), 22], [m(19), 4]], (c, top, X, Y) => plant(c, top, X, Y, o.leaf));
-      prop(p, m(3, 2), 14, 2, 1, (c, top, X, Y) => shelf(c, X, Y, 32, W, 7)); prop(p, m(27, 2), 12, 2, 1, (c, top, X, Y) => foldTable(c, X, Y, 32, [o.bed, o.sofa, WHITE], W));
+      const m = (x, w = 1) => (o.flip ? 31 - x - (w - 1) : x), W = o.wood, put = (x, y, w, h, f) => prop(p, m(x, w), y, w, h, f);
+      // Kitchen and dining corner.
+      put(3, 4, 5, 1, (c, top, X, Y) => kitchen(c, top, X, Y, 80, o.units, o.worktop)); put(8, 4, 1, 1, (c, top, X, Y) => fridge(c, top, X, Y));
+      put(4, 9, 3, 2, (c, top, X, Y) => dineSet(c, top, X, Y, { square: true, cloth: o.cloth, check: o.check, chair: W, table: W }));
+      put(9, 9, 2, 1, (c, top, X, Y) => hutch(c, top, X, Y, W, o.plates || WHITE));
+      // The living room.
+      for (const x of [20, 22]) put(x, 4, 2, 1, (c, top, X, Y) => shelf(c, X, Y, 32, W, x));
+      put(25, 4, 2, 1, (c, top, X, Y) => tvSet(c, top, X, Y, W)); put(24, 8, 3, 1, (c, top, X, Y) => sofa(c, X, Y, 48, o.sofa)); put(28, 8, 1, 1, (c, top, X, Y) => armchair(c, X, Y, o.sofa)); put(23, 8, 1, 1, (c, top, X, Y) => floorLamp(c, top, X, Y, undefined, W));
+      put(24, 10, 3, 1, (c, top, X, Y) => coffeeTable(c, X, Y, 48, W, { mag: o.bed, bowl: o.check || WHITE }));
+      // The reading nook.
+      for (const x of [3, 5]) put(x, 13, 2, 1, (c, top, X, Y) => shelf(c, X, Y, 32, W, x + 3));
+      put(3, 15, 1, 1, (c, top, X, Y) => armchair(c, X, Y, o.bed)); put(4, 15, 1, 1, (c, top, X, Y) => nightstand(c, top, X, Y, W)); put(7, 14, 1, 1, (c, top, X, Y) => floorLamp(c, top, X, Y, undefined, W));
+      put(6, 16, 1, 1, (c, top, X, Y) => bookPile(c, X, Y, [o.sofa, o.bed, [226, 200, 120], [90, 110, 160]]));
+      // The study.
+      put(4, 19, 3, 1, (c, top, X, Y) => { desk(c, top, X, Y, 48, W); papers(c, X + 36, Y + 4, 2); }); put(5, 20, 1, 1, (c, top, X, Y) => stool(c, top, X, Y, o.sofa));
+      put(3, 19, 1, 1, (c, top, X, Y) => cabinet(c, X, Y, lt(W, 0.2))); put(7, 19, 1, 1, (c, top, X, Y) => globe(c, top, X, Y, W));
+      // The play mat.
+      put(9, 18, 2, 1, (c, top, X, Y) => toyBox(c, top, X, Y, o.check && o.check !== WHITE ? o.check : o.bed, [o.bed, o.sofa, [250, 210, 90]]));
+      put(12, 19, 1, 1, (c, top, X, Y) => blocks(c, X, Y, [o.bed, o.sofa, [250, 210, 90], [226, 90, 90]])); put(10, 20, 1, 1, (c, top, X, Y) => rockingToy(c, top, X, Y, o.toy || [250, 220, 150]));
+      // The bedroom, behind its screen.
+      put(23, 15, 2, 1, (c, top, X, Y) => screen(c, top, X, Y, 32, o.cloth === WHITE ? o.check : o.cloth, W));
+      put(27, 13, 2, 1, (c, top, X, Y) => petBed(c, top, X, Y, o.bed, o.toy || [250, 220, 150]));
+      put(26, 17, 2, 2, (c, top, X, Y) => bigBed(c, top, X, Y, o.bed, W)); put(28, 17, 1, 1, (c, top, X, Y) => nightstand(c, top, X, Y, W)); put(25, 17, 1, 1, (c, top, X, Y) => nightstand(c, top, X, Y, W));
+      put(24, 20, 2, 2, (c, top, X, Y) => wardrobe(c, top, X, Y, [o.bed, o.sofa, WHITE, o.check || o.cloth], W)); put(27, 21, 2, 1, (c, top, X, Y) => vanity(c, top, X, Y, W, [o.bed, o.sofa]));
+      // Coats by the door, and the plants.
+      put(13, 22, 1, 1, (c, top, X, Y) => coatStand(c, top, X, Y, [o.sofa, o.bed, o.cloth])); put(19, 22, 2, 1, (c, top, X, Y) => shoeBench(c, X, Y, W, [o.sofa, o.bed, [70, 60, 60]]));
+      put(20, 19, 2, 1, (c, top, X, Y) => photoTable(c, top, X, Y, W, [o.rug, o.rug2, o.bed]));
+      one(p, [[m(2), 4], [m(29), 4], [m(2), 23], [m(29), 23], [m(19), 4]], (c, top, X, Y) => plant(c, top, X, Y, o.leaf));
       o.more(p, m);
     },
   });
@@ -2423,7 +2553,7 @@ function house(o) {
 // Santalune's trade house: a country kitchen, and Bunnelby everywhere you look.
 PLANS.KalosSantaluneTrade = house({
   floor: (p, c) => planks(p, c, [216, 172, 112]), wall: [244, 230, 196], wallOpts: { stripe: [236, 218, 176], gap: 12, sw: 4, panel: [176, 128, 80], top: [255, 246, 220] }, wood: [176, 128, 80], units: [240, 232, 214], worktop: [176, 128, 80],
-  cloth: WHITE, check: [250, 210, 90], sofa: [110, 160, 110], bed: [226, 150, 90], rugs: [[13, 7, 19, 11, [120, 170, 120]], [23, 9, 27, 11, [226, 190, 120]], [3, 12, 7, 12, [226, 190, 120]]],
+  cloth: WHITE, check: [250, 210, 90], sofa: [110, 160, 110], bed: [226, 150, 90], rug: [120, 170, 120], rug2: [226, 190, 120], toy: [200, 190, 180],
   art(p, c) {
     for (const x of [10, 17]) windowAt(c, x * T, 18, 28, 30, [170, 214, 244], [255, 246, 220]);
     // Bunnelby, framed.
@@ -2431,17 +2561,18 @@ PLANS.KalosSantaluneTrade = house({
     picture(c, 4 * T, 12, 26, 26, ARTS[0]); picture(c, 23 * T, 14, 30, 24, ARTS[4]);
   },
   more(p, m) {
-    one(p, [[12, 5], [14, 13], [27, 22]], (c, top, X, Y) => plush(c, top, X, Y, [170, 160, 150]));
-    // Carrots from the garden, and the basket by the door.
+    one(p, [[12, 5], [13, 20], [27, 22]], (c, top, X, Y) => plush(c, top, X, Y, [170, 160, 150]));
+    // Carrots from the garden.
     one(p, [[10, 4], [11, 4], [10, 5]], (c, top, X, Y) => { crate(c, X, Y, [200, 160, 100]); for (const dx of [3, 7, 11]) { c.poly([[X + dx, Y + 1], [X + dx + 3, Y + 1], [X + dx + 1, Y + 8]], [240, 140, 60]); c.rect(X + dx + 1, Y - 2, 1, 3, [90, 170, 90]); } });
-    wide(p, [[9, 21]], 2, 1, (c, top, X, Y) => bench(c, X, Y, 32, [176, 128, 80])); wide(p, [[19, 15]], 1, 1, (c, top, X, Y) => clock(c, top, X, Y));
-    wide(p, [[10, 15]], 3, 2, (c, top, X, Y) => teaTable(c, X, Y, 48, 30, [250, 240, 214]));
+    // The tea corner, under the clock.
+    wide(p, [[19, 15]], 3, 2, (c, top, X, Y) => teaTable(c, X, Y, 48, 30, [250, 240, 214])); one(p, [[22, 13]], (c, top, X, Y) => clock(c, top, X, Y));
+    one(p, [[18, 15], [22, 15]], (c, top, X, Y) => armchair(c, X, Y, [110, 160, 110]));
   },
 });
 // Cyllage's: a seaside house turned the other way round, Luvdisc in the tank.
 PLANS.KalosCyllageTrade = house({
   flip: true, floor: (p, c) => planks(p, c, [232, 216, 182]), wall: [190, 220, 240], wallOpts: { panel: [244, 246, 250], top: WHITE, skirt: [90, 130, 180] }, wood: [226, 214, 196], units: [244, 246, 250], worktop: [100, 160, 220],
-  cloth: [100, 160, 226], check: WHITE, sofa: [80, 140, 210], bed: [80, 190, 200], leaf: [80, 170, 130], rugs: [[13, 7, 19, 11, [90, 150, 220]], [4, 9, 8, 11, [240, 200, 140]], [24, 12, 28, 12, [240, 200, 140]]],
+  cloth: [100, 160, 226], check: WHITE, sofa: [80, 140, 210], bed: [80, 190, 200], leaf: [80, 170, 130], rug: [90, 150, 220], rug2: [240, 200, 140], toy: [250, 140, 180],
   art(p, c) {
     tankWall(p, c, 13, 1, 18, 2, 6); for (const [dx, dy] of [[20, 14], [50, 22], [78, 12]]) { const x = 13 * T + dx, y = T + dy; c.ellipse(x - 3, y, 4, 4, [250, 140, 180]); c.ellipse(x + 3, y, 4, 4, [250, 140, 180]); c.poly([[x - 7, y + 1], [x + 7, y + 1], [x, y + 9]], [250, 140, 180]); c.p(x - 3, y, INK); c.ellipse(x, y + 3, 2, 1, [255, 200, 220]); }
     for (const x of [9, 21]) { c.ellipse(x * T + 8, 28, 13, 13, [240, 244, 250]); c.ellipse(x * T + 8, 28, 10, 10, [150, 206, 244]); c.rect(x * T + 7, 16, 2, 24, [240, 244, 250]); c.rect(x * T - 4, 27, 24, 2, [240, 244, 250]); c.rect(x * T - 1, 34, 18, 3, [70, 130, 200]); }
@@ -2449,23 +2580,25 @@ PLANS.KalosCyllageTrade = house({
   },
   more(p, m) {
     // Shells and floats, and heart cushions.
-    one(p, [[12, 5], [19, 13], [8, 22]], (c, top, X, Y) => { shadow(c, X, Y); c.ellipse(X + 5, Y + 8, 4, 4, [250, 140, 180]); c.ellipse(X + 11, Y + 8, 4, 4, [250, 140, 180]); c.poly([[X + 1, Y + 9], [X + 15, Y + 9], [X + 8, Y + 15]], [250, 140, 180]); c.ellipse(X + 5, Y + 7, 1, 1, WHITE); });
-    one(p, [[20, 4], [21, 4]], (c, top, X, Y) => { crate(c, X, Y, [200, 180, 140]); c.ellipse(X + 5, Y + 3, 3, 2, [250, 230, 220]); c.ellipse(X + 11, Y + 4, 2, 2, [250, 180, 160]); });
-    wide(p, [[20, 21]], 1, 1, (c, top, X, Y) => { shadow(c, X, Y); top.ellipse(X + 8, Y - 6, 5, 20, [60, 130, 190]); top.ellipse(X + 8, Y - 6, 4, 19, [250, 220, 110]); top.rect(X + 7, Y - 22, 2, 32, WHITE); });
-    wide(p, [[19, 15]], 3, 2, (c, top, X, Y) => teaTable(c, X, Y, 48, 30, [240, 244, 250])); wide(p, [[11, 21]], 2, 1, (c, top, X, Y) => bench(c, X, Y, 32, [226, 214, 196]));
+    one(p, [[m(12), 5], [m(13), 20], [m(18), 15]], (c, top, X, Y) => { shadow(c, X, Y); c.ellipse(X + 5, Y + 8, 4, 4, [250, 140, 180]); c.ellipse(X + 11, Y + 8, 4, 4, [250, 140, 180]); c.poly([[X + 1, Y + 9], [X + 15, Y + 9], [X + 8, Y + 15]], [250, 140, 180]); c.ellipse(X + 5, Y + 7, 1, 1, WHITE); });
+    one(p, [[m(10), 4], [m(11), 4]], (c, top, X, Y) => { crate(c, X, Y, [200, 180, 140]); c.ellipse(X + 5, Y + 3, 3, 2, [250, 230, 220]); c.ellipse(X + 11, Y + 4, 2, 2, [250, 180, 160]); });
+    // The sea corner: tea by the surfboard.
+    one(p, [[m(22), 14]], (c, top, X, Y) => { shadow(c, X, Y); top.ellipse(X + 8, Y - 6, 5, 20, [60, 130, 190]); top.ellipse(X + 8, Y - 6, 4, 19, [250, 220, 110]); top.rect(X + 7, Y - 22, 2, 32, WHITE); });
+    wide(p, [[m(19, 3), 15]], 3, 2, (c, top, X, Y) => teaTable(c, X, Y, 48, 30, [240, 244, 250])); one(p, [[m(22), 16]], (c, top, X, Y) => armchair(c, X, Y, [80, 140, 210]));
   },
 });
 // Snowbelle's: a log cabin with the fire going, a piano for Jigglypuff to sing to.
 PLANS.KalosSnowbelleTrade = house({
   log: true, floor: (p, c) => planks(p, c, [168, 120, 82]), wall: [150, 104, 70], wood: [120, 82, 56], units: [200, 170, 130], worktop: [110, 76, 50],
-  cloth: [190, 50, 60], check: WHITE, sofa: [190, 60, 70], bed: [60, 130, 140], leaf: [60, 120, 90], rugs: [[13, 6, 19, 11, [170, 50, 60]], [23, 9, 27, 11, [226, 200, 160]], [9, 15, 14, 18, [226, 150, 170]]],
+  cloth: [190, 50, 60], check: WHITE, sofa: [190, 60, 70], bed: [60, 130, 140], leaf: [60, 120, 90], rug: [170, 50, 60], rug2: [226, 200, 160], toy: [226, 150, 170], plates: [250, 240, 214],
   art(p, c) { fireplace(c, 14 * T, 16, 4 * T, 48); for (const x of [10, 19, 27]) snowWindow(c, x * T + 2, 12, 30, 30); c.box(4 * T, 10, 30, 30, [250, 220, 230], [110, 76, 50]); c.ellipse(4 * T + 15, 27, 9, 9, [250, 170, 200]); c.poly([[4 * T + 8, 22], [4 * T + 9, 14], [4 * T + 14, 19]], [250, 170, 200]); c.poly([[4 * T + 22, 22], [4 * T + 21, 14], [4 * T + 16, 19]], [250, 170, 200]); c.ellipse(4 * T + 12, 26, 2, 2, [90, 190, 200]); c.ellipse(4 * T + 18, 26, 2, 2, [90, 190, 200]); c.ellipse(4 * T + 15, 21, 3, 2, [250, 200, 220]); },
   more(p, m) {
-    wide(p, [[10, 15]], 3, 2, (c, top, X, Y) => piano(c, top, X, Y)); one(p, [[11, 17]], (c, top, X, Y) => stool(c, top, X, Y, [110, 40, 50]));
-    one(p, [[13, 15], [21, 22], [12, 5]], (c, top, X, Y) => plush(c, top, X, Y, [250, 170, 200]));
+    // The music corner: the piano Jigglypuff sings to.
+    wide(p, [[19, 15]], 3, 2, (c, top, X, Y) => piano(c, top, X, Y)); one(p, [[20, 17]], (c, top, X, Y) => stool(c, top, X, Y, [110, 40, 50]));
+    one(p, [[22, 16], [13, 20], [12, 5]], (c, top, X, Y) => plush(c, top, X, Y, [250, 170, 200]));
     // Firewood, and boots drying.
     one(p, [[10, 4], [11, 4], [19, 5]], (c, top, X, Y) => { shadow(c, X, Y); for (let r = 0; r < 3; r++) for (let k = 0; k < 3 - (r > 1); k++) { c.ellipse(X + 4 + k * 4 + (r % 2) * 2, Y + 12 - r * 4, 2.5, 2.5, [110, 76, 50]); c.ellipse(X + 4 + k * 4 + (r % 2) * 2, Y + 12 - r * 4, 1.5, 1.5, [214, 180, 130]); } });
-    wide(p, [[19, 15]], 3, 2, (c, top, X, Y) => teaTable(c, X, Y, 48, 30, [226, 200, 160])); wide(p, [[19, 21]], 2, 1, (c, top, X, Y) => bench(c, X, Y, 32, [120, 82, 56]));
+    one(p, [[18, 15]], (c, top, X, Y) => armchair(c, X, Y, [190, 60, 70]));
   },
 });
 // Aquacorde's rest house: two beds, a sofa and the kettle on.
@@ -2494,7 +2627,7 @@ PLANS.KalosAquacordeShop = shop({
   },
   fit(p) {
     const BLUE = [70, 120, 200], POT = [[150, 100, 200], [240, 150, 60], [250, 220, 90], [110, 200, 150], [240, 110, 130]];
-    tillRow(p, 5, 11, 6, [8], BLUE, WHITE, (c, top, X, Y, w, k) => { if (k) tillBox(top, X + 30, Y); else for (const dx of [8, 20, 32]) { top.rect(X + dx, Y - 7, 5, 7, POT[dx % 5]); top.rect(X + dx + 1, Y - 9, 3, 2, [200, 206, 226]); } });
+    tillRow(p, 5, 11, 6, [8], BLUE, WHITE, (c, top, X, Y, w, k) => { if (k) { tillBox(top, X + 4, Y); papers(c, X + 30, Y - 1, 2); } else for (const dx of [8, 20, 32]) { top.rect(X + dx, Y - 7, 5, 7, POT[dx % 5]); top.rect(X + dx + 1, Y - 9, 3, 2, [200, 206, 226]); } });
     wide(p, [[5, 4], [7, 4]], 2, 1, (c, top, X, Y) => rack(c, X, Y, 32, [226, 232, 244], jarItem(POT), X)); wide(p, [[10, 4], [12, 4]], 2, 1, (c, top, X, Y) => rack(c, X, Y, 32, [226, 232, 244], ballItem([BALLS[0], BALLS[0], BALLS[1]]), X));
     wide(p, [[3, 9], [13, 9], [13, 12]], 2, 1, (c, top, X, Y) => rack(c, X, Y, 32, [226, 232, 244], jarItem(POT), X + Y));
     one(p, [[2, 4], [3, 4], [2, 5], [15, 4], [3, 12]], (c, top, X, Y) => { crate(c, X, Y, [214, 190, 140]); c.rect(X + 4, Y + 4, 8, 6, WHITE); c.rect(X + 6, Y + 6, 4, 2, BLUE); });
@@ -2542,7 +2675,7 @@ PLANS.KalosCycleShop = shop({
   },
   fit(p) {
     const GRN = [110, 190, 110], YL = [250, 214, 70], ST = [150, 156, 176];
-    wide(p, [[11, 7]], 4, 1, (c, top, X, Y) => { counter(c, X, Y, 64, [90, 96, 116], GRN); tillBox(top, X + 44, Y); top.ellipse(X + 14, Y - 5, 6, 5, YL); top.rect(X + 9, Y - 4, 10, 2, INK); top.ellipse(X + 28, Y - 5, 6, 5, GRN); top.rect(X + 23, Y - 4, 10, 2, INK); });
+    tillRow(p, 8, 14, 7, [10], [90, 96, 116], GRN, (c, top, X, Y, w, k) => { if (k) { tillBox(top, X + 4, Y); top.ellipse(X + 30, Y - 5, 6, 5, YL); top.rect(X + 25, Y - 4, 10, 2, INK); top.ellipse(X + 46, Y - 5, 6, 5, GRN); top.rect(X + 41, Y - 4, 10, 2, INK); } else { c.box(X + 4, Y - 3, 12, 4, [236, 236, 244], [120, 126, 146]); for (let n = 0; n < 3; n++) { c.ellipse(X + 22 + n * 3, Y - 2, 2, 2, [[226, 70, 70], [70, 120, 200], YL][n]); } } });
     [[3, 6, YL], [3, 9, GRN], [3, 12, YL], [17, 9, GRN], [17, 12, YL], [7, 11, GRN], [13, 11, YL]].forEach(([x, y, col]) => prop(p, x, y, 2, 1, (c, top, X, Y) => { c.rect(X + 2, Y + 13, 28, 2, ST); c.rect(X + 15, Y + 6, 2, 8, ST); bike(c, X, Y, col); }));
     wide(p, [[15, 4]], 4, 1, (c, top, X, Y) => { table(c, X, Y, 64, 16, ST); c.ellipse(X + 14, Y + 5, 7, 5, INK, 2); c.rect(X + 28, Y + 3, 12, 2, [226, 70, 70]); c.rect(X + 44, Y + 2, 4, 7, [70, 120, 200]); c.rect(X + 52, Y + 4, 8, 3, [150, 154, 170]); top.box(X + 50, Y - 8, 8, 9, [226, 70, 70], INK); });
     wide(p, [[8, 4], [12, 4]], 2, 1, (c, top, X, Y) => rack(c, X, Y, 32, [226, 228, 238], (cc, x, y, k) => { const col = [YL, GRN, [226, 70, 70], [70, 120, 200]][k % 4]; cc.ellipse(x + 2, y + 3, 2.5, 2.5, col); cc.rect(x, y + 4, 5, 1, INK); }, X));
@@ -2573,9 +2706,14 @@ PLANS.KalosHerboriste = shop({
     [3, 5, 7, 9, 11, 19, 21, 23, 25, 27].forEach((x, k) => prop(p, x, 4, 2, 1, (c, top, X, Y) => rack(c, X, Y, 32, WOOD, k % 2 ? jarItem(HERBS) : (cc, px, py) => { cc.box(px - 1, py + 1, 6, 5, lt(WOOD, 0.3), dk(WOOD, 0.4)); cc.p(px + 2, py + 3, GOLD); }, k)));
     wide(p, [[11, 8]], 11, 1, (c, top, X, Y) => {
       counter(c, X, Y, 11 * T, WOOD, [226, 200, 150]); tillBox(top, X + 150, Y, [110, 76, 50]);
-      // Scales, mortar, jars.
+      // Nobody minding the shop just now: scales and mortar left out, the day's goods wrapped and priced, a card
+      // propped in the middle (a clock face: back at three) and the bell to ring.
       top.rect(X + 23, Y - 12, 2, 12, GOLD); top.rect(X + 14, Y - 11, 20, 1, GOLD); for (const dx of [14, 33]) { top.rect(X + dx, Y - 10, 1, 4, GOLD); top.ellipse(X + dx, Y - 5, 4, 2, GOLD); } c.ellipse(X + 52, Y - 1, 6, 3, [200, 200, 206]); c.line(X + 52, Y - 2, X + 58, Y - 8, [150, 150, 160], 2);
-      for (let k = 0; k < 5; k++) { top.box(X + 72 + k * 11, Y - 9, 8, 9, [220, 240, 250, 150], [120, 150, 170]); top.rect(X + 73 + k * 11, Y - 5, 6, 4, HERBS[k]); top.rect(X + 72 + k * 11, Y - 10, 8, 2, [150, 108, 70]); }
+      for (let k = 0; k < 2; k++) { top.box(X + 63 + k * 10, Y - 9, 8, 9, [220, 240, 250, 150], [120, 150, 170]); top.rect(X + 64 + k * 10, Y - 5, 6, 4, HERBS[k + 1]); top.rect(X + 63 + k * 10, Y - 10, 8, 2, [150, 108, 70]); }
+      c.rect(X + 86, Y - 2, 2, 3, [110, 76, 50]); c.rect(X + 100, Y - 2, 2, 3, [110, 76, 50]); top.box(X + 82, Y - 19, 24, 17, [250, 244, 222], [110, 76, 50]); frame(top, X + 84, Y - 17, 20, 13, [190, 160, 110]);
+      top.ellipse(X + 90, Y - 11, 4, 4, WHITE); top.ellipse(X + 90, Y - 11, 4, 4, INK, 1); top.rect(X + 90, Y - 14, 1, 3, INK); top.rect(X + 90, Y - 11, 3, 1, INK); for (let k = 0; k < 3; k++) top.rect(X + 96, Y - 15 + k * 4, 6 - (k % 2) * 2, 1, [150, 60, 50]);
+      c.rect(X + 112, Y - 1, 12, 2, dk(GOLD, 0.4)); top.ellipse(X + 118, Y - 4, 5, 4, GOLD); top.ellipse(X + 116, Y - 6, 2, 1, lt(GOLD, 0.6)); top.rect(X + 117, Y - 9, 2, 2, dk(GOLD, 0.3));
+      for (let k = 0; k < 2; k++) { const x = X + 128 + k * 9, y = Y - 4 - k * 2; c.box(x, y, 10, 7, [200, 170, 120], [130, 100, 70]); c.rect(x + 4, y, 1, 7, [226, 200, 150]); c.rect(x, y + 3, 10, 1, [226, 200, 150]); c.box(x + 6, y + 4, 5, 4, WHITE, [150, 150, 170]); c.p(x + 8, y + 6, [200, 60, 60]); }
     });
     // The drying beam over the counter.
     p.paint(9.6, (c, top) => { for (const x of [11 * T, 22 * T - 3]) { top.rect(x, 6 * T + 2, 3, 2 * T - 2, dk(WOOD, 0.3)); } top.rect(11 * T, 6 * T + 2, 11 * T, 3, dk(WOOD, 0.2)); bundles(top, 11 * T + 2, 6 * T + 5, 11 * T - 4, 2); });
@@ -2675,7 +2813,7 @@ PLANS.KalosFriendSafariLobby = shop({
   },
   fit(p) {
     const BAM = [200, 164, 96], GRN = [90, 140, 90];
-    tillRow(p, 11, 21, 8, [16], BAM, [110, 160, 100], (c, top, X, Y, w, k) => { for (let x = X + 4; x < X + w; x += 8) c.rect(x, Y + 3, 1, 11, dk(BAM, 0.3)); if (k) { tillBox(top, X + 56, Y, [110, 76, 50]); papers(c, X + 14, Y - 1, 3); } else { top.box(X + 10, Y - 7, 6, 7, [50, 52, 64], INK); top.box(X + 18, Y - 7, 6, 7, [50, 52, 64], INK); top.rect(X + 15, Y - 5, 4, 2, [50, 52, 64]); c.box(X + 44, Y - 3, 14, 5, [250, 240, 200], [110, 76, 50]); } });
+    tillRow(p, 11, 21, 8, [16], BAM, [110, 160, 100], (c, top, X, Y, w, k) => { for (let x = X + 4; x < X + w; x += 8) c.rect(x, Y + 2, 1, 6, dk(BAM, 0.3)); if (k) { tillBox(top, X + 4, Y, [110, 76, 50]); papers(c, X + 30, Y - 1, 3); } else { top.box(X + 10, Y - 7, 6, 7, [50, 52, 64], INK); top.box(X + 18, Y - 7, 6, 7, [50, 52, 64], INK); top.rect(X + 15, Y - 5, 4, 2, [50, 52, 64]); c.box(X + 44, Y - 3, 14, 5, [250, 240, 200], [110, 76, 50]); } });
     one(p, [[2, 4], [29, 4], [12, 4], [20, 4], [2, 25], [29, 25], [2, 14], [29, 14]], (c, top, X, Y) => palm(c, top, X, Y));
     // What lives where: three boards.
     [[4, 5, [110, 180, 110]], [7, 5, [110, 170, 230]], [22, 5, [226, 190, 120]], [25, 5, [200, 150, 220]]].forEach(([x, y, col]) => prop(p, x, y, 2, 1, (c, top, X, Y) => { c.rect(X + 14, Y, 4, 14, [110, 76, 50]); top.box(X, Y - 18, 32, 20, [250, 240, 200], [110, 76, 50]); top.rect(X + 3, Y - 15, 26, 9, lt(col, 0.4)); for (const dx of [8, 16, 24]) { top.ellipse(X + dx, Y - 10, 3, 3, col); top.p(X + dx - 1, Y - 11, INK); } top.rect(X + 3, Y - 4, 18, 2, [110, 76, 50]); }));
@@ -2757,16 +2895,18 @@ PLANS.KalosRoute22LeagueGate = shop({
     const ax = 12 * T + 8; c.box(ax - 26, 6, 52, 58, [206, 202, 216], [90, 86, 110]); c.ellipse(ax, 8, 26, 8, [90, 86, 110]); c.ellipse(ax, 9, 24, 7, [226, 222, 236]); for (const dx of [-24, 16]) { c.rect(ax + dx, 14, 8, 50, [180, 176, 194]); c.rect(ax + dx + 1, 14, 2, 50, [236, 232, 244]); for (let y = 22; y < 64; y += 12) c.rect(ax + dx, y, 8, 1, [120, 116, 140]); }
     c.rect(ax - 14, 22, 28, 42, [12, 10, 20]); c.ellipse(ax, 22, 14, 8, [12, 10, 20]); for (let k = 3; k >= 1; k--) c.ellipse(ax, 58, 5 * k, 9 * k, [90, 110, 190, 22]); ball(c, ax, 9, 5, [226, 190, 60]);
     c.rect(12 * T, 4 * T, T, T, [12, 10, 20]); steps(c, 12, 4, [190, 186, 204]);
-    // The way through, and the League's seal where the guard stands.
+    // The way through, and the League's seal where the guard stands. Below the seal the approach widens between the
+    // braziers (the right one is the hall's own; its twin stands a tile further out, to leave two tiles between them).
+    c.rect(11 * T, 12 * T, 2 * T, 5 * T, [186, 182, 204]); for (let y = 12 * T; y < 17 * T; y += 16) c.rect(11 * T, y, 2 * T, 1, [150, 146, 170]); c.rect(11 * T - 1, 12 * T, 1, 5 * T, GOLD); c.rect(13 * T, 12 * T, 1, 5 * T, GOLD);
     c.rect(12 * T - 2, 5 * T, T + 4, 12 * T, [206, 202, 216, 150]); c.rect(12 * T - 3, 5 * T, 1, 12 * T, GOLD); c.rect(13 * T + 2, 5 * T, 1, 12 * T, GOLD);
     const cy = 9 * T + 8; c.ellipse(ax, cy, 50, 30, [206, 202, 216]); c.ellipse(ax, cy, 50, 30, GOLD, 2); c.ellipse(ax, cy, 38, 22, [150, 40, 50]); c.ellipse(ax, cy, 38, 22, GOLD, 1); c.rect(ax - 37, cy - 1, 74, 3, GOLD); c.ellipse(ax, cy, 12, 8, GOLD); c.ellipse(ax, cy, 9, 5, [206, 202, 216]);
-    for (const x of [10, 13]) glow(c, x * T + 16, 12 * T + 10, 30, [250, 150, 50], 18);
+    for (const x of [9, 13]) glow(c, x * T + 16, 12 * T + 10, 30, [250, 150, 50], 18);
   },
   fit(p) {
     const ST = [190, 186, 204];
     // Champions' statues, and the braziers either side of the way.
     wide(p, [[5, 5], [17, 5]], 2, 2, (c, top, X, Y) => { c.ellipse(X + 16, Y + 30, 16, 3, [0, 0, 0, 60]); c.box(X + 1, Y + 14, 30, 17, ST, [90, 86, 110]); c.rect(X + 2, Y + 15, 28, 3, lt(ST, 0.4)); c.rect(X + 8, Y + 22, 16, 5, GOLD); lucario(c, top, X + 16, Y + 16, 0.55, [176, 180, 200]); });
-    wide(p, [[10, 12], [13, 12]], 2, 2, (c, top, X, Y) => { c.ellipse(X + 16, Y + 29, 14, 4, [0, 0, 0, 60]); c.box(X + 9, Y + 12, 14, 18, ST, [90, 86, 110]); c.rect(X + 11, Y + 13, 3, 16, lt(ST, 0.4)); c.box(X + 5, Y + 26, 22, 5, dk(ST, 0.15), [90, 86, 110]); c.poly([[X + 2, Y + 4], [X + 30, Y + 4], [X + 24, Y + 13], [X + 8, Y + 13]], [96, 98, 112]); c.rect(X + 2, Y + 3, 28, 3, [130, 132, 150]); flame(top, X + 16, Y + 4, 1.5); flame(top, X + 9, Y + 4, 0.8); flame(top, X + 23, Y + 4, 0.8); });
+    wide(p, [[9, 12], [13, 12]], 2, 2, (c, top, X, Y) => { c.ellipse(X + 16, Y + 29, 14, 4, [0, 0, 0, 60]); c.box(X + 9, Y + 12, 14, 18, ST, [90, 86, 110]); c.rect(X + 11, Y + 13, 3, 16, lt(ST, 0.4)); c.box(X + 5, Y + 26, 22, 5, dk(ST, 0.15), [90, 86, 110]); c.poly([[X + 2, Y + 4], [X + 30, Y + 4], [X + 24, Y + 13], [X + 8, Y + 13]], [96, 98, 112]); c.rect(X + 2, Y + 3, 28, 3, [130, 132, 150]); flame(top, X + 16, Y + 4, 1.5); flame(top, X + 9, Y + 4, 0.8); flame(top, X + 23, Y + 4, 0.8); });
     one(p, [[3, 9], [20, 9], [3, 14], [20, 14], [8, 6], [15, 6]], (c, top, X, Y) => pillar(c, top, X, Y, [206, 202, 216]));
     one(p, [[9, 4], [15, 4]], (c, top, X, Y) => torch(c, top, X, Y));
     one(p, [[2, 4], [21, 4], [2, 17], [21, 17]], (c, top, X, Y) => armour(c, top, X, Y));
