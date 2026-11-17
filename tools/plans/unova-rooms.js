@@ -1553,27 +1553,209 @@ Object.assign(WD, {
 });
 
 // ---------------------------------------------------------------- more roles
-// A gatehouse: the lane between its two doors, the electric bulletin board, benches and plants along the walls.
-function gateRoom(F, o = {}) {
-  const I = F.I, st = F.st, p = F.p, hue = st.fab[0], r = F.rnd, cy = F.exit.y, mid = (F.L + F.R + 1) / 2 * S;
-  F.art((c) => {
-    const x0 = F.L * S, x1 = (F.R + 1) * S, Y = cy * S - 8; c.rect(x0, Y, x1 - x0, 32, A(hue, 64)); c.rect(x0, Y, x1 - x0, 2, hue); c.rect(x0, Y + 30, x1 - x0, 2, hue);
-    for (let x = x0 + 56; x < x1 - 40; x += 32) { if (Math.abs(x - mid) < 30) continue; const d = x < mid ? -1 : 1; c.poly([[x - d * 5, Y + 9], [x + d * 4, Y + 16], [x - d * 5, Y + 23], [x - d * 5, Y + 19], [x - d, Y + 16], [x - d * 5, Y + 13]], A(WHITE, 210)); }
-    c.ellipse(mid, Y + 16, 22, 15, A(WHITE, 120)); c.ellipse(mid, Y + 16, 22, 15, hue, 2); ball(c, mid, Y + 16, 9, hue);
-  }, 0.1);
-  for (const w of p.warps) { const left = w.x < (F.L + F.R) / 2, X = left ? (F.L - 1) * S + 5 : (F.R + 1) * S; p.paint(0.05, (c) => { c.box(X, w.y * S - 16, 11, 48, o.out || [170, 214, 244], [40, 44, 60]); c.rect(X + 1, w.y * S - 15, 9, 3, WHITE); c.rect(X + (left ? 1 : 8), w.y * S - 12, 2, 43, [226, 240, 250]); const mx = left ? F.L * S : w.x * S + 2; c.box(mx, w.y * S - 8, 30, 32, hue, dk(hue, 0.5)); c.rect(mx + 3, w.y * S - 5, 24, 26, lt(hue, 0.25)); }); }
-  F.k.fixtures((s) => s.w === 2 && s.h === 2 ? (s.y < (F.T + F.B) / 2 ? (c, X, Y, W, H) => { P.counter(c, X, Y - 6, W, H + 6, hue, WHITE); c.box(X + 8, Y - 13, 12, 9, [50, 54, 70], INK); c.rect(X + 10, Y - 11, 8, 5, [110, 190, 236]); c.rect(X + 22, Y - 5, 5, 3, WHITE); } : (c, X, Y, W, H) => { P.table(c, X, Y - 6, W, H + 6, [200, 206, 220]); c.box(X + 5, Y, 9, 7, WHITE, [150, 150, 160]); c.box(X + 17, Y + 1, 9, 7, lt(hue, 0.5), [150, 150, 160]); c.rect(X + 8, Y + 11, 5, 5, hue); c.rect(X + 18, Y + 12, 6, 4, WHITE); }) : null);
-  const seats = F.shuffle([I.bench3, I.bench, I.lockers, I.signpost, I.bench, I.vending]);
-  F.run([I.plant, null, seats[0], null, null, seats[1]], 1); F.run([I.plant, null, seats[2], null, null, null, seats[3]], -1);
-  for (const x of F.shuffle([F.L + 3, F.L + 8, F.R - 9, F.R - 4]).slice(0, 3)) F.stand(x, F.B, r() < 0.7 ? I.bench : I.signpost);
-  F.front([I.plant, I.plant]);
-  F.col([I.signpost, null, I.plant], -1, F.T + 3); F.col([I.plant], 1, cy + 3);
-  for (const [fx, fy] of [[[0.3, 0.3], [0.7, 0.75]], [[0.72, 0.28], [0.3, 0.78]], [[0.5, 0.22], [0.2, 0.75], [0.8, 0.78]]][(F.num + (seedOf(p.name) & 1)) % 3]) { const at = F.spot(2, 2, [F.L + F.W * fx, F.T + F.H * fy], { clear: true, margin: 1 }); if (at && Math.abs(at[1] - cy) > 2) { F.rug(at[0] - 1, at[1], at[0] + 2, at[1] + 1, lt(hue, 0.35), { kind: "mat" }); F.stand(at[0], at[1], I.bench); F.stand(at[0], at[1] + 1, I.bench); } }
-  if (!F.k.solids.some((q) => q.w === 2 && q.h === 2)) scatter(F, [[{ w: 3, d: (c, X, Y, W) => { F_.counter(c, X, Y, W, st); c.box(X + 6, Y - 10, 12, 9, [50, 54, 70], INK); c.rect(X + 8, Y - 8, 8, 5, [110, 190, 236]); c.rect(X + 26, Y - 4, 6, 3, WHITE); c.rect(X + 36, Y - 6, 5, 5, lt(hue, 0.4)); } }, [F.L + F.W * [0.62, 0.3, 0.5, 0.75][seedOf(p.name) % 4], seedOf(p.name) % 3 === 0 ? F.B - 3.5 : F.T + 4.5]]], { margin: 1 });
-  if (o.more2) o.more2(F);
-  F.decor(Array.isArray(o.wall) ? o.wall : ["led", "window", "map", "clock", "window", "timetable"], { step: 74, fixed: true });
+// ---------------------------------------------------------------- the gatehouses
+// Every gatehouse is the same hall (doors at either end of one lane), so the layout follows where it stands: "bridge" (a picture
+// window on the bay with the bridge across it, the bridge's model or its toll booths), "tube" (the Marine Tube's aquarium
+// walls), "city" (a security desk, an arch and turnstiles), "route" (benches, a vending corner, the notice board) and "rest"
+// (a desert or mountain rest stop). The lane between the two doors always stays clear.
+// A bridge in miniature over pixels x0..x1, its deck at dy, its towers h high: "suspension", "truss", "arch" or "cable".
+function drawBridge(c, x0, x1, dy, h, kind, o = {}) {
+  const w = x1 - x0, deck = o.deck || [226, 226, 236], cab = o.cable || [236, 236, 244], sea = o.sea;
+  if (kind === "suspension") {
+    const t0 = x0 + w * 0.26, t1 = x0 + w * 0.74, top = dy - h, sag = dy - h * 0.18;
+    const cy = (x) => x < t0 ? dy - (dy - top) * ((x - x0) / (t0 - x0)) ** 1.6 : x > t1 ? dy - (dy - top) * ((x1 - x) / (x1 - t1)) ** 1.6 : sag - (sag - top) * ((2 * (x - t0) / (t1 - t0) - 1) ** 2);
+    for (let x = Math.ceil(x0); x < x1; x++) { const y = Math.round(cy(x)); c.p(x, y, cab); if (x % 3 === 0 && y < dy - 1) c.rect(x, y + 1, 1, dy - y - 1, A(cab, 120)); }
+    for (const t of [t0, t1]) { c.rect(Math.round(t) - 1, top - 1, 3, dy - top + 5, o.tower || [214, 80, 70]); c.rect(Math.round(t) - 1, top + Math.round(h * 0.35), 3, 1, dk(o.tower || [214, 80, 70], 0.3)); }
+  } else if (kind === "truss") {
+    const th = Math.max(4, Math.round(h * 0.45)), n = Math.max(4, Math.round(w / th));
+    c.rect(x0, dy - th, w, 1, [150, 110, 80]);
+    for (let i = 0; i < n; i++) { const a = x0 + w * i / n, b = x0 + w * (i + 1) / n; c.line(a, dy, (a + b) / 2, dy - th, [170, 120, 84]); c.line((a + b) / 2, dy - th, b, dy, [170, 120, 84]); }
+    for (let i = 1; i < 4; i++) c.rect(Math.round(x0 + w * i / 4) - 1, dy + 2, 3, Math.max(3, Math.round(h * 0.4)), [130, 110, 100]);
+    const tx = x0 + w * 0.3, cw = Math.max(5, Math.round(w / 9));
+    for (let i = 0; i < 3; i++) { c.rect(Math.round(tx + i * (cw + 1)), dy - Math.max(3, th - 2), cw, Math.max(3, th - 2), i ? WHITE : [220, 70, 60]); c.rect(Math.round(tx + i * (cw + 1)) + 1, dy - Math.max(3, th - 2) + 1, cw - 2, 1, [70, 120, 200]); }
+  } else if (kind === "arch") {
+    const stone = o.stone || [190, 176, 150], n = Math.max(3, Math.round(w / 20));
+    c.rect(x0, dy - 1, w, 4, stone); c.rect(x0, dy - 1, w, 1, lt(stone, 0.3));
+    for (let i = 0; i <= n; i++) { const x = Math.round(x0 + w * i / n); c.rect(x - 2, dy + 3, 4, Math.max(3, Math.round(h * 0.45)), dk(stone, 0.15)); }
+    for (let i = 0; i < n; i++) { const a = x0 + w * i / n, b = x0 + w * (i + 1) / n; c.ellipse((a + b) / 2, dy + 3, (b - a) / 2 - 2, 2, dk(stone, 0.3), 1); }
+    for (let x = x0 + 3; x + 6 < x1; x += Math.max(9, w / 7)) { const hh = 3 + Math.round(hsh(x, dy, 2) * 3); c.rect(Math.round(x), dy - 1 - hh, 6, hh, [236, 226, 206]); c.poly([[Math.round(x) - 1, dy - 1 - hh], [Math.round(x) + 3, dy - 4 - hh], [Math.round(x) + 7, dy - 1 - hh]], [190, 90, 70]); }
+  } else {
+    const pyl = [x0 + w * 0.3, x0 + w * 0.7], top = dy - h;
+    for (const t of pyl) { for (let i = 1; i <= 5; i++) for (const d of [-1, 1]) c.line(t, top + 2 + i, t + d * w * 0.045 * i, dy, A(cab, 200)); c.poly([[t - 3, dy + 4], [t - 1, top], [t + 1, top], [t + 3, dy + 4]], o.tower || [236, 236, 244]); c.rect(Math.round(t) - 2, top + Math.round(h * 0.4), 4, 1, dk(o.tower || [236, 236, 244], 0.25)); }
+    for (let x = Math.ceil(x0) + 4; x < x1; x += 6) c.p(x, dy + 1, [250, 220, 120]);
+  }
+  c.rect(x0, dy, w, 2, deck); c.rect(x0, dy + 2, w, 1, dk(deck, 0.45));
 }
-const gateStyle = (hue, o = {}) => (r) => ({ floor: o.floor || (r < 0.5 ? T.check([236, 240, 244], mix([214, 224, 236], hue, 0.12), 1) : T.lino(mix([236, 238, 242], hue, 0.06), mix([200, 206, 220], hue, 0.3))), wall: typeof o.wall === "function" ? o.wall : paper(mix([226, 234, 240], hue, 0.12), { base: dk(hue, 0.25), rail: hue }), wood: [200, 206, 220], fab: [hue, lt(hue, 0.35), dk(hue, 0.25)], mat: hue, counter: hue, counterTop: WHITE, ...o.st });
+const SKIES = { day: [[200, 230, 250], [150, 206, 244], [70, 140, 210]], dusk: [[250, 200, 150], [236, 150, 140], [90, 90, 160]], sea: [[220, 240, 250], [170, 216, 244], [60, 150, 200]] };
+// The back wall as one long window on the bay with the bridge across it.
+const bayWall = (frameCol, kind, sky = "day", o = {}) => (c, X, Y, W) => {
+  const [hi, lo, sea] = SKIES[sky] || SKIES.day, gy = Y + 3, gh = 23, hz = gy + 13;
+  c.rect(X, Y, W, 32, frameCol); c.rect(X, Y, W, 2, lt(frameCol, 0.35));
+  for (let i = 0; i < 13; i++) c.rect(X, gy + i, W, 1, mix(hi, lo, i / 12));
+  if (sky === "dusk") { c.ellipse(X + W * 0.62, hz - 1, 9, 9, [250, 230, 160]); c.ellipse(X + W * 0.62, hz - 1, 13, 13, [250, 230, 160, 60]); } else { c.ellipse(X + W * 0.12, gy + 4, 4, 4, [255, 250, 220]); for (const [dx, dy] of [[0.3, 3], [0.55, 6], [0.83, 2]]) { c.ellipse(X + W * dx, gy + dy, 9, 2, A(WHITE, 200)); c.ellipse(X + W * dx + 4, gy + dy - 1, 5, 2, A(WHITE, 220)); } }
+  for (let x = 0; x < W; x += 2) { const hh = 2 + Math.round((Math.sin(x / 23) + Math.sin(x / 9 + 1)) * 1.3 + 2); c.rect(X + x, hz - hh, 2, hh, mix(lo, o.land || [90, 130, 110], 0.55)); }
+  c.rect(X, hz, W, gy + gh - hz, sea); for (let i = 0; i < W / 6; i++) c.rect(X + Math.floor(hsh(i, 1, W) * W), hz + 2 + Math.floor(hsh(i, 2, W) * (gy + gh - hz - 3)), 4, 1, lt(sea, 0.3));
+  drawBridge(c, X + W * 0.08, X + W * 0.92, hz + 1, 11, kind, { sea, tower: o.tower, deck: o.deck });
+  if (sky === "dusk") c.rect(X, hz + 3, W, 1, A([250, 220, 150], 120));
+  for (let x = 0; x <= W; x += 52) { c.rect(X + x - 2, gy, 3, gh, frameCol); c.rect(X + x - 2, gy, 1, gh, lt(frameCol, 0.3)); }
+  c.rect(X, gy - 1, W, 1, dk(frameCol, 0.3)); c.rect(X, gy + gh, W, 2, lt(frameCol, 0.45)); c.rect(X, Y + 28, W, 4, dk(frameCol, 0.35));
+};
+// The back wall as the Marine Tube itself: deep water behind glass, fish, kelp, light from above.
+const tubeWall = (frameCol) => (c, X, Y, W) => {
+  c.rect(X, Y, W, 32, frameCol);
+  for (let i = 0; i < 24; i++) c.rect(X, Y + 3 + i, W, 1, mix([90, 190, 236], [24, 70, 140], i / 23));
+  for (let x = 10; x < W; x += 37) c.poly([[X + x, Y + 3], [X + x + 8, Y + 3], [X + x + 22, Y + 27], [X + x + 10, Y + 27]], [255, 255, 255, 26]);
+  for (let x = 6; x < W; x += 23) { const hh = 6 + Math.round(hsh(x, 4, W) * 12); for (let j = 0; j < hh; j += 2) c.rect(X + x + Math.round(Math.sin(j / 2 + x) * 1.5), Y + 26 - j, 2, 2, j & 2 ? [60, 150, 90] : [80, 176, 100]); }
+  c.rect(X, Y + 24, W, 3, [200, 190, 150]); for (let x = 3; x < W; x += 11) c.ellipse(X + x, Y + 25, 3, 1, [176, 166, 130]);
+  for (let i = 0; i < W / 26; i++) { const x = X + 8 + hsh(i, 3, W) * (W - 16), y = Y + 7 + hsh(i, 5, W) * 14; fish(c, x, y, 0.45 + hsh(i, 7, W) * 0.35, [[250, 170, 90], [250, 236, 140], [240, 110, 120], [150, 220, 250], [200, 160, 240]][i % 5], i & 1); }
+  for (let i = 0; i < W / 14; i++) c.ellipse(X + 4 + hsh(i, 9, W) * (W - 8), Y + 5 + hsh(i, 11, W) * 18, 1, 1, A(WHITE, 160));
+  for (let x = 0; x <= W; x += 64) { c.rect(X + x - 3, Y + 2, 5, 26, frameCol); for (let y = 5; y < 27; y += 5) c.p(X + x - 1, Y + y, lt(frameCol, 0.4)); }
+  c.rect(X, Y, W, 3, lt(frameCol, 0.2)); c.rect(X, Y + 27, W, 5, dk(frameCol, 0.3)); c.rect(X, Y + 27, W, 1, lt(frameCol, 0.4));
+};
+// A desert lookout: dunes under a hot sky through wide windows.
+const duneWall = (col) => (c, X, Y, W) => {
+  adobeWall(col)(c, X, Y, W);
+  for (let x = 12; x + 50 < W; x += 70) { c.box(X + x, Y + 5, 50, 18, [250, 226, 170], dk(col, 0.4)); c.rect(X + x + 1, Y + 6, 48, 7, [250, 236, 200]); c.ellipse(X + x + 38, Y + 9, 3, 3, [255, 250, 220]); for (let i = 0; i < 48; i += 2) { const hh = 4 + Math.round(Math.sin((x + i) / 7) * 2 + Math.sin((x + i) / 3) * 1); c.rect(X + x + 1 + i, Y + 22 - hh, 2, hh, i % 6 < 3 ? [226, 180, 110] : [236, 196, 130]); } c.rect(X + x + 24, Y + 5, 2, 18, dk(col, 0.4)); }
+};
+// Wall things for the gates.
+Object.assign(WD, {
+  camera: (c, cx, Y) => { c.rect(cx - 1, Y + 4, 2, 5, [90, 96, 110]); c.box(cx - 7, Y + 8, 12, 6, [226, 230, 240], [70, 76, 96]); c.box(cx - 10, Y + 9, 4, 4, [50, 54, 70], INK); c.p(cx - 9, Y + 10, [240, 80, 70]); },
+  notices: (c, cx, Y) => { c.box(cx - 28, Y + 4, 56, 21, [190, 150, 104], [110, 76, 50]); frame(c, cx - 27, Y + 5, 54, 19, [150, 110, 70]); for (let i = 0; i < 9; i++) { const x = cx - 25 + (i % 5) * 10 + (i > 4 ? 5 : 0), y = Y + 7 + (i > 4 ? 9 : 0) + (i & 1), k2 = [WHITE, [250, 240, 150], [200, 230, 250], [250, 200, 200], [210, 240, 200]][i % 5]; c.rect(x, y, 8, 7, k2); c.rect(x + 1, y + 2, 6, 1, [150, 150, 160]); c.rect(x + 1, y + 4, 4, 1, [150, 150, 160]); c.p(x + 4, y, i % 3 ? RED : [70, 110, 200]); } },
+  trail: (c, cx, Y) => { c.box(cx - 16, Y + 5, 32, 19, [226, 214, 180], [120, 84, 44]); c.poly([[cx - 14, Y + 22], [cx - 7, Y + 9], [cx - 2, Y + 15], [cx + 4, Y + 7], [cx + 14, Y + 22]], [150, 150, 160]); c.poly([[cx + 1, Y + 10], [cx + 4, Y + 7], [cx + 7, Y + 10]], WHITE); c.line(cx - 12, Y + 21, cx - 4, Y + 16, RED); c.line(cx - 4, Y + 16, cx + 3, Y + 18, RED); c.line(cx + 3, Y + 18, cx + 9, Y + 12, RED); },
+  sun: (c, cx, Y) => { c.box(cx - 9, Y + 5, 18, 19, WHITE, [200, 120, 60]); c.ellipse(cx, Y + 12, 4, 4, [250, 170, 60]); for (let a = 0; a < 8; a++) c.line(cx + Math.cos(a * 0.785) * 5, Y + 12 + Math.sin(a * 0.785) * 5, cx + Math.cos(a * 0.785) * 7, Y + 12 + Math.sin(a * 0.785) * 7, [250, 170, 60]); c.rect(cx - 6, Y + 19, 12, 1, [200, 120, 60]); c.rect(cx - 4, Y + 21, 8, 1, [70, 140, 220]); },
+  hats: (c, cx, Y) => { c.rect(cx - 14, Y + 8, 28, 2, [130, 96, 60]); for (let i = 0; i < 3; i++) { const x = cx - 9 + i * 9, k2 = [[236, 214, 160], [226, 120, 80], [240, 236, 220]][i]; c.ellipse(x, Y + 15, 6, 2, dk(k2, 0.2)); c.ellipse(x, Y + 13, 3, 3, k2); c.rect(x - 3, Y + 13, 7, 1, [200, 70, 60]); } },
+  dragon: (c, cx, Y) => { c.box(cx - 13, Y + 4, 26, 21, [60, 56, 76], GOLD); c.poly([[cx - 8, Y + 21], [cx - 4, Y + 10], [cx, Y + 14], [cx + 4, Y + 8], [cx + 9, Y + 12], [cx + 5, Y + 15], [cx + 8, Y + 21]], [130, 120, 170]); c.poly([[cx + 4, Y + 8], [cx + 9, Y + 6], [cx + 7, Y + 10]], [130, 120, 170]); c.p(cx + 6, Y + 9, [250, 80, 80]); },
+  wheel: (c, cx, Y) => { c.box(cx - 13, Y + 4, 26, 21, [250, 226, 170], [200, 120, 150]); c.ellipse(cx, Y + 13, 8, 8, [200, 120, 150], 1); for (let a = 0; a < 8; a++) { c.line(cx, Y + 13, cx + Math.cos(a * 0.785) * 8, Y + 13 + Math.sin(a * 0.785) * 8, [200, 120, 150]); c.rect(Math.round(cx + Math.cos(a * 0.785) * 8) - 1, Math.round(Y + 13 + Math.sin(a * 0.785) * 8), 3, 2, [[226, 80, 80], [250, 210, 90], [90, 150, 226], [110, 200, 120]][a % 4]); } c.line(cx, Y + 13, cx - 5, Y + 23, [150, 90, 110]); c.line(cx, Y + 13, cx + 5, Y + 23, [150, 90, 110]); },
+  bracket: (c, cx, Y) => { c.box(cx - 30, Y + 4, 60, 20, [30, 34, 50], GOLD); for (let i = 0; i < 4; i++) { c.rect(cx - 27, Y + 7 + i * 4, 10, 2, i & 1 ? [110, 190, 250] : WHITE); c.rect(cx + 17, Y + 7 + i * 4, 10, 2, i & 1 ? [110, 190, 250] : WHITE); } for (const d of [-1, 1]) { c.rect(cx + d * 17 - (d > 0 ? 0 : 1), Y + 8, 1, 13, [150, 150, 170]); c.rect(cx + d * 10, Y + 10, 1, 9, [150, 150, 170]); } c.rect(cx - 17, Y + 14, 34, 1, [150, 150, 170]); star(c, cx, Y + 13, 5, GOLD); },
+  spotlight: (c, cx, Y) => { c.rect(cx - 1, Y + 3, 2, 4, [70, 70, 84]); c.box(cx - 5, Y + 6, 10, 7, [50, 50, 60], INK); c.ellipse(cx, Y + 13, 4, 2, [255, 250, 210]); },
+});
+// Free-standing things in a gatehouse.
+Object.assign(F_, {
+  benchUp: (c, X, Y, W, st) => { const h = st.fab[0]; c.rect(X + 2, Y + 13, W - 3, 2, [0, 0, 0, 50]); c.box(X + 1, Y, W - 2, 7, lt(h, 0.5), dk(h, 0.3)); c.box(X + 1, Y + 6, W - 2, 6, lt(h, 0.2), dk(h, 0.35)); c.rect(X + 2, Y + 7, W - 4, 1, lt(h, 0.45)); c.rect(X + 3, Y + 12, 3, 2, dk(h, 0.3)); c.rect(X + W - 6, Y + 12, 3, 2, dk(h, 0.3)); },
+  scope: (c, X, Y, W, st) => { const cx = X + W / 2; c.ellipse(cx, Y + 14, 5, 2, [0, 0, 0, 60]); c.rect(cx - 1, Y - 1, 2, 15, [90, 96, 116]); c.box(cx - 4, Y + 12, 8, 3, [90, 96, 116], INK); c.box(cx - 6, Y - 8, 12, 8, st.fab[0], dk(st.fab[0], 0.5)); c.box(cx - 7, Y - 10, 5, 5, [60, 64, 80], INK); c.box(cx + 2, Y - 10, 5, 5, [60, 64, 80], INK); c.p(cx - 5, Y - 8, [190, 226, 250]); c.p(cx + 4, Y - 8, [190, 226, 250]); c.rect(cx - 2, Y - 3, 4, 1, GOLD); },
+  vend: (col) => (c, X, Y, W) => { shade(c, X, Y, W, S); c.box(X, Y - 14, W, 29, col, dk(col, 0.55)); c.rect(X + 1, Y - 13, W - 2, 1, lt(col, 0.35)); c.box(X + 2, Y - 11, W - 6, 13, [230, 240, 250], dk(col, 0.4)); for (let r = 0; r < 2; r++) for (let k2 = 0; k2 < 3; k2++) c.rect(X + 3 + k2 * 3, Y - 10 + r * 6, 2, 5, [[240, 200, 70], [226, 90, 90], [110, 200, 120], [90, 150, 230], [250, 250, 250], [240, 150, 60]][(k2 + r * 3) % 6]); c.rect(X + W - 3, Y - 9, 2, 4, [250, 220, 120]); c.box(X + 3, Y + 6, W - 6, 6, [30, 36, 50], INK); },
+  bins: (c, X, Y, W) => { for (const [dx, col] of [[1, [70, 130, 200]], [8, [90, 170, 100]]]) { c.ellipse(X + dx + 4, Y + 14, 4, 1, [0, 0, 0, 60]); c.box(X + dx, Y + 2, 8, 12, col, dk(col, 0.5)); c.rect(X + dx - 1, Y + 1, 10, 3, lt(col, 0.3)); c.rect(X + dx + 3, Y + 6, 2, 4, WHITE); } },
+  tallTank: (c, X, Y, W) => { shade(c, X, Y, W, S); c.box(X + 1, Y - 14, W - 2, 29, [40, 120, 190], [60, 70, 96]); c.rect(X + 2, Y - 13, W - 4, 3, [190, 226, 250]); c.rect(X + 2, Y + 10, W - 4, 4, [214, 200, 150]); c.rect(X + 3, Y + 2, 1, 8, [70, 170, 100]); c.rect(X + 11, Y - 2, 1, 12, [70, 170, 100]); fish(c, X + 8, Y - 5, 0.5, [250, 170, 90], false); fish(c, X + 7, Y + 4, 0.4, [250, 236, 140], true); c.p(X + 5, Y - 9, WHITE); c.p(X + 10, Y - 7, WHITE); c.rect(X + 2, Y - 12, 1, 22, A(WHITE, 90)); },
+  turnstile: (c, X, Y, W, st, up) => { const g = [70, 76, 96]; shade(c, X, Y, W, S); c.box(X + 3, Y - 6, 10, 21, [200, 206, 220], g); c.rect(X + 4, Y - 5, 8, 2, WHITE); c.box(X + 5, Y - 2, 6, 3, [30, 34, 50], INK); c.rect(X + 6, Y - 1, 4, 1, up ? [110, 230, 130] : [250, 200, 80]); c.rect(X + 13, Y + 2, 3, 8, [170, 220, 250, 170]); c.rect(X, Y + 2, 3, 8, [170, 220, 250, 170]); c.rect(X + 4, Y + 11, 8, 1, dk(g, 0.2)); },
+  scanner: (c, X, Y, W) => { shade(c, X, Y, W, S); c.box(X, Y + 4, W, 11, [150, 156, 170], [70, 76, 96]); for (let i = 2; i < W - 2; i += 3) c.rect(X + i, Y + 5, 1, 3, [70, 76, 96]); c.box(X + W / 2 - 9, Y - 8, 18, 14, [200, 206, 220], [70, 76, 96]); c.rect(X + W / 2 - 7, Y + 2, 14, 4, [24, 26, 34]); for (let i = 0; i < 5; i++) c.rect(X + W / 2 - 6 + i * 3, Y + 3, 2, 2, [24 + i * 8, 26, 34]); c.box(X + W / 2 - 4, Y - 6, 8, 5, [30, 34, 50], INK); c.rect(X + W / 2 - 3, Y - 5, 6, 3, [110, 230, 250]); c.box(X + 3, Y + 1, 7, 4, [226, 150, 90], [130, 70, 40]); },
+  parasol: (c, X, Y, W, st) => { const cx = X + W / 2, k2 = st.fab[0]; c.ellipse(cx, Y + 13, 12, 3, [0, 0, 0, 40]); c.rect(cx, Y - 12, 1, 26, [200, 196, 186]); c.box(cx - 3, Y + 11, 7, 3, [200, 196, 186], [120, 116, 110]); for (let i = 0; i < 6; i++) c.poly([[cx, Y - 20], [cx - 13 + i * 26 / 6, Y - 11], [cx - 13 + (i + 1) * 26 / 6, Y - 11]], i & 1 ? WHITE : k2); c.rect(cx - 13, Y - 11, 27, 1, dk(k2, 0.3)); },
+  skis: (c, X, Y, W) => { c.ellipse(X + 8, Y + 14, 6, 2, [0, 0, 0, 60]); for (const [dx, col] of [[3, [220, 70, 60]], [7, [70, 120, 210]], [11, [250, 200, 80]]]) { c.rect(X + dx, Y - 14, 2, 28, col); c.rect(X + dx, Y - 15, 2, 2, lt(col, 0.4)); } c.line(X + 2, Y - 12, X + 14, Y + 8, [150, 156, 170]); },
+  noticeStand: (c, X, Y, W, st) => { const h = st.fab[0]; c.rect(X + 3, Y + 13, W - 6, 2, [0, 0, 0, 50]); c.rect(X + 4, Y, 2, 14, [110, 116, 136]); c.rect(X + W - 6, Y, 2, 14, [110, 116, 136]); c.box(X + 1, Y - 14, W - 2, 16, [200, 160, 110], dk(h, 0.3)); c.rect(X + 1, Y - 14, W - 2, 3, h); for (let i = 0; i < 6; i++) { const x = X + 4 + (i % 3) * ((W - 8) / 3), y = Y - 9 + Math.floor(i / 3) * 6; c.rect(x, y, 7, 5, [WHITE, [250, 240, 150], [200, 230, 250]][i % 3]); c.p(x + 3, y, RED); } },
+  booth: (c, X, Y, W, H, st, o = {}) => { const h = st.fab[0], gl = [180, 220, 244]; c.rect(X + 2, Y + H - 2, W - 2, 3, [0, 0, 0, 56]); c.box(X + 1, Y + 14, W - 2, H - 15, o.wood ? [150, 104, 66] : [226, 230, 240], [70, 76, 96]); c.box(X + 3, Y - 2, W - 6, 17, gl, [70, 76, 96]); c.rect(X + 4, Y - 1, 4, 15, A(WHITE, 140)); c.rect(X + W / 2 - 1, Y - 2, 2, 17, [70, 76, 96]); c.box(X + 6, Y + 14, W - 12, 3, WHITE, [150, 150, 160]); c.box(X - 1, Y - 9, W + 2, 8, h, dk(h, 0.5)); c.rect(X, Y - 8, W, 2, lt(h, 0.3)); c.box(X + W / 2 - 8, Y - 7, 16, 5, [250, 236, 140], dk(h, 0.4)); for (let i = 0; i < 4; i++) c.rect(X + W / 2 - 6 + i * 3, Y - 5, 2, 1, INK); c.box(X + 5, Y + 20, 7, 6, [60, 64, 80], INK); c.rect(X + 6, Y + 21, 5, 2, [110, 230, 130]); },
+  arm: (c, X, Y, W, st, left) => { const d = left ? -1 : 1, cx = X + W / 2; shade(c, X + 3, Y, W - 6, S); c.box(cx - 4, Y - 2, 8, 17, [240, 200, 60], [120, 96, 30]); c.rect(cx - 3, Y + 4, 6, 2, INK); for (let i = 0; i < 8; i++) c.rect(cx + d * (2 + i * 2), Y - 4 - i * 3, 3, 3, i & 1 ? WHITE : [220, 60, 60]); c.ellipse(cx, Y - 2, 3, 3, [60, 64, 80]); },
+  lowTable: (c, X, Y, W, st) => { const w = st.wood; c.ellipse(X + W / 2, Y + 13, W / 2 - 1, 3, [0, 0, 0, 50]); c.box(X + 2, Y + 4, W - 4, 7, w, dk(w, 0.5)); c.rect(X + 3, Y + 5, W - 6, 1, lt(w, 0.3)); c.rect(X + 4, Y + 11, 2, 3, dk(w, 0.4)); c.rect(X + W - 6, Y + 11, 2, 3, dk(w, 0.4)); c.ellipse(X + 9, Y + 6, 3, 2, WHITE); c.rect(X + 8, Y + 3, 3, 3, [200, 120, 70]); c.ellipse(X + W - 9, Y + 6, 3, 2, WHITE); },
+  cactus: (c, X, Y, W) => { const cx = X + W / 2, g = [90, 160, 90]; c.ellipse(cx, Y + 14, 5, 2, [0, 0, 0, 60]); c.box(cx - 4, Y + 7, 8, 8, [200, 120, 80], [110, 60, 40]); c.box(cx - 2, Y - 9, 5, 17, g, dk(g, 0.4)); c.box(cx - 7, Y - 4, 4, 5, g, dk(g, 0.4)); c.rect(cx - 6, Y - 6, 2, 3, g); c.box(cx + 3, Y - 1, 4, 4, g, dk(g, 0.4)); c.rect(cx + 4, Y - 4, 2, 3, g); c.p(cx, Y - 10, [250, 120, 160]); c.rect(cx, Y - 6, 1, 12, lt(g, 0.3)); },
+  hotDrinks: (c, X, Y, W, st) => { F_.counter(c, X, Y, W, st); c.box(X + 4, Y - 11, 10, 10, [150, 156, 170], INK); c.rect(X + 6, Y - 9, 6, 3, [60, 40, 30]); for (let i = 0; i < 3; i++) { c.box(X + 18 + i * 6, Y - 5, 5, 5, WHITE, [150, 150, 160]); c.rect(X + 19 + i * 6, Y - 9, 1, 3, A(WHITE, 140)); } },
+});
+const gateFix = {
+  desk: (hue) => (c, X, Y, W, H) => { shade(c, X, Y, W, H); c.box(X + 2, Y - 8, W - 4, 18, dk(hue, 0.1), dk(hue, 0.55)); c.rect(X + 3, Y - 7, W - 6, 2, lt(hue, 0.3)); for (let i = 0; i < 4; i++) c.box(X + 5 + i * 6, Y - 13, 5, 6, [WHITE, [250, 236, 150], [200, 230, 250], [250, 200, 200]][i], [150, 150, 160]); P.counter(c, X, Y + 9, W, H - 9, hue, WHITE); c.box(X + 6, Y - 2, 12, 9, [50, 54, 70], INK); c.rect(X + 8, Y, 8, 5, [110, 190, 236]); c.rect(X + 20, Y + 9, 6, 3, WHITE); c.ellipse(X + W - 8, Y + 22, 4, 4, WHITE); c.rect(X + W - 9, Y + 21, 2, 4, dk(hue, 0.3)); c.p(X + W - 9, Y + 19, dk(hue, 0.3)); },
+  security: (hue) => (c, X, Y, W, H) => { P.counter(c, X, Y - 6, W, H + 6, [70, 76, 96], [200, 206, 220]); for (const dx of [2, 16]) { c.box(X + dx, Y - 16, 13, 10, [30, 34, 50], INK); c.rect(X + dx + 1, Y - 15, 11, 8, [60, 110, 90]); c.rect(X + dx + 2, Y - 14, 4, 3, [120, 200, 150]); c.rect(X + dx + 7, Y - 11, 4, 3, [120, 200, 150]); } c.rect(X + 2, Y + 6, W - 4, 3, hue); c.rect(X + W - 8, Y - 4, 4, 3, [240, 80, 70]); },
+  model: (kind, hue) => (c, X, Y, W, H) => { shade(c, X, Y, W, H); c.box(X + 1, Y + H - 12, W - 2, 11, dk(hue, 0.2), dk(hue, 0.6)); c.rect(X + 2, Y + H - 11, W - 4, 2, lt(hue, 0.3)); c.box(X + 2, Y - 8, W - 4, H - 3, [210, 236, 250, 110], [90, 110, 130]); c.rect(X + 3, Y + H - 18, W - 6, 6, [70, 140, 210]); for (let i = 0; i < 4; i++) c.rect(X + 5 + i * 7, Y + H - 15 + (i & 1), 4, 1, [150, 200, 240]); c.rect(X + 3, Y + H - 19, 4, 3, [110, 160, 100]); c.rect(X + W - 7, Y + H - 19, 4, 3, [110, 160, 100]); drawBridge(c, X + 4, X + W - 4, Y + H - 20, kind === "truss" ? 8 : 15, kind, { deck: [240, 240, 244] }); c.rect(X + 3, Y - 7, 1, H - 6, A(WHITE, 200)); c.box(X + W / 2 - 6, Y + H - 7, 12, 4, GOLD, dk(GOLD, 0.4)); },
+  cylinder: (c, X, Y, W, H) => { const cx = X + W / 2; c.ellipse(cx, Y + H - 3, W / 2 - 1, 4, [0, 0, 0, 60]); c.box(X + 3, Y + H - 9, W - 6, 7, [70, 76, 96], INK); c.rect(X + 4, Y - 12, W - 8, H + 3, [50, 140, 210, 220]); c.ellipse(cx, Y - 12, W / 2 - 4, 3, [190, 230, 250]); c.rect(X + 5, Y - 10, 2, H, A(WHITE, 120)); c.rect(X + 4, Y + H - 14, W - 8, 5, [214, 200, 150]); for (let i = 0; i < 3; i++) c.rect(X + 9 + i * 6, Y + H - 22 - i * 3, 1, 9 + i * 3, [70, 170, 100]); fish(c, cx - 4, Y - 2, 0.6, [250, 170, 90], false); fish(c, cx + 5, Y + 6, 0.5, [240, 110, 120], true); fish(c, cx - 2, Y + 11, 0.4, [250, 236, 140], false); c.box(X + 3, Y - 16, W - 6, 5, [70, 76, 96], INK); },
+  scanner: (c, X, Y, W, H) => { c.rect(X, Y - 6, W, H + 6, [0, 0, 0, 0]); F_.scanner(c, X, Y + S, W); c.box(X + 2, Y - 4, W - 4, 12, [150, 156, 170], [70, 76, 96]); for (let i = 3; i < W - 3; i += 3) c.rect(X + i, Y - 3, 1, 10, [110, 116, 130]); },
+  board: (hue) => (c, X, Y, W, H) => { shade(c, X, Y, W, H); for (const dx of [4, W - 6]) c.rect(X + dx, Y + 4, 2, H - 6, [110, 116, 136]); c.box(X + 1, Y - 12, W - 2, 22, [200, 160, 110], dk(hue, 0.4)); c.rect(X + 1, Y - 12, W - 2, 4, hue); for (let i = 0; i < 6; i++) { const x = X + 4 + (i % 3) * 9, y = Y - 6 + Math.floor(i / 3) * 7; c.rect(x, y, 7, 6, [WHITE, [250, 240, 150], [200, 230, 250]][(i + 1) % 3]); c.p(x + 3, y, RED); } c.box(X + 6, Y + 16, W - 12, 6, [226, 214, 180], [120, 84, 44]); },
+  mapTable: (c, X, Y, W, H, st) => { P.table(c, X, Y - 6, W, H + 6, st.wood); c.box(X + 3, Y - 2, W - 6, H - 10, [226, 214, 180], [150, 130, 90]); c.poly([[X + 6, Y + 12], [X + 9, Y + 2], [X + 18, Y], [X + 26, Y + 6], [X + 22, Y + 14]], [150, 200, 130]); c.line(X + 7, Y + 10, X + 25, Y + 3, RED); c.ellipse(X + 12, Y + 8, 2, 2, [70, 130, 210]); },
+  snacks: (c, X, Y, W, H, st) => { P.counter(c, X, Y - 6, W, H + 6, st.counter || st.wood, WHITE); for (let i = 0; i < 4; i++) c.box(X + 3 + i * 7, Y - 12, 5, 7, [[226, 90, 90], [90, 150, 226], [250, 210, 90], [110, 200, 120]][i], INK); c.box(X + 6, Y + 2, W - 12, 5, [236, 226, 200], [150, 130, 90]); },
+  teaTable: (c, X, Y, W, H, st) => { c.rect(X, Y - 6, W, H + 6, [0, 0, 0, 0]); c.ellipse(X + W / 2, Y + H - 4, W / 2, 5, [0, 0, 0, 50]); c.box(X + 2, Y + 6, W - 4, H - 12, st.wood, dk(st.wood, 0.5)); c.rect(X + 3, Y + 7, W - 6, 2, lt(st.wood, 0.3)); c.ellipse(X + W / 2, Y + 12, 4, 3, [200, 120, 70]); for (const [dx, dy] of [[8, 14], [W - 8, 14], [W / 2, 19]]) c.ellipse(X + dx, Y + dy, 3, 2, WHITE); },
+};
+function gateRoom(F, o = {}) {
+  const I = F.I, st = F.st, p = F.p, hue = st.fab[0], r = F.rnd, lay = o.layout || "route", cy = F.exit.y, L = F.L, R = F.R, T = F.T, B = F.B, mid = (L + R + 1) / 2 * S;
+  const doors = p.warps.slice().sort((a, b) => a.x - b.x), far = o.toward === "left" ? doors[0] : doors[doors.length - 1];
+  // the lane
+  F.art((c) => {
+    const x0 = L * S, x1 = (R + 1) * S, Y = cy * S - 8;
+    if (lay === "bridge") { for (let x = x0; x < x1; x += S) for (let j = 0; j < 4; j++) { const k2 = mix(o.plank || [196, 150, 100], [255, 255, 255], hsh(x, j, 3) * 0.12); c.rect(x, Y + j * 8, S, 8, k2); c.rect(x, Y + j * 8 + 7, S, 1, dk(k2, 0.3)); if (((x >> 4) + j) % 3 === 0) c.rect(x + 7, Y + j * 8, 1, 7, dk(k2, 0.25)); } c.rect(x0, Y - 2, x1 - x0, 2, dk(o.plank || [196, 150, 100], 0.45)); c.rect(x0, Y + 32, x1 - x0, 2, dk(o.plank || [196, 150, 100], 0.45)); for (let x = x0 + 8; x < x1; x += 32) { c.ellipse(x, Y - 1, 2, 2, [150, 156, 170]); c.ellipse(x, Y + 33, 2, 2, [150, 156, 170]); } }
+    else if (lay === "tube") { c.rect(x0, Y, x1 - x0, 32, [30, 70, 120, 150]); c.rect(x0, Y + 3, x1 - x0, 26, [40, 110, 170, 150]); for (let x = x0 + 6; x < x1; x += 12) { c.ellipse(x, Y + 2, 2, 1, [150, 240, 250]); c.ellipse(x, Y + 30, 2, 1, [150, 240, 250]); } for (let x = x0 + 40; x < x1 - 30; x += 48) fish(c, x, Y + 16, 1.1, [150, 220, 250, 120], x > mid); }
+    else if (lay === "city") { if (o.runner) { c.rect(x0, Y + 2, x1 - x0, 28, o.runner); c.rect(x0, Y + 4, x1 - x0, 2, GOLD); c.rect(x0, Y + 26, x1 - x0, 2, GOLD); } else c.rect(x0, Y, x1 - x0, 32, A(hue, 50)); for (const y of [Y, Y + 30]) for (let x = x0; x < x1; x += 12) c.rect(x, y, 8, 2, [240, 200, 60]); for (let x = x0 + 40; x < x1 - 30; x += 40) { if (Math.abs(x - mid) < 24) continue; const d = x < mid ? -1 : 1; c.poly([[x - d * 5, Y + 9], [x + d * 4, Y + 16], [x - d * 5, Y + 23], [x - d * 5, Y + 19], [x - d, Y + 16], [x - d * 5, Y + 13]], A(WHITE, 200)); } }
+    else if (lay === "rest") { const k2 = o.runner || [200, 110, 80]; c.box(x0 + 2, Y + 2, x1 - x0 - 4, 28, k2, dk(k2, 0.45)); for (let x = x0 + 6; x < x1 - 6; x += 10) c.rect(x, Y + 4, 4, 24, lt(k2, 0.2)); for (const y of [Y + 6, Y + 24]) c.rect(x0 + 4, y, x1 - x0 - 8, 2, o.runTrim || [250, 220, 140]); }
+    else { const k2 = o.runner || dk(hue, 0.15); c.rect(x0, Y + 1, x1 - x0, 30, k2); c.rect(x0, Y + 3, x1 - x0, 2, GOLD); c.rect(x0, Y + 27, x1 - x0, 2, GOLD); for (let x = x0 + 24; x < x1; x += 24) c.poly([[x - 4, Y + 16], [x, Y + 12], [x + 4, Y + 16], [x, Y + 20]], lt(k2, 0.3)); }
+    if (lay !== "tube") { c.ellipse(mid, Y + 16, 22, 15, A(WHITE, 120)); c.ellipse(mid, Y + 16, 22, 15, hue, 2); ball(c, mid, Y + 16, 9, hue); } else { glow(c, mid, Y + 16, 22, [150, 240, 250], 30); c.ellipse(mid, Y + 16, 18, 12, [150, 240, 250], 2); }
+  }, 0.1);
+  for (const w of p.warps) { const left = w.x < (L + R) / 2, X = left ? (L - 1) * S + 5 : (R + 1) * S; p.paint(0.05, (c) => { c.box(X, w.y * S - 16, 11, 48, o.out || [170, 214, 244], [40, 44, 60]); c.rect(X + 1, w.y * S - 15, 9, 3, WHITE); c.rect(X + (left ? 1 : 8), w.y * S - 12, 2, 43, [226, 240, 250]); const mx = left ? L * S : w.x * S + 2; c.box(mx, w.y * S - 8, 30, 32, hue, dk(hue, 0.5)); c.rect(mx + 3, w.y * S - 5, 24, 26, lt(hue, 0.25)); }); }
+  // the room's own desk and table
+  const DEF = { bridge: [gateFix.desk(hue), gateFix.model(o.bridge || "suspension", hue)], tube: [gateFix.desk(hue), gateFix.cylinder], city: [gateFix.security(hue), gateFix.scanner], route: [gateFix.desk(hue), gateFix.mapTable], rest: [gateFix.snacks, o.rest === "mountain" ? gateFix.mapTable : gateFix.teaTable] }[lay] || [gateFix.desk(hue), gateFix.desk(hue)];
+  const up = o.fixUp || DEF[0], down = o.fixDown || DEF[1];
+  const bay = (fx, fy, col) => { const at = F.spot(2, 2, [L + F.W * fx, T + F.H * fy], { clear: true, margin: 1 }); if (!at || Math.abs(at[1] - cy) <= 2) return false; F.rug(at[0] - 1, at[1], at[0] + 2, at[1] + 1, col || lt(hue, 0.35), { kind: "mat" }); F.stand(at[0], at[1], { w: 2, d: F_.benchUp }); F.stand(at[0], at[1] + 1, I.bench); return true; };
+  F.k.fixtures((s) => s.w === 2 && s.h === 2 ? (c, X, Y, W, H) => (s.y < cy ? up : down)(c, X, Y, W, H, st) : null);
+  const hasDown = F.k.solids.some((q) => q.w === 2 && q.h === 2 && q.y > cy), hasUp = F.k.solids.some((q) => q.w === 2 && q.h === 2 && q.y < cy);
+  const big = (w, h, d, pref) => { const at = F.spot(w, h, pref, { clear: true, margin: 1, top: 1 }); return at && F.put(at[0], at[1], w, h, (c, X, Y, W, H) => d(c, X, Y + S, W, H - S, st), { rows: h - 1 }) && at; };
+  const lane = () => { for (let x = L; x <= R; x++) for (let d = -1; d <= 1; d++) F.reserve(x, cy + d); };
+  if (lay !== "city") lane();
+  const LAY = {
+    bridge() {
+      const kind = o.bridge || "suspension", fx = far.x < mid / S ? 1 : -1;
+      if (!hasDown) big(3, 3, gateFix.model(kind, hue), [mid / S + (fx < 0 ? 3 : -3), cy + 4]);
+      if (o.booths) { const bx = far.x + fx * 6 + (fx < 0 ? 0 : -1); for (const [y, arm] of [[cy - 3, cy - 2], [cy + 2, cy + 3]].slice(0, o.booths)) if (F.put(bx, y, 2, 2, (c, X, Y, W, H) => F_.booth(c, X, Y, W, H, st, { wood: o.wood }), { rows: 1 })) F.stand(bx + (fx > 0 ? -1 : 2), arm, { w: 1, d: (c, X, Y, W) => F_.arm(c, X, Y, W, st, fx > 0) }); }
+      F.run([I.plant, null, { w: 1, d: F_.scope }, null, I.bench3, null, null, { w: 1, d: F_.scope }], 1); F.run([I.plant, null, { w: 1, d: F_.scope }, null, I.bench3, null, null, null, { w: 1, d: F_.scope }], -1);
+      F.col([o.booths ? null : I.signpost, null, I.plant, null, null], -fx, T + 3);
+      for (const x of [L + 4, L + 9, R - 10, R - 5]) F.stand(x, B, I.bench);
+      F.front([I.plant, I.plant, { w: 1, d: F_.bins }]);
+      { const at = F.spot(2, 1, [far.x < mid / S ? R - 6 : L + 6, cy - 3], { clear: true }); if (at) F.stand(at[0], at[1], { w: 2, d: F_.noticeStand, tall: true }); }
+      bay(far.x < mid / S ? 0.72 : 0.28, 0.8, o.rugCol);
+      F.p.paint(0.04, (c) => { WD.led(c, (L + 3) * S + 8, (T - 2) * S); WD.clock(c, (R - 1) * S, (T - 2) * S, st); });
+    },
+    tube() {
+      F.art((c) => { for (let i = 0; i < 26; i++) { const x = (L + 0.5 + hsh(i, 2, 8) * (F.W - 1)) * S, y = (T + 0.5 + hsh(i, 3, 8) * (F.H - 1)) * S; if (Math.abs(y / S - cy - 0.5) < 2) continue; c.ellipse(x, y, 10 + hsh(i, 4, 8) * 12, 4 + hsh(i, 5, 8) * 4, [190, 240, 255, 40]); c.ellipse(x + 3, y - 1, 5, 2, [220, 250, 255, 50]); } }, 0.08);
+      if (!hasDown) big(2, 3, gateFix.cylinder, [mid / S - 4, cy + 4]);
+      big(2, 3, gateFix.cylinder, [mid / S + 5, T + 4]);
+      const tk = { w: 1, d: F_.tallTank, tall: true };
+      F.col([tk, null, tk, null, null, null, null, null, tk, null, tk], -1, T + 2); F.col([tk, null, tk, null, null, null, null, null, tk, null, tk], 1, T + 2);
+      F.run([null, I.bench3, null, null, null, null, I.bench3], 1); F.run([null, I.bench3, null, null, null, null, I.bench3], -1);
+      for (const x of [L + 4, L + 9, R - 10, R - 5]) F.stand(x, B, I.bench);
+      bay(0.25, 0.25, [90, 170, 210]); bay(0.75, 0.8, [90, 170, 210]); bay(0.25, 0.82, [90, 170, 210]);
+      F.front([I.plant, I.plant]); F.p.paint(0.04, (c) => WD.led(c, mid, (T - 2) * S));
+    },
+    city() {
+      const ax = Math.round(mid / S) - 6, tx = Math.round(mid / S) + 5;
+      // the arch, the turnstiles, the scanner beside the arch
+      const posts = (x, d) => [cy - 1, cy + 1].map((y) => F.put(x, y, 1, 1, d));
+      const ok = posts(ax, (c, X, Y) => { shade(c, X + 1, Y, 14, S); c.box(X + 3, Y - 20, 10, 35, [200, 206, 220], [70, 76, 96]); c.rect(X + 4, Y - 18, 2, 31, WHITE); c.rect(X + 10, Y - 18, 2, 31, [150, 156, 176]); c.box(X + 5, Y - 15, 6, 4, [30, 34, 50], INK); c.rect(X + 6, Y - 14, 4, 2, [110, 230, 130]); for (let k2 = 0; k2 < 4; k2++) c.rect(X + 6, Y - 8 + k2 * 5, 4, 1, [110, 230, 130, 150]); });
+      if (ok[0] && ok[1]) F.art((c) => { const X = ax * S + 5; glow(c, X + 3, cy * S + 8, 12, [110, 230, 130], 22); c.rect(X, (cy - 1) * S + 14, 6, 2 * S - 12, [110, 230, 130, 70]); for (let y = (cy - 1) * S + 16; y < (cy + 1) * S; y += 4) c.rect(X + 1, y, 4, 1, [180, 250, 200, 160]); }, 0.12);
+      for (const x of [tx, tx + 1]) posts(x, (c, X, Y, W) => F_.turnstile(c, X, Y, W, st, x === tx));
+      lane();
+      if (!hasDown) F.stand(ax - 3, cy - 2, { w: 2, d: F_.scanner });
+      if (!hasUp) { const at = F.spot(3, 1, [ax - 2, T + 3], { clear: true }); if (at) F.stand(at[0], at[1], { w: 3, d: (c, X, Y, W) => gateFix.security(hue)(c, X, Y + 4, W, S - 4) }); }
+      F.art((c) => { for (const x of [ax - 1, tx - 1, tx + 2]) for (let j = 0; j < 3; j++) c.rect(x * S + 2 + j * 4, (cy - 1) * S + 8, 2, 3 * S - 16, A([240, 200, 60], 160)); for (const x of [tx - 3, ax + 2]) { c.ellipse(x * S + 5, cy * S + 6, 2, 3, A(WHITE, 140)); c.ellipse(x * S + 11, cy * S + 9, 2, 3, A(WHITE, 140)); } }, 0.11);
+      F.run([I.plant, null, F.I.vending, { w: 1, d: F_.vend([200, 60, 60]), tall: true }, null, null, I.bench3, null, null, I.bench3], o.flip ? -1 : 1); F.run([I.plant, null, null, I.bench3, null, null, I.lockers], o.flip ? 1 : -1);
+      for (const fx of [0.3, 0.7]) { const at = F.spot(3, 1, [L + F.W * fx, cy + 4.5], { clear: true }); if (at) { F.rug(at[0] - 1, at[1], at[0] + 3, at[1] + 1, lt(hue, 0.3), { kind: "mat" }); F.stand(at[0], at[1], { w: 3, d: F_.benchUp }); F.stand(at[0], at[1] + 1, I.bench3); } }
+      F.front([I.plant, I.plant, { w: 1, d: F_.bins }]);
+      F.col([I.plant, null, null, null, null, null], -1, T + 3);
+    },
+    route() {
+      const vx = o.flip ? -1 : 1;
+      F.run([{ w: 1, d: F_.vend(o.vend || [70, 110, 190]), tall: true }, { w: 1, d: F_.vend([200, 60, 60]), tall: true }, I.cooler, { w: 1, d: F_.bins }, null, I.plant], vx);
+      F.run([I.plant, null, I.bench3, null, I.plant, null, I.bench3], -vx);
+      if (!hasDown) { const at = F.spot(2, 1, [mid / S + 4, cy + 3.5], { clear: true }); if (at) F.stand(at[0], at[1], { w: 2, d: F_.noticeStand, tall: true }); }
+      else { const at = F.spot(2, 1, [mid / S - 6, cy - 3], { clear: true }); if (at) F.stand(at[0], at[1], { w: 2, d: F_.noticeStand, tall: true }); }
+      for (const [fx, fy] of [[0.25, 0.78], [0.75, 0.8], [0.62, 0.25]]) { const at = F.spot(2, 2, [L + F.W * fx, T + F.H * fy], { clear: true, margin: 1 }); if (at && Math.abs(at[1] - cy) > 2) { F.rug(at[0] - 1, at[1], at[0] + 2, at[1] + 1, lt(hue, 0.35), { kind: "mat" }); F.stand(at[0], at[1], { w: 2, d: F_.benchUp }); F.stand(at[0], at[1] + 1, I.bench); } }
+      F.col([I.plant, null, null, null], -vx, T + 3); F.col([I.plant], vx, cy + 3);
+      F.front([I.plant, I.plant, I.umbrellas]);
+      if (o.extraR) o.extraR(F);
+    },
+    rest() {
+      const desert = o.rest !== "mountain";
+      if (desert) {
+        F.run([{ w: 1, d: F_.cactus }, null, I.cooler, { w: 1, d: F_.vend([226, 140, 60]), tall: true }, null, null, { w: 3, d: F_.hotDrinks }], 1); F.run([{ w: 1, d: F_.cactus }, null, I.cooler, null, null, { w: 1, d: F_.fan }, null, I.plant], -1);
+        for (const [fx, fy, k] of [[0.3, 0.8, "stripe"], [0.72, 0.78, "stripe"], [0.55, 0.28, "mat"]]) { const at = F.spot(2, 1, [L + F.W * fx, T + F.H * fy], { clear: true, margin: 1 }); if (at && Math.abs(at[1] - cy) > 2) { F.rug(at[0] - 1, at[1] - 1, at[0] + 2, at[1] + 1, [[200, 110, 80], [70, 160, 160], [226, 180, 90]][Math.round(fx * 3) % 3], { kind: k }); F.stand(at[0], at[1], { w: 2, d: F_.lowTable }); F.art((c) => { for (const [dx, dy, col] of [[-1, 0, st.fab[0]], [2, 0, st.fab[1]], [0, -1, st.fab[2]], [1, -1, st.fab[0]]]) if (F.isOpen(at[0] + dx, at[1] + dy) && !F.person(at[0] + dx, at[1] + dy)) cushion(col)(c, (at[0] + dx) * S, (at[1] + dy) * S); }, 0.25); const pa = F.spot(1, 1, [at[0] + 2.5, at[1] - 0.5], { clear: true, margin: 0 }); if (pa) F.stand(pa[0], pa[1], { w: 1, d: F_.parasol }); } }
+        scatter(F, [[X_.sand2, [L + 1, T + 3]], [X_.sand1, [R - 1, T + 4]], [X_.sand2, [L + 2, B - 1]], [X_.sand1, [R - 2, B - 1]]], { margin: 0, side: 0, bottom: 0 }); F.art((c) => { for (const w of p.warps) for (let i = 0; i < 26; i++) { const x = w.x * S + 8 + (w.x < mid / S ? 1 : -1) * hsh(i, 1, w.x) * 90, y = w.y * S + (hsh(i, 2, w.x) - 0.5) * 44; c.rect(x, y, 2 + (i % 3), 1, i & 1 ? [236, 206, 150] : [214, 180, 120]); } }, 0.12);
+        F.front([{ w: 1, d: F_.cactus }, I.plant, { w: 1, d: F_.bins }]);
+      } else {
+        F.run([I.coats, null, I.fireplace, null, { w: 3, d: F_.hotDrinks }], 1); F.run([{ w: 1, d: F_.skis }, I.firewood2, null, I.bookcase, null, I.coats], -1);
+        const at = F.spot(3, 1, [mid / S - 5, T + 5], { clear: true }); if (at) { F.rug(at[0] - 1, at[1] - 1, at[0] + 3, at[1] + 1, [150, 60, 60], { kind: "check" }); F.stand(at[0], at[1], I.sofa(3, st.fab[1])); }
+        for (const [fx, fy] of [[0.28, 0.8], [0.72, 0.8]]) { const a2 = F.spot(2, 1, [L + F.W * fx, T + F.H * fy], { clear: true, margin: 1 }); if (a2 && Math.abs(a2[1] - cy) > 2) { F.rug(a2[0] - 1, a2[1] - 1, a2[0] + 2, a2[1] + 1, [110, 90, 70], { kind: "border" }); F.stand(a2[0], a2[1], { w: 2, d: F_.lowTable }); for (const dx of [-1, 2]) F.stand(a2[0] + dx, a2[1], I.armchair(dx < 0 ? st.fab[0] : st.fab[2])); } }
+        F.col([{ w: 1, d: F_.skis }, null, null, I.lamp], -1, T + 3); F.col([I.firewood, null, null, I.plant], 1, T + 3);
+        if (!hasDown) big(2, 3, gateFix.mapTable, [mid / S + 5, T + 5]);
+        scatter(F, [[I.lockers, [R - 5, T + 3]], [I.shoes, [L + 5, B - 1]], [I.coats, [R - 3, B - 2]], [I.bookcase1, [L + 3, T + 3]]], { margin: 0 });
+        F.front([I.plant, I.umbrellas, { w: 1, d: F_.skis }]);
+      }
+    },
+  };
+  (LAY[lay] || LAY.route)();
+  if (o.more2) o.more2(F);
+  const wall = Array.isArray(o.wall) ? o.wall : lay === "bridge" || lay === "tube" ? null : lay === "city" ? ["led", "camera", "screen", "map", "camera", "clock"] : lay === "rest" ? (o.rest === "mountain" ? ["led", "trail", "antlers", "clock", "trail"] : ["led", "sun", "hats", "map", "sun"]) : ["led", "notices", "map", "window", "clock", "notices"];
+  if (wall) F.decor(wall, { step: 74, fixed: true });
+}
+const gateStyle = (hue, o = {}) => (r) => ({ floor: o.floor || (r < 0.5 ? T.check([236, 240, 244], mix([214, 224, 236], hue, 0.12), 1) : T.lino(mix([236, 238, 242], hue, 0.06), mix([200, 206, 220], hue, 0.3))), wall: o.wallFn || (typeof o.wall === "function" ? o.wall : paper(mix([226, 234, 240], hue, 0.12), { base: dk(hue, 0.25), rail: hue })), wood: o.woodCol || [200, 206, 220], fab: [hue, lt(hue, 0.35), dk(hue, 0.25)], mat: hue, counter: hue, counterTop: WHITE, ...o.st });
 // A hotel lobby: the desk beside the receptionist, the key rack, a runner from the door, a lounge.
 function hotel(F, o = {}) {
   const I = F.I, st = F.st, p = F.p, r = F.rnd, a = p.people.slice().sort((q, s) => q.y - s.y || Math.abs(q.x - 11) - Math.abs(s.x - 11))[0] || { x: 11, y: F.T + 2 }, col = st.fab[0];
@@ -1688,7 +1870,7 @@ const ISLANDS = {
   beds: (F, mx, my) => { scatter(F, [[F.I.bed(F.st.fab[0]), [mx - 0.5, my]], [F.I.bedside, [mx + 0.5, my - 0.5]], [F.I.bed(F.st.fab[1] || F.st.fab[0]), [mx + 1.5, my]]], { margin: 0 }); },
 };
 bedroom.isl = ["play", "seat", "read", "green"]; gateRoom.isl = []; hotel.isl = ["seat", "green"]; officeRoom.isl = ["desk", "green", "seat"]; lab.isl = ["lab", "crates"]; shop.isl = ["shelf", "crates"]; cafe.isl = ["green"]; study.isl = ["read", "seat"]; rest.isl = ["seat", "green"]; arena.isl = []; club.isl = ["seat", "green", "play"];
-music.isl = ["seat", "green"]; railway.isl = living.isl; anglers.isl = ["seat", "crates", "green"]; performer.isl = ["seat", "green", "read"]; badgeOffice.isl = ["seat", "green"]; apartments.isl = ["green", "seat"]; club.isl = ["seat", "green"]; unityTop.isl = []; gallery.isl = []; library.isl = []; parlour.isl = ["green", "seat"]; school.isl = []; market.isl = ["crates"]; dojo.isl = []; hideout.isl = ["crates"]; stockroom.isl = []; stonecutter.isl = ["crates", "seat"]; shipCabin.isl = ["crates", "seat"]; lostFound.isl = ["shelf", "crates"]; dreamLab.isl = ["lab"]; depot.isl = ["crates", "seat"]; atelier.isl = ["seat", "green"]; bakery.isl = ["dine", "green"]; quiz.isl = [];
+music.isl = ["seat", "green"]; railway.isl = living.isl; anglers.isl = ["seat", "crates", "green"]; performer.isl = ["seat", "green", "read"]; badgeOffice.isl = ["seat", "green"]; apartments.isl = ["green", "seat"]; club.isl = ["seat", "green"]; unityTop.isl = []; gallery.isl = []; library.isl = []; parlour.isl = ["green", "seat"]; school.isl = []; market.isl = ["crates"]; dojo.isl = []; hideout.isl = ["crates"]; stockroom.isl = []; stonecutter.isl = ["crates", "seat"]; shipCabin.isl = ["crates", "seat"]; lostFound.isl = ["shelf", "crates"]; dreamLab.isl = ["lab"]; depot.isl = ["crates", "seat"]; bakery.isl = ["dine", "green"]; quiz.isl = [];
 const ROLES = { living, bedroom, gate: gateRoom, hotel, office: officeRoom, lab, shop, cafe, study, rest, arena, club };
 const TOWN_STYLE = [[/Aspertia/, "aspertia"], [/Floccesy/, "floccesy"], [/Virbank/, "virbank"], [/Castelia|Unity/, "office"], [/Nimbasa/, "nimbasa"], [/Driftveil/, "driftveil"], [/Mistralton/, "mistralton"], [/Icirrus/, "icirrus"], [/Opelucid/, "opelucid"], [/Lacunosa/, "lacunosa"], [/Undella|Route13|Route18/, "beach"], [/Humilau/, "humilau"], [/Lentimas/, "lentimas"], [/Nacrene/, "nacrene"], [/Striaton/, "striaton"], [/Accumula/, "accumula"], [/Nuvema/, "nuvema"], [/VillageBridge/, "village"], [/Anville/, "anville"], [/BlackCity/, "black"], [/WhiteForest/, "white"], [/Route4/, "desert"], [/AbundantShrine/, "shrine"], [/League|VictoryRoad/, "league"], [/Lab/, "lab"], [/Route/, "cabin"]];
 const styleKeyOf = (name) => (TOWN_STYLE.find(([re]) => re.test(name)) || [0, "aspertia"])[1];
@@ -1715,7 +1897,7 @@ const chips = (F, n, col) => F.art((c) => { for (let i = 0; i < n; i++) { const 
 function stonecutter(F) {
   const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2;
   F.run([I.fireplace, null, X_.workbench, null, X_.block2, X_.block1], 1); F.run([I.bed(st.fab[0]), I.bedside, I.wardrobe, null, I.barrel2], -1);
-  F.art((c) => { c.ellipse(8 * S, 12 * S, 80, 44, [200, 196, 186, 90]); c.ellipse(8 * S, 12 * S, 56, 28, [214, 210, 200, 90]); }, 0.1); chips(F, 60, [176, 172, 164]);
+  stonecutterFloor(F); chips(F, 30, [176, 172, 164]);
   scatter(F, [[X_.block2, [5, 10]], [X_.carving, [9, 11]], [X_.block1, [11, 14]], [X_.block2, [5, 15]], [X_.block1, [8, 17]], [X_.carving, [17, 10]], [I.table(2, (c, X, Y) => { c.rect(X + 4, Y, 9, 2, [150, 156, 170]); c.box(X + 18, Y - 3, 8, 7, [176, 172, 164], [100, 96, 90]); }), [12, 17]]]);
   F.dining([20, 16], 3); F.col([I.sacks, I.sacks, null, null, I.barrel, null, null, X_.block1], -1, F.T + 4); F.col([I.bookcase1, null, null, I.crates, null, null, null, I.plant], 1, F.T + 4);
   F.front([I.plant, I.crate, I.sacks, I.barrel]); F.decor(["tools", "window", "tools", "antlers", "picture", "window"]);
@@ -1880,16 +2062,6 @@ function depot(F) {
   F.col([I.crates, I.barrel, null, null, null, null, null, null, I.crate], -1, F.T + 4); F.col([I.bookcase1, null, null, null, I.plant, null, null, null, X_.luggage], 1, F.T + 4);
   F.front([I.plant, I.crates, I.plant, I.umbrellas]); F.openRug(st.fab[0], { maxW: 6, maxH: 3 }); F.decor(["map", "timetable", "clock", "poster", "window", "map"]);
 }
-// Burgh's old warehouse: easels, canvases, pots of paint.
-function atelier(F) {
-  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, paints = [[226, 70, 110], [70, 140, 226], [240, 196, 60], [90, 190, 110], [236, 130, 60]];
-  F.run([I.easel(paints[0]), null, I.easel(paints[1]), I.crates2, null, I.bookcase], 1); F.run([I.plant, I.easel(paints[3]), null, I.sideboard, I.crate], -1);
-  F.art((c) => { for (let i = 0; i < 7; i++) { const x = Math.round(F.L + 2 + hsh(i, 1, 9) * (F.W - 4)), y = Math.round(F.T + 4 + hsh(i, 2, 9) * (F.H - 7)); if (F.isOpen(x, y) && !F.person(x, y)) paintCan(c, x, y, paints[i % 5]); } for (let i = 0; i < 10; i++) c.ellipse((F.L + 1 + hsh(i, 5, 9) * (F.W - 2)) * S, (F.T + 3 + hsh(i, 6, 9) * (F.H - 5)) * S, 3 + hsh(i, 7, 9) * 5, 2 + hsh(i, 8, 9) * 3, A(paints[i % 5], 120)); }, 0.11);
-  scatter(F, [[I.easel(paints[2]), [cx - 4, cy]], [I.easel(paints[4]), [cx + 4, cy + 2]], [I.table(2, (c, X, Y) => { for (let i = 0; i < 4; i++) c.box(X + 3 + i * 6, Y - 3, 5, 6, paints[i], dk(paints[i], 0.4)); }), [cx - 5, cy + 3]]], { margin: 0 });
-  lounge(F, [F.R - 5, cy + 3]);
-  F.col([I.crates, null, null, I.easel(paints[1]), null, null, I.barrel], -1, F.T + 4); F.col([I.bookcase1, null, null, I.crate, null, null, I.plant], 1, F.T + 4);
-  F.front([I.crate, I.plant, I.crates]); F.decor(["picture", "window", "picture", "picture", "window"], { step: 30 });
-}
 // The museum's library and Lenora's study above it: every fixture is a shelf to read.
 function library(F, o = {}) {
   const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2;
@@ -1941,6 +2113,230 @@ function school(F) {
   F.col([null, null, null, null, null, I.plant, null, null, null, null, null, I.bookcase1], -1, F.T + 3); F.col([I.bookcase1, I.bookcase1, null, null, null, I.plant, null, null, null, null, I.crate], 1, F.T + 5);
   F.front([I.plant, I.umbrellas, I.plant, I.coats]); F.decor(["map", "clock", "poster", "calendar", "picture"], { step: 44, skip: [{ x0: 17 * S, x1: 24 * S }] });
 }
+// ---------------------------------------------------------------- Route 4's houses: everyone out here lives with the sand, each their own way
+Object.assign(F_, {
+  bunk: (col, wood) => (c, X, Y, W, H) => { shade(c, X, Y, W, H); for (const dx of [1, W - 3]) c.rect(X + dx, Y - 16, 2, H + 14, dk(wood, 0.25)); P.bed(c, X + 1, Y + 3, W - 2, H - 4, col); c.box(X + 1, Y - 15, W - 2, 15, [236, 232, 224], dk(wood, 0.5)); c.box(X + 3, Y - 14, W - 6, 5, WHITE, [190, 190, 200]); c.rect(X + 2, Y - 8, W - 4, 6, dk(col, 0.12)); c.rect(X + 2, Y - 8, W - 4, 1, lt(col, 0.3)); c.rect(X + 1, Y - 1, W - 2, 2, wood); for (let k = 0; k < 4; k++) c.rect(X + W - 5, Y - 12 + k * 4, 4, 1, lt(wood, 0.2)); },
+  loom: (c, X, Y, W, st) => { const w = st.wood; shade(c, X, Y, W, S); for (const dx of [1, W - 4]) c.box(X + dx, Y - 16, 3, 31, w, dk(w, 0.5)); c.box(X, Y - 17, W, 3, lt(w, 0.1), dk(w, 0.5)); c.box(X + 1, Y + 9, W - 2, 3, w, dk(w, 0.5)); for (let i = 5; i < W - 5; i += 2) c.rect(X + i, Y - 14, 1, 23, [236, 226, 206]); for (let r = 0; r < 4; r++) c.rect(X + 4, Y + r * 2, W - 8, 2, [[200, 70, 60], [240, 190, 80], [60, 140, 150], [236, 226, 206]][r]); for (let i = 0; i < 3; i++) c.poly([[X + 8 + i * 10, Y + 1], [X + 12 + i * 10, Y + 5], [X + 8 + i * 10, Y + 8], [X + 4 + i * 10, Y + 5]], [60, 100, 150]); c.box(X + 3, Y - 5, W - 6, 2, dk(w, 0.2), dk(w, 0.5)); },
+  wheelSpin: (c, X, Y, W, st) => { const w = st.wood, cx = X + W / 2; c.ellipse(cx, Y + 14, 6, 2, [0, 0, 0, 60]); c.rect(cx - 6, Y + 10, 12, 3, w); c.line(cx - 4, Y + 13, cx - 2, Y + 2, w); c.ellipse(cx + 1, Y - 3, 7, 7, dk(w, 0.4), 1); for (let a = 0; a < 6; a++) c.line(cx + 1, Y - 3, cx + 1 + Math.cos(a) * 6, Y - 3 + Math.sin(a) * 6, w); c.ellipse(cx - 5, Y + 6, 3, 3, [240, 190, 80]); },
+  yarn: (c, X, Y, W) => { c.ellipse(X + 8, Y + 14, 7, 2, [0, 0, 0, 60]); c.box(X + 2, Y + 5, 12, 9, [190, 150, 100], [110, 80, 50]); for (let i = 0; i < 3; i++) c.rect(X + 3, Y + 7 + i * 3, 10, 1, [150, 110, 70]); for (const [dx, dy, col] of [[5, 4, [200, 70, 60]], [10, 3, [60, 140, 150]], [8, 0, [240, 190, 80]]]) { c.ellipse(X + dx, Y + dy, 3, 3, dk(col, 0.25)); c.ellipse(X + dx, Y + dy, 2, 2, col); } },
+  bike: (c, X, Y, W) => { c.ellipse(X + W / 2, Y + 14, W / 2 - 2, 2, [0, 0, 0, 60]); for (const dx of [6, W - 7]) { c.ellipse(X + dx, Y + 7, 6, 6, [40, 40, 50]); c.ellipse(X + dx, Y + 7, 4, 4, [200, 206, 220], 1); c.p(X + dx, Y + 7, INK); } c.line(X + 6, Y + 7, X + 13, Y - 1, [220, 70, 60], 2); c.line(X + 13, Y - 1, X + W - 7, Y + 7, [220, 70, 60], 2); c.line(X + 13, Y - 1, X + 16, Y + 7, [220, 70, 60], 2); c.line(X + 6, Y + 7, X + 16, Y + 7, [220, 70, 60], 2); c.rect(X + 10, Y - 3, 6, 2, INK); c.line(X + W - 7, Y + 7, X + W - 9, Y - 4, [150, 156, 170], 2); c.rect(X + W - 12, Y - 5, 6, 2, INK); },
+  tarp: (c, X, Y, W) => { const k2 = [110, 130, 100]; c.ellipse(X + W / 2, Y + 14, W / 2, 3, [0, 0, 0, 60]); c.poly([[X + 1, Y + 14], [X + 4, Y - 6], [X + W * 0.45, Y - 12], [X + W - 5, Y - 5], [X + W - 1, Y + 14]], dk(k2, 0.3)); c.poly([[X + 3, Y + 13], [X + 6, Y - 4], [X + W * 0.45, Y - 10], [X + W - 7, Y - 4], [X + W - 3, Y + 13]], k2); for (let i = 0; i < 4; i++) c.line(X + 8 + i * (W - 16) / 3, Y - 5, X + 6 + i * (W - 12) / 3, Y + 13, dk(k2, 0.18)); c.rect(X + 2, Y + 11, W - 4, 2, [176, 150, 100]); },
+  jukebox: (c, X, Y, W) => { shade(c, X, Y, W, S); c.box(X + 1, Y - 12, W - 2, 27, [190, 60, 70], [90, 30, 40]); c.ellipse(X + W / 2, Y - 10, W / 2 - 1, 5, [250, 210, 100]); c.box(X + 3, Y - 6, W - 6, 9, [60, 40, 60], INK); for (let i = 0; i < 3; i++) c.rect(X + 4, Y - 5 + i * 3, W - 8, 1, [250, 200, 120]); c.rect(X + 3, Y + 6, W - 6, 6, [226, 190, 90]); },
+  highChair: (c, X, Y, W, st) => { const cx = X + W / 2, w = st.wood; c.ellipse(cx, Y + 14, 5, 2, [0, 0, 0, 60]); c.line(cx - 5, Y + 14, cx - 3, Y + 1, w); c.line(cx + 5, Y + 14, cx + 3, Y + 1, w); c.box(cx - 5, Y - 9, 10, 11, lt(w, 0.15), dk(w, 0.5)); c.box(cx - 6, Y, 12, 3, WHITE, [150, 150, 160]); c.ellipse(cx, Y + 1, 2, 1, [240, 150, 90]); },
+  pots: (c, X, Y, W) => { P.table(c, X, Y - 2, W, 18, [170, 130, 96]); for (let i = 3; i + 8 <= W; i += 9) { c.box(X + i, Y - 3, 8, 7, [200, 120, 80], [110, 60, 40]); const g = [[90, 160, 90], [110, 180, 110], [70, 150, 120]][(i / 9 | 0) % 3]; c.box(X + i + 2, Y - 10, 4, 8, g, dk(g, 0.4)); if ((i / 9 | 0) % 2) { c.rect(X + i, Y - 7, 2, 3, g); c.p(X + i + 4, Y - 11, [250, 120, 160]); } } },
+  showcase: (draw) => (c, X, Y, W) => P.showcase(c, X, Y - 10, W, 25, draw),
+});
+Object.assign(WD, {
+  helmets: (c, cx, Y) => { c.rect(cx - 15, Y + 9, 30, 2, [130, 96, 60]); for (let i = 0; i < 3; i++) { const x = cx - 10 + i * 10, k2 = [[250, 200, 60], [240, 140, 60], [250, 200, 60]][i]; c.ellipse(x, Y + 15, 5, 4, dk(k2, 0.3)); c.ellipse(x, Y + 14, 4, 3, k2); c.rect(x - 6, Y + 17, 12, 2, dk(k2, 0.2)); c.ellipse(x, Y + 12, 1, 1, WHITE); } },
+  rugsHung: (c, cx, Y, st, r) => { for (let i = 0; i < 2; i++) { const x = cx - 15 + i * 16, k2 = [[200, 70, 60], [60, 140, 150], [240, 190, 80]][(i + Math.floor(r * 3)) % 3]; c.rect(x - 1, Y + 4, 16, 2, [130, 96, 60]); c.box(x, Y + 6, 14, 19, k2, dk(k2, 0.4)); for (let j = 0; j < 3; j++) c.poly([[x + 7, Y + 8 + j * 6], [x + 11, Y + 11 + j * 6], [x + 7, Y + 14 + j * 6], [x + 3, Y + 11 + j * 6]], lt(k2, 0.4)); for (let j = 1; j < 14; j += 2) c.p(x + j, Y + 25, lt(k2, 0.3)); } },
+  scroll: (c, cx, Y, st, r) => { c.rect(cx - 7, Y + 3, 14, 2, [110, 76, 50]); c.box(cx - 6, Y + 5, 12, 20, [240, 232, 210], [170, 150, 120]); c.rect(cx - 7, Y + 25, 14, 2, [110, 76, 50]); if (r < 0.5) { c.poly([[cx - 4, Y + 20], [cx - 1, Y + 12], [cx + 2, Y + 16], [cx + 4, Y + 20]], [110, 130, 110]); c.ellipse(cx + 2, Y + 9, 2, 2, [220, 80, 70]); } else for (let i = 0; i < 3; i++) c.rect(cx - 1, Y + 8 + i * 5, 2, 4, [50, 46, 56]); },
+  menu: (c, cx, Y) => { c.box(cx - 15, Y + 4, 30, 20, [40, 50, 44], [130, 96, 60]); for (let i = 0; i < 4; i++) { c.rect(cx - 12, Y + 8 + i * 4, 12, 1, [236, 236, 220]); c.rect(cx + 6, Y + 8 + i * 4, 5, 1, [250, 220, 120]); } c.ellipse(cx + 2, Y + 7, 2, 1, [240, 130, 130]); },
+  seeds: (c, cx, Y) => { c.rect(cx - 14, Y + 20, 28, 2, [130, 96, 60]); c.rect(cx - 14, Y + 11, 28, 2, [130, 96, 60]); for (let i = 0; i < 6; i++) for (const y of [4, 13]) { const k2 = [[226, 190, 120], [200, 150, 110], [236, 214, 170]][(i + y) % 3]; c.box(cx - 13 + i * 5, Y + y, 4, 7, k2, dk(k2, 0.4)); c.p(cx - 12 + i * 5, Y + y + 2, [90, 160, 90]); } },
+  oilcan: (c, cx, Y) => WD.tools(c, cx, Y, { wood: [130, 120, 110] }),
+});
+const R4 = { // floors for Route 4's houses
+  terracotta: T.check([214, 140, 100], [200, 126, 90], 1), kitchen: T.check([240, 236, 226], [190, 90, 80], 1), dusty: T.plank([190, 160, 120]), boards: T.plank([170, 126, 90]), concrete: T.slab([176, 170, 160], 7),
+};
+// A bunkhouse for the Resort's diggers: bunks down the walls, lockers, the mess table, boots by the door.
+function bunkhouse(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, bk = (col) => ({ w: 1, h: 2, d: F_.bunk(col, st.wood) });
+  F.k.floor(R4.boards, F.L, F.T, F.R, F.B, 0.015);
+  F.run([bk([200, 110, 70]), bk([110, 130, 160]), null, I.lockers, null, bk([140, 150, 100])], 1); F.run([I.stove, I.sink, null, I.lockers, null, bk([200, 110, 70])], -1);
+  F.col([bk([110, 130, 160]), null, bk([200, 110, 70]), null, null, I.crates], -1, F.T + 4); F.col([bk([140, 150, 100]), null, null, bk([110, 130, 160]), null, I.barrel], 1, F.T + 4);
+  F.dining([cx, cy + 1], 4, { cloth: false, rugCol: [150, 120, 90], rugO: { kind: "mat" }, draw: (c, X, Y, W, H) => { P.table(c, X, Y, W, H, [150, 110, 76]); for (let i = 0; i < 4; i++) { c.box(X + 6 + i * 14, Y + 8 + (i & 1) * 3, 6, 6, [176, 180, 190], [90, 96, 110]); c.rect(X + 7 + i * 14, Y + 9 + (i & 1) * 3, 4, 2, [120, 80, 50]); } c.box(X + W / 2 - 6, Y + 4, 12, 6, [200, 120, 70], [110, 60, 40]); } });
+  scatter(F, [[I.shoes, [F.exit.x - 4, F.B - 1]], [I.coats, [F.exit.x + 3, F.B - 1]], [I.cooler, [F.R - 2, F.B - 2]]], { margin: 0, bottom: 0 });
+  F.art((c) => { for (let i = 0; i < 14; i++) { const x = F.exit.x * S + 8 + Math.sin(i * 1.7) * 18, y = (F.B - i * 0.6) * S + 4; c.ellipse(x - 3, y, 2, 3, [150, 120, 84, 120]); c.ellipse(x + 3, y + 5, 2, 3, [150, 120, 84, 120]); } }, 0.12);
+  F.decor(["helmets", "map", "clock", "board", "helmets", "hats"], { step: 40 });
+}
+// A big family kitchen: the cooking runs the whole back wall, an island, the long table, a high chair.
+function familyKitchen(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2;
+  F.k.floor(T.check([240, 236, 226], mix(st.fab[0], [200, 80, 70], 0.4), 1), F.L, F.T, F.R, F.T + 4, 0.015); F.art((c) => { c.rect(F.L * S, (F.T + 5) * S - 2, F.W * S, 2, dk(st.wood, 0.3)); }, 0.05);
+  F.run([I.fridge, I.kitchen(4), I.sink, { w: 1, d: F_.stove, tall: true }, I.kitchen(3), null, { w: 1, d: F_.micro, tall: true }], 1); F.run([I.fridge, I.sideboard], -1);
+  scatter(F, [[I.counter(3), [cx, F.T + 4]]], { margin: 1 });
+  const at = F.dining([cx - 0.5, cy + 2.5], 4, { cloth: true, col: [236, 120, 110], rugCol: [200, 150, 90], rugO: { kind: "check" } });
+  if (at) scatter(F, [[{ w: 1, d: F_.highChair }, [at[0] + 4.5, at[1] + 0.5]]], { margin: 0 });
+  F.col([I.bookcase1, null, null, I.plant, null, null, I.toys], -1, F.T + 6); F.col([I.dresser1, null, null, I.flowers, null, null, I.lamp], 1, F.T + 6);
+  F.flat([F.L + 3, F.B - 2], blocks); F.flat([F.R - 3, F.B - 2], petBowl); F.flat([cx + 4, F.T + 6], (c, X, Y) => { c.box(X + 3, Y + 6, 10, 8, [176, 150, 110], [110, 80, 50]); c.ellipse(X + 6, Y + 6, 3, 2, [226, 90, 70]); c.ellipse(X + 10, Y + 5, 3, 2, [250, 200, 70]); });
+  corners(F, [I.plant, I.umbrellas, I.shoes]);
+  F.decor(["pans", "calendar", "window", "pans", "clock", "curtains"], { step: 38 });
+}
+// A collector's den: glass cases of finds from the ruins, cabinets of curios, a chair to admire them from.
+function collectorDen(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, cols = [[200, 170, 110], [150, 200, 210], [220, 130, 90], [170, 150, 200]];
+  const finds = [(c, x, y) => { c.ellipse(x, y - 4, 5, 4, [196, 170, 120]); c.ellipse(x, y - 4, 3, 2, [150, 120, 84], 1); c.ellipse(x, y - 4, 1, 1, [150, 120, 84]); }, (c, x, y) => { c.poly([[x - 4, y], [x - 2, y - 9], [x + 2, y - 9], [x + 4, y]], [200, 150, 90]); c.rect(x - 3, y - 6, 6, 1, [120, 84, 50]); }, (c, x, y) => ball(c, x, y - 5, 4, [220, 70, 60]), (c, x, y) => { c.poly([[x, y - 10], [x + 4, y - 4], [x, y], [x - 4, y - 4]], [120, 200, 220]); c.p(x - 1, y - 6, WHITE); }, (c, x, y) => { c.line(x - 4, y - 2, x + 4, y - 7, [240, 236, 220], 2); c.ellipse(x - 4, y - 2, 2, 2, [240, 236, 220]); c.ellipse(x + 4, y - 7, 2, 2, [240, 236, 220]); }];
+  const cs = (i) => ({ w: 1, d: F_.showcase(finds[i % finds.length]), tall: true });
+  F.k.floor(T.carpet([130, 60, 64]), F.L, F.T, F.R, F.B, 0.015);
+  F.run([I.trophies, I.goods(cols), I.goods(cols), null, cs(0), cs(1), cs(2)], 1); F.run([I.bookcase, null, cs(3), cs(4), null, I.trophies], -1);
+  let n = 0; for (const [fx, fy] of [[0.25, 0.45], [0.42, 0.45], [0.58, 0.45], [0.75, 0.45], [0.3, 0.72], [0.7, 0.72]]) { const at = F.spot(1, 1, [F.L + F.W * fx, F.T + F.H * fy], { clear: true, margin: 1 }); if (at && F.stand(at[0], at[1], { w: 1, d: F_.plinth((c, x, y) => finds[n % 5](c, x, y + 2)) })) n++; }
+  F.rug(Math.round(cx - 4), Math.round(cy - 1), Math.round(cx + 3), Math.round(cy + 3), [60, 50, 80], { kind: "border", trim: GOLD }); scatter(F, [[I.sofa(3, [150, 50, 64]), [cx, cy + 2.5]], [I.lamp, [cx - 2.5, cy + 2.5]]], { margin: 0 });
+  F.col([cs(1), null, null, I.armchair([150, 50, 64]), I.lamp, null, cs(2)], -1, F.T + 3); F.col([cs(3), null, null, { w: 1, d: F_.globe }, null, null, cs(0)], 1, F.T + 3);
+  F.front([I.plant, cs(4), I.plant]);
+  F.decor(["picture", "discs", "badges", "picture", "map", "picture"], { step: 36 });
+}
+// The sand storeroom: the desert gets in under the door; crates and sacks to the rafters, a cot, a lamp.
+function sandStore(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2;
+  F.k.floor(R4.dusty, F.L, F.T, F.R, F.B, 0.015);
+  F.run([I.crates2, I.sacks2, I.barrel, null, X_.boxes(2), null, I.crates2], 1); F.run([I.barrel2, I.crates, null, I.sacks2, null, X_.boxes(2)], -1);
+  F.col([I.crates, I.sacks, null, null, I.barrel, null, null, I.crates], -1, F.T + 3); F.col([I.sacks, I.crate, null, null, null, X_.mattress, null, null, I.lamp], 1, F.T + 3);
+  scatter(F, [[{ w: 3, d: F_.tarp }, [cx - 4, cy + 1]], [{ w: 2, d: F_.tarp }, [cx + 4, cy + 3]], [I.crates2, [cx + 4, F.T + 5]], [I.barrel, [cx - 6, F.B - 3]]], { margin: 0 });
+  scatter(F, [[X_.sand2, [F.exit.x - 3, F.B]], [X_.sand2, [F.exit.x + 3, F.B]], [X_.sand1, [F.L, cy]], [X_.sand2, [F.R - 1, F.T + 2]], [X_.sand1, [cx, F.T + 5]], [X_.sand1, [F.L + 2, F.B - 1]]], { margin: 0, side: 0, bottom: 0 });
+  F.art((c) => { const X = F.exit.x * S + 8, Y = (F.B - 1) * S; for (const d of [-1, 1]) { c.poly([[X + d * 24, Y + 30], [X + d * 30, Y + 8], [X + d * 44, Y + 2], [X + d * 60, Y + 14], [X + d * 66, Y + 30]], [226, 200, 146, 150]); for (let i = 0; i < 3; i++) c.line(X + d * (40 + i * 8), Y + 26, X + d * (52 + i * 10), Y - 6 - i * 8, [240, 220, 170, 110]); } for (let i = 0; i < 18; i++) c.rect(X - 30 + hsh(i, 1, 3) * 60, Y - 20 - hsh(i, 2, 3) * 50, 2, 1, [236, 210, 156]); }, 0.11);
+  chips(F, 120, [230, 206, 150]);
+  F.decor(["tools", "hats", "lamp", "tools", "calendar"], { step: 46 });
+}
+// A cactus grower's: pots on every table, seed packets on the wall, a terracotta floor.
+function greenhouse(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, cac = /desert|lentimas/.test(st.key) ? { w: 1, d: F_.cactus } : I.flowers;
+  F.k.floor(R4.terracotta, F.L, F.T, F.R, F.B, 0.015);
+  F.run([cac, I.plant, cac, { w: 3, d: F_.pots }, null, I.kitchen(3), I.fridge], 1); F.run([cac, cac, I.plant, null, { w: 3, d: F_.pots }], -1);
+  for (const [fx, fy] of [[0.28, 0.42], [0.72, 0.42], [0.28, 0.7], [0.72, 0.7]]) { const at = F.spot(3, 1, [F.L + F.W * fx, F.T + F.H * fy], { clear: true }); if (at) F.stand(at[0], at[1], { w: 3, d: F_.pots }); }
+  F.col([cac, null, I.plant, null, cac, null, I.flowers, null, cac], -1, F.T + 3); F.col([I.plant, null, cac, null, I.flowers, null, cac, null, I.plant], 1, F.T + 3);
+  F.art((c) => { for (let i = 0; i < 9; i++) { const x = (F.L + 1 + hsh(i, 4, 2) * (F.W - 2)) * S, y = (F.T + 2 + hsh(i, 5, 2) * (F.H - 3)) * S; c.ellipse(x, y, 6, 3, [150, 100, 70, 70]); } }, 0.11);
+  F.flat([cx, F.B - 2], (c, X, Y) => { c.box(X + 3, Y + 6, 9, 7, [110, 150, 200], [50, 80, 120]); c.line(X + 12, Y + 8, X + 15, Y + 5, [110, 150, 200], 2); frame(c, X + 5, Y + 2, 5, 4, [50, 80, 120]); });
+  corners(F, [cac, I.plant, cac]);
+  F.decor(["seeds", "window", "sun", "window", "seeds", "window"], { step: 36 });
+}
+// A weaver's house: the loom, baskets of yarn, rugs on the walls and every bit of the floor.
+function weaver(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, yarn = { w: 1, d: F_.yarn };
+  F.run([{ w: 3, d: F_.loom, tall: true }, yarn, null, { w: 1, d: F_.wheelSpin }, yarn], 1); F.run([I.kitchen(3), I.fridge, null, { w: 3, d: F_.loom, tall: true }], -1);
+  const rugC = [[200, 70, 60], [60, 140, 150], [240, 190, 80], [150, 96, 160]]; let i = 0;
+  for (const [x0, y0, x1, y1] of [[F.L + 1, F.T + 4, F.L + 6, F.T + 7], [F.R - 6, F.T + 4, F.R - 1, F.T + 6], [F.L + 1, F.B - 4, F.L + 5, F.B - 2], [F.R - 5, F.B - 4, F.R - 1, F.B - 2], [Math.round(cx) - 3, F.T + 9, Math.round(cx) + 2, F.T + 11]]) F.rug(x0, y0, x1, y1, rugC[i % 4], { kind: ["stripe", "border", "check", "stripe", "round"][i++], trim: [250, 236, 200] });
+  scatter(F, [[yarn, [F.L + 3, F.T + 5]], [I.armchair([200, 70, 60]), [F.L + 5, F.T + 5]], [{ w: 2, d: F_.lowTable }, [F.R - 4, F.T + 5]], [yarn, [F.R - 2, F.B - 3]], [yarn, [F.L + 2, F.B - 3]]], { margin: 0 });
+  F.col([I.bookcase1, null, null, null, yarn, null, I.plant], -1, F.T + 3); F.col([yarn, null, null, I.lamp, null, null, I.flowers], 1, F.T + 3);
+  corners(F, [yarn, I.plant, I.shoes]);
+  F.decor(["rugsHung", "window", "rugsHung", "clock", "rugsHung"], { step: 40 });
+}
+// A mechanic's: a bike up for mending, tyres, the workbench, oil on the floor.
+function workshop(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, tire = X_.tire;
+  F.k.floor(R4.concrete, F.L, F.T, F.R, F.B, 0.015);
+  F.run([X_.workbench, null, tire, tire, null, I.lockers, null, I.cooler], 1); F.run([I.kitchen(3), I.fridge, null, X_.workbench], -1);
+  scatter(F, [[{ w: 2, d: F_.bike }, [cx - 3, cy]], [{ w: 2, d: F_.bike }, [cx + 3, cy + 2]], [tire, [cx - 6, cy + 3]], [I.barrel, [F.R - 3, F.T + 5]], [I.sofa(3, [110, 120, 140]), [cx, F.B - 3]]], { margin: 0 });
+  F.art((c) => { for (let i = 0; i < 6; i++) { const x = (cx - 6 + hsh(i, 1, 4) * 12) * S, y = (cy - 2 + hsh(i, 2, 4) * 5) * S; c.ellipse(x, y, 7 + hsh(i, 3, 4) * 6, 3 + hsh(i, 4, 4) * 2, [40, 40, 50, 70]); } hazard(c, Math.round(cx) - 5, Math.round(cy) - 2, Math.round(cx) + 4, Math.round(cy) + 3); }, 0.1);
+  F.col([tire, null, null, I.crates, null, null, tire], -1, F.T + 3); F.col([I.barrel, null, null, null, tire, null, I.crate], 1, F.T + 3);
+  corners(F, [tire, I.plant, I.crates]);
+  F.decor(["tools", "oilcan", "calendar", "tools", "poster"], { step: 40 });
+}
+// A quiet tea room: tatami mats, a low table and its cushions, scrolls on the wall.
+function teaHouse(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2;
+  F.k.floor(T.tatami([206, 196, 140]), F.L, F.T + 2, F.R, F.B - 2, 0.015);
+  F.art((c) => { frame(c, F.L * S, (F.T + 2) * S, F.W * S, (F.H - 4) * S, [110, 76, 50], 2); }, 0.05);
+  F.run([I.wardrobe, null, I.kitchen(3), null, I.plant, I.sideboard], 1); F.run([I.plant, null, I.bookcase, null, I.dresser], -1);
+  for (const [fx, fy] of [[0.35, 0.45], [0.68, 0.68]]) { const at = F.spot(2, 1, [F.L + F.W * fx, F.T + F.H * fy], { clear: true, margin: 1 }); if (at) { F.stand(at[0], at[1], { w: 2, d: F_.lowTable }); F.art((c) => { for (const [dx, dy, col] of [[-1, 0, st.fab[0]], [2, 0, st.fab[1]], [0, 1, st.fab[2]], [1, -1, st.fab[0]]]) if (F.isOpen(at[0] + dx, at[1] + dy) && !F.person(at[0] + dx, at[1] + dy)) cushion(col)(c, (at[0] + dx) * S, (at[1] + dy) * S); }, 0.25); } }
+  F.col([I.lamp, null, null, I.plant, null, null, I.lamp], -1, F.T + 4); F.col([I.lamp, null, null, null, I.flowers], 1, F.T + 4);
+  F.front([I.shoes, I.plant, I.umbrellas]);
+  F.decor(["scroll", "lamp", "scroll", "window", "scroll"], { step: 36 });
+}
+// A little roadside diner: the counter with its stools, a jukebox, booths by the window.
+function diner(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2;
+  F.k.floor(T.check([240, 236, 226], [60, 60, 70], 1), F.L, F.T, F.R, F.B, 0.015);
+  F.run([I.fridge, I.kitchen(4), null, { w: 1, d: F_.jukebox, tall: true }], 1); F.run([I.plant, { w: 1, d: F_.vend([200, 60, 60]), tall: true }, null, I.kitchen(3)], -1);
+  const a = F.p.people[0]; if (a) for (const [x, n] of [[a.x - 4, 3], [a.x + 2, 3]]) if (F.stand(x, a.y, { w: n, d: (c, X, Y, W) => { F_.counter(c, X, Y, W, { ...st, counter: [200, 60, 70], counterTop: [236, 236, 240] }); for (let i = 0; i < n; i++) c.box(X + 4 + i * 16, Y - 5, 8, 4, WHITE, [150, 150, 160]); } })) F.art((c) => { for (let i = 0; i < n; i++) if (F.isOpen(x + i, a.y + 1) && !F.person(x + i, a.y + 1)) { c.ellipse((x + i) * S + 8, (a.y + 1) * S + 12, 5, 2, [0, 0, 0, 50]); c.rect((x + i) * S + 7, (a.y + 1) * S + 4, 2, 9, [150, 156, 170]); c.ellipse((x + i) * S + 8, (a.y + 1) * S + 4, 5, 3, [200, 60, 70]); } }, 0.3);
+  let n = 0; for (const [fx, fy] of [[0.2, 0.62], [0.5, 0.75], [0.8, 0.62], [0.2, 0.88], [0.8, 0.88]]) { const at = F.spot(2, 2, [F.L + F.W * fx, F.T + F.H * fy], { clear: true }); if (at && n < 4 && F.put(at[0], at[1], 2, 2, roundTable([236, 236, 240]), { rows: 1 })) { n++; F.art((c) => { for (const x of [at[0] - 1, at[0] + 2]) if (F.isOpen(x, at[1] + 1) && !F.person(x, at[1] + 1)) P.chair(c, x * S + (x < at[0] ? 3 : -3), (at[1] + 1) * S - 3, [200, 60, 70]); }, 0.3); } }
+  F.col([I.plant, null, null, null, I.flowers], -1, F.T + 5); F.col([I.plant, null, null, null, null, I.flowers], 1, F.T + 5);
+  F.front([I.plant, I.umbrellas, I.plant]);
+  F.decor(["menu", "window", "poster", "window", "menu", "clock"], { step: 36 });
+}
+// The night watchman's room upstairs: a bunk, his desk and the radio, the map of the route.
+function watchRoom(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2;
+  F.run([I.bed([70, 90, 140]), I.bedside, null, I.wardrobe, null, I.filing, I.filing], 1); F.run([I.lockers, null, I.desk, null, { w: 1, d: F_.machine, tall: true }], -1);
+  scatter(F, [[I.desk, [cx - 4, cy + 1]], [{ w: 1, d: F_.globe }, [cx + 4, cy - 1]], [I.sofa(3, [70, 90, 140]), [cx + 3, F.B - 3]], [I.table(2), [cx + 3, F.B - 1]]], { margin: 0 });
+  F.rug(Math.round(cx - 3), Math.round(cy - 1), Math.round(cx + 2), Math.round(cy + 2), [70, 90, 140], { kind: "border" });
+  F.col([I.coats, null, null, I.bookcase1, null, null, I.plant], -1, F.T + 3); F.col([I.cooler, null, null, null, I.lamp], 1, F.T + 4);
+  F.decor(["map", "clock", "board", "window", "calendar"], { step: 40 });
+}
+bunkhouse.isl = []; familyKitchen.isl = ["play", "seat"]; collectorDen.isl = []; sandStore.isl = ["crates"]; greenhouse.isl = []; weaver.isl = []; workshop.isl = []; teaHouse.isl = []; diner.isl = []; watchRoom.isl = [];
+// ---------------------------------------------------------------- dressed floors: the middle of a crowded room stays walkable, so the floor itself carries the pattern
+// Painted under the rugs (z 0.09): over tiles x0..x1, y0..y1.
+const FLOORS = {
+  // a patterned carpet: a lattice of diamonds inside a woven border
+  lattice: (c, X, Y, w, h, o) => { const a = o.col, b = o.col2 || lt(a, 0.25), t = o.trim || GOLD; c.box(X, Y, w, h, a, dk(a, 0.45)); for (let y = Y + 10; y < Y + h - 8; y += 12) for (let x = X + 10 + ((y - Y - 10) / 12 & 1) * 8; x < X + w - 8; x += 16) { c.poly([[x - 5, y], [x, y - 5], [x + 5, y], [x, y + 5]], b); c.p(x, y, t); } frame(c, X + 3, Y + 3, w - 6, h - 6, t); frame(c, X + 6, Y + 6, w - 12, h - 12, A(lt(a, 0.35), 200)); for (let x = X + 8; x < X + w - 6; x += 6) { c.p(x, Y + 4, lt(a, 0.4)); c.p(x, Y + h - 5, lt(a, 0.4)); } },
+  // inlaid stone: a band round the edge and a star medallion at the centre
+  inlay: (c, X, Y, w, h, o) => { const t = o.trim || GOLD, b = o.col || [150, 150, 176], cx = X + w / 2, cy = Y + h / 2; frame(c, X + 2, Y + 2, w - 4, h - 4, b, 3); frame(c, X + 7, Y + 7, w - 14, h - 14, t, 1); for (const [x, y] of [[X + 4, Y + 4], [X + w - 5, Y + 4], [X + 4, Y + h - 5], [X + w - 5, Y + h - 5]]) { c.poly([[x - 5, y], [x, y - 5], [x + 5, y], [x, y + 5]], t); c.p(x, y, b); } const r = Math.min(w, h) * 0.32; c.ellipse(cx, cy, r, r * 0.72, A(b, 90)); c.ellipse(cx, cy, r, r * 0.72, t, 2); c.ellipse(cx, cy, r * 0.7, r * 0.5, b, 1); const pts = []; for (let k = 0; k < 16; k++) { const ang = -Math.PI / 2 + k * Math.PI / 8, q = k & 1 ? r * 0.28 : r * 0.82; pts.push([cx + Math.cos(ang) * q, cy + Math.sin(ang) * q * 0.72]); } c.poly(pts, A(t, 200)); c.ellipse(cx, cy, 4, 3, b); },
+  // a night sky: stars and the lines of the constellations, a ring of signs
+  stars: (c, X, Y, w, h, o) => { const a = o.col || [60, 40, 90], cx = X + w / 2, cy = Y + h / 2; c.box(X, Y, w, h, a, dk(a, 0.4)); for (let i = 0; i < w * h / 180; i++) { const x = X + 3 + hsh(i, 1, w) * (w - 6), y = Y + 3 + hsh(i, 2, h) * (h - 6), s = hsh(i, 3, w); if (s > 0.85) star(c, x, y, 3, [250, 230, 160]); else c.p(x, y, s > 0.4 ? [250, 240, 200] : [180, 170, 220]); } for (let k = 0; k < 4; k++) { const sx = X + w * (0.15 + 0.23 * k), sy = Y + h * (0.22 + 0.5 * (k & 1)); let px = sx, py = sy; for (let j = 0; j < 4; j++) { const nx = Math.min(X + w - 6, px + 10 + hsh(k, j, 5) * 14), ny = Math.max(Y + 6, Math.min(Y + h - 6, py + (hsh(j, k, 6) - 0.5) * 18)); c.line(px, py, nx, ny, [190, 180, 240, 140]); c.ellipse(nx, ny, 1, 1, [250, 240, 200]); px = nx; py = ny; } } const r = Math.min(w, h) * 0.42; c.ellipse(cx, cy, r * 1.3, r, GOLD, 1); for (let k = 0; k < 12; k++) { const ang = k * Math.PI / 6; c.ellipse(cx + Math.cos(ang) * r * 1.3, cy + Math.sin(ang) * r, 3, 3, [[250, 210, 100], [190, 150, 250], [150, 220, 250]][k % 3]); } frame(c, X + 3, Y + 3, w - 6, h - 6, A(GOLD, 200)); },
+  // a mosaic of cut stone in rings, the stonecutter's showpiece
+  mosaic: (c, X, Y, w, h, o) => { const cx = X + w / 2, cy = Y + h / 2, R0 = Math.min(w / 2, h / 2 * 1.5) - 2, cols = o.cols || [[196, 186, 170], [150, 140, 130], [176, 120, 96], [120, 130, 150], [214, 206, 190]]; for (let ring = 0; ring < 6; ring++) { const r1 = R0 * (1 - ring / 6), n = Math.max(6, Math.round(r1 / 3)); c.ellipse(cx, cy, r1, r1 * 0.66, dk(cols[ring % cols.length], 0.35)); c.ellipse(cx, cy, r1 - 1, r1 * 0.66 - 1, cols[ring % cols.length]); for (let k = 0; k < n; k++) { const ang = k * 2 * Math.PI / n, x = cx + Math.cos(ang) * (r1 - 3), y = cy + Math.sin(ang) * (r1 - 3) * 0.66; c.rect(x - 1, y - 1, 3, 2, (k + ring) & 1 ? lt(cols[ring % cols.length], 0.25) : dk(cols[ring % cols.length], 0.2)); } } star(c, cx, cy, 7, [226, 214, 190]); c.ellipse(cx, cy, 2, 2, [150, 120, 96]); },
+  // diagonal parquet in two woods with a border
+  parquet: (c, X, Y, w, h, o) => { const a = o.col || [176, 130, 90], b = o.col2 || dk(a, 0.18); for (let y = Y; y < Y + h; y += 8) for (let x = X; x < X + w; x += 8) { const k = ((x - X) / 8 + (y - Y) / 8) & 1; c.rect(x, y, 8, 8, k ? a : b); if (k) c.line(x, y + 7, x + 7, y, dk(a, 0.15)); else c.line(x, y, x + 7, y + 7, lt(b, 0.12)); } frame(c, X, Y, w, h, dk(a, 0.5), 2); frame(c, X + 3, Y + 3, w - 6, h - 6, o.trim || lt(a, 0.3)); },
+};
+function dressFloor(F, kind, x0, y0, x1, y1, o = {}) { F.art((c) => FLOORS[kind](c, x0 * S, y0 * S, (x1 - x0 + 1) * S, (y1 - y0 + 1) * S, o), o.z || 0.09); }
+// Soft pools of lamplight on the floor at tiles [x, y].
+function lightPools(F, at, col = [255, 236, 170]) { F.art((c) => { for (const [x, y] of at) for (let k = 3; k >= 1; k--) c.ellipse(x * S + 8, y * S + 10, 12 * k, 7 * k, A(col, 14)); }, 0.11); }
+
+// ---------------------------------------------------------------- more rooms for the town runs
+Object.assign(F_, {
+  canvases: (c, X, Y, W) => { shade(c, X, Y, W, S); for (let i = 0; i < 3; i++) { const x = X + 1 + i * 3, k2 = [[236, 226, 200], [226, 120, 110], [110, 150, 220]][i]; c.box(x, Y - 10 + i * 2, W - 8, 24 - i * 2, k2, [130, 96, 60]); if (i === 2) { c.ellipse(x + 5, Y + 2, 3, 3, [250, 210, 90]); c.rect(x + 2, Y + 7, W - 12, 2, [90, 160, 110]); } } },
+  dropCloth: (c, X, Y, W, H, paints) => { c.box(X + 1, Y + 1, W - 2, H - 2, [236, 230, 214], [190, 180, 160]); for (let i = 0; i < 4; i++) c.line(X + 3 + i * W / 4, Y + 2, X + 6 + i * W / 4, Y + H - 3, [214, 206, 188]); for (let i = 0; i < 40; i++) { const x = X + 4 + hsh(i, 1, W) * (W - 8), y = Y + 4 + hsh(i, 2, H) * (H - 8), col = paints[i % paints.length], s = hsh(i, 3, W); c.ellipse(x, y, 1 + s * 4, 1 + s * 2, A(col, 200)); if (s > 0.6) { c.p(x + 5, y - 2, col); c.p(x - 4, y + 3, col); } } },
+  paintTable: (paints) => (c, X, Y, W, st) => { P.table(c, X, Y - 2, W, 18, st.wood); c.ellipse(X + W / 2, Y + 4, W / 2 - 4, 3, A(paints[0], 120)); for (let i = 0; i * 7 + 10 < W; i++) { const col = paints[i % paints.length]; c.box(X + 4 + i * 7, Y - 4, 6, 7, [196, 196, 206], [90, 90, 104]); c.ellipse(X + 7 + i * 7, Y - 4, 3, 1, col); } c.rect(X + W - 10, Y - 8, 2, 9, [150, 110, 70]); c.rect(X + W - 10, Y - 9, 2, 2, paints[1]); c.rect(X + W - 7, Y - 7, 2, 8, [150, 110, 70]); c.rect(X + W - 7, Y - 8, 2, 2, paints[2]); },
+  kiln: (c, X, Y, W) => F_.oven(c, X, Y, W),
+  potWheel: (c, X, Y, W) => { const cx = X + W / 2; c.ellipse(cx, Y + 13, 7, 2, [0, 0, 0, 60]); c.box(cx - 6, Y + 2, 12, 11, [120, 110, 100], [60, 56, 50]); c.ellipse(cx, Y + 2, 7, 3, [170, 160, 150]); c.ellipse(cx, Y, 4, 2, [190, 130, 90]); c.rect(cx - 3, Y - 6, 6, 6, [200, 140, 96]); c.ellipse(cx, Y - 6, 3, 1, [150, 100, 70]); },
+  potShelf: (c, X, Y, W, st) => { const w = st.wood; shade(c, X, Y, W, S); c.box(X, Y - 15, W, 30, dk(w, 0.15), dk(w, 0.6)); for (let r = 0; r < 3; r++) { const y = Y - 12 + r * 9; c.rect(X + 1, y + 7, W - 2, 2, lt(w, 0.2)); for (let i = 3; i + 6 <= W - 2; i += 8) { const k2 = [[200, 130, 90], [176, 110, 80], [226, 200, 160], [110, 140, 150]][(i / 8 + r) % 4 | 0]; c.ellipse(X + i + 3, y + 4, 3, 3, dk(k2, 0.3)); c.ellipse(X + i + 3, y + 4, 2, 3, k2); c.rect(X + i + 2, y, 3, 2, dk(k2, 0.2)); } } },
+  line: (c, X, Y, W, st) => { c.rect(X + 1, Y - 12, 1, 26, [150, 110, 70]); c.rect(X + W - 2, Y - 12, 1, 26, [150, 110, 70]); c.line(X + 1, Y - 11, X + W - 2, Y - 10, [200, 200, 210]); for (let i = 4; i < W - 6; i += 8) { const k2 = [st.fab[0], WHITE, st.fab[1] || [120, 170, 220], [250, 220, 120]][(i / 8 | 0) % 4]; c.box(X + i, Y - 10, 7, 9 + (i & 4 ? 2 : 0), k2, dk(k2, 0.3)); c.rect(X + i + 1, Y - 11, 1, 2, [150, 110, 70]); } },
+  basket: (c, X, Y, W) => { c.ellipse(X + 8, Y + 14, 7, 2, [0, 0, 0, 60]); c.box(X + 2, Y + 4, 12, 10, [200, 170, 120], [120, 90, 60]); for (let i = 0; i < 3; i++) c.rect(X + 3, Y + 6 + i * 3, 10, 1, [160, 130, 90]); c.box(X + 3, Y, 5, 5, WHITE, [170, 170, 180]); c.box(X + 7, Y + 1, 6, 4, [120, 170, 220], [70, 110, 160]); },
+});
+// Burgh's old warehouse as a working studio: canvases stacked against the walls, one drop-cloth corner, a table of pots.
+function atelier(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, paints = [[226, 70, 110], [70, 140, 226], [240, 196, 60], [90, 190, 110], [236, 130, 60]], cv = { w: 1, d: F_.canvases, tall: true };
+  F.run([cv, cv, null, I.easel(paints[0]), null, I.bookcase, null, I.crates2], 1); F.run([I.plant, cv, cv, null, I.sideboard, cv], -1);
+  // the drop cloth: a corner of the floor that is all paint, with the work on its easels
+  const dc = F.spot(5, 3, [F.L + 4, cy + 1.5], { clear: true, margin: 0, side: 0 }) || F.spot(4, 3, [F.L + 4, cy + 1.5], { clear: true, margin: 0, side: 0 });
+  if (dc) { const w = F.ok(dc[0] + 4, dc[1], 1, 3) ? 5 : 4; F.rugs.push([dc[0], dc[1], dc[0] + w - 1, dc[1] + 2]); F.art((c) => F_.dropCloth(c, dc[0] * S, dc[1] * S, w * S, 3 * S, paints), 0.12); scatter(F, [[I.easel(paints[2]), [dc[0] + 1, dc[1] + 1]], [I.easel(paints[4]), [dc[0] + 3, dc[1] + 2]]], { margin: 0, top: 1 }); }
+  scatter(F, [[{ w: 3, d: F_.paintTable(paints) }, [cx + 1, cy - 1]], [I.easel(paints[3]), [cx + 4, cy + 2]], [cv, [cx + 6, cy + 2]]], { margin: 1 });
+  lounge(F, [F.R - 5, cy + 3]);
+  F.col([cv, null, null, cv, null, null, I.barrel], -1, F.T + 4); F.col([I.bookcase1, null, null, cv, null, null, I.plant], 1, F.T + 4);
+  F.front([cv, I.plant, I.crates]); F.decor(["picture", "window", "picture", "picture", "window"], { step: 30 });
+}
+atelier.isl = [];
+// A children's room: bunk beds, a toy chest, a play mat with roads painted on it.
+function kidsRoom(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, bk = (col) => ({ w: 1, h: 2, d: F_.bunk(col, st.wood) }), flip = F.v === 1;
+  F.run([bk(st.fab[0]), bk(st.fab[1] || st.fab[0]), I.bedside, null, I.toys2, null, I.bookcase], flip ? -1 : 1); F.run([I.wardrobe, null, I.desk, null, I.toys], flip ? 1 : -1);
+  const at = F.spot(5, 3, [cx, cy + 1], { clear: true, margin: 0 });
+  if (at && F.rug(at[0], at[1], at[0] + 4, at[1] + 2, [110, 180, 110], { kind: "mat" })) F.art((c) => { const X = at[0] * S + 8, Y = at[1] * S + 10, w = 4 * S - 16, h = 2 * S - 12; c.box(X - 4, Y - 4, w + 8, h + 8, [120, 120, 130], [90, 90, 100]); c.rect(X + 4, Y + 4, w - 8, h - 8, [110, 180, 110]); for (let x = X; x < X + w; x += 8) { c.rect(x, Y - 1, 4, 1, WHITE); c.rect(x, Y + h + 1, 4, 1, WHITE); } for (const [dx, col] of [[10, [226, 90, 80]], [w - 20, [90, 130, 226]]]) { c.box(X + dx, Y + 6, 10, 8, [236, 226, 200], [130, 110, 90]); c.poly([[X + dx - 1, Y + 6], [X + dx + 5, Y + 1], [X + dx + 11, Y + 6]], col); } c.box(X + w / 2 - 4, Y - 6, 8, 5, [250, 210, 90], INK); }, 0.13);
+  F.flat([cx - 4, cy + 3], blocks); F.flat([cx + 4, cy - 1], (c, X, Y) => ball(c, X + 8, Y + 9, 4)); F.flat([cx + 3, cy + 3], cushion(st.fab[0]));
+  F.col([I.toys, null, null, I.plant, null, null, I.lamp], flip ? 1 : -1, F.T + 4); F.col([I.dresser1, null, null, I.armchair(), null, null, I.flowers], flip ? -1 : 1, F.T + 4);
+  corners(F, [I.toys, I.plant, I.crate]);
+  F.decor(["poster", "curtains", "picture", "poster", "clock", "curtains"]);
+}
+kidsRoom.isl = [];
+// A potter's house: the wheel, the kiln, shelves of pots drying.
+function potter(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, sh = { w: 2, d: F_.potShelf, tall: true };
+  F.k.floor(T.slab([200, 170, 140], 9), F.L, F.T, F.R, F.B, 0.015);
+  F.run([X_.oven, null, sh, sh, null, I.sink], 1); F.run([I.kitchen(3), I.fridge, null, sh], -1);
+  scatter(F, [[{ w: 1, d: F_.potWheel }, [cx - 3, cy]], [{ w: 1, d: F_.potWheel }, [cx + 3, cy]], [{ w: 3, d: F_.pots }, [cx, cy + 3]], [I.sacks, [F.L + 3, F.B - 3]]], { margin: 0 });
+  F.art((c) => { for (let i = 0; i < 12; i++) { const x = (cx - 5 + hsh(i, 1, 6) * 10) * S, y = (cy - 1 + hsh(i, 2, 6) * 4) * S; c.ellipse(x, y, 3 + hsh(i, 3, 6) * 4, 2, [176, 120, 90, 90]); } }, 0.11);
+  F.dining([F.R - 5, F.B - 3], 2, { cloth: false });
+  F.col([I.sacks, null, null, I.barrel, null, null, I.plant], -1, F.T + 3); F.col([sh, null, null, null, I.lamp], 1, F.T + 3);
+  corners(F, [I.plant, I.sacks, I.barrel]);
+  F.decor(["shelf", "window", "picture", "window", "shelf"], { step: 36 });
+}
+potter.isl = [];
+// The Resort's laundry: washing machines, lines of drying linen, baskets everywhere.
+function laundry(F) {
+  const I = F.I, st = F.st, cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2, wsh = X_.washer, bsk = { w: 1, d: F_.basket };
+  F.k.floor(T.check([236, 240, 244], [214, 224, 236], 1), F.L, F.T, F.R, F.B, 0.015);
+  F.run([wsh, wsh, wsh, null, I.sink, null, bsk, bsk], 1); F.run([wsh, wsh, null, I.lockers, null, bsk], -1);
+  for (const [fx, fy] of [[0.3, 0.45], [0.7, 0.45], [0.3, 0.75], [0.7, 0.75]]) { const at = F.spot(4, 1, [F.L + F.W * fx, F.T + F.H * fy], { clear: true }); if (at) F.stand(at[0], at[1], { w: 4, d: F_.line }); }
+  scatter(F, [[bsk, [cx, cy]], [bsk, [cx - 1, F.B - 2]], [I.table(2, (c, X, Y) => { for (let i = 0; i < 3; i++) c.box(X + 4 + i * 8, Y - 2 - i, 8, 5, [WHITE, st.fab[0], [250, 220, 120]][i], [150, 150, 160]); }), [cx + 3, F.B - 2]]], { margin: 0 });
+  F.col([bsk, null, null, I.plant, null, null, bsk], -1, F.T + 3); F.col([I.cooler, null, null, bsk, null, null, I.plant], 1, F.T + 3);
+  corners(F, [bsk, I.plant]);
+  F.decor(["calendar", "window", "clock", "window", "hooks"], { step: 40 });
+}
+laundry.isl = [];
+// The Stonecutter's floor: his mosaic in the middle, chalk lines where the next blocks are marked out.
+function stonecutterFloor(F) {
+  const cx = (F.L + F.R + 1) / 2, cy = (F.T + F.B + 1) / 2;
+  dressFloor(F, "mosaic", Math.round(cx) - 6, Math.round(cy) - 3, Math.round(cx) + 5, Math.round(cy) + 3, { z: 0.095 });
+  F.art((c) => { for (const [x, y, w, h] of [[F.L + 2, F.B - 6, 4, 3], [F.R - 6, F.T + 4, 4, 2]]) { frame(c, x * S + 2, y * S + 2, w * S - 4, h * S - 4, [240, 240, 236, 170]); for (let i = 1; i < w; i++) c.rect((x + i) * S, y * S + 4, 1, h * S - 8, [240, 240, 236, 110]); c.line(x * S + 4, y * S + 4, (x + w) * S - 4, (y + h) * S - 4, [240, 240, 236, 90]); } }, 0.1);
+}
 // Fixtures that are a PC to read: a desk with the machine on it.
 const pcFix = (c, X, Y, W, st) => { const w = st.wood; c.rect(X + 2, Y + 14, 13, 2, [0, 0, 0, 56]); c.box(X, Y + 3, S, 12, w, dk(w, 0.5)); c.rect(X + 1, Y + 4, 14, 2, lt(w, 0.25)); c.box(X + 2, Y - 9, 12, 11, [200, 206, 220], [80, 86, 104]); c.rect(X + 4, Y - 7, 8, 6, [70, 160, 220]); c.rect(X + 5, Y - 6, 3, 1, [190, 226, 250]); c.rect(X + 4, Y + 7, 8, 2, [226, 226, 236]); };
 const goldBin = (c, X, Y) => { c.ellipse(X + 8, Y + 13, 6, 2, [0, 0, 0, 60]); c.box(X + 3, Y + 1, 10, 13, GOLD, dk(GOLD, 0.5)); c.rect(X + 2, Y, 12, 3, lt(GOLD, 0.4)); c.rect(X + 5, Y + 4, 1, 8, lt(GOLD, 0.5)); star(c, X + 9, Y + 8, 3, WHITE); };
@@ -1959,35 +2355,58 @@ STYLES.parlour = () => ({ floor: T.carpet([96, 70, 120]), wall: paper([130, 96, 
 STYLES.school = () => ({ floor: T.plank([214, 180, 130]), wall: paper([226, 232, 220], { base: [150, 110, 76] }), wood: [176, 124, 80], fab: fabs("green", "red", "blue"), mat: [90, 150, 110] });
 const G = (hue, o = {}) => ({ role: "gate", style: gateStyle(hue, o), ...o });
 const SPECS = {
-  // gatehouses
-  HouseAccumulaGate: G([100, 170, 110]), HouseRouteGateGate: G([110, 180, 100]), HouseNimbasaGateGate: G([240, 180, 70], { wall: ["led", "film", "window", "map", "clock", "flags"] }), HouseNimbasaGateGate2: G([236, 130, 170]),
-  HouseBridgeGate2: G([80, 140, 210], { wall: ["led", "bridge", "window", "map", "bridge", "clock"] }), HouseBridgeGateGate: G([90, 130, 200], { wall: ["led", "bridge", "window", "timetable", "bridge", "map"] }),
-  HouseBridgeGateGate2: G([180, 120, 80], { wall: ["led", "rail", "window", "bridge", "timetable", "rail"] }), HouseBridgeGateGate3: G([170, 110, 90], { wall: ["led", "bridge", "rail", "window", "clock", "rail"] }),
-  HouseBridgeGateGate4: G([130, 150, 100], { floor: T.cobble([200, 196, 186]) }), HouseBridgeGateGate5: G([150, 140, 100], { floor: T.cobble([206, 198, 180]) }),
-  HouseBridgeGateGate6: G([160, 120, 210], { wall: ["led", "bridge", "window", "screen", "bridge", "clock"] }), HouseBridgeGateGate7: G([130, 130, 220], { wall: ["led", "bridge", "screen", "window", "bridge", "map"] }),
-  HouseBridgeGateGate8: G([50, 170, 200], { wall: ["led", "tube", "window", "tube", "map", "tube"], out: [90, 190, 230], more2: (F) => signsAs(F, () => infoBoard([50, 170, 200]), [[3, 4], [3, 6]]) }),
-  HouseBridgeGateGate9: G([60, 160, 220], { wall: ["led", "tube", "tube", "window", "tube", "clock"], out: [90, 190, 230], more2: (F) => signsAs(F, () => infoBoard([60, 160, 220]), [[21, 3], [17, 3]]) }),
-  HouseDriftveilCity8: G([210, 70, 70], { wall: ["led", "banner", "screen", "badges", "banner", "screen"] }), HouseOpelucidGate: G([120, 124, 170], { floor: T.slab([200, 200, 212], 3), wall: stoneWall([150, 154, 174]) }), HouseOpelucidGateGate2: G([140, 110, 170], { floor: T.slab([206, 200, 212], 5), wall: stoneWall([156, 150, 170]) }),
-  HouseRouteGate: G([214, 160, 80], { floor: T.check([240, 226, 190], [230, 210, 166], 1), out: [250, 226, 160] }), HouseUndellaGate: G([80, 170, 220], { wall: ["led", "window", "fishTrophy", "map", "window", "clock"] }), HouseVirbankGateGate: G([170, 110, 200], { wall: ["led", "film", "film", "screen", "film", "clock"] }),
+  // gatehouses: bridge gates look out on their bridge; the Marine Tube's gates are aquariums; city gates check you through;
+  // route gates are waiting rooms; the desert and mountain gates are rest stops.
+  HouseBridgeGate2: G([80, 140, 210], { layout: "bridge", bridge: "suspension", wallFn: bayWall([226, 230, 240], "suspension", "day", { land: [70, 130, 80] }), more2: (F) => scatter(F, [[F.I.plant, [F.L + 3, F.T + 3]], [F.I.flowers, [F.L + 6, F.B - 3]], [F.I.plant, [F.L + 4, F.B - 4]]], { margin: 0 }) }),
+  HouseBridgeGateGate: G([90, 130, 200], { layout: "bridge", bridge: "suspension", toward: "left", floor: T.marble([226, 230, 240]), wallFn: bayWall([200, 206, 220], "suspension", "day", { land: [130, 140, 170] }), more2: (F) => scatter(F, [[F.I.vending, [F.R - 3, F.T + 4]], [F.I.lockers, [F.R - 6, F.T + 3]], [F.I.cooler, [F.R - 2, F.B - 3]]], { margin: 0 }) }),
+  HouseBridgeGateGate2: G([180, 120, 80], { layout: "bridge", bridge: "truss", floor: T.check([236, 232, 222], [222, 214, 200], 1), wallFn: bayWall([150, 110, 84], "truss", "day", { land: [130, 120, 90] }), plank: [170, 130, 96], more2: (F) => scatter(F, [[X_.trainTable, [F.R - 9, F.T + 5]], [X_.signal, [F.R - 4, F.T + 4]], [X_.signal, [F.L + 6, F.B - 3]]], { margin: 0 }) }),
+  HouseBridgeGateGate3: G([170, 110, 90], { layout: "bridge", bridge: "truss", toward: "left", floor: T.slab([206, 200, 192], 4), wallFn: bayWall([130, 96, 76], "truss", "dusk", { land: [110, 90, 100] }), plank: [150, 110, 80], more2: (F) => scatter(F, [[X_.trainTable, [F.L + 9, F.B - 4]], [X_.signal, [F.L + 4, F.T + 4]], [F.I.lockers, [F.R - 4, F.T + 3]]], { margin: 0 }) }),
+  HouseBridgeGateGate4: G([130, 150, 100], { layout: "bridge", bridge: "arch", booths: 1, wood: true, floor: T.cobble([200, 196, 186]), wallFn: bayWall([130, 96, 66], "arch", "day", { land: [90, 140, 90] }), woodCol: [130, 96, 66], plank: [176, 130, 90], rugCol: [130, 110, 80], more2: (F) => scatter(F, [[F.I.barrel, [F.L + 3, F.B - 3]], [F.I.crates, [F.L + 4, F.B - 2]], [F.I.firewood, [F.R - 3, F.B - 3]]], { margin: 0 }) }),
+  HouseBridgeGateGate5: G([150, 140, 100], { layout: "bridge", bridge: "arch", booths: 1, wood: true, toward: "left", floor: T.cobble([206, 198, 180]), wallFn: bayWall([120, 90, 60], "arch", "dusk", { land: [100, 110, 80] }), woodCol: [120, 90, 60], plank: [166, 120, 84], rugCol: [140, 90, 70], more2: (F) => scatter(F, [[F.I.sacks, [F.R - 3, F.B - 3]], [F.I.barrel2, [F.R - 5, F.B - 2]], [F.I.flowers, [F.R - 3, F.T + 4]]], { margin: 0 }) }),
+  HouseBridgeGateGate6: G([160, 120, 210], { layout: "bridge", bridge: "cable", booths: 2, toward: "left", floor: T.lino([234, 232, 242], [190, 176, 220]), wallFn: bayWall([70, 70, 96], "cable", "dusk", { tower: [240, 240, 250], land: [90, 80, 120] }), plank: [150, 150, 170] }),
+  HouseBridgeGateGate7: G([130, 130, 220], { layout: "bridge", bridge: "cable", booths: 2, floor: T.check([236, 238, 246], [216, 220, 240], 1), wallFn: bayWall([90, 96, 130], "cable", "day", { tower: [240, 240, 250], land: [110, 150, 110] }), plank: [160, 166, 186] }),
+  HouseBridgeGateGate8: G([50, 170, 200], { layout: "tube", out: [90, 190, 230], floor: T.check([150, 196, 226], [136, 184, 216], 1), wallFn: tubeWall([60, 80, 110]), more2: (F) => signsAs(F, () => infoBoard([50, 170, 200]), [[3, 4], [3, 6]]) }),
+  HouseBridgeGateGate9: G([60, 160, 220], { layout: "tube", out: [90, 190, 230], floor: T.lino([170, 210, 230], [90, 150, 200]), wallFn: tubeWall([70, 70, 100]), more2: (F) => signsAs(F, () => infoBoard([60, 160, 220]), [[21, 3], [17, 3]]) }),
+  HouseNimbasaGateGate: G([240, 180, 70], { layout: "city", floor: T.check([246, 240, 226], [240, 226, 200], 1), wall: ["led", "wheel", "camera", "flags", "wheel", "clock"] }),
+  HouseNimbasaGateGate2: G([236, 130, 170], { layout: "city", flip: true, floor: T.lino([246, 236, 240], [236, 160, 190]), wall: ["led", "flags", "wheel", "camera", "flags", "screen"] }),
+  HouseDriftveilCity8: G([210, 70, 70], { layout: "city", floor: T.slab([200, 196, 200], 6), runner: [150, 40, 50], wall: ["led", "banner", "bracket", "camera", "banner", "badges"], more2: (F) => scatter(F, [[F.I.trophies, [F.L + 8, F.T + 3]], [X_.flag([210, 70, 70]), [F.L + 3, F.T + 5]], [X_.flag([60, 110, 200]), [F.R - 3, F.B - 4]]], { margin: 0 }) }),
+  HouseOpelucidGate: G([120, 124, 170], { layout: "city", floor: T.slab([200, 200, 212], 3), wallFn: stoneWall([150, 154, 174]), wall: ["led", "dragon", "camera", "dragon", "clock"], more2: (F) => scatter(F, [[{ w: 1, tall: true, d: (c, X, Y, W) => P.statue(c, X, Y - 14, W, 30, [110, 104, 140]) }, [F.L + 9, F.T + 3]], [{ w: 1, tall: true, d: (c, X, Y, W) => P.statue(c, X, Y - 14, W, 30, [110, 104, 140]) }, [F.R - 9, F.T + 3]]], { margin: 0 }) }),
+  HouseVirbankGateGate: G([170, 110, 200], { layout: "city", flip: true, floor: T.check([60, 56, 72], [70, 64, 84], 1), runner: [180, 40, 60], out: [250, 200, 120], wall: ["led", "film", "spotlight", "film", "camera", "film"], more2: (F) => F.art((c) => { for (const x of [F.L + 5, F.R - 5]) { c.poly([[x * S + 4, F.T * S], [x * S + 12, F.T * S], [x * S + 40, (F.exit.y - 2) * S], [x * S - 24, (F.exit.y - 2) * S]], [255, 240, 190, 30]); c.ellipse(x * S + 8, (F.exit.y - 2) * S, 32, 12, [255, 240, 190, 40]); } }, 0.12) }),
+  HouseAccumulaGate: G([100, 170, 110], { layout: "route", floor: T.plank([214, 180, 136]), wall: ["led", "notices", "map", "window", "poster", "notices"] }),
+  HouseRouteGateGate: G([110, 180, 100], { layout: "route", flip: true, vend: [60, 150, 110], floor: T.lino([236, 236, 226], [150, 196, 140]), wall: ["led", "notices", "lifebuoy", "window", "map", "notices"], extraR: (F) => scatter(F, [[F.I.plant, [F.L + 8, F.B - 2]], [F.I.flowers, [F.R - 8, F.B - 2]]], { margin: 0 }) }),
+  HouseUndellaGate: G([80, 170, 220], { layout: "route", floor: T.plank([236, 214, 170]), wallFn: seaWindows([240, 244, 236]), vend: [60, 150, 210], st: { palm: true }, wall: ["led", "notices", "lifebuoy", "notices"], extraR: (F) => scatter(F, [[X_.sand1, [F.R - 1, F.B - 2]], [X_.sand1, [F.R - 2, F.T + 3]], [F.I.umbrellas, [F.L + 3, F.B - 2]]], { margin: 0, side: 0 }) }),
+  HouseRouteGate: G([214, 160, 80], { layout: "rest", floor: T.check([240, 226, 190], [230, 210, 166], 1), out: [250, 226, 160], wallFn: duneWall([226, 180, 120]), runner: [200, 120, 70], wall: ["led", "sun", "hats", "map", "sun"] }),
+  HouseOpelucidGateGate2: G([140, 110, 170], { layout: "rest", rest: "mountain", floor: T.plank([150, 110, 80]), wallFn: stoneWall([156, 150, 170], [110, 76, 50]), woodCol: [120, 84, 56], runner: [120, 70, 90], runTrim: [226, 200, 140], st: { stone: [150, 146, 160] } }),
   // hotels, offices, labs, shops
   HouseDriftveilCity2: { role: "hotel", style: hotelStyle([150, 50, 60], [236, 222, 196], fabs("wine", "gold", "navy")) }, HouseDriftveilCity3: { role: "hotel", style: hotelStyle([60, 76, 130], [226, 226, 214], fabs("navy", "cream", "gold")) },
   HouseDriftveilCity4: { role: "hotel", style: hotelStyle([110, 70, 130], [240, 226, 230], fabs("plum", "gold", "rose")) }, HouseDriftveilCity5: { role: "hotel", style: hotelStyle([50, 120, 120], [230, 236, 220], fabs("teal", "cream", "orange")) },
-  HouseCasteliaCity28: { role: "hotel", style: "marble", doors: { exit: "lift" } }, HouseUnityTower2: { role: "hotel", style: "marble", doors: { exit: "lift", other: "pad" } }, HouseUnityTower3: { role: unityTop, style: "marble", doors: { exit: "pad" } },
-  HouseCasteliaCity18: { role: "office", style: "office", doors: { exit: "lift" } }, HouseCasteliaCity20: { style: "castelia", doors: { exit: "lift" } }, HouseCasteliaCity23: { style: "castelia", doors: { exit: "lift" } }, HouseCasteliaCity26: { role: "club", style: "castelia", doors: { exit: "lift" } },
-  HouseCasteliaCity14: { role: gallery, style: "marble", doors: { exit: "lift" } }, HouseCasteliaCity22: { role: "cafe", style: "cafe", doors: { exit: "lift" } }, HouseCasteliaCity25: { role: parlour, style: "parlour", doors: { exit: "lift" } },
+  HouseCasteliaCity28: { role: "hotel", style: "marble", doors: { exit: "lift" }, before: (F) => { dressFloor(F, "inlay", F.L, F.T + 1, F.exit.x - 2, F.B, { col: [176, 176, 204] }); dressFloor(F, "inlay", F.exit.x + 2, F.T + 1, F.R, F.B, { col: [176, 176, 204] }); }, more: (F) => lightPools(F, [[F.L + 1, F.T + 4], [F.R - 1, F.T + 4], [F.L + 1, F.B - 3], [F.R - 1, F.B - 3]]) }, HouseUnityTower2: { role: "hotel", style: "marble", doors: { exit: "lift", other: "pad" } }, HouseUnityTower3: { role: unityTop, style: "marble", doors: { exit: "pad" } },
+  HouseCasteliaCity18: { role: "office", style: "office", doors: { exit: "lift" } }, HouseCasteliaCity20: { style: "castelia", doors: { exit: "lift" }, before: (F) => dressFloor(F, "parquet", F.L + 1, F.T + 2, F.R - 1, F.B - 1, { col: [190, 150, 110] }) }, HouseCasteliaCity26: { role: "club", style: "castelia", doors: { exit: "lift" }, before: (F) => { dressFloor(F, "parquet", F.L, F.T + 1, F.R, F.B, { col: [170, 126, 90], trim: GOLD }); dressFloor(F, "lattice", F.L + 2, F.T + 3, F.R - 2, F.B - 2, { col: [40, 90, 100], col2: [60, 120, 126] }); }, more: (F) => lightPools(F, [[F.L + 1, F.T + 3], [F.R - 1, F.T + 3], [F.L + 1, F.B - 2], [F.R - 1, F.B - 2], [(F.L + F.R) / 2, F.T + 2]]) },
+  HouseCasteliaCity14: { role: gallery, style: "marble", doors: { exit: "lift" } }, HouseCasteliaCity22: { role: "cafe", style: "cafe", doors: { exit: "lift" } }, HouseCasteliaCity25: { role: parlour, style: "parlour", doors: { exit: "lift" }, before: (F) => dressFloor(F, "stars", F.L + 1, F.T + 2, F.R - 1, F.B - 1, { col: [56, 38, 84] }), more: (F) => lightPools(F, [[F.L, F.T + 4], [F.R, F.T + 5], [F.L, F.B - 4], [F.R, F.B - 3]], [220, 180, 255]) },
   CasteliaBadgeOffice: { role: badgeOffice, style: "marble" }, CasteliaFerryCabin: { role: shipCabin, style: "ship" }, SewerHideout: { role: hideout, style: "sewer" }, DriftveilMarket: { role: market, style: "market" }, ShoppingMallStockroom: { role: stockroom, style: "stock" },
   HousePokeTransferLab: { role: "lab", style: "lab" }, StriatonFennelLab: { role: dreamLab, style: "dream" }, CasteliaDreamLab: { role: dreamLab, style: "dream" }, HouseIcirrusCity5: { role: "office", style: "icirrus", wall: ["whiteboard", "window", "screen", "antlers", "board"] },
   HouseNacreneCity3: { role: library, style: "museum" }, HouseNacreneCity4: { role: library, style: "museum", upstairs: true }, HouseNacreneCity8: { role: "shop" }, HouseNacreneCity9: { role: atelier }, HouseNacreneCity10: { role: "cafe", music: false },
   // clubs, battle houses, rest houses
-  HouseIcirrusCity6: { role: "club" }, HouseBlackCity5: { role: "club" }, HouseNimbasaCity14: { role: "arena" }, HouseOpelucidCity4: { role: "arena" }, HousePokemonLeague11: { role: "rest" }, HouseVictoryRoad27: { role: "rest" }, VillageBridgeHouse7: { role: "rest" },
+  HouseIcirrusCity6: { role: "club" }, HouseIcirrusCity3: { role: teaHouse }, HouseBlackCity5: { role: "club" }, HouseNimbasaCity14: { role: "arena" }, HouseOpelucidCity4: { role: "arena" }, HousePokemonLeague11: { role: "rest", before: (F) => { dressFloor(F, "inlay", F.L, F.T + 3, F.exit.x - 2, F.B, { col: [120, 110, 150] }); dressFloor(F, "inlay", F.exit.x + 2, F.T + 3, F.R, F.B, { col: [120, 110, 150] }); } }, HouseVictoryRoad27: { role: "rest", before: (F) => { dressFloor(F, "inlay", F.L, F.T + 3, F.exit.x - 2, F.B, { col: [130, 120, 100] }); dressFloor(F, "inlay", F.exit.x + 2, F.T + 3, F.R, F.B, { col: [130, 120, 100] }); } }, VillageBridgeHouse7: { role: "rest" },
   HouseMistraltonCity3: { role: depot }, IcirrusQuizHouse: { role: quiz }, StriatonTrainersSchool: { role: school, style: "school" }, AccumulaMusicHouse: { role: music }, NimbasaHouse: { role: apartments },
   // Village Bridge and Anville
   VillageBridgeHouse2: { role: stonecutter }, VillageBridgeHouse3: { role: bakery }, VillageBridgeHouse4: { role: anglers }, VillageBridgeHouse5: { role: dojo }, VillageBridgeHouse6: { role: performer }, VillageBridgeHouse8: { wall: ["rods", "window", "fishTrophy", "curtains", "net", "picture"] }, VillageBridgeHouse9: { role: music, drums: true },
   AnvilleHouse2: { role: railway }, AnvilleHouse3: { role: railway }, AnvilleHouse4: { role: lostFound },
+  // neighbouring houses in one town each get a life of their own
+  HouseAccumulaTown4: { role: familyKitchen }, HouseAccumulaTown6: { role: "study" }, HouseAccumulaTown5: { role: kidsRoom },
+  HouseAspertiaCity5: { role: greenhouse }, HouseAspertiaCity7: { role: familyKitchen }, HouseAspertiaCity6: { role: kidsRoom },
+  HouseFloccesyTown4: { role: weaver }, HouseHumilauCity4: { role: anglers }, HouseHumilauCity5: { role: familyKitchen },
+  HouseLacunosaTown3: { role: collectorDen }, HouseLacunosaTown4: { role: familyKitchen }, HouseLentimasTown3: { role: greenhouse },
+  HouseNacreneCity6: { role: potter }, HouseNacreneCity7: { role: familyKitchen }, HouseNimbasaCity15: { role: music }, HouseNuvemaTown6: { role: "study" },
+  HouseOpelucidCity6: { role: teaHouse }, HouseOpelucidCity8: { role: collectorDen }, HouseOpelucidCity10: { role: "study" }, HouseOpelucidCity5: { role: kidsRoom }, HouseOpelucidCity9: { role: kidsRoom },
+  HouseStriatonCity5: { role: familyKitchen }, HouseStriatonCity7: { role: greenhouse }, HouseStriatonCity8: { role: kidsRoom }, HouseVirbankCity4: { role: workshop },
+  HouseCasteliaCity23: { role: "study", style: "castelia", doors: { exit: "lift" } }, HouseRoute133: { role: anglers }, HouseRoute233: { role: bunkhouse }, HouseRoute73: { role: teaHouse }, HouseRoute63: { role: greenhouse },
   // homes with something of their own
   LacunosaReadingHouse: { role: "study" }, NuvemaOldBedroom: { role: "bedroom" }, HumilauTradeHouse: { wall: ["mantine", "shelf", "fishTrophy", "mantine", "clock"] }, MistraltonFamilyHouse: { wall: ["discs", "curtains", "discs", "picture", "discs", "clock"] },
   VirbankAudinoHouse: { wall: ["audino", "curtains", "audino", "shelf", "audino"] }, HouseVirbankCity5: { wall: ["anchor", "window", "lifebuoy", "timetable", "anchor"] },
-  Route4SandHouse: { more: (F) => { scatter(F, [[X_.sand2, [F.L + 1, F.T + 5]], [X_.sand1, [F.R - 1, F.T + 8]], [X_.sand2, [F.L + 2, F.B - 2]], [X_.sand1, [F.R - 2, F.B - 4]], [X_.sand2, [F.L + 12, F.T + 10]]], { margin: 0, side: 0 }); chips(F, 90, [230, 206, 150]); } },
+  HouseRoute411: { role: bunkhouse }, HouseRoute412: { role: potter }, HouseRoute414: { role: collectorDen }, HouseRoute415: { role: laundry },
+  HouseRoute43: { role: greenhouse }, HouseRoute44: { role: weaver }, HouseRoute45: { role: workshop }, HouseRoute47: { role: teaHouse }, HouseRoute49: { role: diner }, HouseRoute48: { role: dojo }, HouseRoute410: { role: watchRoom },
+  Route4SandHouse: { role: sandStore }, Route4FamilyHouse: { role: familyKitchen },
   HouseHumilauCity6: { before: (F) => signsAs(F, (s) => s.y === 3 ? (c, X, Y, W, st) => F_.tvFix(c, X, Y, W, st) : goldBin, [[3, 3], [6, 3], [9, 3], [18, 11]]) },
   HouseAspertiaCity4: { role: "bedroom", before: (F) => signsAs(F, () => pcFix, [[18, 3]]) }, HouseNuvemaTown7: { role: "bedroom", before: (F) => signsAs(F, () => pcFix, [[11, 4]]) },
   HouseWhiteForest2: { more: (F) => { scatter(F, [[F.I.plant, [F.L + 4, F.T + 5]], [F.I.flowers, [F.R - 4, F.T + 6]], [F.I.plant, [F.L + 5, F.B - 3]], [F.I.plant, [F.R - 5, F.B - 3]], [F.I.flowers, [F.L + 9, F.T + 4]]], { margin: 0 }); } },
