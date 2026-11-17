@@ -240,7 +240,9 @@ Black/White Gyms), the League rooms, N's Castle, the Plasma Frigate, the story
 buildings, and every cave and dungeon floor (Glittering Cave, Reflection Cave,
 Frost Cavern, Terminus Cave; the Castelia Sewers, Relic Castle, Chargestone
 Cave, Twist Mountain, Dragonspiral Tower, the Regi chambers, the Hidden
-Grottoes). Ordinary houses, shops and gatehouses keep the default.
+Grottoes). The ordinary houses, shops, gatehouses and offices have plans too (`kalos-rooms.js`'s
+cafés, restaurants, boutiques and offices; `unova-rooms.js`'s furnishing kit, varied by town and seeded by the map's
+name), so no Kalos or Unova room keeps the default look but Reflection Cave 1F.
 
 A room plan in these two regions can only redraw: it re-tiles the floor and
 paints the set-piece, and never changes where you can walk, so a Gym's puzzle
